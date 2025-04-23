@@ -100,7 +100,7 @@ const Login = () => {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-3xl font-bold tracking-tight">
-            Commission Compass
+            Driver Commission Calculator
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             Sign in to access your commission calculator

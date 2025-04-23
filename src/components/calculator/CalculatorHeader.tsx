@@ -1,4 +1,3 @@
-
 import { Percent, Settings } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -15,7 +14,7 @@ export const CalculatorHeader = ({ userRole, onLogout }: CalculatorHeaderProps) 
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-2">
         <Percent className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold text-indigo-800">Commission Calculator</h1>
+        <h1 className="text-2xl font-bold text-indigo-800">Driver Commission Calculator</h1>
       </div>
       <div className="flex items-center gap-4">
         {userRole === 'admin' && (
