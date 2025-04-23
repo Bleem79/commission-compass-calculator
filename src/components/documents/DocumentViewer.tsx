@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -17,10 +18,11 @@ interface Document {
 interface DocumentViewerProps {
   bucketName: string;
   title: string;
+  icon?: React.ReactNode;
   isAdmin: boolean;
 }
 
-export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerProps) => {
+export const DocumentViewer = ({ bucketName, title, icon, isAdmin }: DocumentViewerProps) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -152,6 +154,7 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
           fetchDocuments();
         }}
       >
+        {icon && <span className="mr-2">{icon}</span>}
         {title}
       </Button>
 
