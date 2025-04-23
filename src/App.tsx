@@ -12,7 +12,6 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Protected route wrapper
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? children : <Navigate to="/login" replace />;
@@ -31,7 +30,9 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <SidebarProvider>
-              <Dashboard />
+              <div className="min-h-screen w-full">
+                <Dashboard />
+              </div>
             </SidebarProvider>
           </ProtectedRoute>
         } 
@@ -45,11 +46,13 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <div className="min-h-screen w-full bg-background">
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </div>
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>

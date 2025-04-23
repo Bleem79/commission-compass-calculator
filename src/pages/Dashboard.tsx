@@ -14,8 +14,10 @@ import { CalculatorActions } from "@/components/calculator/CalculatorActions";
 import { CalculatorResults } from "@/components/calculator/CalculatorResults";
 import { commissionData } from "@/constants/calculator";
 import type { NextTierInfo } from "@/types/calculator";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
+  const isMobile = useIsMobile();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [month, setMonth] = useState("");
@@ -125,27 +127,27 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 flex flex-col justify-center items-center p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 flex flex-col justify-start items-center p-2 md:p-6">
       <div className="w-full max-w-3xl mx-auto">
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 md:gap-6">
           <CalculatorHeader userRole={user?.role} onLogout={handleLogout} />
           <UserProfile email={user?.email} username={user?.username} role={user?.role} />
           
           <Card className="w-full rounded-lg shadow-lg bg-white/90 backdrop-blur-sm border border-indigo-100">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-2xl font-bold tracking-tight text-indigo-800">
+            <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0 pb-2">
+              <CardTitle className="text-xl md:text-2xl font-bold tracking-tight text-indigo-800">
                 Commission Percentage Calculator
               </CardTitle>
               <div className="flex items-center space-x-2">
-                <Percent className="h-6 w-6 text-indigo-500" />
+                <Percent className="h-5 w-5 md:h-6 md:w-6 text-indigo-500" />
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size={isMobile ? "sm" : "icon"}>
                         <HelpCircle className="h-4 w-4 text-purple-600" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-secondary text-secondary-foreground">
+                    <TooltipContent side={isMobile ? "bottom" : "right"} className="bg-secondary text-secondary-foreground">
                       Calculate your potential commission based on your monthly income.
                     </TooltipContent>
                   </Tooltip>
@@ -153,7 +155,7 @@ const Dashboard = () => {
               </div>
             </CardHeader>
             
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 md:space-y-6 p-3 md:p-6">
               <CalculatorForm
                 month={month}
                 shiftType={shiftType}
@@ -169,7 +171,7 @@ const Dashboard = () => {
               
               <CalculatorActions onReset={handleReset} />
               
-              <Separator className="my-4" />
+              <Separator className="my-2 md:my-4" />
               
               <CalculatorResults
                 averageDailyIncome={averageDailyIncome}
