@@ -6,6 +6,7 @@ type UserRole = "guest" | "admin";
 
 interface User {
   username: string;
+  email?: string;
   role: UserRole;
 }
 

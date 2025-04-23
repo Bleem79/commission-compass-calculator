@@ -196,10 +196,10 @@ const Dashboard = () => {
         <div className="mb-6 p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100">
           <div className="flex items-center gap-2">
             <div className="bg-indigo-100 rounded-full p-2">
-              <span className="text-indigo-600">{user?.email?.charAt(0).toUpperCase()}</span>
+              <span className="text-indigo-600">{user?.username?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}</span>
             </div>
             <div>
-              <p className="text-indigo-900 font-medium">{user?.email}</p>
+              <p className="text-indigo-900 font-medium">{user?.email || user?.username}</p>
               <p className="text-sm text-indigo-600 capitalize">Role: {user?.role}</p>
             </div>
           </div>
@@ -246,7 +246,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <Label htmlFor="shiftType">
-                  <Layers className="mr-2 h-4 w-4 inline-block" />
+                  <Calendar className="mr-2 h-4 w-4 inline-block" />
                   Select Shift Type
                 </Label>
                 <Select onValueChange={setShiftType} value={shiftType} defaultValue={shiftType}>
