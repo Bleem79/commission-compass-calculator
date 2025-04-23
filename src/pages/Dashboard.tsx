@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button"; // Add this import
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Percent, HelpCircle } from 'lucide-react';
@@ -127,13 +127,15 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 flex items-center justify-center p-4 md:p-6">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md mx-auto space-y-6">
         <CalculatorHeader userRole={user?.role} onLogout={handleLogout} />
         <UserProfile email={user?.email} username={user?.username} role={user?.role} />
         
-        <Card className="w-full rounded-lg shadow-md bg-gradient-to-br from-white via-indigo-50 to-purple-100 border-none">
+        <Card className="w-full rounded-lg shadow-lg bg-white/90 backdrop-blur-sm border border-indigo-100">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg md:text-2xl font-bold tracking-tight text-indigo-800">Commission Percentage Calculator</CardTitle>
+            <CardTitle className="text-lg md:text-2xl font-bold tracking-tight text-indigo-800">
+              Commission Percentage Calculator
+            </CardTitle>
             <div className="flex items-center space-x-2">
               <Percent className="h-6 w-6 text-indigo-500" />
               <TooltipProvider>
@@ -151,7 +153,7 @@ const Dashboard = () => {
             </div>
           </CardHeader>
           
-          <CardContent>
+          <CardContent className="space-y-6">
             <CalculatorForm
               month={month}
               shiftType={shiftType}
