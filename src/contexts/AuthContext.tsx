@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 type UserRole = "guest" | "admin";
 
 interface User {
+  id?: string;  // Add optional id field
   username: string;
   email?: string;
   role: UserRole;
@@ -27,6 +28,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         setUser(null);
+      } else if (session?.user) {
+        // Update user with Supabase user details when logged in
+        setUser({
+          id: session.user.id,
+          username: session.user.email || 'User',
+          email: session.user.email,
+          role: session.user.user_metadata?.role || 'guest'
+        });
       }
     });
 
