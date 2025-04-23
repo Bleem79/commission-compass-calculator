@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +10,7 @@ import { LogIn, UserCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const Login = () => {
-  const { login, setUser } = useAuth();
+  const { setUser } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
