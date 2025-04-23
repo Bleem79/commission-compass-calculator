@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,11 +15,13 @@ const Login = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -37,30 +40,14 @@ const Login = () => {
       }
 
       if (data.user) {
-        // Check if the user has an admin role
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', data.user.id)
-          .eq('role', 'admin')
-          .single();
-
-        if (roleError) {
-          // No admin role found
-          setUser({ username: data.user.email || 'User', role: 'guest' });
-          navigate("/dashboard");
-          return;
-        }
-
-        if (roleData) {
-          // User has admin role
-          setUser({ username: data.user.email || 'Admin', role: 'admin' });
-          toast({
-            title: "Login Successful",
-            description: "Welcome, Admin!",
-          });
-          navigate("/dashboard");
-        }
+        console.log("User logged in:", data.user);
+        // The user data and role will be set by AuthContext
+        // through the onAuthStateChange listener
+        toast({
+          title: "Login Successful",
+          description: "Welcome back!",
+        });
+        navigate("/dashboard");
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -70,10 +57,13 @@ const Login = () => {
         description: "An unexpected error occurred",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleGuestLogin = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: 'guest@mfuel.temp',
@@ -100,6 +90,8 @@ const Login = () => {
         description: "An unexpected error occurred",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -122,12 +114,12 @@ const Login = () => {
           )}
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">Email</Label>
               <div className="relative">
                 <UserCircle className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                 <Input
                   id="username"
-                  placeholder="Enter username"
+                  placeholder="Enter email"
                   className="pl-10"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -144,9 +136,13 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full">
-              <LogIn className="mr-2 h-4 w-4" />
-              Sign In
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Signing in..." : (
+                <>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign In
+                </>
+              )}
             </Button>
           </form>
         </CardContent>
@@ -155,6 +151,7 @@ const Login = () => {
             variant="outline" 
             className="w-full" 
             onClick={handleGuestLogin}
+            disabled={loading}
           >
             Continue as Guest
           </Button>

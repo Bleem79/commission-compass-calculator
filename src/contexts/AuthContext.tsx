@@ -1,11 +1,12 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 type UserRole = "guest" | "admin";
 
 interface User {
-  id?: string;  // Add optional id field
+  id?: string;
   username: string;
   email?: string;
   role: UserRole;
@@ -25,25 +26,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        checkUserRole(session.user.id, session.user.email || 'User');
+      }
+    });
+
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state change:", event, session?.user);
+      
       if (event === 'SIGNED_OUT') {
         setUser(null);
       } else if (session?.user) {
-        // Check if the user has an admin role
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .eq('role', 'admin')
-          .single();
-
-        // Update user with Supabase user details and role
-        setUser({
-          id: session.user.id,
-          username: session.user.email || 'User',
-          email: session.user.email,
-          role: roleData ? 'admin' : 'guest'
-        });
+        checkUserRole(session.user.id, session.user.email || 'User');
       }
     });
 
@@ -52,9 +49,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // Helper function to check user role
+  const checkUserRole = async (userId: string, userEmail: string) => {
+    try {
+      console.log("Checking role for user:", userId);
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .single();
+
+      if (roleError && roleError.code !== 'PGRST116') { // Not found is ok
+        console.error("Error fetching user role:", roleError);
+      }
+
+      // Update user with Supabase user details and role
+      console.log("Role data:", roleData, "setting user role to:", roleData ? 'admin' : 'guest');
+      setUser({
+        id: userId,
+        username: userEmail,
+        email: userEmail,
+        role: roleData ? 'admin' : 'guest'
+      });
+    } catch (error) {
+      console.error("Error in checkUserRole:", error);
+      setUser({
+        id: userId,
+        username: userEmail,
+        email: userEmail,
+        role: 'guest' // Default to guest on error
+      });
+    }
+  };
+
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out"
+      });
+    } catch (error) {
+      console.error("Error during logout:", error);
+      toast({
+        title: "Logout Error",
+        description: "An error occurred during logout",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
