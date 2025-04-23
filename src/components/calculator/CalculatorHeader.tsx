@@ -16,10 +16,6 @@ export const CalculatorHeader = ({ userRole, onLogout }: CalculatorHeaderProps) 
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-indigo-800">
           Commission Percentage Calculator
         </h1>
-        <Bell 
-          className="text-purple-600 hover:text-purple-700 cursor-pointer" 
-          size={24} 
-        />
       </div>
       <div className="flex items-center space-x-2">
         {userRole && (
