@@ -4,11 +4,7 @@ import { RefreshCw, Info, Fuel, MapPin } from 'lucide-react';
 import { DocumentViewer } from "@/components/documents/DocumentViewer";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface CalculatorActionsProps {
-  onReset: () => void;
-}
-
-export const CalculatorActions = ({ onReset }: CalculatorActionsProps) => {
+export const CalculatorActions = ({ onReset }: { onReset: () => void }) => {
   const { user, isAdmin } = useAuth();
 
   return (
@@ -25,7 +21,7 @@ export const CalculatorActions = ({ onReset }: CalculatorActionsProps) => {
       <Button
         variant="outline"
         asChild
-        className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+        className="flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200"
       >
         <DocumentViewer
           bucketName="info-docs"
@@ -38,7 +34,7 @@ export const CalculatorActions = ({ onReset }: CalculatorActionsProps) => {
       <Button
         variant="outline"
         asChild
-        className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+        className="flex items-center justify-center gap-2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200"
       >
         <DocumentViewer
           bucketName="mfuel-docs"
@@ -51,7 +47,7 @@ export const CalculatorActions = ({ onReset }: CalculatorActionsProps) => {
       <Button
         variant="outline"
         asChild
-        className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+        className="flex items-center justify-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200"
       >
         <DocumentViewer
           bucketName="hotspot-docs"
