@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -126,63 +125,60 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 flex items-center justify-center p-4 md:p-6">
-      <div className="w-full max-w-md mx-auto space-y-6">
-        <CalculatorHeader userRole={user?.role} onLogout={handleLogout} />
-        <UserProfile email={user?.email} username={user?.username} role={user?.role} />
-        
-        <Card className="w-full rounded-lg shadow-lg bg-white/90 backdrop-blur-sm border border-indigo-100">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg md:text-2xl font-bold tracking-tight text-indigo-800">
-              Commission Percentage Calculator
-            </CardTitle>
-            <div className="flex items-center space-x-2">
-              <Percent className="h-6 w-6 text-indigo-500" />
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <HelpCircle className="h-4 w-4 text-purple-600" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-secondary text-secondary-foreground">
-                    Calculate your potential commission based on your monthly income.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </CardHeader>
+    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 flex flex-col justify-center items-center p-4 md:p-6">
+      <div className="w-full max-w-3xl mx-auto">
+        <div className="flex flex-col gap-6">
+          <CalculatorHeader userRole={user?.role} onLogout={handleLogout} />
+          <UserProfile email={user?.email} username={user?.username} role={user?.role} />
           
-          <CardContent className="space-y-6">
-            <CalculatorForm
-              month={month}
-              shiftType={shiftType}
-              commissionType={commissionType}
-              totalIncome={totalIncome}
-              workingDays={workingDays}
-              onMonthChange={setMonth}
-              onShiftTypeChange={setShiftType}
-              onCommissionTypeChange={setCommissionType}
-              onTotalIncomeChange={setTotalIncome}
-              onWorkingDaysChange={setWorkingDays}
-            />
+          <Card className="w-full rounded-lg shadow-lg bg-white/90 backdrop-blur-sm border border-indigo-100">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-2xl font-bold tracking-tight text-indigo-800">
+                Commission Percentage Calculator
+              </CardTitle>
+              <div className="flex items-center space-x-2">
+                <Percent className="h-6 w-6 text-indigo-500" />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <HelpCircle className="h-4 w-4 text-purple-600" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-secondary text-secondary-foreground">
+                      Calculate your potential commission based on your monthly income.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </CardHeader>
             
-            <CalculatorActions
-              onReset={handleReset}
-              onInfoClick={() => setOpenAlertDialog(true)}
-              onFuelClick={() => setOpenFuelAlertDialog(true)}
-              onHotspotClick={() => setOpenHotspotAlertDialog(true)}
-            />
-            
-            <Separator className="my-4" />
-            
-            <CalculatorResults
-              averageDailyIncome={averageDailyIncome}
-              commissionPercentage={commissionPercentage}
-              nextTierInfo={nextTierInfo}
-            />
-          </CardContent>
-        </Card>
+            <CardContent className="space-y-6">
+              <CalculatorForm
+                month={month}
+                shiftType={shiftType}
+                commissionType={commissionType}
+                totalIncome={totalIncome}
+                workingDays={workingDays}
+                onMonthChange={setMonth}
+                onShiftTypeChange={setShiftType}
+                onCommissionTypeChange={setCommissionType}
+                onTotalIncomeChange={setTotalIncome}
+                onWorkingDaysChange={setWorkingDays}
+              />
+              
+              <CalculatorActions onReset={handleReset} />
+              
+              <Separator className="my-4" />
+              
+              <CalculatorResults
+                averageDailyIncome={averageDailyIncome}
+                commissionPercentage={commissionPercentage}
+                nextTierInfo={nextTierInfo}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

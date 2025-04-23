@@ -1,20 +1,16 @@
 
 import { Button } from "@/components/ui/button";
 import { RefreshCw, HelpCircle, Fuel, MapPin } from 'lucide-react';
+import { DocumentViewer } from "@/components/documents/DocumentViewer";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CalculatorActionsProps {
   onReset: () => void;
-  onInfoClick: () => void;
-  onFuelClick: () => void;
-  onHotspotClick: () => void;
 }
 
-export const CalculatorActions = ({
-  onReset,
-  onInfoClick,
-  onFuelClick,
-  onHotspotClick
-}: CalculatorActionsProps) => {
+export const CalculatorActions = ({ onReset }: CalculatorActionsProps) => {
+  const { user, isAdmin } = useAuth();
+
   return (
     <div className="grid grid-cols-4 gap-4 mt-4">
       <Button
@@ -26,32 +22,23 @@ export const CalculatorActions = ({
         Reset
       </Button>
       
-      <Button
-        variant="secondary"
-        onClick={onInfoClick}
-        className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-100 to-cyan-100 hover:from-blue-200 hover:to-cyan-200 border border-blue-200"
-      >
-        <HelpCircle className="h-4 w-4" />
-        Info
-      </Button>
+      <DocumentViewer
+        bucketName="info-docs"
+        title="Info"
+        isAdmin={isAdmin}
+      />
       
-      <Button
-        variant="secondary"
-        onClick={onFuelClick}
-        className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-100 to-teal-100 hover:from-green-200 hover:to-teal-200 border border-green-200"
-      >
-        <Fuel className="h-4 w-4" />
-        M-Fuel%
-      </Button>
+      <DocumentViewer
+        bucketName="mfuel-docs"
+        title="M-Fuel%"
+        isAdmin={isAdmin}
+      />
 
-      <Button
-        variant="secondary"
-        onClick={onHotspotClick}
-        className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-100 to-yellow-100 hover:from-orange-200 hover:to-yellow-200 border border-orange-200"
-      >
-        <MapPin className="h-4 w-4" />
-        Hotspot
-      </Button>
+      <DocumentViewer
+        bucketName="hotspot-docs"
+        title="Hotspot"
+        isAdmin={isAdmin}
+      />
     </div>
   );
 };
