@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,7 +34,6 @@ import { Home, Settings, Calendar, BarChart, Layers, Wallet, Percent, RefreshCw,
 import { toast } from "@/hooks/use-toast";
 import AdminSettings from "@/components/AdminSettings";
 
-// Commission data as provided
 const commissionData = [
   { shiftType: "Single Shift", commissionType: "With Basic", from: 0, to: 199.99, percentage: 0 },
   { shiftType: "Single Shift", commissionType: "With Basic", from: 200, to: 224.99, percentage: 5 },
@@ -96,14 +94,12 @@ const Dashboard = () => {
   const [openFuelAlertDialog, setOpenFuelAlertDialog] = useState(false);
   const [openHotspotAlertDialog, setOpenHotspotAlertDialog] = useState(false);
 
-  // Ensure user is logged in
   useEffect(() => {
     if (!user) {
       navigate("/login");
     }
   }, [user, navigate]);
 
-  // Calculate commission based on inputs
   useEffect(() => {
     if (totalIncome !== undefined && workingDays !== undefined && workingDays > 0 && month !== "" && shiftType !== "" && commissionType !== "") {
       const income = totalIncome / workingDays;
@@ -138,7 +134,6 @@ const Dashboard = () => {
         }
       }
 
-      // Determine next tiers
       const currentTier = commissionData.find(
         (item) =>
           item.shiftType === shiftType &&
@@ -200,7 +195,7 @@ const Dashboard = () => {
           <div className="flex h-14 items-center justify-center">
             <div className="flex items-center space-x-2">
               <Percent className="h-6 w-6 text-primary" />
-              <span className="font-semibold">Commission Compass</span>
+              <span className="font-semibold text-lg tracking-tight">Commission Compass</span>
             </div>
           </div>
           <SidebarTrigger />
@@ -232,10 +227,17 @@ const Dashboard = () => {
           <SidebarGroup>
             <SidebarGroupLabel>User Info</SidebarGroupLabel>
             <div className="px-2 py-2">
-              <div className="rounded-md bg-primary/10 px-3 py-2 text-sm">
-                <p className="font-semibold">{user?.username}</p>
-                <p className="text-xs text-muted-foreground capitalize">Role: {user?.role}</p>
-              </div>
+              {user?.username && (
+                <div className="rounded-md bg-primary/5 border border-primary/20 px-3 py-2 text-sm flex flex-col items-start shadow-sm">
+                  <span className="font-bold text-[.97rem] text-black dark:text-white flex items-center gap-1">
+                    <span className="bg-gray-100 rounded-full px-2 py-0.5 mr-2 flex items-center gap-1 shadow text-[.92rem] text-primary dark:bg-gray-800">
+                      <span className="mr-1"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" className="inline"><circle cx="8" cy="8" r="7" /></svg></span>
+                      <span className="text-primary">{user.username}</span>
+                    </span>
+                  </span>
+                  <span className="text-xs mt-1 capitalize font-medium text-purple-600">Role: {user.role}</span>
+                </div>
+              )}
             </div>
           </SidebarGroup>
         </SidebarContent>
@@ -246,16 +248,16 @@ const Dashboard = () => {
         </SidebarFooter>
       </Sidebar>
       <div className="flex flex-1 flex-col items-center justify-center p-4">
-        <Card className="w-full rounded-lg shadow-md mx-auto max-w-md">
+        <Card className="w-full rounded-lg shadow-md mx-auto max-w-md bg-gradient-to-br from-white via-indigo-50 to-purple-100 border-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg md:text-2xl font-bold tracking-tight">Commission Percentage Calculator</CardTitle>
+            <CardTitle className="text-lg md:text-2xl font-bold tracking-tight text-indigo-800">Commission Percentage Calculator</CardTitle>
             <div className="flex items-center space-x-2">
-              <Percent className="h-6 w-6 text-primary" />
+              <Percent className="h-6 w-6 text-indigo-500" />
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon">
-                      <HelpCircle className="h-4 w-4" />
+                      <HelpCircle className="h-4 w-4 text-purple-600" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent className="bg-secondary text-secondary-foreground">
@@ -396,44 +398,33 @@ const Dashboard = () => {
             <div className="mt-4 space-y-2">
               <div className="text-lg font-semibold">
                 {averageDailyIncome !== undefined && (
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 text-pink-600">
                     <BarChart className="h-5 w-5" />
                     <span>Average Daily Income: {averageDailyIncome.toFixed(2)}</span>
                   </div>
                 )}
                 {commissionPercentage !== undefined && (
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 text-emerald-700">
                     <Percent className="h-5 w-5" />
-                    <span>Commission Percentage: {commissionPercentage}%</span>
+                    <span>Commission Percentage: <span className="font-bold">{commissionPercentage}%</span></span>
                   </div>
                 )}
               </div>
               
               {nextTierInfo.length > 0 && (
                 <div className="space-y-2">
-                  <div className="font-semibold">Next Tiers:</div>
+                  <div className="font-semibold text-indigo-700">Next Tiers:</div>
                   {nextTierInfo.map((tier, index) => (
-                    <div key={index} className="flex items-center space-x-2">
+                    <div key={index} className="flex items-center space-x-2 text-indigo-500">
                       <ArrowRight className="h-4 w-4" />
-                      <span>{tier.percentage}% (Need {tier.amountNeeded.toFixed(2)} more)</span>
+                      <span>{tier.percentage}% <span className="text-gray-600">(Need {tier.amountNeeded.toFixed(2)} more)</span></span>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-            
-            {user?.role === "admin" && (
-              <div className="mt-4 border-t pt-4">
-                <div className="text-sm font-semibold text-primary">Admin Controls</div>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  <Button size="sm">Edit Commission Tiers</Button>
-                  <Button size="sm">Export Report</Button>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
-        
         {user?.role === "admin" && <AdminSettings />}
       </div>
     </div>
