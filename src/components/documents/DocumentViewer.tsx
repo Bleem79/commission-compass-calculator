@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { FileUp, File } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Document {
   id: string;
@@ -24,6 +25,7 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
 
   const fetchDocuments = useCallback(async () => {
     const { data, error } = await supabase
@@ -52,6 +54,15 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
       return;
     }
 
+    if (!user) {
+      toast({ 
+        title: 'Authentication Error', 
+        description: 'You must be logged in to upload files', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const filePath = `${Date.now()}-${file.name}`;
@@ -66,6 +77,7 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
         file_name: file.name,
         file_type: file.type,
         file_path: filePath,
+        uploaded_by: user.role === 'admin' ? user.username : 'guest' // This is a temporary solution
       });
 
       if (dbError) throw dbError;
