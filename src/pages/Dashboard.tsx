@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/tooltip";
 import { Home, Settings, Calendar, BarChart, Wallet, Percent, RefreshCw, HelpCircle, Fuel } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
-import AdminSettings from "@/components/AdminSettings";
 
 const commissionData = [
   { shiftType: "Single Shift", commissionType: "With Basic", from: 0, to: 199.99, percentage: 0 },
@@ -382,8 +381,6 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
-
-        {user?.role === "admin" && <AdminSettings />}
       </div>
     </div>
   );
