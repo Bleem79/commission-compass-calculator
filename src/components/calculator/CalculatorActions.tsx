@@ -12,7 +12,7 @@ export const CalculatorActions = ({ onReset }: { onReset: () => void }) => {
       <Button
         variant="secondary"
         onClick={onReset}
-        className="flex items-center justify-center gap-2 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200"
+        className="flex items-center justify-center gap-2 bg-pink-50 hover:bg-pink-100 text-rose-600 border border-pink-200"
       >
         <RefreshCw className="h-4 w-4" />
         Reset
@@ -34,7 +34,7 @@ export const CalculatorActions = ({ onReset }: { onReset: () => void }) => {
       <Button
         variant="outline"
         asChild
-        className="flex items-center justify-center gap-2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200"
+        className="flex items-center justify-center gap-2 bg-green-50 hover:bg-green-100 text-emerald-600 border border-green-200"
       >
         <DocumentViewer
           bucketName="mfuel-docs"
@@ -47,7 +47,7 @@ export const CalculatorActions = ({ onReset }: { onReset: () => void }) => {
       <Button
         variant="outline"
         asChild
-        className="flex items-center justify-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200"
+        className="flex items-center justify-center gap-2 bg-purple-50 hover:bg-purple-100 text-violet-600 border border-purple-200"
       >
         <DocumentViewer
           bucketName="hotspot-docs"
