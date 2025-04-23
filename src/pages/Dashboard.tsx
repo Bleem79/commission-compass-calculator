@@ -7,9 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, 
-  AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, 
-  AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { 
   Tooltip,
   TooltipContent,
@@ -173,8 +170,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 flex flex-col items-center justify-start p-4 md:p-6">
-      <div className="w-full max-w-md mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 flex items-center justify-center p-4 md:p-6">
+      <div className="w-full max-w-md">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <Percent className="h-6 w-6 text-primary" />
