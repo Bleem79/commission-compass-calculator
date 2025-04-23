@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,7 +62,10 @@ const Login = () => {
 
   const handleGuestLogin = async () => {
     setLoading(true);
+    setError("");
+    
     try {
+      // These credentials must match a user in your Supabase auth system
       const { data, error } = await supabase.auth.signInWithPassword({
         email: 'guest@amantaximena.com',
         password: 'Gm@4445'
@@ -69,6 +73,7 @@ const Login = () => {
 
       if (error) {
         console.error("Guest login error:", error);
+        setError(`Guest login failed: ${error.message}`);
         toast({
           title: "Guest Login Error",
           description: error.message,
@@ -78,6 +83,7 @@ const Login = () => {
       }
 
       if (data.user) {
+        console.log("Guest login successful:", data.user);
         toast({
           title: "Guest Login Successful",
           description: "Welcome! You're logged in as a guest.",
@@ -86,6 +92,7 @@ const Login = () => {
       }
     } catch (err) {
       console.error("Guest login error:", err);
+      setError("An unexpected error occurred during guest login");
       toast({
         title: "Guest Login Error",
         description: "An unexpected error occurred",
