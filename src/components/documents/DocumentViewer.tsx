@@ -28,52 +28,66 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
   const { user } = useAuth();
 
   const fetchDocuments = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('documents')
-      .select('*')
-      .eq('bucket_name', bucketName);
+    try {
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('bucket_name', bucketName);
 
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-      return;
+      if (error) {
+        console.error("Error fetching documents:", error);
+        toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        return;
+      }
+
+      setDocuments(data || []);
+    } catch (err) {
+      console.error("Unexpected error fetching documents:", err);
     }
-
-    setDocuments(data || []);
   }, [bucketName]);
 
   // Check if bucket exists and create it if it doesn't
   const ensureBucketExists = useCallback(async () => {
     try {
+      console.log("Ensuring bucket exists:", bucketName);
       // First check if bucket exists
       const { data: buckets, error: listError } = await supabase.storage.listBuckets();
       
       if (listError) {
         console.error("Error checking buckets:", listError);
-        return;
+        return false;
       }
       
       const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
+      console.log("Bucket exists?", bucketExists);
       
       if (!bucketExists) {
+        console.log("Creating bucket:", bucketName);
         const { error: createError } = await supabase.storage.createBucket(bucketName, {
           public: true
         });
         
         if (createError) {
           console.error("Error creating bucket:", createError);
+          return false;
         }
+        console.log("Bucket created successfully:", bucketName);
       }
+      return true;
     } catch (error) {
       console.error("Error ensuring bucket exists:", error);
+      return false;
     }
   }, [bucketName]);
   
-  // Ensure bucket exists when component mounts
+  // Ensure bucket exists when component mounts and dialog opens
   useEffect(() => {
-    if (isAdmin) {
+    if (isOpen && isAdmin) {
+      console.log("Admin status in DocumentViewer:", isAdmin);
       ensureBucketExists();
+      fetchDocuments();
     }
-  }, [isAdmin, ensureBucketExists]);
+  }, [isOpen, isAdmin, ensureBucketExists, fetchDocuments]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -100,16 +114,25 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
     setIsLoading(true);
     try {
       // Ensure bucket exists before upload
-      await ensureBucketExists();
+      const bucketReady = await ensureBucketExists();
+      if (!bucketReady) {
+        throw new Error("Could not ensure bucket exists");
+      }
       
       const filePath = `${Date.now()}-${file.name}`;
+      console.log("Uploading file to bucket:", bucketName, "path:", filePath);
       
       // Upload file to storage
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from(bucketName)
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        throw uploadError;
+      }
+      
+      console.log("File uploaded successfully:", uploadData);
 
       // Add record to documents table
       const { error: dbError } = await supabase.from('documents').insert({
@@ -120,7 +143,10 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
         uploaded_by: user.id // Use the user ID
       });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("Database error:", dbError);
+        throw dbError;
+      }
 
       toast({ title: 'Success', description: 'File uploaded successfully' });
       await fetchDocuments();
@@ -142,16 +168,26 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
   };
 
   const viewDocument = async (document: Document) => {
-    const { data, error } = await supabase.storage
-      .from(document.bucket_name)
-      .createSignedUrl(document.file_path, 60);
+    try {
+      const { data, error } = await supabase.storage
+        .from(document.bucket_name)
+        .createSignedUrl(document.file_path, 60);
 
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-      return;
+      if (error) {
+        console.error("Error creating signed URL:", error);
+        toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        return;
+      }
+
+      window.open(data.signedUrl, '_blank');
+    } catch (err) {
+      console.error("Error viewing document:", err);
+      toast({
+        title: 'Error',
+        description: 'Failed to open document',
+        variant: 'destructive'
+      });
     }
-
-    window.open(data.signedUrl, '_blank');
   };
 
   return (
