@@ -33,14 +33,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    // Listen for auth changes
+    // Listen for auth changes - optimized to minimize overhead
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state change:", event, session?.user);
-      
       if (event === 'SIGNED_OUT') {
+        // Immediate state change for logout
         setUser(null);
       } else if (session?.user) {
-        checkUserRole(session.user.id, session.user.email || 'User');
+        // For sign in, set basic user info immediately and check role asynchronously
+        const userEmail = session.user.email || 'User';
+        setUser({
+          id: session.user.id,
+          username: userEmail,
+          email: userEmail,
+          role: 'guest' // Default role until checked
+        });
+        
+        // Check actual role in background
+        checkUserRole(session.user.id, userEmail);
       }
     });
 
@@ -52,7 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Helper function to check user role
   const checkUserRole = async (userId: string, userEmail: string) => {
     try {
-      console.log("Checking role for user:", userId);
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
@@ -60,26 +68,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('role', 'admin')
         .single();
 
-      if (roleError && roleError.code !== 'PGRST116') { // Not found is ok
-        console.error("Error fetching user role:", roleError);
+      if (roleData) {
+        // Update role only if different from current
+        setUser(prevUser => {
+          if (prevUser?.role === 'admin') return prevUser;
+          return {
+            id: userId,
+            username: userEmail,
+            email: userEmail,
+            role: 'admin'
+          };
+        });
       }
-
-      // Update user with Supabase user details and role
-      console.log("Role data:", roleData, "setting user role to:", roleData ? 'admin' : 'guest');
-      setUser({
-        id: userId,
-        username: userEmail,
-        email: userEmail,
-        role: roleData ? 'admin' : 'guest'
-      });
     } catch (error) {
       console.error("Error in checkUserRole:", error);
-      setUser({
-        id: userId,
-        username: userEmail,
-        email: userEmail,
-        role: 'guest' // Default to guest on error
-      });
     }
   };
 

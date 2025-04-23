@@ -36,16 +36,19 @@ const Login = () => {
           description: error.message,
           variant: "destructive"
         });
+        setLoading(false);
         return;
       }
 
       if (data.user) {
-        console.log("User logged in:", data.user);
+        // Don't wait for toast, redirect immediately
+        navigate("/dashboard");
+        
+        // Show toast after navigation has started
         toast({
           title: "Login Successful",
           description: "Welcome back!",
         });
-        navigate("/dashboard");
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -55,7 +58,6 @@ const Login = () => {
         description: "An unexpected error occurred",
         variant: "destructive"
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -65,7 +67,6 @@ const Login = () => {
     setError("");
     
     try {
-      // These credentials must match a user in your Supabase auth system
       const { data, error } = await supabase.auth.signInWithPassword({
         email: 'guest@amantaximena.com',
         password: 'Gm@4445'
@@ -79,16 +80,19 @@ const Login = () => {
           description: error.message,
           variant: "destructive"
         });
+        setLoading(false);
         return;
       }
 
       if (data.user) {
-        console.log("Guest login successful:", data.user);
+        // Don't wait for toast, redirect immediately
+        navigate("/dashboard");
+        
+        // Show toast after navigation has started
         toast({
           title: "Guest Login Successful",
           description: "Welcome! You're logged in as a guest.",
         });
-        navigate("/dashboard");
       }
     } catch (err) {
       console.error("Guest login error:", err);
@@ -98,7 +102,6 @@ const Login = () => {
         description: "An unexpected error occurred",
         variant: "destructive"
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -131,6 +134,7 @@ const Login = () => {
                   className="pl-10"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -142,6 +146,7 @@ const Login = () => {
                 placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
