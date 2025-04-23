@@ -29,12 +29,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (event === 'SIGNED_OUT') {
         setUser(null);
       } else if (session?.user) {
-        // Update user with Supabase user details when logged in
+        // Check if the user has an admin role
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
+          .single();
+
+        // Update user with Supabase user details and role
         setUser({
           id: session.user.id,
           username: session.user.email || 'User',
           email: session.user.email,
-          role: session.user.user_metadata?.role || 'guest'
+          role: roleData ? 'admin' : 'guest'
         });
       }
     });
