@@ -77,7 +77,7 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
         file_name: file.name,
         file_type: file.type,
         file_path: filePath,
-        uploaded_by: user.role === 'admin' ? user.username : 'guest' // This is a temporary solution
+        uploaded_by: user.id // Use the user ID instead of username
       });
 
       if (dbError) throw dbError;
