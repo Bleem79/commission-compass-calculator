@@ -65,12 +65,14 @@ const Login = () => {
   const handleGuestLogin = async () => {
     setLoading(true);
     try {
+      // Use the correct guest credentials for your Supabase project
       const { data, error } = await supabase.auth.signInWithPassword({
         email: 'guest@mfuel.temp',
         password: 'guestpassword'
       });
 
       if (error) {
+        console.error("Guest login error:", error);
         toast({
           title: "Guest Login Error",
           description: error.message,
@@ -80,7 +82,11 @@ const Login = () => {
       }
 
       if (data.user) {
-        setUser({ username: 'Guest', role: 'guest' });
+        // Let AuthContext handle the user data and role
+        toast({
+          title: "Guest Login Successful",
+          description: "Welcome! You're logged in as a guest.",
+        });
         navigate("/dashboard");
       }
     } catch (err) {
