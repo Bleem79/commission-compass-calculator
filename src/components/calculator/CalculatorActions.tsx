@@ -29,12 +29,8 @@ export const CalculatorActions = ({ onReset }: CalculatorActionsProps) => {
       >
         <DocumentViewer
           bucketName="info-docs"
-          title={
-            <>
-              <Info className="h-4 w-4" />
-              Info
-            </>
-          }
+          title="Info"
+          icon={<Info className="h-4 w-4" />}
           isAdmin={isAdmin}
         />
       </Button>
@@ -46,12 +42,8 @@ export const CalculatorActions = ({ onReset }: CalculatorActionsProps) => {
       >
         <DocumentViewer
           bucketName="mfuel-docs"
-          title={
-            <>
-              <Fuel className="h-4 w-4" />
-              M-Fuel%
-            </>
-          }
+          title="M-Fuel%"
+          icon={<Fuel className="h-4 w-4" />}
           isAdmin={isAdmin}
         />
       </Button>
@@ -63,12 +55,8 @@ export const CalculatorActions = ({ onReset }: CalculatorActionsProps) => {
       >
         <DocumentViewer
           bucketName="hotspot-docs"
-          title={
-            <>
-              <MapPin className="h-4 w-4" />
-              Hotspot
-            </>
-          }
+          title="Hotspot"
+          icon={<MapPin className="h-4 w-4" />}
           isAdmin={isAdmin}
         />
       </Button>
