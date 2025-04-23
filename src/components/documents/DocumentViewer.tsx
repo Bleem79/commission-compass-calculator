@@ -1,7 +1,7 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { FileUp, File } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -41,6 +41,40 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
     setDocuments(data || []);
   }, [bucketName]);
 
+  // Check if bucket exists and create it if it doesn't
+  const ensureBucketExists = useCallback(async () => {
+    try {
+      // First check if bucket exists
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+      
+      if (listError) {
+        console.error("Error checking buckets:", listError);
+        return;
+      }
+      
+      const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
+      
+      if (!bucketExists) {
+        const { error: createError } = await supabase.storage.createBucket(bucketName, {
+          public: true
+        });
+        
+        if (createError) {
+          console.error("Error creating bucket:", createError);
+        }
+      }
+    } catch (error) {
+      console.error("Error ensuring bucket exists:", error);
+    }
+  }, [bucketName]);
+  
+  // Ensure bucket exists when component mounts
+  useEffect(() => {
+    if (isAdmin) {
+      ensureBucketExists();
+    }
+  }, [isAdmin, ensureBucketExists]);
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -54,10 +88,10 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
       return;
     }
 
-    if (!user) {
+    if (!user || !user.id) {
       toast({ 
         title: 'Authentication Error', 
-        description: 'You must be logged in to upload files', 
+        description: 'You must be logged in with a valid user ID to upload files', 
         variant: 'destructive' 
       });
       return;
@@ -65,26 +99,38 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
 
     setIsLoading(true);
     try {
+      // Ensure bucket exists before upload
+      await ensureBucketExists();
+      
       const filePath = `${Date.now()}-${file.name}`;
+      
+      // Upload file to storage
       const { error: uploadError } = await supabase.storage
         .from(bucketName)
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
+      // Add record to documents table
       const { error: dbError } = await supabase.from('documents').insert({
         bucket_name: bucketName,
         file_name: file.name,
         file_type: file.type,
         file_path: filePath,
-        uploaded_by: user.id // Use the user ID instead of username
+        uploaded_by: user.id // Use the user ID
       });
 
       if (dbError) throw dbError;
 
       toast({ title: 'Success', description: 'File uploaded successfully' });
       await fetchDocuments();
+      
+      // Clear file input
+      if (event.target) {
+        event.target.value = '';
+      }
     } catch (error) {
+      console.error("Upload error:", error);
       toast({ 
         title: 'Error', 
         description: error instanceof Error ? error.message : 'Failed to upload file', 
@@ -124,6 +170,9 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{title} Documents</DialogTitle>
+            <DialogDescription>
+              View and manage documents related to {title.toLowerCase()}.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -143,7 +192,7 @@ export const DocumentViewer = ({ bucketName, title, isAdmin }: DocumentViewerPro
                   disabled={isLoading}
                 >
                   <FileUp className="mr-2 h-4 w-4" />
-                  Upload Document
+                  {isLoading ? 'Uploading...' : 'Upload Document'}
                 </Button>
               </div>
             )}
