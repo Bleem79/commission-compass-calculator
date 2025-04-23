@@ -173,8 +173,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 flex flex-col items-center justify-start p-4 md:p-6">
+      <div className="w-full max-w-md mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <Percent className="h-6 w-6 text-primary" />
@@ -204,7 +204,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <Card className="w-full rounded-lg shadow-md mx-auto max-w-3xl bg-gradient-to-br from-white via-indigo-50 to-purple-100 border-none">
+        <Card className="w-full rounded-lg shadow-md bg-gradient-to-br from-white via-indigo-50 to-purple-100 border-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg md:text-2xl font-bold tracking-tight text-indigo-800">Commission Percentage Calculator</CardTitle>
             <div className="flex items-center space-x-2">
