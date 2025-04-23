@@ -1,33 +1,107 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { LogIn, UserCircle } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const Login = () => {
-  const { login, loginAsGuest } = useAuth();
+  const { login, setUser } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = login(username, password);
-    if (success) {
-      navigate("/dashboard");
-    } else {
-      setError("Invalid username or password");
+    setError("");
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: username,
+        password: password,
+      });
+
+      if (error) {
+        setError(error.message);
+        toast({
+          title: "Login Error",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (data.user) {
+        // Check if the user has an admin role
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .eq('role', 'admin')
+          .single();
+
+        if (roleError) {
+          // No admin role found
+          setUser({ username: data.user.email || 'User', role: 'guest' });
+          navigate("/dashboard");
+          return;
+        }
+
+        if (roleData) {
+          // User has admin role
+          setUser({ username: data.user.email || 'Admin', role: 'admin' });
+          toast({
+            title: "Login Successful",
+            description: "Welcome, Admin!",
+          });
+          navigate("/dashboard");
+        }
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("An unexpected error occurred");
+      toast({
+        title: "Login Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
     }
   };
 
-  const handleGuestLogin = () => {
-    loginAsGuest();
-    navigate("/dashboard");
+  const handleGuestLogin = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'guest@mfuel.temp',
+        password: 'guestpassword'
+      });
+
+      if (error) {
+        toast({
+          title: "Guest Login Error",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (data.user) {
+        setUser({ username: 'Guest', role: 'guest' });
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      console.error("Guest login error:", err);
+      toast({
+        title: "Guest Login Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
