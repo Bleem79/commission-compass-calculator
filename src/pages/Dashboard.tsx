@@ -16,7 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Home, Settings, Calendar, BarChart, Wallet, Percent, RefreshCw, HelpCircle, Fuel } from 'lucide-react';
+import { Home, Settings, Calendar, BarChart, Wallet, Percent, RefreshCw, HelpCircle, Fuel, MapPin } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 
 const commissionData = [
@@ -178,7 +178,7 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <Percent className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold text-indigo-800">Commission Compass</h1>
+            <h1 className="text-2xl font-bold text-indigo-800">Commission Calculator</h1>
           </div>
           <div className="flex items-center gap-4">
             {user?.role === 'admin' && (
@@ -303,50 +303,42 @@ const Dashboard = () => {
               </div>
             </div>
             
-            <div className="flex justify-between mt-4">
-              <Button variant="secondary" onClick={handleReset}>
-                <RefreshCw className="mr-2 h-4 w-4" />
+            <div className="grid grid-cols-4 gap-4 mt-4">
+              <Button
+                variant="secondary"
+                onClick={handleReset}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-pink-100 to-purple-100 hover:from-pink-200 hover:to-purple-200 border border-purple-200"
+              >
+                <RefreshCw className="h-4 w-4" />
                 Reset
               </Button>
               
-              <AlertDialog open={openAlertDialog} onOpenChange={setOpenAlertDialog}>
-                <AlertDialogTrigger asChild>
-                  <Button variant="secondary" size="icon">
-                    <HelpCircle className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Information</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Calculate your total income based on the total number of days in the month.
-                      If your commission is below 10%, you are not eligible for 2 days off.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Close</AlertDialogCancel>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button
+                variant="secondary"
+                onClick={() => setOpenAlertDialog(true)}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-100 to-cyan-100 hover:from-blue-200 hover:to-cyan-200 border border-blue-200"
+              >
+                <HelpCircle className="h-4 w-4" />
+                Info
+              </Button>
               
-              <AlertDialog open={openFuelAlertDialog} onOpenChange={setOpenFuelAlertDialog}>
-                <AlertDialogTrigger asChild>
-                  <Button variant="secondary" size="icon">
-                    <Fuel className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Fuel Percentage</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      To be updated soon.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Close</AlertDialogCancel>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button
+                variant="secondary"
+                onClick={() => setOpenFuelAlertDialog(true)}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-100 to-teal-100 hover:from-green-200 hover:to-teal-200 border border-green-200"
+              >
+                <Fuel className="h-4 w-4" />
+                M-Fuel%
+              </Button>
+
+              <Button
+                variant="secondary"
+                onClick={() => setOpenHotspotAlertDialog(true)}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-100 to-yellow-100 hover:from-orange-200 hover:to-yellow-200 border border-orange-200"
+              >
+                <MapPin className="h-4 w-4" />
+                Hotspot
+              </Button>
             </div>
             
             <Separator className="my-4" />
