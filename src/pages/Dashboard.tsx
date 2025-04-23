@@ -16,21 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarSeparator,
-  SidebarTrigger,
-  useSidebar,
-} from '@/components/ui/sidebar';
-import { Home, Settings, Calendar, BarChart, Layers, Wallet, Percent, RefreshCw, HelpCircle, Fuel, LogOut } from 'lucide-react';
+import { Home, Settings, Calendar, BarChart, Wallet, Percent, RefreshCw, HelpCircle, Fuel } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import AdminSettings from "@/components/AdminSettings";
 
@@ -89,7 +75,6 @@ const Dashboard = () => {
   const [averageDailyIncome, setAverageDailyIncome] = useState<number | undefined>(undefined);
   const [commissionPercentage, setCommissionPercentage] = useState<number | undefined>(undefined);
   const [nextTierInfo, setNextTierInfo] = useState<NextTierInfo[]>([]);
-  const { open } = useSidebar();
   const [openAlertDialog, setOpenAlertDialog] = useState(false);
   const [openFuelAlertDialog, setOpenFuelAlertDialog] = useState(false);
   const [openHotspotAlertDialog, setOpenHotspotAlertDialog] = useState(false);
@@ -189,66 +174,38 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex h-screen antialiased text-foreground">
-      <Sidebar collapsible="icon">
-        <SidebarHeader>
-          <div className="flex h-14 items-center justify-center">
-            <div className="flex items-center space-x-2">
-              <Percent className="h-6 w-6 text-primary" />
-              <span className="font-semibold text-lg tracking-tight">Commission Compass</span>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Percent className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold text-indigo-800">Commission Compass</h1>
           </div>
-          <SidebarTrigger />
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton>
-                <Home className="mr-2 h-4 w-4" />
-                <span>Dashboard</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            {user?.role === "admin" && (
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+          <div className="flex items-center gap-4">
+            {user?.role === 'admin' && (
+              <Button variant="ghost" onClick={() => navigate('/settings')}>
+                <Settings className="h-5 w-5 text-indigo-600" />
+              </Button>
             )}
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Logout</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-          <SidebarSeparator />
-          <SidebarGroup>
-            <SidebarGroupLabel>User Info</SidebarGroupLabel>
-            <div className="px-2 py-2">
-              {user?.username && (
-                <div className="rounded-md bg-primary/5 border border-primary/20 px-3 py-2 text-sm flex flex-col items-start shadow-sm">
-                  <span className="font-bold text-[.97rem] text-black dark:text-white flex items-center gap-1">
-                    <span className="bg-gray-100 rounded-full px-2 py-0.5 mr-2 flex items-center gap-1 shadow text-[.92rem] text-primary dark:bg-gray-800">
-                      <span className="mr-1"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" className="inline"><circle cx="8" cy="8" r="7" /></svg></span>
-                      <span className="text-primary">{user.username}</span>
-                    </span>
-                  </span>
-                  <span className="text-xs mt-1 capitalize font-medium text-purple-600">Role: {user.role}</span>
-                </div>
-              )}
-            </div>
-          </SidebarGroup>
-        </SidebarContent>
-        <SidebarFooter>
-          <div className="px-2 py-2 text-xs text-muted-foreground">
-            Commission Compass Calculator v1.0
+            <Button variant="ghost" onClick={handleLogout}>
+              <span className="text-indigo-600">Logout</span>
+            </Button>
           </div>
-        </SidebarFooter>
-      </Sidebar>
-      <div className="flex flex-1 flex-col items-center justify-center p-4">
-        <Card className="w-full rounded-lg shadow-md mx-auto max-w-md bg-gradient-to-br from-white via-indigo-50 to-purple-100 border-none">
+        </div>
+
+        <div className="mb-6 p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100">
+          <div className="flex items-center gap-2">
+            <div className="bg-indigo-100 rounded-full p-2">
+              <span className="text-indigo-600">{user?.email?.charAt(0).toUpperCase()}</span>
+            </div>
+            <div>
+              <p className="text-indigo-900 font-medium">{user?.email}</p>
+              <p className="text-sm text-indigo-600 capitalize">Role: {user?.role}</p>
+            </div>
+          </div>
+        </div>
+
+        <Card className="w-full rounded-lg shadow-md mx-auto max-w-3xl bg-gradient-to-br from-white via-indigo-50 to-purple-100 border-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg md:text-2xl font-bold tracking-tight text-indigo-800">Commission Percentage Calculator</CardTitle>
             <div className="flex items-center space-x-2">
@@ -425,6 +382,7 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+
         {user?.role === "admin" && <AdminSettings />}
       </div>
     </div>
