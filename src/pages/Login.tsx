@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,8 +40,6 @@ const Login = () => {
 
       if (data.user) {
         console.log("User logged in:", data.user);
-        // The user data and role will be set by AuthContext
-        // through the onAuthStateChange listener
         toast({
           title: "Login Successful",
           description: "Welcome back!",
@@ -65,10 +62,9 @@ const Login = () => {
   const handleGuestLogin = async () => {
     setLoading(true);
     try {
-      // Use the correct guest credentials for your Supabase project
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: 'guest@mfuel.temp',
-        password: 'guestpassword'
+        email: 'guest@amantaximena.com',
+        password: 'Gm@4445'
       });
 
       if (error) {
@@ -82,7 +78,6 @@ const Login = () => {
       }
 
       if (data.user) {
-        // Let AuthContext handle the user data and role
         toast({
           title: "Guest Login Successful",
           description: "Welcome! You're logged in as a guest.",
