@@ -1,7 +1,10 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Bell } from "lucide-react";
+import { Bell, BellDot } from "lucide-react";
 import { AdminMessages } from "@/components/messages/AdminMessages";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserProfileProps {
   email?: string;
@@ -11,6 +14,22 @@ interface UserProfileProps {
 
 export const UserProfile = ({ email, username, role }: UserProfileProps) => {
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
+
+  const { data: hasUnreadMessages } = useQuery({
+    queryKey: ['unread-messages'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('admin_messages')
+        .select('id')
+        .is('read_at', null)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return data.length > 0;
+    },
+    refetchInterval: 30000, // Check for new messages every 30 seconds
+  });
 
   const handleNotificationClick = () => {
     setIsMessagesOpen(true);
@@ -33,9 +52,17 @@ export const UserProfile = ({ email, username, role }: UserProfileProps) => {
         <Button
           variant="ghost"
           onClick={handleNotificationClick}
-          className="flex items-center gap-2 text-violet-500 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+          className={`flex items-center gap-2 transition-colors ${
+            hasUnreadMessages 
+              ? 'text-violet-600 hover:text-violet-700 hover:bg-violet-50' 
+              : 'text-violet-500 hover:text-violet-600 hover:bg-violet-50'
+          }`}
         >
-          <Bell className="h-6 w-6" />
+          {hasUnreadMessages ? (
+            <BellDot className="h-6 w-6" />
+          ) : (
+            <Bell className="h-6 w-6" />
+          )}
           <span className="font-medium">Open Me</span>
         </Button>
       </div>

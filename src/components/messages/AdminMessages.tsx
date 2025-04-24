@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -44,6 +43,23 @@ export const AdminMessages = ({
       return data as Message[];
     }
   });
+
+  useEffect(() => {
+    const markMessagesAsRead = async () => {
+      if (isOpen && !isAdmin) {
+        const { error } = await supabase
+          .from('admin_messages')
+          .update({ read_at: new Date().toISOString() })
+          .is('read_at', null);
+        
+        if (error) {
+          console.error('Error marking messages as read:', error);
+        }
+      }
+    };
+
+    markMessagesAsRead();
+  }, [isOpen, isAdmin]);
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
