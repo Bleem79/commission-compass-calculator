@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string
+          id: string
+          is_admin: boolean | null
+          read_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          is_admin?: boolean | null
+          read_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          is_admin?: boolean | null
+          read_at?: string | null
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           bucket_name: string

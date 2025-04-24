@@ -1,6 +1,7 @@
-
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Bell } from "lucide-react";
+import { AdminMessages } from "@/components/messages/AdminMessages";
 
 interface UserProfileProps {
   email?: string;
@@ -9,9 +10,10 @@ interface UserProfileProps {
 }
 
 export const UserProfile = ({ email, username, role }: UserProfileProps) => {
+  const [isMessagesOpen, setIsMessagesOpen] = useState(false);
+
   const handleNotificationClick = () => {
-    // Placeholder for notification functionality
-    console.log('Notification clicked');
+    setIsMessagesOpen(true);
   };
 
   return (
@@ -37,6 +39,11 @@ export const UserProfile = ({ email, username, role }: UserProfileProps) => {
           <span className="font-medium">Open Me</span>
         </Button>
       </div>
+
+      <AdminMessages 
+        isOpen={isMessagesOpen} 
+        onClose={() => setIsMessagesOpen(false)} 
+      />
     </div>
   );
 };
