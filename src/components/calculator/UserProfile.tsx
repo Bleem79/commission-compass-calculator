@@ -30,11 +30,11 @@ export const UserProfile = ({ email, username, role }: UserProfileProps) => {
         </div>
         <Button
           variant="ghost"
-          size="icon"
           onClick={handleNotificationClick}
-          className="text-indigo-600 hover:bg-indigo-50"
+          className="flex items-center gap-2 text-violet-500 hover:text-violet-600 hover:bg-violet-50 transition-colors"
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-6 w-6" />
+          <span className="font-medium">Open Me</span>
         </Button>
       </div>
     </div>
