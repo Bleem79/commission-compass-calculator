@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { Trash2 } from "lucide-react";
 
 interface Message {
   id: string;
@@ -73,9 +74,38 @@ export const AdminMessages = ({
     }
   });
 
+  const deleteMessageMutation = useMutation({
+    mutationFn: async (messageId: string) => {
+      const { error } = await supabase
+        .from('admin_messages')
+        .delete()
+        .eq('id', messageId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refetch();
+      toast({
+        title: "Message deleted",
+        description: "The message has been deleted successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete message. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleSend = () => {
     if (!newMessage.trim()) return;
     sendMessageMutation.mutate(newMessage);
+  };
+
+  const handleDelete = (messageId: string) => {
+    deleteMessageMutation.mutate(messageId);
   };
 
   return (
@@ -96,12 +126,22 @@ export const AdminMessages = ({
                 {messages?.map((message) => (
                   <div
                     key={message.id}
-                    className="rounded-lg bg-secondary/50 p-3"
+                    className="rounded-lg bg-secondary/50 p-3 relative group"
                   >
                     <p className="text-sm">{message.content}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {new Date(message.created_at).toLocaleString()}
                     </p>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleDelete(message.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive hover:text-destructive/90" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
