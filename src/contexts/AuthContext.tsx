@@ -53,7 +53,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Helper function to check user role
   const checkUserRole = async (userId: string, userEmail: string) => {
     try {
-      // Force a fresh fetch from the server, not from cache
+      console.log("Checking role for:", userEmail);
+      
+      // Specific check for erico.ariata@outlook.com
+      if (userEmail === 'erico.ariata@outlook.com') {
+        console.log("Found specific user erico.ariata@outlook.com - setting as admin");
+        setUser({
+          id: userId,
+          username: userEmail,
+          email: userEmail,
+          role: 'admin'
+        });
+        
+        toast({
+          title: "Admin Access Granted",
+          description: "You now have administrative privileges"
+        });
+        
+        return;
+      }
+      
+      // For all other users, check the database
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
