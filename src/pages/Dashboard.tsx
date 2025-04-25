@@ -36,6 +36,9 @@ const Dashboard = () => {
   useEffect(() => {
     if (!user) {
       navigate("/login");
+    } else {
+      // Debug the user role when dashboard loads
+      console.log("Dashboard loaded with user role:", user.role);
     }
   }, [user, navigate]);
 

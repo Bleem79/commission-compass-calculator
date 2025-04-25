@@ -10,6 +10,9 @@ interface CalculatorHeaderProps {
 }
 
 export const CalculatorHeader = ({ userRole, onLogout }: CalculatorHeaderProps) => {
+  // Debug the role being received
+  console.log("CalculatorHeader received role:", userRole);
+  
   return (
     <div className="flex items-center justify-between w-full">
       <div className="flex items-center space-x-4">

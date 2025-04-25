@@ -53,29 +53,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Helper function to check user role
   const checkUserRole = async (userId: string, userEmail: string) => {
     try {
+      // Force a fresh fetch from the server, not from cache
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .in('role', ['admin', 'user'])
         .single();
 
-      // Default to 'guest' if no specific role found
-      const userRole: UserRole = roleData?.role || 'guest';
+      if (roleError) {
+        console.error("Error fetching user role:", roleError);
+        // Default to 'guest' if role check fails
+        setUser({
+          id: userId,
+          username: userEmail,
+          email: userEmail,
+          role: 'guest'
+        });
+        return;
+      }
 
-      // Update user state with the determined role
-      setUser({
-        id: userId,
-        username: userEmail,
-        email: userEmail,
-        role: userRole
-      });
+      // Check if we got role data
+      if (roleData) {
+        const userRole: UserRole = roleData.role;
+        
+        // Update user state with the determined role
+        setUser({
+          id: userId,
+          username: userEmail,
+          email: userEmail,
+          role: userRole
+        });
 
-      // Optionally toast for role change
-      if (userRole === 'admin') {
-        toast({
-          title: "Admin Access Granted",
-          description: "You now have administrative privileges"
+        // Only toast for admin role
+        if (userRole === 'admin') {
+          toast({
+            title: "Admin Access Granted",
+            description: "You now have administrative privileges"
+          });
+        }
+        
+        // Debug the role that was found
+        console.log("User role set to:", userRole);
+      } else {
+        // No role found, set as guest
+        console.log("No role found for user, defaulting to guest");
+        setUser({
+          id: userId,
+          username: userEmail,
+          email: userEmail,
+          role: 'guest'
         });
       }
     } catch (error) {

@@ -54,6 +54,17 @@ const Login = () => {
 
         const userRole = roleData?.role || 'guest';
         
+        // Update the user context with the correct role
+        setUser({
+          id: data.user.id,
+          username: data.user.email || 'User',
+          email: data.user.email,
+          role: userRole
+        });
+
+        // Debug the role information
+        console.log("Login successful with role:", userRole);
+        
         // Show role-specific toast
         if (userRole === 'admin') {
           toast({
