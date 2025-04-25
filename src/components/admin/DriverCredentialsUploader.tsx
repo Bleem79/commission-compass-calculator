@@ -38,10 +38,10 @@ export const DriverCredentialsUploader = () => {
     if (authError) throw authError;
 
     if (authData.user) {
-      // Fix: Use 'driver' as a string literal that matches the enum type in the database
+      // Set driver role for the new user
       const { error: roleError } = await supabase.from('user_roles').insert({
         user_id: authData.user.id,
-        role: 'driver' as 'admin' | 'user' // Type assertion to match expected enum values
+        role: 'driver'
       });
 
       if (roleError) throw roleError;
@@ -75,6 +75,7 @@ export const DriverCredentialsUploader = () => {
         try {
           await createDriverAccount(driver.email, driver.password);
           successCount++;
+          console.log(`Created driver account for ${driver.email}`);
         } catch (error: any) {
           console.error(`Failed to create driver account for ${driver.email}:`, error);
           errorCount++;
@@ -95,6 +96,9 @@ export const DriverCredentialsUploader = () => {
       });
     } finally {
       setIsUploading(false);
+      if (event.target) {
+        event.target.value = '';
+      }
     }
   };
 
@@ -125,3 +129,4 @@ export const DriverCredentialsUploader = () => {
     </div>
   );
 };
+
