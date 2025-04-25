@@ -47,7 +47,7 @@ const AppRoutes = () => {
   
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<AuthRoute />} />
       <Route 
         path="/" 
         element={<Navigate to="/dashboard" replace />} 
@@ -81,13 +81,27 @@ const AppRoutes = () => {
   );
 };
 
+// Add an AuthRoute component to handle redirecting authenticated users away from login
+const AuthRoute = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+  
+  return <Login />;
+};
+
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
   
   useEffect(() => {
-    console.log("ProtectedRoute check - Auth status:", isAuthenticated, "User:", user?.email);
-  }, [isAuthenticated, user]);
+    console.log("ProtectedRoute check - Auth status:", isAuthenticated);
+  }, [isAuthenticated]);
   
   if (!isAuthenticated) {
     console.log("Not authenticated, redirecting to login from", location.pathname);

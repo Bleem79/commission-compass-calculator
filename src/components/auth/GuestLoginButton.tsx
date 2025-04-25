@@ -3,9 +3,11 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export const GuestLoginButton = () => {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleGuestLogin = async () => {
     setLoading(true);
@@ -32,7 +34,7 @@ export const GuestLoginButton = () => {
           title: "Guest Login Successful",
           description: "Welcome! You're logged in as a guest.",
         });
-        // Navigation will happen automatically through auth state change
+        navigate("/dashboard");
       }
     } catch (err) {
       console.error("Guest login error:", err);
@@ -53,7 +55,7 @@ export const GuestLoginButton = () => {
       onClick={handleGuestLogin}
       disabled={loading}
     >
-      Continue as Guest
+      {loading ? "Signing in..." : "Continue as Guest"}
     </Button>
   );
 };

@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -10,7 +9,6 @@ import { LogIn, UserCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export const LoginForm = () => {
-  const { setUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [identifier, setIdentifier] = useState("");
@@ -46,8 +44,13 @@ export const LoginForm = () => {
 
       if (data.user) {
         console.log("Login successful with user ID:", data.user.id);
-        // Auth state change will trigger role check and navigation
-        // No need to navigate here - the auth state change will trigger protected route check
+        toast({
+          title: "Login Successful",
+          description: "You are now logged in",
+        });
+        
+        // Explicitly navigate to dashboard after login
+        navigate("/dashboard");
       } else {
         // This shouldn't happen, but just in case
         setError("Login successful but no user data received");

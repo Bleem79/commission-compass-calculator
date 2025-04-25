@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { Session } from "@supabase/supabase-js";
 
 type UserRole = "guest" | "admin" | "user" | "driver";
 
@@ -18,22 +19,48 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  session: Session | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    // First check if session exists
+    // Set up auth state change listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log("Auth state changed:", event);
+      
+      setSession(newSession);
+      
+      if (event === 'SIGNED_OUT') {
+        // Immediate state change for logout
+        console.log("User signed out, clearing auth state");
+        setUser(null);
+      } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && newSession?.user) {
+        // For sign in, check user role - but use setTimeout to avoid potential deadlock
+        console.log("User signed in or token refreshed:", newSession.user.email);
+        const userEmail = newSession.user.email || 'User';
+        
+        // Use setTimeout to avoid potential deadlock
+        setTimeout(() => {
+          checkUserRole(newSession.user.id, userEmail);
+        }, 0);
+      }
+    });
+    
+    // THEN check for existing session
     const checkInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
         
-        if (session?.user) {
-          console.log("Initial session found for:", session.user.email);
-          await checkUserRole(session.user.id, session.user.email || 'User');
+        setSession(initialSession);
+        
+        if (initialSession?.user) {
+          console.log("Initial session found for:", initialSession.user.email);
+          await checkUserRole(initialSession.user.id, initialSession.user.email || 'User');
         } else {
           console.log("No initial session found");
           setUser(null);
@@ -45,27 +72,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Run the initial session check
     checkInitialSession();
-
-    // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event);
-      
-      if (event === 'SIGNED_OUT') {
-        // Immediate state change for logout
-        console.log("User signed out, clearing auth state");
-        setUser(null);
-      } else if (event === 'SIGNED_IN' && session?.user) {
-        // For sign in, check user role
-        console.log("User signed in:", session.user.email);
-        const userEmail = session.user.email || 'User';
-        await checkUserRole(session.user.id, userEmail);
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        // Handle token refresh to maintain session
-        console.log("Token refreshed for:", session.user.email);
-        const userEmail = session.user.email || 'User';
-        await checkUserRole(session.user.id, userEmail);
-      }
-    });
 
     // Clean up the subscription
     return () => {
@@ -96,7 +102,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // For all other users, check the database
+      // Check for guest account
+      if (userEmail === 'guest@amantaximena.com') {
+        console.log("Guest account detected - setting role as guest");
+        setUser({
+          id: userId,
+          username: "Guest User",
+          email: userEmail,
+          role: 'guest'
+        });
+        return;
+      }
+      
+      // For all other users, try to check the database but handle errors gracefully
       try {
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
@@ -105,10 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
 
         if (roleError) {
-          if (roleError.code !== 'PGRST116') { // Not found error
-            console.error("Error fetching user role:", roleError);
-          }
-          
+          console.log("No specific role found for user, defaulting to guest");
           // Default to 'guest' if role check fails or no role found
           setUser({
             id: userId,
@@ -177,6 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await supabase.auth.signOut();
       setUser(null);
+      setSession(null);
       toast({
         title: "Logged out",
         description: "You have been successfully logged out"
@@ -197,8 +213,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         setUser,
         logout,
-        isAuthenticated: !!user,
-        isAdmin: user?.role === "admin"
+        isAuthenticated: !!session,
+        isAdmin: user?.role === "admin",
+        session
       }}
     >
       {children}
