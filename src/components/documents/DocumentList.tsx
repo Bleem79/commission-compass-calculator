@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { File } from 'lucide-react';
+import { File, FileX } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -14,9 +14,10 @@ interface Document {
 
 interface DocumentListProps {
   documents: Document[];
+  isAdmin?: boolean;
 }
 
-export const DocumentList = ({ documents }: DocumentListProps) => {
+export const DocumentList = ({ documents, isAdmin = false }: DocumentListProps) => {
   const viewDocument = async (document: Document) => {
     try {
       const { data, error } = await supabase.storage
@@ -40,6 +41,42 @@ export const DocumentList = ({ documents }: DocumentListProps) => {
     }
   };
 
+  const deleteDocument = async (document: Document) => {
+    try {
+      // First delete from storage
+      const { error: storageError } = await supabase.storage
+        .from(document.bucket_name)
+        .remove([document.file_path]);
+
+      if (storageError) {
+        console.error("Error deleting from storage:", storageError);
+        toast({ title: 'Error', description: storageError.message, variant: 'destructive' });
+        return;
+      }
+
+      // Then delete from database
+      const { error: dbError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', document.id);
+
+      if (dbError) {
+        console.error("Error deleting from database:", dbError);
+        toast({ title: 'Error', description: dbError.message, variant: 'destructive' });
+        return;
+      }
+
+      toast({ title: 'Success', description: 'Document deleted successfully' });
+    } catch (err) {
+      console.error("Error deleting document:", err);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete document',
+        variant: 'destructive'
+      });
+    }
+  };
+
   return (
     <div className="grid gap-4">
       {documents.map((doc) => (
@@ -51,9 +88,21 @@ export const DocumentList = ({ documents }: DocumentListProps) => {
             <File className="h-5 w-5" />
             <span>{doc.file_name}</span>
           </div>
-          <Button variant="ghost" onClick={() => viewDocument(doc)}>
-            View
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={() => viewDocument(doc)}>
+              View
+            </Button>
+            {isAdmin && (
+              <Button 
+                variant="ghost" 
+                onClick={() => deleteDocument(doc)}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+              >
+                <FileX className="h-5 w-5" />
+                <span className="sr-only">Delete</span>
+              </Button>
+            )}
+          </div>
         </div>
       ))}
       {documents.length === 0 && (
