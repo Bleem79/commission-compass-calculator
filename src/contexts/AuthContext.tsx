@@ -20,6 +20,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   session: Session | null;
+  refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +28,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+
+  // Add function to refresh session
+  const refreshSession = async () => {
+    try {
+      const { data } = await supabase.auth.refreshSession();
+      setSession(data.session);
+      if (data.session?.user) {
+        await checkUserRole(data.session.user.id, data.session.user.email || 'User');
+      }
+    } catch (error) {
+      console.error("Error refreshing session:", error);
+    }
+  };
 
   useEffect(() => {
     // Set up auth state change listener FIRST
@@ -48,6 +62,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTimeout(() => {
           checkUserRole(newSession.user.id, userEmail);
         }, 0);
+      } else if (event === 'USER_UPDATED') {
+        // Handle email verification
+        if (newSession?.user) {
+          setTimeout(() => {
+            checkUserRole(newSession.user.id, newSession.user.email || 'User');
+          }, 0);
+        }
       }
     });
     
@@ -215,7 +236,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         isAuthenticated: !!session,
         isAdmin: user?.role === "admin",
-        session
+        session,
+        refreshSession
       }}
     >
       {children}

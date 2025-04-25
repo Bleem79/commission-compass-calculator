@@ -42,12 +42,13 @@ export const createDriverAccount = async (email: string, password: string, drive
           throw new Error(`Email ${email} is already registered`);
         }
         
-        // Create the user account
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        // Create the user account with autoconfirm enabled
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
           email,
           password: passwordStr,
-          options: {
-            emailRedirectTo: window.location.origin + '/login'
+          email_confirm: true, // Auto-confirm the email
+          user_metadata: {
+            driver_id: driverId
           }
         });
 
