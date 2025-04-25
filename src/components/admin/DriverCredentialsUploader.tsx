@@ -47,8 +47,13 @@ export const DriverCredentialsUploader = () => {
           const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(sheet);
+          
+          // Add logging to see the parsed data
+          console.log("Parsed Excel data:", jsonData);
+          
           resolve(jsonData);
         } catch (error) {
+          console.error("Error processing Excel file:", error);
           reject(error);
         }
       };
@@ -60,21 +65,31 @@ export const DriverCredentialsUploader = () => {
   const createDriverAccount = async (email: string, password: string, driverId: string) => {
     console.log(`Attempting to create driver account for ${email} with Driver ID: ${driverId}`);
 
-    // Ensure password is a string
-    const passwordStr = String(password);
-    
-    // Sign up the user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password: passwordStr,
-    });
+    try {
+      // Ensure password is a string and trim any whitespace
+      const passwordStr = String(password).trim();
+      
+      if (!email || !passwordStr || !driverId) {
+        throw new Error(`Missing required fields for driver: ${email}`);
+      }
+      
+      // Sign up the user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password: passwordStr,
+      });
 
-    if (authError) {
-      console.error(`Authentication error for ${email}:`, authError);
-      throw authError;
-    }
+      if (authError) {
+        console.error(`Authentication error for ${email}:`, authError);
+        throw authError;
+      }
 
-    if (authData.user) {
+      if (!authData.user) {
+        throw new Error(`No user returned for ${email}`);
+      }
+
+      console.log(`User created with ID: ${authData.user.id}`);
+
       // Set driver role
       const { error: roleError } = await supabase.from('user_roles').insert({
         user_id: authData.user.id,
@@ -86,21 +101,27 @@ export const DriverCredentialsUploader = () => {
         throw roleError;
       }
 
+      console.log(`Role assigned for user: ${email}`);
+
       // Create driver credentials entry
-      const { error: credentialsError } = await supabase.from('driver_credentials').insert({
+      const { data: credData, error: credentialsError } = await supabase.from('driver_credentials').insert({
         user_id: authData.user.id,
         driver_id: driverId
-      });
+      }).select();
 
       if (credentialsError) {
         console.error(`Driver credentials insertion error for ${email}:`, credentialsError);
         throw credentialsError;
       }
 
+      console.log(`Driver credentials created:`, credData);
       console.log(`Successfully created driver account for ${email} with Driver ID: ${driverId}`);
+      
+      return authData;
+    } catch (error) {
+      console.error(`Error in createDriverAccount for ${email}:`, error);
+      throw error;
     }
-
-    return authData;
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,6 +137,23 @@ export const DriverCredentialsUploader = () => {
     try {
       const drivers = await processExcelFile(file) as Array<{ email: string, password: string | number, driverId: string }>;
       
+      if (!drivers || drivers.length === 0) {
+        toast.error("No data found in the uploaded file");
+        setIsUploading(false);
+        return;
+      }
+      
+      // Validate data structure
+      if (!drivers[0].hasOwnProperty('email') || 
+          !drivers[0].hasOwnProperty('password') || 
+          !drivers[0].hasOwnProperty('driverId')) {
+        toast.error("Invalid template format", { 
+          description: "Please use the template provided by the Download Template button" 
+        });
+        setIsUploading(false);
+        return;
+      }
+      
       let successCount = 0;
       let errorCount = 0;
       const errors: { email: string; error: string }[] = [];
@@ -124,11 +162,16 @@ export const DriverCredentialsUploader = () => {
 
       for (const driver of drivers) {
         try {
+          // Ensure all required fields are present
+          if (!driver.email || !driver.password || !driver.driverId) {
+            throw new Error("Missing required fields");
+          }
+          
           // Ensure password is passed as a string
           await createDriverAccount(
-            driver.email, 
+            driver.email.toString().trim(), 
             String(driver.password), 
-            driver.driverId
+            driver.driverId.toString().trim()
           );
           successCount++;
           
@@ -170,7 +213,7 @@ export const DriverCredentialsUploader = () => {
       if (errorCount > 0) {
         const errorMessage = errors.map(e => `${e.email}: ${e.error}`).join('\n');
         toast.error(`Failed to create ${errorCount} driver account${errorCount > 1 ? 's' : ''}`, {
-          description: errorMessage,
+          description: errorMessage.length > 100 ? errorMessage.substring(0, 100) + '...' : errorMessage,
           action: {
             label: "View Errors",
             onClick: () => {
@@ -188,6 +231,7 @@ export const DriverCredentialsUploader = () => {
       }
 
     } catch (error: any) {
+      console.error("Error processing driver accounts:", error);
       toast.error("Failed to process driver accounts", {
         description: error.message
       });
