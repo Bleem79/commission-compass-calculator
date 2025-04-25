@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { processExcelFile } from "@/utils/excel/processExcelFile";
 import { createDriverAccount } from "@/services/driverAccountService";
 import { processBatch } from "@/utils/batchProcessor";
-import { DownloadTemplateButton } from "./DownloadTemplateButton";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 export const DriverCredentialsUploader = () => {
@@ -126,35 +125,32 @@ export const DriverCredentialsUploader = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <DownloadTemplateButton />
-        <input
-          type="file"
-          accept=".xlsx,.xls"
-          onChange={handleFileUpload}
-          className="hidden"
-          id="driver-excel-upload"
-        />
-        <Button
-          variant="outline"
-          disabled={isUploading}
-          onClick={() => document.getElementById('driver-excel-upload')?.click()}
-          className="flex items-center gap-2"
-        >
-          {isUploading ? (
-            "Processing..."
-          ) : (
-            <>
-              <FileText className="h-4 w-4" />
-              <span>Upload Driver Credentials</span>
-            </>
-          )}
-        </Button>
-      </div>
+    <div>
+      <input
+        type="file"
+        accept=".xlsx,.xls"
+        onChange={handleFileUpload}
+        className="hidden"
+        id="driver-excel-upload"
+      />
+      <Button
+        variant="outline"
+        disabled={isUploading}
+        onClick={() => document.getElementById('driver-excel-upload')?.click()}
+        className="w-full bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800 transition-colors flex items-center gap-2"
+      >
+        {isUploading ? (
+          "Processing..."
+        ) : (
+          <>
+            <FileText className="h-4 w-4" />
+            <span>Upload Driver Credentials</span>
+          </>
+        )}
+      </Button>
       
       {uploadStats && (
-        <Alert variant={uploadStats.failed > 0 ? "destructive" : "default"}>
+        <Alert variant={uploadStats.failed > 0 ? "destructive" : "default"} className="mt-3">
           <AlertTitle>Upload Results</AlertTitle>
           <AlertDescription>
             <div className="space-y-2">
