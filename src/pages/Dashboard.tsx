@@ -16,6 +16,9 @@ import { CalculatorResults } from "@/components/calculator/CalculatorResults";
 import { commissionData } from "@/constants/calculator";
 import type { NextTierInfo } from "@/types/calculator";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { DriverCredentialsUploader } from "@/components/admin/DriverCredentialsUploader";
+import { ExcelUploader } from "@/components/admin/ExcelUploader";
+import { DownloadTemplateButton } from "@/components/admin/DownloadTemplateButton";
 
 const Dashboard = () => {
   const isMobile = useIsMobile();
@@ -135,7 +138,7 @@ const Dashboard = () => {
       <div className="w-full max-w-3xl mx-auto">
         <div className="flex flex-col gap-4 md:gap-6">
           <CalculatorHeader userRole={user?.role} onLogout={handleLogout} />
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center space-x-4">
             <Button
               variant="outline"
               className="mb-4"
@@ -143,8 +146,12 @@ const Dashboard = () => {
             >
               View Commission Table
             </Button>
+            <div className="flex space-x-2">
+              <ExcelUploader />
+              <DownloadTemplateButton />
+              <DriverCredentialsUploader />
+            </div>
           </div>
-          <UserProfile email={user?.email} username={user?.username} role={user?.role} />
           
           <Card className="w-full rounded-lg shadow-lg bg-white/90 backdrop-blur-sm border border-indigo-100">
             <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0 pb-2">
