@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
 
@@ -29,7 +29,7 @@ export const DriverCredentialsUploader = () => {
     });
   };
 
-  const createDriverAccount = async (email: string, password: string) => {
+  const createDriverAccount = async (email: string, password: string, driverId: string) => {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -38,13 +38,23 @@ export const DriverCredentialsUploader = () => {
     if (authError) throw authError;
 
     if (authData.user) {
-      // Set driver role for the new user
+      // Set driver role
       const { error: roleError } = await supabase.from('user_roles').insert({
         user_id: authData.user.id,
         role: 'driver'
       });
 
       if (roleError) throw roleError;
+
+      // Create driver credentials entry
+      const { error: credentialsError } = await supabase.from('driver_credentials').insert({
+        user_id: authData.user.id,
+        driver_id: driverId
+      });
+
+      if (credentialsError) throw credentialsError;
+
+      console.log(`Created driver account for ${email} with ID ${driverId}`);
     }
 
     return authData;
@@ -54,68 +64,69 @@ export const DriverCredentialsUploader = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Check if file is Excel
     if (!file.name.match(/\.(xlsx|xls)$/)) {
-      toast({
-        variant: "destructive",
-        title: "Invalid file type",
-        description: "Please upload an Excel file (.xlsx or .xls)",
-      });
+      toast.error("Please upload an Excel file (.xlsx or .xls)");
       return;
     }
 
     setIsUploading(true);
     try {
-      const drivers = await processExcelFile(file) as Array<{ email: string, password: string }>;
+      const drivers = await processExcelFile(file) as Array<{ email: string, password: string, driverId: string }>;
       
       let successCount = 0;
       let errorCount = 0;
-      const errors: string[] = [];
+      const errors: { email: string; error: string }[] = [];
+
+      const toastId = toast.loading("Processing driver credentials...");
 
       for (const driver of drivers) {
         try {
-          await createDriverAccount(driver.email, driver.password);
+          await createDriverAccount(driver.email, driver.password, driver.driverId);
           successCount++;
           console.log(`Created driver account for ${driver.email}`);
+          
+          // Show incremental progress
+          toast.loading(`Processed ${successCount} of ${drivers.length} drivers...`, {
+            id: toastId
+          });
         } catch (error: any) {
           console.error(`Failed to create driver account for ${driver.email}:`, error);
-          errors.push(driver.email);
+          errors.push({ email: driver.email, error: error.message });
           errorCount++;
         }
       }
 
-      // Show success toast
+      // Dismiss the loading toast
+      toast.dismiss(toastId);
+
+      // Show final success/error toast
       if (successCount > 0) {
-        toast({
-          title: "Driver accounts created successfully",
-          description: `Created ${successCount} driver accounts${errorCount > 0 ? ` (${errorCount} failed)` : ''}`,
-          variant: "default"
+        toast.success(
+          `Successfully processed ${successCount} driver${successCount > 1 ? 's' : ''}${
+            errorCount > 0 ? ` (${errorCount} failed)` : ''
+          }`, {
+          description: "Driver accounts have been created and roles assigned"
         });
       }
 
-      // Show error toast if there were any failures
+      // Show detailed error toast if there were any failures
       if (errorCount > 0) {
-        toast({
-          title: "Some drivers failed to create",
-          description: `Failed to create accounts for: ${errors.join(', ')}`,
-          variant: "destructive"
+        const errorMessage = errors.map(e => `${e.email}: ${e.error}`).join('\n');
+        toast.error(`Failed to create ${errorCount} driver account${errorCount > 1 ? 's' : ''}`, {
+          description: errorMessage
         });
       }
 
       // Show toast if no accounts were created
       if (successCount === 0) {
-        toast({
-          title: "Upload failed",
-          description: "No driver accounts were created. Please check the file and try again.",
-          variant: "destructive"
+        toast.error("No driver accounts were created", {
+          description: "Please check the file format and try again"
         });
       }
 
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Upload failed",
-        description: error.message || "Failed to process driver accounts. Please try again.",
+      toast.error("Failed to process driver accounts", {
+        description: error.message
       });
     } finally {
       setIsUploading(false);
