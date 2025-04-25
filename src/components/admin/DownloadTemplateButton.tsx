@@ -36,10 +36,10 @@ export const DownloadTemplateButton = () => {
     <Button
       variant="outline"
       onClick={downloadTemplate}
-      className="flex items-center gap-2"
+      className="w-full bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800 transition-colors"
     >
-      <Download className="h-4 w-4" />
-      <span>Download Template</span>
+      <Download className="h-4 w-4 mr-2" />
+      Download Template
     </Button>
   );
 };

@@ -137,17 +137,29 @@ const Dashboard = () => {
         <div className="flex flex-col gap-4 md:gap-6">
           <CalculatorHeader userRole={user?.role} onLogout={handleLogout} />
           
-          <div className="flex flex-wrap gap-3 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Button
               variant="outline"
               onClick={() => navigate('/commission-table')}
-              className="flex items-center gap-2"
+              className="w-full bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800 transition-colors"
             >
               View Commission Table
             </Button>
-            <ExcelUploader />
+            <Button
+              variant="outline"
+              onClick={() => document.getElementById('excel-upload')?.click()}
+              className="w-full bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800 transition-colors"
+            >
+              Upload Excel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => document.getElementById('driver-excel-upload')?.click()}
+              className="w-full bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800 transition-colors"
+            >
+              Upload Driver Credentials
+            </Button>
             <DownloadTemplateButton />
-            <DriverCredentialsUploader />
           </div>
           
           <Card className="w-full rounded-lg shadow-lg bg-white/90 backdrop-blur-sm border border-indigo-100">
