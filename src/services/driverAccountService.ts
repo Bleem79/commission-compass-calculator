@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { AdminUserAttributes } from "@supabase/supabase-js";
 
 export const createDriverAccount = async (email: string, password: string, driverId: string) => {
   console.log(`Attempting to create driver account for ${email} with Driver ID: ${driverId}`);
@@ -41,7 +42,8 @@ export const createDriverAccount = async (email: string, password: string, drive
           throw usersError;
         }
         
-        const existingUser = usersList?.users?.find(user => user.email === email);
+        // Fix the type issue by properly typing the users array
+        const existingUser = usersList?.users?.find((user: any) => user.email === email);
         if (existingUser) {
           throw new Error(`Email ${email} is already registered`);
         }
