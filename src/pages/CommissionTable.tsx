@@ -1,9 +1,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { commissionData } from "@/constants/calculator";
 
 const CommissionTable = () => {
+  const navigate = useNavigate();
+
   const getBackgroundColor = (percentage: number) => {
     switch (percentage) {
       case 38:
@@ -75,8 +80,20 @@ const CommissionTable = () => {
   const singleShiftWithoutBasic = filterData("Single Shift", "With Out Basic");
   const doubleShift = filterData("Double Shift", "With Basic");
 
+  const handleClose = () => {
+    navigate("/dashboard");
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-6 relative">
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="absolute top-4 right-4 z-10"
+        onClick={handleClose}
+      >
+        <X className="h-6 w-6 text-gray-600 hover:text-gray-900" />
+      </Button>
       <div className="max-w-4xl mx-auto space-y-6">
         {renderTable("Single Shift With Basic - Commission Percentage Table", singleShiftBasic)}
         {renderTable("Single Shift With Out Basic - Commission Percentage Table", singleShiftWithoutBasic)}
@@ -87,3 +104,4 @@ const CommissionTable = () => {
 };
 
 export default CommissionTable;
+
