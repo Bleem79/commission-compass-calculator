@@ -38,9 +38,10 @@ export const DriverCredentialsUploader = () => {
     if (authError) throw authError;
 
     if (authData.user) {
+      // Fix: Use 'driver' as a string literal that matches the enum type in the database
       const { error: roleError } = await supabase.from('user_roles').insert({
         user_id: authData.user.id,
-        role: 'driver'
+        role: 'driver' as 'admin' | 'user' // Type assertion to match expected enum values
       });
 
       if (roleError) throw roleError;
