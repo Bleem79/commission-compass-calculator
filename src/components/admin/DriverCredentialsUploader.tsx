@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FileText, Download } from "lucide-react";
@@ -59,10 +60,13 @@ export const DriverCredentialsUploader = () => {
   const createDriverAccount = async (email: string, password: string, driverId: string) => {
     console.log(`Attempting to create driver account for ${email} with Driver ID: ${driverId}`);
 
+    // Ensure password is a string
+    const passwordStr = String(password);
+    
     // Sign up the user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
-      password,
+      password: passwordStr,
     });
 
     if (authError) {
@@ -110,7 +114,7 @@ export const DriverCredentialsUploader = () => {
 
     setIsUploading(true);
     try {
-      const drivers = await processExcelFile(file) as Array<{ email: string, password: string, driverId: string }>;
+      const drivers = await processExcelFile(file) as Array<{ email: string, password: string | number, driverId: string }>;
       
       let successCount = 0;
       let errorCount = 0;
@@ -120,7 +124,12 @@ export const DriverCredentialsUploader = () => {
 
       for (const driver of drivers) {
         try {
-          await createDriverAccount(driver.email, driver.password, driver.driverId);
+          // Ensure password is passed as a string
+          await createDriverAccount(
+            driver.email, 
+            String(driver.password), 
+            driver.driverId
+          );
           successCount++;
           
           // Show incremental progress
