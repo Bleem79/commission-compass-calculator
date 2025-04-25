@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-type UserRole = "guest" | "admin";
+type UserRole = "guest" | "admin" | "user";
 
 interface User {
   id?: string;
@@ -39,16 +39,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Immediate state change for logout
         setUser(null);
       } else if (session?.user) {
-        // For sign in, set basic user info immediately and check role asynchronously
+        // For sign in, check user role immediately
         const userEmail = session.user.email || 'User';
-        setUser({
-          id: session.user.id,
-          username: userEmail,
-          email: userEmail,
-          role: 'guest' // Default role until checked
-        });
-        
-        // Check actual role in background
         checkUserRole(session.user.id, userEmail);
       }
     });
@@ -65,23 +57,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .eq('role', 'admin')
+        .in('role', ['admin', 'user'])
         .single();
 
-      if (roleData) {
-        // Update role only if different from current
-        setUser(prevUser => {
-          if (prevUser?.role === 'admin') return prevUser;
-          return {
-            id: userId,
-            username: userEmail,
-            email: userEmail,
-            role: 'admin'
-          };
+      // Default to 'guest' if no specific role found
+      const userRole: UserRole = roleData?.role || 'guest';
+
+      // Update user state with the determined role
+      setUser({
+        id: userId,
+        username: userEmail,
+        email: userEmail,
+        role: userRole
+      });
+
+      // Optionally toast for role change
+      if (userRole === 'admin') {
+        toast({
+          title: "Admin Access Granted",
+          description: "You now have administrative privileges"
         });
       }
     } catch (error) {
-      console.error("Error in checkUserRole:", error);
+      console.error("Error checking user role:", error);
+      // Fallback to guest role if role check fails
+      setUser({
+        id: userId,
+        username: userEmail,
+        email: userEmail,
+        role: 'guest'
+      });
     }
   };
 
