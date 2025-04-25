@@ -86,7 +86,7 @@ export const DocumentViewer = ({ bucketName, title, icon, isAdmin }: DocumentVie
                 setIsLoading={setIsLoading}
               />
             )}
-            <DocumentList documents={documents} />
+            <DocumentList documents={documents} isAdmin={isAdmin} />
           </div>
         </DialogContent>
       </Dialog>
