@@ -4,8 +4,8 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export const processBatch = async <T extends { email: string }>(
   items: T[],
   processItem: (item: T) => Promise<any>,
-  batchSize: number = 2, // Reduced batch size for better reliability
-  delayMs: number = 5000 // Increased delay between batches
+  batchSize: number = 5, // Increased from 2 to 5
+  delayMs: number = 3000 // Decreased from 5000 to 3000
 ) => {
   const results = {
     success: [] as string[],
@@ -13,29 +13,32 @@ export const processBatch = async <T extends { email: string }>(
   };
 
   console.log(`Starting batch processing of ${items.length} items with batchSize=${batchSize}, delayMs=${delayMs}`);
-
+  
+  // Process in concurrent batches for better efficiency
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
     console.log(`Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(items.length/batchSize)}`);
     
-    // Process items in the current batch sequentially with delay between each item
-    for (const item of batch) {
+    // Process items in parallel within each batch
+    const batchPromises = batch.map(async (item) => {
       try {
         console.log(`Processing item for ${item.email}`);
         await processItem(item);
         results.success.push(item.email.toString());
         console.log(`Successfully processed item for ${item.email}`);
-        
-        // Add a larger delay between individual items in a batch
-        await delay(1000); // Increased from 500ms to 1000ms
+        return { success: true, email: item.email };
       } catch (error: any) {
         const errorMessage = error.message || 'Unknown error';
         console.error(`Failed to process item for ${item.email}:`, error);
         results.errors.push({ email: item.email.toString(), error: errorMessage });
+        return { success: false, email: item.email, error: errorMessage };
       }
-    }
+    });
     
-    // Add a longer delay between batches
+    // Wait for all promises in the batch to resolve
+    await Promise.all(batchPromises);
+    
+    // Add a delay between batches to avoid rate limiting
     if (i + batchSize < items.length) {
       console.log(`Waiting ${delayMs}ms before processing next batch...`);
       await delay(delayMs);

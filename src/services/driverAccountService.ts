@@ -13,7 +13,7 @@ export const createDriverAccount = async (email: string, password: string, drive
     
     // Add retry mechanism for network issues
     let retryCount = 0;
-    const maxRetries = 3;
+    const maxRetries = 2; // Reduced from 3 to 2
     
     while (retryCount < maxRetries) {
       try {
@@ -32,13 +32,10 @@ export const createDriverAccount = async (email: string, password: string, drive
           throw new Error(`Driver with ID ${driverId} already exists`);
         }
         
-        // Check if email is already registered
-        const { data: emailCheck, error: emailError } = await supabase.auth.signInWithPassword({
-          email,
-          password: passwordStr
-        }).catch(() => ({ data: null, error: null }));
+        // Check if email is already registered - use a more efficient method
+        const { data: userExists, error: userCheckError } = await supabase.auth.admin.getUserByEmail(email);
         
-        if (emailCheck?.user) {
+        if (userExists) {
           throw new Error(`Email ${email} is already registered`);
         }
         
@@ -63,24 +60,26 @@ export const createDriverAccount = async (email: string, password: string, drive
 
         console.log(`User created with ID: ${authData.user.id}`);
 
-        // Assign driver role
-        const { error: roleError } = await supabase.from('user_roles').insert({
-          user_id: authData.user.id,
-          role: 'driver'
-        });
+        // Assign driver role - use Promise.all to parallelize operations
+        const [roleResult, credResult] = await Promise.all([
+          supabase.from('user_roles').insert({
+            user_id: authData.user.id,
+            role: 'driver'
+          }),
+          supabase.from('driver_credentials').insert({
+            user_id: authData.user.id,
+            driver_id: driverId
+          }).select()
+        ]);
+        
+        const roleError = roleResult.error;
+        const credentialsError = credResult.error;
+        const credData = credResult.data;
 
         if (roleError) {
           console.error(`Role assignment error for ${email}:`, roleError);
           throw roleError;
         }
-
-        console.log(`Role assigned for user: ${email}`);
-
-        // Create driver credentials
-        const { data: credData, error: credentialsError } = await supabase.from('driver_credentials').insert({
-          user_id: authData.user.id,
-          driver_id: driverId
-        }).select();
 
         if (credentialsError) {
           console.error(`Driver credentials insertion error for ${email}:`, credentialsError);
@@ -94,10 +93,10 @@ export const createDriverAccount = async (email: string, password: string, drive
       } catch (err: any) {
         retryCount++;
         
-        // If it's a network error, retry after a delay
+        // If it's a network error, retry after a shorter delay
         if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('network'))) {
-          console.log(`Network error on attempt ${retryCount}. Retrying in ${retryCount * 2}s...`);
-          await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
+          console.log(`Network error on attempt ${retryCount}. Retrying in ${retryCount}s...`);
+          await new Promise(resolve => setTimeout(resolve, retryCount * 1000)); // Reduced delay
           
           if (retryCount < maxRetries) {
             continue;

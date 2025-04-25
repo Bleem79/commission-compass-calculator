@@ -7,9 +7,11 @@ import { processExcelFile } from "@/utils/excel/processExcelFile";
 import { createDriverAccount } from "@/services/driverAccountService";
 import { processBatch } from "@/utils/batchProcessor";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
 
 export const DriverCredentialsUploader = () => {
   const [isUploading, setIsUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [uploadStats, setUploadStats] = useState<{
     total: number;
     success: number;
@@ -19,6 +21,7 @@ export const DriverCredentialsUploader = () => {
 
   const resetStats = () => {
     setUploadStats(null);
+    setProgress(0);
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,19 +56,34 @@ export const DriverCredentialsUploader = () => {
         return;
       }
 
-      const toastId = toast.loading(`Processing ${drivers.length} driver credentials...`);
-      console.log(`Starting to process ${drivers.length} driver accounts`);
+      const totalDrivers = drivers.length;
+      const toastId = toast.loading(`Processing ${totalDrivers} driver credentials...`);
+      console.log(`Starting to process ${totalDrivers} driver accounts`);
       
-      // Process in smaller batches with longer delays
+      let completedCount = 0;
+      
+      // Track progress callback
+      const updateProgress = (success: boolean) => {
+        completedCount++;
+        const newProgress = Math.round((completedCount / totalDrivers) * 100);
+        setProgress(newProgress);
+        toast.loading(`Processing: ${completedCount}/${totalDrivers} (${newProgress}%)`, { id: toastId });
+      };
+      
+      // Process with optimized batch parameters
       const results = await processBatch(
         drivers,
-        (driver) => createDriverAccount(
-          driver.email, 
-          String(driver.password), 
-          driver.driverId
-        ),
-        1, // Process only 1 at a time for maximum reliability
-        8000 // Wait 8 seconds between batches
+        async (driver) => {
+          const result = await createDriverAccount(
+            driver.email, 
+            String(driver.password), 
+            driver.driverId
+          );
+          updateProgress(!!result);
+          return result;
+        },
+        5, // Process 5 at a time for better efficiency
+        3000 // Wait 3 seconds between batches
       );
       
       toast.dismiss(toastId);
@@ -148,6 +166,13 @@ export const DriverCredentialsUploader = () => {
           </>
         )}
       </Button>
+      
+      {isUploading && (
+        <div className="mt-3">
+          <Progress value={progress} className="h-2" />
+          <p className="text-sm text-center mt-1">{progress}% Complete</p>
+        </div>
+      )}
       
       {uploadStats && (
         <Alert variant={uploadStats.failed > 0 ? "destructive" : "default"} className="mt-3">
