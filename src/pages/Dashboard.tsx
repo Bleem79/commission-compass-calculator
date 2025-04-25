@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -131,6 +132,15 @@ const Dashboard = () => {
       <div className="w-full max-w-3xl mx-auto">
         <div className="flex flex-col gap-4 md:gap-6">
           <CalculatorHeader userRole={user?.role} onLogout={handleLogout} />
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              className="mb-4"
+              onClick={() => navigate('/commission-table')}
+            >
+              View Commission Table
+            </Button>
+          </div>
           <UserProfile email={user?.email} username={user?.username} role={user?.role} />
           
           <Card className="w-full rounded-lg shadow-lg bg-white/90 backdrop-blur-sm border border-indigo-100">
