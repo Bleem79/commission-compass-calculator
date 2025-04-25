@@ -1,13 +1,40 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
+import { FileText, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
+import { generateUserTemplate } from "@/utils/excel/generateUserTemplate";
 
 export const DriverCredentialsUploader = () => {
   const [isUploading, setIsUploading] = useState(false);
+
+  const downloadTemplate = () => {
+    try {
+      const template = generateUserTemplate();
+      
+      // Create a blob from the template
+      const blob = new Blob([template], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      // Create download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'driver_upload_template.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Template downloaded successfully", {
+        description: "Use this template to prepare your driver data for upload"
+      });
+    } catch (error: any) {
+      toast.error("Failed to download template", {
+        description: error.message
+      });
+    }
+  };
 
   const processExcelFile = async (file: File) => {
     return new Promise((resolve, reject) => {
@@ -165,6 +192,14 @@ export const DriverCredentialsUploader = () => {
 
   return (
     <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        onClick={downloadTemplate}
+        className="flex items-center gap-2"
+      >
+        <Download className="h-4 w-4" />
+        <span>Download Template</span>
+      </Button>
       <input
         type="file"
         accept=".xlsx,.xls"
