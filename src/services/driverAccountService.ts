@@ -43,7 +43,12 @@ export const createDriverAccount = async (email: string, password: string, drive
         }
         
         // Fix the type issue by properly typing the users array
-        const existingUser = usersList?.users?.find((user: any) => user.email === email);
+        interface UserWithEmail {
+          email?: string;
+          id: string;
+        }
+
+        const existingUser = usersList?.users?.find((user: UserWithEmail) => user.email === email);
         if (existingUser) {
           throw new Error(`Email ${email} is already registered`);
         }
