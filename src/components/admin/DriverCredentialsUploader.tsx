@@ -70,6 +70,7 @@ export const DriverCredentialsUploader = () => {
       
       let successCount = 0;
       let errorCount = 0;
+      const errors: string[] = [];
 
       for (const driver of drivers) {
         try {
@@ -78,15 +79,37 @@ export const DriverCredentialsUploader = () => {
           console.log(`Created driver account for ${driver.email}`);
         } catch (error: any) {
           console.error(`Failed to create driver account for ${driver.email}:`, error);
+          errors.push(driver.email);
           errorCount++;
         }
       }
 
-      toast({
-        title: "Driver accounts processed",
-        description: `Successfully created ${successCount} accounts. Failed: ${errorCount}`,
-        variant: successCount > 0 ? "default" : "destructive"
-      });
+      // Show success toast
+      if (successCount > 0) {
+        toast({
+          title: "Driver accounts created successfully",
+          description: `Created ${successCount} driver accounts${errorCount > 0 ? ` (${errorCount} failed)` : ''}`,
+          variant: "default"
+        });
+      }
+
+      // Show error toast if there were any failures
+      if (errorCount > 0) {
+        toast({
+          title: "Some drivers failed to create",
+          description: `Failed to create accounts for: ${errors.join(', ')}`,
+          variant: "destructive"
+        });
+      }
+
+      // Show toast if no accounts were created
+      if (successCount === 0) {
+        toast({
+          title: "Upload failed",
+          description: "No driver accounts were created. Please check the file and try again.",
+          variant: "destructive"
+        });
+      }
 
     } catch (error: any) {
       toast({
@@ -129,4 +152,3 @@ export const DriverCredentialsUploader = () => {
     </div>
   );
 };
-
