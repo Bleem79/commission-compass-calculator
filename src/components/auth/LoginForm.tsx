@@ -12,7 +12,7 @@ import { toast } from "@/hooks/use-toast";
 export const LoginForm = () => {
   const { setUser } = useAuth();
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -23,8 +23,9 @@ export const LoginForm = () => {
     setLoading(true);
 
     try {
+      // Try to log in using the identifier (could be email or driver ID)
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: username,
+        email: identifier.includes('@') ? identifier : `${identifier}@driver.temp`, // Use temp email format for ID login
         password: password,
       });
 
@@ -87,6 +88,11 @@ export const LoginForm = () => {
             title: "Admin Login Successful",
             description: "You have been logged in with administrative privileges.",
           });
+        } else if (userRole === 'driver') {
+          toast({
+            title: "Driver Login Successful",
+            description: "Welcome back!",
+          });
         } else {
           toast({
             title: "Login Successful",
@@ -117,15 +123,15 @@ export const LoginForm = () => {
         </div>
       )}
       <div className="space-y-2">
-        <Label htmlFor="username">Email</Label>
+        <Label htmlFor="identifier">Email or Driver ID</Label>
         <div className="relative">
           <UserCircle className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
           <Input
-            id="username"
-            placeholder="Enter email"
+            id="identifier"
+            placeholder="Enter email or driver ID"
             className="pl-10"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             disabled={loading}
           />
         </div>
