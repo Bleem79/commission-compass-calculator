@@ -1,26 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Percent, HelpCircle } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
-import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CalculatorHeader } from "@/components/calculator/CalculatorHeader";
-import { UserProfile } from "@/components/calculator/UserProfile";
-import { CalculatorForm } from "@/components/calculator/CalculatorForm";
-import { CalculatorActions } from "@/components/calculator/CalculatorActions";
-import { CalculatorResults } from "@/components/calculator/CalculatorResults";
 import { commissionData } from "@/constants/calculator";
 import type { NextTierInfo } from "@/types/calculator";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { DriverCredentialsUploader } from "@/components/admin/DriverCredentialsUploader";
-import { ExcelUploader } from "@/components/admin/ExcelUploader";
-import { DownloadTemplateButton } from "@/components/admin/DownloadTemplateButton";
+import { CalculatorHeader } from "@/components/calculator/CalculatorHeader";
+import { AdminActionButtons } from "@/components/admin/AdminActionButtons";
+import { CalculatorContainer } from "@/components/calculator/CalculatorContainer";
 
 const Dashboard = () => {
-  const isMobile = useIsMobile();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [month, setMonth] = useState("");
@@ -31,9 +19,6 @@ const Dashboard = () => {
   const [averageDailyIncome, setAverageDailyIncome] = useState<number | undefined>(undefined);
   const [commissionPercentage, setCommissionPercentage] = useState<number | undefined>(undefined);
   const [nextTierInfo, setNextTierInfo] = useState<NextTierInfo[]>([]);
-  const [openAlertDialog, setOpenAlertDialog] = useState(false);
-  const [openFuelAlertDialog, setOpenFuelAlertDialog] = useState(false);
-  const [openHotspotAlertDialog, setOpenHotspotAlertDialog] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -136,79 +121,23 @@ const Dashboard = () => {
       <div className="w-full max-w-3xl mx-auto">
         <div className="flex flex-col gap-4 md:gap-6">
           <CalculatorHeader userRole={user?.role} onLogout={handleLogout} />
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/commission-table')}
-              className="w-full bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800 transition-colors"
-            >
-              View Commission Table
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => document.getElementById('excel-upload')?.click()}
-              className="w-full bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800 transition-colors"
-            >
-              Upload Excel
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => document.getElementById('driver-excel-upload')?.click()}
-              className="w-full bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800 transition-colors"
-            >
-              Upload Driver Credentials
-            </Button>
-            <DownloadTemplateButton />
-          </div>
-          
-          <Card className="w-full rounded-lg shadow-lg bg-white/90 backdrop-blur-sm border border-indigo-100">
-            <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0 pb-2">
-              <CardTitle className="text-xl md:text-2xl font-bold tracking-tight text-indigo-800">
-                Commission Percentage Calculator
-              </CardTitle>
-              <div className="flex items-center space-x-2">
-                <Percent className="h-5 w-5 md:h-6 md:w-6 text-indigo-500" />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size={isMobile ? "sm" : "icon"}>
-                        <HelpCircle className="h-4 w-4 text-purple-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side={isMobile ? "bottom" : "right"} className="bg-secondary text-secondary-foreground">
-                      Calculate your potential commission based on your monthly income.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-4 md:space-y-6 p-3 md:p-6">
-              <CalculatorForm
-                month={month}
-                shiftType={shiftType}
-                commissionType={commissionType}
-                totalIncome={totalIncome}
-                workingDays={workingDays}
-                onMonthChange={setMonth}
-                onShiftTypeChange={setShiftType}
-                onCommissionTypeChange={setCommissionType}
-                onTotalIncomeChange={setTotalIncome}
-                onWorkingDaysChange={setWorkingDays}
-              />
-              
-              <CalculatorActions onReset={handleReset} />
-              
-              <Separator className="my-2 md:my-4" />
-              
-              <CalculatorResults
-                averageDailyIncome={averageDailyIncome}
-                commissionPercentage={commissionPercentage}
-                nextTierInfo={nextTierInfo}
-              />
-            </CardContent>
-          </Card>
+          <AdminActionButtons />
+          <CalculatorContainer
+            month={month}
+            shiftType={shiftType}
+            commissionType={commissionType}
+            totalIncome={totalIncome}
+            workingDays={workingDays}
+            averageDailyIncome={averageDailyIncome}
+            commissionPercentage={commissionPercentage}
+            nextTierInfo={nextTierInfo}
+            onReset={handleReset}
+            onMonthChange={setMonth}
+            onShiftTypeChange={setShiftType}
+            onCommissionTypeChange={setCommissionType}
+            onTotalIncomeChange={setTotalIncome}
+            onWorkingDaysChange={setWorkingDays}
+          />
         </div>
       </div>
     </div>
