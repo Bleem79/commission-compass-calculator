@@ -15,6 +15,7 @@ export const DriverCredentialsUploader = () => {
     total: number;
     success: number;
     failed: number;
+    errors?: Array<{ email: string; error: string }>;
   } | null>(null);
 
   const resetStats = () => {
@@ -39,6 +40,7 @@ export const DriverCredentialsUploader = () => {
       
       if (!drivers || drivers.length === 0) {
         toast.error("No data found in the uploaded file");
+        setIsUploading(false);
         return;
       }
       
@@ -48,6 +50,7 @@ export const DriverCredentialsUploader = () => {
         toast.error("Invalid template format", { 
           description: "Please use the template provided by the Download Template button" 
         });
+        setIsUploading(false);
         return;
       }
 
@@ -62,8 +65,8 @@ export const DriverCredentialsUploader = () => {
           String(driver.password), 
           driver.driverId
         ),
-        2, // Process only 2 at a time
-        5000 // Wait 5 seconds between batches
+        1, // Process only 1 at a time for maximum reliability
+        8000 // Wait 8 seconds between batches
       );
       
       toast.dismiss(toastId);
@@ -71,7 +74,8 @@ export const DriverCredentialsUploader = () => {
       setUploadStats({
         total: drivers.length,
         success: results.success.length,
-        failed: results.errors.length
+        failed: results.errors.length,
+        errors: results.errors
       });
 
       if (results.success.length > 0) {
@@ -153,12 +157,25 @@ export const DriverCredentialsUploader = () => {
         <Alert variant={uploadStats.failed > 0 ? "destructive" : "default"}>
           <AlertTitle>Upload Results</AlertTitle>
           <AlertDescription>
-            Total: {uploadStats.total} | 
-            Successful: {uploadStats.success} | 
-            Failed: {uploadStats.failed}
-            {uploadStats.failed > 0 && (
-              <p className="mt-2">Please check the console for detailed error information.</p>
-            )}
+            <div className="space-y-2">
+              <div>
+                Total: {uploadStats.total} | 
+                Successful: {uploadStats.success} | 
+                Failed: {uploadStats.failed}
+              </div>
+              
+              {uploadStats.failed > 0 && uploadStats.errors && (
+                <div className="text-sm mt-2">
+                  <strong>Common error reasons:</strong>
+                  <ul className="list-disc pl-5 mt-1">
+                    <li>Email already exists in system</li>
+                    <li>Driver ID already exists</li>
+                    <li>Network connection issues</li>
+                    <li>Rate limiting from the authentication service</li>
+                  </ul>
+                </div>
+              )}
+            </div>
           </AlertDescription>
         </Alert>
       )}

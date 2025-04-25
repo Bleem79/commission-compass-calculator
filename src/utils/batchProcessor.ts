@@ -4,8 +4,8 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export const processBatch = async <T extends { email: string }>(
   items: T[],
   processItem: (item: T) => Promise<any>,
-  batchSize: number = 3,
-  delayMs: number = 3000
+  batchSize: number = 2, // Reduced batch size for better reliability
+  delayMs: number = 5000 // Increased delay between batches
 ) => {
   const results = {
     success: [] as string[],
@@ -26,8 +26,8 @@ export const processBatch = async <T extends { email: string }>(
         results.success.push(item.email.toString());
         console.log(`Successfully processed item for ${item.email}`);
         
-        // Add a small delay between individual items in a batch
-        await delay(500);
+        // Add a larger delay between individual items in a batch
+        await delay(1000); // Increased from 500ms to 1000ms
       } catch (error: any) {
         const errorMessage = error.message || 'Unknown error';
         console.error(`Failed to process item for ${item.email}:`, error);
