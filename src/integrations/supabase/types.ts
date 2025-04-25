@@ -66,6 +66,27 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_credentials: {
+        Row: {
+          created_at: string | null
+          driver_id: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          driver_id: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          driver_id?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       uploaded_files: {
         Row: {
           category: string
