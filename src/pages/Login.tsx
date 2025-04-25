@@ -41,14 +41,34 @@ const Login = () => {
       }
 
       if (data.user) {
-        // Don't wait for toast, redirect immediately
-        navigate("/dashboard");
+        // Get user role from database before navigating
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .single();
+          
+        if (roleError && roleError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+          console.error("Error fetching user role:", roleError);
+        }
+
+        const userRole = roleData?.role || 'guest';
         
-        // Show toast after navigation has started
-        toast({
-          title: "Login Successful",
-          description: "Welcome back!",
-        });
+        // Show role-specific toast
+        if (userRole === 'admin') {
+          toast({
+            title: "Admin Login Successful",
+            description: "You have been logged in with administrative privileges.",
+          });
+        } else {
+          toast({
+            title: "Login Successful",
+            description: "Welcome back!",
+          });
+        }
+        
+        // Navigate to dashboard after toast is triggered
+        navigate("/dashboard");
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -85,14 +105,11 @@ const Login = () => {
       }
 
       if (data.user) {
-        // Don't wait for toast, redirect immediately
-        navigate("/dashboard");
-        
-        // Show toast after navigation has started
         toast({
           title: "Guest Login Successful",
           description: "Welcome! You're logged in as a guest.",
         });
+        navigate("/dashboard");
       }
     } catch (err) {
       console.error("Guest login error:", err);
