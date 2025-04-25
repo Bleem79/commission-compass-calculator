@@ -124,6 +124,55 @@ export const DriverCredentialsUploader = () => {
     }
   };
 
+  // Helper function to wait for a specified time
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const processBatch = async (drivers: Array<{ email: string, password: string | number, driverId: string }>, batchSize: number, delayMs: number) => {
+    const results: {
+      success: Array<string>,
+      errors: Array<{ email: string, error: string }>
+    } = {
+      success: [],
+      errors: []
+    };
+
+    // Process in batches
+    for (let i = 0; i < drivers.length; i += batchSize) {
+      const batch = drivers.slice(i, i + batchSize);
+      
+      // Show batch progress
+      toast.loading(`Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(drivers.length/batchSize)}...`);
+      
+      // Process each driver in the current batch
+      for (const driver of batch) {
+        try {
+          if (!driver.email || !driver.password || !driver.driverId) {
+            throw new Error("Missing required fields");
+          }
+          
+          await createDriverAccount(
+            driver.email.toString().trim(), 
+            String(driver.password), 
+            driver.driverId.toString().trim()
+          );
+          
+          results.success.push(driver.email.toString());
+        } catch (error: any) {
+          console.error(`Failed to create driver account for ${driver.email}:`, error);
+          results.errors.push({ email: driver.email.toString(), error: error.message });
+        }
+      }
+      
+      // Wait before processing the next batch
+      if (i + batchSize < drivers.length) {
+        toast.info(`Waiting before processing next batch...`);
+        await delay(delayMs);
+      }
+    }
+    
+    return results;
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -153,78 +202,46 @@ export const DriverCredentialsUploader = () => {
         setIsUploading(false);
         return;
       }
+
+      const toastId = toast.loading("Starting driver credentials processing...");
       
-      let successCount = 0;
-      let errorCount = 0;
-      const errors: { email: string; error: string }[] = [];
-
-      const toastId = toast.loading("Processing driver credentials...");
-
-      for (const driver of drivers) {
-        try {
-          // Ensure all required fields are present
-          if (!driver.email || !driver.password || !driver.driverId) {
-            throw new Error("Missing required fields");
-          }
-          
-          // Ensure password is passed as a string
-          await createDriverAccount(
-            driver.email.toString().trim(), 
-            String(driver.password), 
-            driver.driverId.toString().trim()
-          );
-          successCount++;
-          
-          // Show incremental progress
-          toast.loading(`Processed ${successCount} of ${drivers.length} drivers...`, {
-            id: toastId
-          });
-        } catch (error: any) {
-          console.error(`Failed to create driver account for ${driver.email}:`, error);
-          errors.push({ email: driver.email, error: error.message });
-          errorCount++;
-        }
-      }
-
+      // Process in batches of 5 with a 2-second delay between batches
+      const results = await processBatch(drivers, 5, 2000);
+      
       // Dismiss the loading toast
       toast.dismiss(toastId);
 
-      // Detailed success toast
-      if (successCount > 0) {
+      // Show results
+      if (results.success.length > 0) {
         toast.success(
-          `Successfully processed ${successCount} driver${successCount > 1 ? 's' : ''}${
-            errorCount > 0 ? ` (${errorCount} failed)` : ''
+          `Successfully processed ${results.success.length} driver${results.success.length > 1 ? 's' : ''}${
+            results.errors.length > 0 ? ` (${results.errors.length} failed)` : ''
           }`, {
           description: "Driver accounts created and roles assigned in the database",
           action: {
             label: "View Details",
             onClick: () => {
-              console.log("Successful Drivers:", 
-                drivers.filter((_, index) => 
-                  !errors.some(err => err.email === drivers[index].email)
-                )
-              );
+              console.log("Successful Drivers:", results.success);
             }
           }
         });
       }
 
-      // Detailed error toast
-      if (errorCount > 0) {
-        const errorMessage = errors.map(e => `${e.email}: ${e.error}`).join('\n');
-        toast.error(`Failed to create ${errorCount} driver account${errorCount > 1 ? 's' : ''}`, {
+      if (results.errors.length > 0) {
+        const errorMessage = results.errors.map(e => `${e.email}: ${e.error}`).join('\n');
+        toast.error(`Failed to create ${results.errors.length} driver account${results.errors.length > 1 ? 's' : ''}`, {
           description: errorMessage.length > 100 ? errorMessage.substring(0, 100) + '...' : errorMessage,
           action: {
             label: "View Errors",
             onClick: () => {
-              console.error("Driver Creation Errors:", errors);
+              console.error("Driver Creation Errors:", results.errors);
             }
           }
         });
       }
 
       // Show toast if no accounts were created
-      if (successCount === 0) {
+      if (results.success.length === 0) {
         toast.error("No driver accounts were created", {
           description: "Please check the file format and try again"
         });
