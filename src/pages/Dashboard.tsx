@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,7 +39,6 @@ const Dashboard = () => {
     if (!user) {
       navigate("/login");
     } else {
-      // Debug the user role when dashboard loads
       console.log("Dashboard loaded with user role:", user.role);
     }
   }, [user, navigate]);
@@ -138,19 +136,18 @@ const Dashboard = () => {
       <div className="w-full max-w-3xl mx-auto">
         <div className="flex flex-col gap-4 md:gap-6">
           <CalculatorHeader userRole={user?.role} onLogout={handleLogout} />
-          <div className="flex justify-between items-center space-x-4">
+          
+          <div className="flex flex-wrap gap-3 items-center">
             <Button
               variant="outline"
-              className="mb-4"
               onClick={() => navigate('/commission-table')}
+              className="flex items-center gap-2"
             >
               View Commission Table
             </Button>
-            <div className="flex space-x-2">
-              <ExcelUploader />
-              <DownloadTemplateButton />
-              <DriverCredentialsUploader />
-            </div>
+            <ExcelUploader />
+            <DownloadTemplateButton />
+            <DriverCredentialsUploader />
           </div>
           
           <Card className="w-full rounded-lg shadow-lg bg-white/90 backdrop-blur-sm border border-indigo-100">
