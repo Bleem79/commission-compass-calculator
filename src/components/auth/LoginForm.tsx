@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
@@ -12,10 +12,14 @@ import { toast } from "@/hooks/use-toast";
 export const LoginForm = () => {
   const { setUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Get the return path from location state, or default to dashboard
+  const from = location.state?.from || "/dashboard";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,66 +45,17 @@ export const LoginForm = () => {
       }
 
       if (data.user) {
-        // Special case for admin user
-        if (data.user.email === 'erico.ariata@outlook.com') {
-          console.log("Admin user detected: erico.ariata@outlook.com");
-          
-          setUser({
-            id: data.user.id,
-            username: data.user.email,
-            email: data.user.email,
-            role: 'admin'
-          });
-          
-          toast({
-            title: "Admin Login Successful",
-            description: "You have been logged in with administrative privileges.",
-          });
-          
-          navigate("/dashboard");
-          return;
-        }
-        
-        // For other users, get role from database
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', data.user.id)
-          .single();
-          
-        if (roleError && roleError.code !== 'PGRST116') {
-          console.error("Error fetching user role:", roleError);
-        }
-
-        const userRole = roleData?.role || 'guest';
-        
-        setUser({
-          id: data.user.id,
-          username: data.user.email || 'User',
-          email: data.user.email,
-          role: userRole
+        console.log("Login successful with user ID:", data.user.id);
+        // Auth state change will trigger role check and navigation
+        // No need to navigate here - the auth state change will trigger protected route check
+      } else {
+        // This shouldn't happen, but just in case
+        setError("Login successful but no user data received");
+        toast({
+          title: "Login Error",
+          description: "An unexpected error occurred",
+          variant: "destructive"
         });
-
-        console.log("Login successful with role:", userRole);
-        
-        if (userRole === 'admin') {
-          toast({
-            title: "Admin Login Successful",
-            description: "You have been logged in with administrative privileges.",
-          });
-        } else if (userRole === 'driver') {
-          toast({
-            title: "Driver Login Successful",
-            description: "Welcome back!",
-          });
-        } else {
-          toast({
-            title: "Login Successful",
-            description: "Welcome back!",
-          });
-        }
-        
-        navigate("/dashboard");
       }
     } catch (err) {
       console.error("Login error:", err);

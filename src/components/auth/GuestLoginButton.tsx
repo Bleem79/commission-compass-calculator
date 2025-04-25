@@ -1,12 +1,10 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 
 export const GuestLoginButton = () => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const handleGuestLogin = async () => {
@@ -29,11 +27,12 @@ export const GuestLoginButton = () => {
       }
 
       if (data.user) {
+        console.log("Guest login successful with user ID:", data.user.id);
         toast({
           title: "Guest Login Successful",
           description: "Welcome! You're logged in as a guest.",
         });
-        navigate("/dashboard");
+        // Navigation will happen automatically through auth state change
       }
     } catch (err) {
       console.error("Guest login error:", err);

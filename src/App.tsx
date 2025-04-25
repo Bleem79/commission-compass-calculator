@@ -3,18 +3,26 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import CommissionTable from "./pages/CommissionTable";
+import { useEffect } from "react";
 
 // Create a new QueryClient instance inside the component
 // to ensure it's created in the proper React context
 const App = () => {
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: 1,
+        staleTime: 30000,
+      },
+    },
+  });
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -74,8 +82,19 @@ const AppRoutes = () => {
 };
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
+  
+  useEffect(() => {
+    console.log("ProtectedRoute check - Auth status:", isAuthenticated, "User:", user?.email);
+  }, [isAuthenticated, user]);
+  
+  if (!isAuthenticated) {
+    console.log("Not authenticated, redirecting to login from", location.pathname);
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+  
+  return children;
 };
 
 export default App;
