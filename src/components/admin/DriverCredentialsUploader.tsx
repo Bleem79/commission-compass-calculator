@@ -30,12 +30,18 @@ export const DriverCredentialsUploader = () => {
   };
 
   const createDriverAccount = async (email: string, password: string, driverId: string) => {
+    console.log(`Attempting to create driver account for ${email} with Driver ID: ${driverId}`);
+
+    // Sign up the user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
     });
 
-    if (authError) throw authError;
+    if (authError) {
+      console.error(`Authentication error for ${email}:`, authError);
+      throw authError;
+    }
 
     if (authData.user) {
       // Set driver role
@@ -44,7 +50,10 @@ export const DriverCredentialsUploader = () => {
         role: 'driver'
       });
 
-      if (roleError) throw roleError;
+      if (roleError) {
+        console.error(`Role assignment error for ${email}:`, roleError);
+        throw roleError;
+      }
 
       // Create driver credentials entry
       const { error: credentialsError } = await supabase.from('driver_credentials').insert({
@@ -52,9 +61,12 @@ export const DriverCredentialsUploader = () => {
         driver_id: driverId
       });
 
-      if (credentialsError) throw credentialsError;
+      if (credentialsError) {
+        console.error(`Driver credentials insertion error for ${email}:`, credentialsError);
+        throw credentialsError;
+      }
 
-      console.log(`Created driver account for ${email} with ID ${driverId}`);
+      console.log(`Successfully created driver account for ${email} with Driver ID: ${driverId}`);
     }
 
     return authData;
@@ -83,7 +95,6 @@ export const DriverCredentialsUploader = () => {
         try {
           await createDriverAccount(driver.email, driver.password, driver.driverId);
           successCount++;
-          console.log(`Created driver account for ${driver.email}`);
           
           // Show incremental progress
           toast.loading(`Processed ${successCount} of ${drivers.length} drivers...`, {
@@ -99,21 +110,37 @@ export const DriverCredentialsUploader = () => {
       // Dismiss the loading toast
       toast.dismiss(toastId);
 
-      // Show final success/error toast
+      // Detailed success toast
       if (successCount > 0) {
         toast.success(
           `Successfully processed ${successCount} driver${successCount > 1 ? 's' : ''}${
             errorCount > 0 ? ` (${errorCount} failed)` : ''
           }`, {
-          description: "Driver accounts have been created and roles assigned"
+          description: "Driver accounts created and roles assigned in the database",
+          action: {
+            label: "View Details",
+            onClick: () => {
+              console.log("Successful Drivers:", 
+                drivers.filter((_, index) => 
+                  !errors.some(err => err.email === drivers[index].email)
+                )
+              );
+            }
+          }
         });
       }
 
-      // Show detailed error toast if there were any failures
+      // Detailed error toast
       if (errorCount > 0) {
         const errorMessage = errors.map(e => `${e.email}: ${e.error}`).join('\n');
         toast.error(`Failed to create ${errorCount} driver account${errorCount > 1 ? 's' : ''}`, {
-          description: errorMessage
+          description: errorMessage,
+          action: {
+            label: "View Errors",
+            onClick: () => {
+              console.error("Driver Creation Errors:", errors);
+            }
+          }
         });
       }
 
