@@ -5,6 +5,7 @@ import { AdminMessages } from "@/components/messages/AdminMessages";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ExcelUploader } from "@/components/admin/ExcelUploader";
+import { DriverCredentialsUploader } from "@/components/admin/DriverCredentialsUploader";
 
 interface UserProfileProps {
   email?: string;
@@ -50,7 +51,12 @@ export const UserProfile = ({ email, username, role }: UserProfileProps) => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          {role === 'admin' && <ExcelUploader />}
+          {role === 'admin' && (
+            <>
+              <ExcelUploader />
+              <DriverCredentialsUploader />
+            </>
+          )}
           <Button
             variant="ghost"
             onClick={handleNotificationClick}
