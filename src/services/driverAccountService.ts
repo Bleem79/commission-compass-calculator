@@ -11,6 +11,21 @@ export const createDriverAccount = async (email: string, password: string, drive
       throw new Error(`Missing required fields for driver: ${email}`);
     }
     
+    // Check if user already exists
+    const { data: existingUsers, error: checkError } = await supabase
+      .from('driver_credentials')
+      .select('user_id')
+      .eq('driver_id', driverId);
+    
+    if (checkError) {
+      console.error(`Error checking existing driver: ${checkError.message}`);
+    }
+    
+    if (existingUsers && existingUsers.length > 0) {
+      throw new Error(`Driver with ID ${driverId} already exists`);
+    }
+    
+    // Create the user account
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password: passwordStr,
@@ -27,6 +42,7 @@ export const createDriverAccount = async (email: string, password: string, drive
 
     console.log(`User created with ID: ${authData.user.id}`);
 
+    // Assign driver role
     const { error: roleError } = await supabase.from('user_roles').insert({
       user_id: authData.user.id,
       role: 'driver'
@@ -39,6 +55,7 @@ export const createDriverAccount = async (email: string, password: string, drive
 
     console.log(`Role assigned for user: ${email}`);
 
+    // Create driver credentials
     const { data: credData, error: credentialsError } = await supabase.from('driver_credentials').insert({
       user_id: authData.user.id,
       driver_id: driverId
