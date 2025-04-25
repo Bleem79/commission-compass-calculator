@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { FileExcel, Upload } from "lucide-react";
+import { FileText, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -65,7 +65,7 @@ export const ExcelUploader = () => {
           "Uploading..."
         ) : (
           <>
-            <FileExcel className="h-4 w-4" />
+            <FileText className="h-4 w-4" />
             <span>Upload Excel</span>
           </>
         )}
