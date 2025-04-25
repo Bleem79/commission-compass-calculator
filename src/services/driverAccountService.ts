@@ -32,10 +32,17 @@ export const createDriverAccount = async (email: string, password: string, drive
           throw new Error(`Driver with ID ${driverId} already exists`);
         }
         
-        // Check if email is already registered - use a more efficient method
-        const { data: userExists, error: userCheckError } = await supabase.auth.admin.getUserByEmail(email);
+        // Check if email is already registered using a different approach
+        // Instead of getUserByEmail, we'll use listUsers and filter by email
+        const { data: usersList, error: usersError } = await supabase.auth.admin.listUsers();
         
-        if (userExists) {
+        if (usersError) {
+          console.error(`Error checking existing users: ${usersError.message}`);
+          throw usersError;
+        }
+        
+        const existingUser = usersList?.users?.find(user => user.email === email);
+        if (existingUser) {
           throw new Error(`Email ${email} is already registered`);
         }
         
