@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { processCSVFile } from "@/utils/csv/processCSVFile";
 import { bulkCreateDriverAccounts } from "@/services/driverAccountService";
-import { supabase } from "@/integrations/supabase/client"; // Import the supabase client
+import { supabase } from "@/integrations/supabase/client"; 
 import { UploadForm } from "./upload/UploadForm";
 import { UploadProgress } from "./upload/UploadProgress";
 import { UploadResults } from "./upload/UploadResults";
@@ -83,12 +83,13 @@ export const DriverCredentialsUploader = () => {
           setCurrentItem(i + 1);
           setProgress(Math.round(((i) / totalDrivers) * 100));
           
-          // Process this driver
+          // Create user account
           const response = await supabase.auth.signUp({
             email: driver.email,
             password: driver.password,
             options: {
               data: {
+                role: 'driver', // Explicitly set role in user metadata
                 driver_id: driver.driverId
               }
             }
@@ -103,7 +104,7 @@ export const DriverCredentialsUploader = () => {
           }
           
           try {
-            // Create driver role
+            // Create driver role - ensure it's explicitly set to 'driver'
             const roleResponse = await supabase.from('user_roles').insert({
               user_id: response.data.user.id,
               role: 'driver'
@@ -114,7 +115,7 @@ export const DriverCredentialsUploader = () => {
               throw roleResponse.error;
             }
             
-            // Create driver credentials - using RPC function to bypass RLS
+            // Use the create_driver_account RPC function to bypass RLS
             const credResponse = await supabase.rpc('create_driver_account', {
               p_email: driver.email,
               p_password: driver.password,
@@ -142,8 +143,7 @@ export const DriverCredentialsUploader = () => {
           });
         }
         
-        // Add a delay between processing each driver to avoid rate limiting
-        // Increasing delay to 2 seconds
+        // Increased delay between processing each driver to avoid rate limiting
         if (i < drivers.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
