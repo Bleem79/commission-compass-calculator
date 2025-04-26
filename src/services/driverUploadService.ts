@@ -34,15 +34,33 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
     try {
       const driver = drivers[i];
       
-      // Instead of using admin.createUser, use the standard signUp method
-      // which doesn't require special permissions
-      const response = await adminSupabase.auth.signUp({
+      // Validate driver data first
+      const validatedDriver = validateDriverData({
         email: driver.email,
         password: driver.password,
+        driverId: driver.driverId
+      });
+      
+      // Check if driver with this ID already exists
+      const { data: existingDriver } = await adminSupabase
+        .from('driver_credentials')
+        .select('driver_id')
+        .eq('driver_id', validatedDriver.driverId)
+        .maybeSingle();
+        
+      if (existingDriver) {
+        throw new Error(`Driver ID ${validatedDriver.driverId} already exists`);
+      }
+      
+      // Instead of using admin.createUser, use the standard signUp method
+      // which doesn't require special permissions and doesn't affect current session
+      const response = await adminSupabase.auth.signUp({
+        email: validatedDriver.email,
+        password: validatedDriver.password,
         options: {
           data: {
             role: 'driver',
-            driver_id: driver.driverId
+            driver_id: validatedDriver.driverId
           }
         }
       });
@@ -52,7 +70,7 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
       }
       
       if (!response.data.user) {
-        throw new Error(`Failed to create user account for ${driver.email}`);
+        throw new Error(`Failed to create user account for ${validatedDriver.email}`);
       }
       
       try {
@@ -63,28 +81,28 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
         });
         
         if (roleResponse.error) {
-          console.error(`Error creating role for ${driver.email}:`, roleResponse.error);
+          console.error(`Error creating role for ${validatedDriver.email}:`, roleResponse.error);
           throw roleResponse.error;
         }
         
         // Create driver credentials
         const credResponse = await adminSupabase.from('driver_credentials').insert({
           user_id: response.data.user.id,
-          driver_id: driver.driverId
+          driver_id: validatedDriver.driverId
         }).select();
         
         if (credResponse.error) {
-          console.error(`Error creating driver credentials for ${driver.email}:`, credResponse.error);
+          console.error(`Error creating driver credentials for ${validatedDriver.email}:`, credResponse.error);
           throw credResponse.error;
         }
       } catch (insertError: any) {
         // If we fail after user creation, log the error but still count as success
         // since the user account was created
-        console.warn(`Created user account for ${driver.email} but had issues with role/credentials: ${insertError.message}`);
+        console.warn(`Created user account for ${validatedDriver.email} but had issues with role/credentials: ${insertError.message}`);
       }
       
-      results.success.push({ email: driver.email, driverId: driver.driverId });
-      console.log(`Successfully created account for ${driver.email}`);
+      results.success.push({ email: validatedDriver.email, driverId: validatedDriver.driverId });
+      console.log(`Successfully created account for ${validatedDriver.email}`);
       
     } catch (error: any) {
       console.error(`Error creating account for ${drivers[i].email}:`, error);
@@ -96,7 +114,7 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
     
     // Add delay between processing each driver to avoid rate limiting
     if (i < drivers.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Increased delay to 5 seconds
+      await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second delay between creations
     }
   }
 

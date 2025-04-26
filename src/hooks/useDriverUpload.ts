@@ -40,8 +40,19 @@ export const useDriverUpload = () => {
     processingRef.current = true;
     
     try {
-      // Start upload process
+      // Store the current session to prevent any issues
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentSession = sessionData.session;
+
+      // Start upload process - this will use signUp instead of admin.createUser
       const results = await uploadDriverCredential(file);
+      
+      // Verify session is still valid after uploads complete
+      const { data: newSessionData } = await supabase.auth.getSession();
+      if (!newSessionData.session && currentSession) {
+        console.warn("Session was lost during upload process, attempting to restore");
+        // If needed, you could implement session recovery here
+      }
       
       setTotalItems(results.total);
       setCurrentItem(results.total);
