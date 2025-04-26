@@ -4,9 +4,16 @@ import { Button } from "@/components/ui/button";
 import { FileText, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const ExcelUploader = () => {
   const [isUploading, setIsUploading] = useState(false);
+  const { isAdmin } = useAuth();
+  
+  // If the user is not an admin, don't render anything
+  if (!isAdmin) {
+    return null;
+  }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -68,4 +75,3 @@ export const ExcelUploader = () => {
     </div>
   );
 };
-

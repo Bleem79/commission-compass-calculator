@@ -1,12 +1,18 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { DriverCredentialsUploader } from "./DriverCredentialsUploader";
 import { ExcelUploader } from "./ExcelUploader";
+import { DriverCredentialsUploader } from "./DriverCredentialsUploader";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const AdminActionButtons = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
+  
+  // If the user is not an admin, don't render anything
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -24,4 +30,3 @@ export const AdminActionButtons = () => {
     </div>
   );
 };
-

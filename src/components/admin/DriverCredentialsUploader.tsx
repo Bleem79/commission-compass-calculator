@@ -7,8 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { UploadForm } from "./upload/UploadForm";
 import { UploadProgress } from "./upload/UploadProgress";
 import { UploadResults } from "./upload/UploadResults";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const DriverCredentialsUploader = () => {
+  const { isAdmin } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentItem, setCurrentItem] = useState(0);
@@ -20,6 +22,11 @@ export const DriverCredentialsUploader = () => {
     failed: number;
     errors?: Array<{ email: string; error: string }>;
   } | null>(null);
+  
+  // If the user is not an admin, don't render anything
+  if (!isAdmin) {
+    return null;
+  }
 
   useEffect(() => {
     const handleVisibilityChange = () => {
