@@ -20,6 +20,8 @@ export const UploadResults = ({ stats }: UploadResultsProps) => {
       acc.rateLimits.push(curr);
     } else if (error.includes('supabase is not defined')) {
       acc.supabaseErrors.push(curr);
+    } else if (error.includes('violates row-level security policy')) {
+      acc.rlsErrors.push(curr);
     } else {
       acc.others.push(curr);
     }
@@ -29,6 +31,7 @@ export const UploadResults = ({ stats }: UploadResultsProps) => {
     duplicates: [] as typeof stats.errors, 
     rateLimits: [] as typeof stats.errors,
     supabaseErrors: [] as typeof stats.errors,
+    rlsErrors: [] as typeof stats.errors,
     others: [] as typeof stats.errors 
   } as Record<string, typeof stats.errors>);
 
@@ -52,6 +55,9 @@ export const UploadResults = ({ stats }: UploadResultsProps) => {
                 ) : null}
                 {groupedErrors?.rateLimits?.length ? (
                   <li>{groupedErrors.rateLimits.length} error(s) due to rate limiting from Supabase</li>
+                ) : null}
+                {groupedErrors?.rlsErrors?.length ? (
+                  <li>{groupedErrors.rlsErrors.length} error(s) due to Row Level Security policies</li>
                 ) : null}
                 <li>Supabase authentication rate limits (max ~5-10 users/minute)</li>
                 <li>Network connection issues</li>
