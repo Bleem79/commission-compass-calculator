@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import { uploadDriverCredential } from "@/services/driverUploadService";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UploadStats {
   total: number;
