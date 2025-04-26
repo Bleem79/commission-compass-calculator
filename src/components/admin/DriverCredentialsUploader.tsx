@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { processCSVFile } from "@/utils/csv/processCSVFile";
@@ -69,8 +70,68 @@ export const DriverCredentialsUploader = () => {
       const totalDrivers = drivers.length;
       setTotalItems(totalDrivers);
       
-      const results = await bulkCreateDriverAccounts(drivers);
-
+      // Process drivers one by one and update progress
+      const results = {
+        success: [] as { email: string; driverId: string }[],
+        errors: [] as { email: string; error: string }[]
+      };
+      
+      for (let i = 0; i < drivers.length; i++) {
+        try {
+          const driver = drivers[i];
+          setCurrentItem(i + 1);
+          setProgress(Math.round(((i) / totalDrivers) * 100));
+          
+          // Process this driver
+          const { data, error } = await supabase.auth.signUp({
+            email: driver.email,
+            password: driver.password,
+            options: {
+              data: {
+                driver_id: driver.driverId
+              }
+            }
+          });
+          
+          if (error) {
+            throw error;
+          }
+          
+          if (!data.user) {
+            throw new Error(`Failed to create user account for ${driver.email}`);
+          }
+          
+          // Create driver role
+          await supabase.from('user_roles').insert({
+            user_id: data.user.id,
+            role: 'driver'
+          });
+          
+          // Create driver credentials
+          await supabase.from('driver_credentials').insert({
+            user_id: data.user.id,
+            driver_id: driver.driverId
+          });
+          
+          results.success.push({ email: driver.email, driverId: driver.driverId });
+          console.log(`Successfully created account for ${driver.email}`);
+          
+        } catch (error: any) {
+          console.error(`Error creating account for ${drivers[i].email}:`, error);
+          results.errors.push({ 
+            email: drivers[i].email, 
+            error: error.message || 'Unknown error occurred'
+          });
+        }
+        
+        // Add a delay between processing each driver to avoid rate limiting
+        if (i < drivers.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
+      setProgress(100);
+      
       setUploadStats({
         total: drivers.length,
         success: results.success.length,

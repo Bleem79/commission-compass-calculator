@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError } from "@supabase/supabase-js";
+import { processBatch } from "@/utils/batchProcessor";
 
 interface DriverData {
   email: string;
@@ -140,18 +141,24 @@ export const bulkCreateDriverAccounts = async (drivers: DriverData[]) => {
         throw new Error(`Missing required fields for driver: ${email}`);
       }
 
-      // Check if driver already exists
-      const { data: existingDriver, error: checkError } = await supabase
+      // Check if driver already exists by ID - this is the problematic query
+      const { data: existingDriverData, error: checkError } = await supabase
         .from('driver_credentials')
         .select('driver_id')
-        .eq('driver_id', driverId)
-        .single();
+        .eq('driver_id', driverId);
 
-      if (checkError && !checkError.message.includes('No rows found')) {
-        throw checkError;
+      // Fix for the "JSON object requested, multiple (or no) rows returned" error
+      // We're not using .single() anymore, so we need to check the array
+      if (checkError) {
+        console.error(`Error checking for existing driver ID ${driverId}:`, checkError);
+        // Only throw if it's not a "no rows" error
+        if (!checkError.message.includes('No rows found')) {
+          throw checkError;
+        }
       }
 
-      if (existingDriver) {
+      // Check if any drivers were returned with this ID
+      if (existingDriverData && existingDriverData.length > 0) {
         throw new Error(`Driver ID ${driverId} already exists`);
       }
 
@@ -167,7 +174,11 @@ export const bulkCreateDriverAccounts = async (drivers: DriverData[]) => {
       });
 
       if (createError) {
-        throw createError;
+        if (createError.message.includes('already registered')) {
+          throw new Error(`Email ${email} already exists in the system`);
+        } else {
+          throw createError;
+        }
       }
 
       if (!authData.user) {
@@ -175,12 +186,17 @@ export const bulkCreateDriverAccounts = async (drivers: DriverData[]) => {
       }
 
       // Create driver role
-      await supabase
+      const { error: roleError } = await supabase
         .from('user_roles')
         .insert({
           user_id: authData.user.id,
           role: 'driver'
         });
+
+      if (roleError) {
+        console.error(`Error creating role for ${email}:`, roleError);
+        // Continue anyway - we'll still try to create the driver record
+      }
 
       // Create driver credentials
       const { error: credError } = await supabase
@@ -191,6 +207,7 @@ export const bulkCreateDriverAccounts = async (drivers: DriverData[]) => {
         });
 
       if (credError) {
+        console.error(`Error creating driver credentials for ${email}:`, credError);
         throw credError;
       }
 
