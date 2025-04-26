@@ -82,12 +82,6 @@ export const useDriverUpload = () => {
     }
   };
 
-  // Function to update progress during upload
-  const updateProgress = (current: number, total: number) => {
-    setCurrentItem(current);
-    setProgress(Math.round((current / total) * 100));
-  };
-
   return {
     isUploading,
     progress,
@@ -96,7 +90,6 @@ export const useDriverUpload = () => {
     uploadStats,
     processingRef,
     handleFileUpload,
-    updateProgress,
     resetStats
   };
 };

@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { validateDriverData } from "@/utils/driverValidation";
+import { processCSVFile } from "@/utils/csv/processCSVFile";
 
 interface DriverUploadResult {
   success: Array<{ email: string; driverId: string }>;
@@ -11,7 +12,7 @@ interface DriverUploadResult {
 
 export const uploadDriverCredential = async (file: File): Promise<DriverUploadResult> => {
   // Process CSV file to extract driver data
-  const drivers = await processDriversCSV(file);
+  const drivers = await processCSVFile(file);
   
   if (!drivers || drivers.length === 0) {
     throw new Error("No data found in the uploaded file");
@@ -26,20 +27,23 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
     total: totalDrivers
   };
   
-  // Get a service client for authentication operations to avoid disrupting the user's session
+  // Use the standard client for operations
   const adminSupabase = supabase;
   
   for (let i = 0; i < drivers.length; i++) {
     try {
       const driver = drivers[i];
       
-      // Create user account using the admin API
-      const response = await adminSupabase.auth.admin.createUser({
+      // Instead of using admin.createUser, use the standard signUp method
+      // which doesn't require special permissions
+      const response = await adminSupabase.auth.signUp({
         email: driver.email,
         password: driver.password,
-        user_metadata: {
-          role: 'driver',
-          driver_id: driver.driverId
+        options: {
+          data: {
+            role: 'driver',
+            driver_id: driver.driverId
+          }
         }
       });
       
@@ -63,12 +67,11 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
           throw roleResponse.error;
         }
         
-        // Use the create_driver_account RPC function to bypass RLS
-        const credResponse = await adminSupabase.rpc('create_driver_account', {
-          p_email: driver.email,
-          p_password: driver.password,
-          p_driver_id: driver.driverId
-        });
+        // Create driver credentials
+        const credResponse = await adminSupabase.from('driver_credentials').insert({
+          user_id: response.data.user.id,
+          driver_id: driver.driverId
+        }).select();
         
         if (credResponse.error) {
           console.error(`Error creating driver credentials for ${driver.email}:`, credResponse.error);
@@ -93,80 +96,9 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
     
     // Add delay between processing each driver to avoid rate limiting
     if (i < drivers.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Increased delay to 5 seconds
     }
   }
 
   return results;
-};
-
-interface DriverData {
-  email: string;
-  password: string;
-  driverId: string;
-}
-
-// Helper function to parse the CSV data
-const processDriversCSV = async (file: File): Promise<DriverData[]> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    
-    reader.onload = (event) => {
-      try {
-        const csvData = event.target?.result as string;
-        if (!csvData) {
-          throw new Error("Failed to read file");
-        }
-        
-        // Split the CSV into rows and skip the header
-        const rows = csvData.split('\n');
-        const headers = rows[0].split(',').map(header => header.trim().toLowerCase());
-        
-        // Find column indices
-        const emailIndex = headers.indexOf('email');
-        const passwordIndex = headers.indexOf('password');
-        const driverIdIndex = headers.indexOf('driverid');
-        
-        if (emailIndex === -1 || passwordIndex === -1 || driverIdIndex === -1) {
-          throw new Error("CSV must contain 'email', 'password', and 'driverId' columns");
-        }
-        
-        const drivers: DriverData[] = [];
-        
-        // Process each row (skip header)
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i].trim();
-          if (!row) continue; // Skip empty rows
-          
-          const columns = row.split(',').map(col => col.trim());
-          
-          if (columns.length <= Math.max(emailIndex, passwordIndex, driverIdIndex)) {
-            console.warn(`Skipping row ${i}: insufficient columns`);
-            continue;
-          }
-          
-          const email = columns[emailIndex];
-          const password = columns[passwordIndex];
-          const driverId = columns[driverIdIndex];
-          
-          if (!email || !password || !driverId) {
-            console.warn(`Skipping row ${i}: missing required data`);
-            continue;
-          }
-          
-          drivers.push({ email, password, driverId });
-        }
-        
-        resolve(drivers);
-      } catch (error) {
-        reject(error);
-      }
-    };
-    
-    reader.onerror = () => {
-      reject(new Error("Error reading file"));
-    };
-    
-    reader.readAsText(file);
-  });
 };
