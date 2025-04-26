@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { processExcelFile } from "@/utils/excel/processExcelFile";
 import { createDriverAccount } from "@/services/driverAccountService";
@@ -11,6 +10,9 @@ import { UploadResults } from "./upload/UploadResults";
 export const DriverCredentialsUploader = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentItem, setCurrentItem] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const processingRef = useRef<boolean>(false);
   const [uploadStats, setUploadStats] = useState<{
     total: number;
     success: number;
@@ -18,9 +20,27 @@ export const DriverCredentialsUploader = () => {
     errors?: Array<{ email: string; error: string }>;
   } | null>(null);
 
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && processingRef.current) {
+        toast.info("Upload process is continuing in the background", {
+          description: "Please keep this tab open until completion"
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const resetStats = () => {
     setUploadStats(null);
     setProgress(0);
+    setCurrentItem(0);
+    setTotalItems(0);
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,12 +55,15 @@ export const DriverCredentialsUploader = () => {
     }
 
     setIsUploading(true);
+    processingRef.current = true;
+    
     try {
       const drivers = await processExcelFile(file);
       
       if (!drivers || drivers.length === 0) {
         toast.error("No data found in the uploaded file");
         setIsUploading(false);
+        processingRef.current = false;
         return;
       }
       
@@ -51,10 +74,13 @@ export const DriverCredentialsUploader = () => {
           description: "Please use the template provided by the Download Template button" 
         });
         setIsUploading(false);
+        processingRef.current = false;
         return;
       }
 
       const totalDrivers = drivers.length;
+      setTotalItems(totalDrivers);
+      
       const toastId = toast.loading(`Processing ${totalDrivers} driver credentials...`);
       console.log(`Starting to process ${totalDrivers} driver accounts`);
       
@@ -62,6 +88,7 @@ export const DriverCredentialsUploader = () => {
       
       const updateProgress = () => {
         completedCount++;
+        setCurrentItem(completedCount);
         const newProgress = Math.round((completedCount / totalDrivers) * 100);
         setProgress(newProgress);
         toast.loading(`Processing: ${completedCount}/${totalDrivers} (${newProgress}%)`, { id: toastId });
@@ -114,6 +141,7 @@ export const DriverCredentialsUploader = () => {
       });
     } finally {
       setIsUploading(false);
+      processingRef.current = false;
       if (event.target) {
         event.target.value = '';
       }
@@ -124,7 +152,7 @@ export const DriverCredentialsUploader = () => {
     <div>
       <UploadForm isUploading={isUploading} onFileSelect={handleFileUpload} />
       
-      {isUploading && <UploadProgress progress={progress} />}
+      {isUploading && <UploadProgress progress={progress} currentItem={currentItem} totalItems={totalItems} />}
       
       {uploadStats && <UploadResults stats={uploadStats} />}
     </div>

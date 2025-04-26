@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
 
 interface UploadFormProps {
   isUploading: boolean;
@@ -24,7 +24,10 @@ export const UploadForm = ({ isUploading, onFileSelect }: UploadFormProps) => {
         className="w-full bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800 transition-colors flex items-center gap-2"
       >
         {isUploading ? (
-          "Processing..."
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Processing...</span>
+          </>
         ) : (
           <>
             <FileText className="h-4 w-4" />

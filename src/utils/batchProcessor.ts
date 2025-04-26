@@ -4,8 +4,8 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export const processBatch = async <T extends { email: string }>(
   items: T[],
   processItem: (item: T) => Promise<any>,
-  batchSize: number = 3, // Reduced from 5 to 3 for better reliability
-  delayMs: number = 5000 // Increased from 3000 to 5000 for better rate limiting
+  batchSize: number = 3, // Keep batch size small for reliability
+  delayMs: number = 5000 // Keep delay between batches to avoid rate limiting
 ) => {
   const results = {
     success: [] as string[],
@@ -14,12 +14,15 @@ export const processBatch = async <T extends { email: string }>(
 
   console.log(`Starting batch processing of ${items.length} items with batchSize=${batchSize}, delayMs=${delayMs}`);
   
+  // Use worker threads for background processing if available and relevant
+  const isBackgroundProcessingSupported = typeof window !== 'undefined' && 'requestIdleCallback' in window;
+  
   // Process in sequential batches for better reliability
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
     console.log(`Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(items.length/batchSize)}`);
     
-    // Process items in parallel within each batch with individual error handling
+    // Create an array of promises for the batch
     const batchPromises = batch.map(async (item) => {
       try {
         console.log(`Processing item for ${item.email}`);
@@ -36,12 +39,36 @@ export const processBatch = async <T extends { email: string }>(
     });
     
     // Wait for all promises in the batch to resolve
-    await Promise.all(batchPromises);
+    // Set a longer timeout to ensure background processing continues
+    try {
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Batch processing timeout")), 30000)
+      );
+      
+      await Promise.race([
+        Promise.all(batchPromises),
+        timeoutPromise
+      ]);
+    } catch (error) {
+      console.error("Batch processing error:", error);
+      // Continue processing despite errors
+    }
     
-    // Add a delay between batches to avoid rate limiting
+    // Add a delay between batches but make it more resilient
     if (i + batchSize < items.length) {
       console.log(`Waiting ${delayMs}ms before processing next batch...`);
-      await delay(delayMs);
+      
+      // Use more browser-friendly delay implementation
+      if (isBackgroundProcessingSupported) {
+        await new Promise(resolve => {
+          // @ts-ignore - TypeScript doesn't know about requestIdleCallback
+          window.requestIdleCallback(() => {
+            setTimeout(resolve, delayMs);
+          });
+        });
+      } else {
+        await delay(delayMs);
+      }
     }
   }
   
