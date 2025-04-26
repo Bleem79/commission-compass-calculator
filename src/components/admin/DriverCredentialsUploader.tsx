@@ -1,7 +1,6 @@
-
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { processExcelFile } from "@/utils/excel/processExcelFile";
+import { processCSVFile } from "@/utils/csv/processCSVFile";
 import { createDriverAccount } from "@/services/driverAccountService";
 import { processBatch } from "@/utils/batchProcessor";
 import { UploadForm } from "./upload/UploadForm";
@@ -21,7 +20,6 @@ export const DriverCredentialsUploader = () => {
     errors?: Array<{ email: string; error: string }>;
   } | null>(null);
 
-  // Handle tab visibility changes to provide feedback when returning to the tab
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && processingRef.current) {
@@ -51,8 +49,8 @@ export const DriverCredentialsUploader = () => {
 
     resetStats();
 
-    if (!file.name.match(/\.(xlsx|xls)$/)) {
-      toast.error("Please upload an Excel file (.xlsx or .xls)");
+    if (!file.name.match(/\.csv$/)) {
+      toast.error("Please upload a CSV file");
       return;
     }
 
@@ -60,21 +58,10 @@ export const DriverCredentialsUploader = () => {
     processingRef.current = true;
     
     try {
-      const drivers = await processExcelFile(file);
+      const drivers = await processCSVFile(file);
       
       if (!drivers || drivers.length === 0) {
         toast.error("No data found in the uploaded file");
-        setIsUploading(false);
-        processingRef.current = false;
-        return;
-      }
-      
-      if (!drivers[0].hasOwnProperty('email') || 
-          !drivers[0].hasOwnProperty('password') || 
-          !drivers[0].hasOwnProperty('driverId')) {
-        toast.error("Invalid template format", { 
-          description: "Please use the template provided by the Download Template button" 
-        });
         setIsUploading(false);
         processingRef.current = false;
         return;
@@ -84,7 +71,7 @@ export const DriverCredentialsUploader = () => {
       setTotalItems(totalDrivers);
       
       const toastId = toast.loading(`Processing ${totalDrivers} driver credentials...`, {
-        duration: 0 // Make the toast persist until dismissed
+        duration: 0
       });
       
       console.log(`Starting to process ${totalDrivers} driver accounts`);
@@ -97,14 +84,12 @@ export const DriverCredentialsUploader = () => {
         const newProgress = Math.round((completedCount / totalDrivers) * 100);
         setProgress(newProgress);
         
-        // Update the toast but don't dismiss it
         toast.loading(`Processing: ${completedCount}/${totalDrivers} (${newProgress}%)`, { 
           id: toastId,
           duration: 0
         });
       };
       
-      // Use smaller batch size and longer delay to avoid RLS policy issues
       const results = await processBatch(
         drivers,
         async (driver) => {
@@ -112,8 +97,8 @@ export const DriverCredentialsUploader = () => {
           updateProgress();
           return result;
         },
-        2, // Smaller batch size
-        7000 // Longer delay
+        1,
+        10000
       );
       
       toast.dismiss(toastId);
@@ -136,12 +121,6 @@ export const DriverCredentialsUploader = () => {
       if (results.errors.length > 0) {
         toast.error(`Failed to create ${results.errors.length} driver account${results.errors.length > 1 ? 's' : ''}`, {
           description: "Check the detailed errors below"
-        });
-      }
-
-      if (results.success.length === 0 && results.errors.length > 0) {
-        toast.error("No driver accounts were created", {
-          description: "Please check RLS policies and database permissions"
         });
       }
 

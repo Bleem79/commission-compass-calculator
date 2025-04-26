@@ -12,7 +12,7 @@ export const UploadForm = ({ isUploading, onFileSelect }: UploadFormProps) => {
     <div>
       <input
         type="file"
-        accept=".xlsx,.xls"
+        accept=".csv"
         onChange={onFileSelect}
         className="hidden"
         id="driver-excel-upload"
@@ -31,10 +31,13 @@ export const UploadForm = ({ isUploading, onFileSelect }: UploadFormProps) => {
         ) : (
           <>
             <FileText className="h-4 w-4" />
-            <span>Upload Driver Credentials</span>
+            <span>Upload Driver Credentials (CSV)</span>
           </>
         )}
       </Button>
+      <p className="text-xs text-muted-foreground mt-2">
+        Please ensure your CSV file has the columns: email, password, driverId
+      </p>
     </div>
   );
 };
