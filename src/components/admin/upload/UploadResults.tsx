@@ -18,12 +18,19 @@ export const UploadResults = ({ stats }: UploadResultsProps) => {
       acc.duplicates.push(curr);
     } else if (error.includes('rate limit') || error.includes('too many requests')) {
       acc.rateLimits.push(curr);
+    } else if (error.includes('supabase is not defined')) {
+      acc.supabaseErrors.push(curr);
     } else {
       acc.others.push(curr);
     }
     
     return acc;
-  }, { duplicates: [] as typeof stats.errors, rateLimits: [] as typeof stats.errors, others: [] as typeof stats.errors } as Record<string, typeof stats.errors>);
+  }, { 
+    duplicates: [] as typeof stats.errors, 
+    rateLimits: [] as typeof stats.errors,
+    supabaseErrors: [] as typeof stats.errors,
+    others: [] as typeof stats.errors 
+  } as Record<string, typeof stats.errors>);
 
   return (
     <Alert variant={stats.failed > 0 ? "destructive" : "default"} className="mt-3">

@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { processCSVFile } from "@/utils/csv/processCSVFile";
 import { bulkCreateDriverAccounts } from "@/services/driverAccountService";
+import { supabase } from "@/integrations/supabase/client"; // Import the supabase client
 import { UploadForm } from "./upload/UploadForm";
 import { UploadProgress } from "./upload/UploadProgress";
 import { UploadResults } from "./upload/UploadResults";
@@ -83,7 +84,7 @@ export const DriverCredentialsUploader = () => {
           setProgress(Math.round(((i) / totalDrivers) * 100));
           
           // Process this driver
-          const { data, error } = await supabase.auth.signUp({
+          const response = await supabase.auth.signUp({
             email: driver.email,
             password: driver.password,
             options: {
@@ -93,25 +94,34 @@ export const DriverCredentialsUploader = () => {
             }
           });
           
-          if (error) {
-            throw error;
+          if (response.error) {
+            throw response.error;
           }
           
-          if (!data.user) {
+          if (!response.data.user) {
             throw new Error(`Failed to create user account for ${driver.email}`);
           }
           
           // Create driver role
-          await supabase.from('user_roles').insert({
-            user_id: data.user.id,
+          const roleResponse = await supabase.from('user_roles').insert({
+            user_id: response.data.user.id,
             role: 'driver'
           });
           
+          if (roleResponse.error) {
+            console.error(`Error creating role for ${driver.email}:`, roleResponse.error);
+          }
+          
           // Create driver credentials
-          await supabase.from('driver_credentials').insert({
-            user_id: data.user.id,
+          const credResponse = await supabase.from('driver_credentials').insert({
+            user_id: response.data.user.id,
             driver_id: driver.driverId
           });
+          
+          if (credResponse.error) {
+            console.error(`Error creating driver credentials for ${driver.email}:`, credResponse.error);
+            throw credResponse.error;
+          }
           
           results.success.push({ email: driver.email, driverId: driver.driverId });
           console.log(`Successfully created account for ${driver.email}`);
