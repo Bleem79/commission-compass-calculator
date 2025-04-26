@@ -115,8 +115,9 @@ export const DriverCredentialsUploader = () => {
             }
             
             // Create driver credentials - using RPC function to bypass RLS
-            const credResponse = await supabase.rpc('create_driver_credential', {
-              p_user_id: response.data.user.id,
+            const credResponse = await supabase.rpc('create_driver_account', {
+              p_email: driver.email,
+              p_password: driver.password,
               p_driver_id: driver.driverId
             });
             
