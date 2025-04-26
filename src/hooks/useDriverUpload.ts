@@ -1,8 +1,9 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { uploadDriverCredential } from "@/services/driverUploadService";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UploadStats {
   total: number;
@@ -18,6 +19,7 @@ export const useDriverUpload = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [uploadStats, setUploadStats] = useState<UploadStats | null>(null);
   const processingRef = useRef<boolean>(false);
+  const { session, refreshSession } = useAuth(); // Use the auth context to manage session
 
   const resetStats = () => {
     setUploadStats(null);
@@ -25,6 +27,24 @@ export const useDriverUpload = () => {
     setCurrentItem(0);
     setTotalItems(0);
   };
+
+  // Setup a periodic session check during upload
+  useEffect(() => {
+    let sessionCheckInterval: number | undefined;
+    
+    if (isUploading && session) {
+      // Check and refresh session every 30 seconds during upload
+      sessionCheckInterval = window.setInterval(() => {
+        refreshSession();
+      }, 30000); // 30 seconds
+    }
+    
+    return () => {
+      if (sessionCheckInterval) {
+        clearInterval(sessionCheckInterval);
+      }
+    };
+  }, [isUploading, session, refreshSession]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -41,19 +61,14 @@ export const useDriverUpload = () => {
     processingRef.current = true;
     
     try {
-      // Store the current session to prevent any issues
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentSession = sessionData.session;
-
-      // Start upload process - this will use signUp instead of admin.createUser
+      // Make sure to refresh session before starting
+      await refreshSession();
+      
+      // Start upload process
       const results = await uploadDriverCredential(file);
       
-      // Verify session is still valid after uploads complete
-      const { data: newSessionData } = await supabase.auth.getSession();
-      if (!newSessionData.session && currentSession) {
-        console.warn("Session was lost during upload process, attempting to restore");
-        // If needed, you could implement session recovery here
-      }
+      // Ensure session is still valid after uploads complete
+      await refreshSession();
       
       setTotalItems(results.total);
       setCurrentItem(results.total);
@@ -85,6 +100,9 @@ export const useDriverUpload = () => {
       toast.error("Failed to process driver accounts", {
         description: error.message || "Unknown error occurred"
       });
+      
+      // Make sure to refresh the session even if there's an error
+      await refreshSession();
     } finally {
       setIsUploading(false);
       processingRef.current = false;

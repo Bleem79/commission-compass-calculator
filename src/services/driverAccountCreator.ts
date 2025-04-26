@@ -21,7 +21,9 @@ export const createDriverAccount = async (email: string, password: string, drive
       options: {
         data: {
           driver_id: validatedData.driverId
-        }
+        },
+        // Don't automatically sign in the new user
+        emailRedirectTo: window.location.origin
       }
     });
 

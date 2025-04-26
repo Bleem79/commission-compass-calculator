@@ -27,41 +27,44 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
     total: totalDrivers
   };
   
-  // Use the standard client for operations
-  const adminSupabase = supabase;
+  // Store the current session to prevent losing it
+  const { data: currentSession } = await supabase.auth.getSession();
   
+  // Use the standard client for operations
   for (let i = 0; i < drivers.length; i++) {
     try {
       const driver = drivers[i];
       
       // Validate driver data first
-      const validatedDriver = validateDriverData({
+      const validatedData = validateDriverData({
         email: driver.email,
         password: driver.password,
         driverId: driver.driverId
       });
       
       // Check if driver with this ID already exists
-      const { data: existingDriver } = await adminSupabase
+      const { data: existingDriver } = await supabase
         .from('driver_credentials')
         .select('driver_id')
-        .eq('driver_id', validatedDriver.driverId)
+        .eq('driver_id', validatedData.driverId)
         .maybeSingle();
         
       if (existingDriver) {
-        throw new Error(`Driver ID ${validatedDriver.driverId} already exists`);
+        throw new Error(`Driver ID ${validatedData.driverId} already exists`);
       }
       
-      // Instead of using admin.createUser, use the standard signUp method
-      // which doesn't require special permissions and doesn't affect current session
-      const response = await adminSupabase.auth.signUp({
-        email: validatedDriver.email,
-        password: validatedDriver.password,
+      // Create new driver using signUp - this should not affect the current session
+      // as long as we don't automatically login the new user
+      const response = await supabase.auth.signUp({
+        email: validatedData.email,
+        password: validatedData.password,
         options: {
           data: {
             role: 'driver',
-            driver_id: validatedDriver.driverId
-          }
+            driver_id: validatedData.driverId
+          },
+          // Critical: Do not automatically sign in as the new user
+          emailRedirectTo: window.location.origin
         }
       });
       
@@ -70,39 +73,39 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
       }
       
       if (!response.data.user) {
-        throw new Error(`Failed to create user account for ${validatedDriver.email}`);
+        throw new Error(`Failed to create user account for ${validatedData.email}`);
       }
       
       try {
         // Create driver role
-        const roleResponse = await adminSupabase.from('user_roles').insert({
+        const roleResponse = await supabase.from('user_roles').insert({
           user_id: response.data.user.id,
           role: 'driver'
         });
         
         if (roleResponse.error) {
-          console.error(`Error creating role for ${validatedDriver.email}:`, roleResponse.error);
+          console.error(`Error creating role for ${validatedData.email}:`, roleResponse.error);
           throw roleResponse.error;
         }
         
         // Create driver credentials
-        const credResponse = await adminSupabase.from('driver_credentials').insert({
+        const credResponse = await supabase.from('driver_credentials').insert({
           user_id: response.data.user.id,
-          driver_id: validatedDriver.driverId
+          driver_id: validatedData.driverId
         }).select();
         
         if (credResponse.error) {
-          console.error(`Error creating driver credentials for ${validatedDriver.email}:`, credResponse.error);
+          console.error(`Error creating driver credentials for ${validatedData.email}:`, credResponse.error);
           throw credResponse.error;
         }
       } catch (insertError: any) {
         // If we fail after user creation, log the error but still count as success
         // since the user account was created
-        console.warn(`Created user account for ${validatedDriver.email} but had issues with role/credentials: ${insertError.message}`);
+        console.warn(`Created user account for ${validatedData.email} but had issues with role/credentials: ${insertError.message}`);
       }
       
-      results.success.push({ email: validatedDriver.email, driverId: validatedDriver.driverId });
-      console.log(`Successfully created account for ${validatedDriver.email}`);
+      results.success.push({ email: validatedData.email, driverId: validatedData.driverId });
+      console.log(`Successfully created account for ${validatedData.email}`);
       
     } catch (error: any) {
       console.error(`Error creating account for ${drivers[i].email}:`, error);
@@ -114,7 +117,31 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
     
     // Add delay between processing each driver to avoid rate limiting
     if (i < drivers.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second delay between creations
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced to 1 second delay between creations
+    }
+    
+    // Every few records, check if the session is still active and restore it if needed
+    if (i % 5 === 0 && currentSession?.session) {
+      const { data: newSession } = await supabase.auth.getSession();
+      if (!newSession.session && currentSession.session) {
+        console.log("Attempting to restore admin session...");
+        await supabase.auth.setSession({
+          access_token: currentSession.session.access_token,
+          refresh_token: currentSession.session.refresh_token
+        });
+      }
+    }
+  }
+
+  // Final check to ensure admin session is maintained
+  if (currentSession?.session) {
+    const { data: finalSession } = await supabase.auth.getSession();
+    if (!finalSession.session) {
+      console.log("Restoring admin session after completion...");
+      await supabase.auth.setSession({
+        access_token: currentSession.session.access_token,
+        refresh_token: currentSession.session.refresh_token
+      });
     }
   }
 
