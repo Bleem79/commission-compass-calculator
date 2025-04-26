@@ -26,7 +26,7 @@ export const UploadForm = ({ isUploading, onFileSelect }: UploadFormProps) => {
         {isUploading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Processing...</span>
+            <span>Processing - Please wait...</span>
           </>
         ) : (
           <>

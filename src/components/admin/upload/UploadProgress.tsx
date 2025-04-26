@@ -17,6 +17,9 @@ export const UploadProgress = ({ progress, currentItem, totalItems }: UploadProg
           <span>Processing: {currentItem}/{totalItems}</span>
         )}
       </div>
+      <p className="text-xs text-muted-foreground mt-1 italic">
+        Please keep this tab open until the process completes.
+      </p>
     </div>
   );
 };

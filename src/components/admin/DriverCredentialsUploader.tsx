@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { processExcelFile } from "@/utils/excel/processExcelFile";
@@ -20,6 +21,7 @@ export const DriverCredentialsUploader = () => {
     errors?: Array<{ email: string; error: string }>;
   } | null>(null);
 
+  // Handle tab visibility changes to provide feedback when returning to the tab
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && processingRef.current) {
@@ -81,7 +83,10 @@ export const DriverCredentialsUploader = () => {
       const totalDrivers = drivers.length;
       setTotalItems(totalDrivers);
       
-      const toastId = toast.loading(`Processing ${totalDrivers} driver credentials...`);
+      const toastId = toast.loading(`Processing ${totalDrivers} driver credentials...`, {
+        duration: 0 // Make the toast persist until dismissed
+      });
+      
       console.log(`Starting to process ${totalDrivers} driver accounts`);
       
       let completedCount = 0;
@@ -91,9 +96,15 @@ export const DriverCredentialsUploader = () => {
         setCurrentItem(completedCount);
         const newProgress = Math.round((completedCount / totalDrivers) * 100);
         setProgress(newProgress);
-        toast.loading(`Processing: ${completedCount}/${totalDrivers} (${newProgress}%)`, { id: toastId });
+        
+        // Update the toast but don't dismiss it
+        toast.loading(`Processing: ${completedCount}/${totalDrivers} (${newProgress}%)`, { 
+          id: toastId,
+          duration: 0
+        });
       };
       
+      // Use smaller batch size and longer delay to avoid RLS policy issues
       const results = await processBatch(
         drivers,
         async (driver) => {
@@ -101,8 +112,8 @@ export const DriverCredentialsUploader = () => {
           updateProgress();
           return result;
         },
-        3,
-        5000
+        2, // Smaller batch size
+        7000 // Longer delay
       );
       
       toast.dismiss(toastId);
@@ -124,13 +135,13 @@ export const DriverCredentialsUploader = () => {
 
       if (results.errors.length > 0) {
         toast.error(`Failed to create ${results.errors.length} driver account${results.errors.length > 1 ? 's' : ''}`, {
-          description: results.errors[0]?.error || "Unknown error"
+          description: "Check the detailed errors below"
         });
       }
 
-      if (results.success.length === 0) {
+      if (results.success.length === 0 && results.errors.length > 0) {
         toast.error("No driver accounts were created", {
-          description: "Please check the file format and try again"
+          description: "Please check RLS policies and database permissions"
         });
       }
 

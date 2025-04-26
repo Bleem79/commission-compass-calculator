@@ -4,8 +4,8 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export const processBatch = async <T extends { email: string }>(
   items: T[],
   processItem: (item: T) => Promise<any>,
-  batchSize: number = 3, // Keep batch size small for reliability
-  delayMs: number = 5000 // Keep delay between batches to avoid rate limiting
+  batchSize: number = 2, // Reduced batch size for more reliability
+  delayMs: number = 7000 // Increased delay between batches to avoid rate limiting
 ) => {
   const results = {
     success: [] as string[],
@@ -14,7 +14,7 @@ export const processBatch = async <T extends { email: string }>(
 
   console.log(`Starting batch processing of ${items.length} items with batchSize=${batchSize}, delayMs=${delayMs}`);
   
-  // Use worker threads for background processing if available and relevant
+  // Use worker threads for background processing if available
   const isBackgroundProcessingSupported = typeof window !== 'undefined' && 'requestIdleCallback' in window;
   
   // Process in sequential batches for better reliability
@@ -31,18 +31,26 @@ export const processBatch = async <T extends { email: string }>(
         console.log(`Successfully processed item for ${item.email}`);
         return { success: true, email: item.email };
       } catch (error: any) {
-        const errorMessage = error.message || 'Unknown error';
-        console.error(`Failed to process item for ${item.email}:`, error);
+        // Improve error handling for specific errors
+        let errorMessage = error.message || 'Unknown error';
+        
+        // Check for RLS policy recursion errors and provide better error messages
+        if (errorMessage.includes('infinite recursion') || 
+            errorMessage.includes('policy') || 
+            errorMessage.includes('violates row-level security')) {
+          errorMessage = 'Permission error: Please check user roles policies';
+          console.error('RLS policy error detected for', item.email, error);
+        }
+        
         results.errors.push({ email: item.email.toString(), error: errorMessage });
         return { success: false, email: item.email, error: errorMessage };
       }
     });
     
-    // Wait for all promises in the batch to resolve
-    // Set a longer timeout to ensure background processing continues
+    // Wait for all promises in the batch to resolve with a longer timeout
     try {
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Batch processing timeout")), 30000)
+        setTimeout(() => reject(new Error("Batch processing timeout")), 60000) // 1 minute timeout
       );
       
       await Promise.race([
@@ -54,7 +62,7 @@ export const processBatch = async <T extends { email: string }>(
       // Continue processing despite errors
     }
     
-    // Add a delay between batches but make it more resilient
+    // Add a delay between batches with better resilience for tab switching
     if (i + batchSize < items.length) {
       console.log(`Waiting ${delayMs}ms before processing next batch...`);
       
@@ -64,7 +72,7 @@ export const processBatch = async <T extends { email: string }>(
           // @ts-ignore - TypeScript doesn't know about requestIdleCallback
           window.requestIdleCallback(() => {
             setTimeout(resolve, delayMs);
-          });
+          }, { timeout: delayMs + 1000 });
         });
       } else {
         await delay(delayMs);
