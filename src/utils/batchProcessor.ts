@@ -4,8 +4,8 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export const processBatch = async <T extends { email: string }>(
   items: T[],
   processItem: (item: T) => Promise<any>,
-  batchSize: number = 5, // Increased from 2 to 5
-  delayMs: number = 3000 // Decreased from 5000 to 3000
+  batchSize: number = 3, // Reduced from 5 to 3 for better reliability
+  delayMs: number = 5000 // Increased from 3000 to 5000 for better rate limiting
 ) => {
   const results = {
     success: [] as string[],
@@ -14,12 +14,12 @@ export const processBatch = async <T extends { email: string }>(
 
   console.log(`Starting batch processing of ${items.length} items with batchSize=${batchSize}, delayMs=${delayMs}`);
   
-  // Process in concurrent batches for better efficiency
+  // Process in sequential batches for better reliability
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
     console.log(`Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(items.length/batchSize)}`);
     
-    // Process items in parallel within each batch
+    // Process items in parallel within each batch with individual error handling
     const batchPromises = batch.map(async (item) => {
       try {
         console.log(`Processing item for ${item.email}`);
