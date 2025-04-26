@@ -1,9 +1,7 @@
-
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { processCSVFile } from "@/utils/csv/processCSVFile";
-import { createDriverAccount } from "@/services/driverAccountService";
-import { processBatch } from "@/utils/batchProcessor";
+import { bulkCreateDriverAccounts } from "@/services/driverAccountService";
 import { UploadForm } from "./upload/UploadForm";
 import { UploadProgress } from "./upload/UploadProgress";
 import { UploadResults } from "./upload/UploadResults";
@@ -71,35 +69,8 @@ export const DriverCredentialsUploader = () => {
       const totalDrivers = drivers.length;
       setTotalItems(totalDrivers);
       
-      const toastId = toast.loading(`Processing ${totalDrivers} driver credentials...`, {
-        duration: 0
-      });
-      
-      console.log(`Starting to process ${totalDrivers} driver accounts`);
-      
-      let completedCount = 0;
-      
-      const updateProgress = () => {
-        completedCount++;
-        setCurrentItem(completedCount);
-        const newProgress = Math.round((completedCount / totalDrivers) * 100);
-        setProgress(newProgress);
-      };
-      
-      // Process one at a time with significant delay between each to avoid rate limiting
-      const results = await processBatch(
-        drivers,
-        async (driver) => {
-          const result = await createDriverAccount(driver.email, String(driver.password), driver.driverId);
-          updateProgress();
-          return result;
-        },
-        1,  // Process one at a time
-        15000  // 15 second delay between items
-      );
-      
-      toast.dismiss(toastId);
-      
+      const results = await bulkCreateDriverAccounts(drivers);
+
       setUploadStats({
         total: drivers.length,
         success: results.success.length,
@@ -109,7 +80,7 @@ export const DriverCredentialsUploader = () => {
 
       if (results.success.length > 0) {
         toast.success(
-          `Successfully processed ${results.success.length} driver${results.success.length > 1 ? 's' : ''}${
+          `Successfully created ${results.success.length} driver account${results.success.length > 1 ? 's' : ''}${
             results.errors.length > 0 ? ` (${results.errors.length} failed)` : ''
           }`
         );

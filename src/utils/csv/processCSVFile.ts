@@ -1,4 +1,3 @@
-
 export const processCSVFile = async (file: File): Promise<Array<{ email: string, password: string, driverId: string }>> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -83,4 +82,24 @@ export const processCSVFile = async (file: File): Promise<Array<{ email: string,
     
     reader.readAsText(file);
   });
+};
+
+export const validateDriverData = (data: any) => {
+  if (!data.email || typeof data.email !== 'string' || !data.email.includes('@')) {
+    throw new Error('Invalid email format');
+  }
+  
+  if (!data.password || typeof data.password !== 'string' || data.password.length < 6) {
+    throw new Error('Password must be at least 6 characters');
+  }
+  
+  if (!data.driverId || typeof data.driverId !== 'string') {
+    throw new Error('Driver ID is required');
+  }
+  
+  return {
+    email: data.email.trim().toLowerCase(),
+    password: data.password,
+    driverId: data.driverId.trim()
+  };
 };

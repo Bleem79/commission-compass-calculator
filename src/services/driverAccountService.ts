@@ -2,19 +2,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError } from "@supabase/supabase-js";
 
-// Define a type for the user object returned by supabase.auth.admin.listUsers()
-interface SupabaseUser {
-  id: string;
-  email?: string;
-  app_metadata?: Record<string, any>;
-  user_metadata?: Record<string, any>;
-  created_at?: string;
-}
-
-// Define the response type for the listUsers function
-interface ListUsersResponse {
-  users?: SupabaseUser[];
-  total?: number;
+interface DriverData {
+  email: string;
+  password: string;
+  driverId: string;
 }
 
 export const createDriverAccount = async (email: string, password: string, driverId: string) => {
@@ -127,4 +118,97 @@ export const createDriverAccount = async (email: string, password: string, drive
     console.error(`Error in createDriverAccount for ${email}:`, error);
     throw error;
   }
+};
+
+export const bulkCreateDriverAccounts = async (drivers: DriverData[]) => {
+  console.log(`Starting bulk creation of ${drivers.length} driver accounts`);
+  
+  const results = {
+    success: [] as { email: string; driverId: string }[],
+    errors: [] as { email: string; error: string }[]
+  };
+
+  for (const driver of drivers) {
+    try {
+      // Normalize inputs
+      const email = String(driver.email).trim().toLowerCase();
+      const password = String(driver.password).trim();
+      const driverId = String(driver.driverId).trim();
+
+      // Basic validation
+      if (!email || !password || !driverId) {
+        throw new Error(`Missing required fields for driver: ${email}`);
+      }
+
+      // Check if driver already exists
+      const { data: existingDriver, error: checkError } = await supabase
+        .from('driver_credentials')
+        .select('driver_id')
+        .eq('driver_id', driverId)
+        .single();
+
+      if (checkError && !checkError.message.includes('No rows found')) {
+        throw checkError;
+      }
+
+      if (existingDriver) {
+        throw new Error(`Driver ID ${driverId} already exists`);
+      }
+
+      // Create user account
+      const { data: authData, error: createError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            driver_id: driverId
+          }
+        }
+      });
+
+      if (createError) {
+        throw createError;
+      }
+
+      if (!authData.user) {
+        throw new Error(`Failed to create user account for ${email}`);
+      }
+
+      // Create driver role
+      await supabase
+        .from('user_roles')
+        .insert({
+          user_id: authData.user.id,
+          role: 'driver'
+        });
+
+      // Create driver credentials
+      const { error: credError } = await supabase
+        .from('driver_credentials')
+        .insert({
+          user_id: authData.user.id,
+          driver_id: driverId
+        });
+
+      if (credError) {
+        throw credError;
+      }
+
+      results.success.push({ email, driverId });
+      console.log(`Successfully created account for ${email}`);
+
+    } catch (error: any) {
+      console.error(`Error creating account for ${driver.email}:`, error);
+      results.errors.push({ 
+        email: driver.email, 
+        error: error.message || 'Unknown error occurred'
+      });
+    }
+
+    // Add delay between requests to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+
+  console.log(`Bulk creation completed. Success: ${results.success.length}, Errors: ${results.errors.length}`);
+  return results;
 };
