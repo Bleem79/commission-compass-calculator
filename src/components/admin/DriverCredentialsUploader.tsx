@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { processCSVFile } from "@/utils/csv/processCSVFile";
@@ -85,6 +86,7 @@ export const DriverCredentialsUploader = () => {
         setProgress(newProgress);
       };
       
+      // Process one at a time with significant delay between each to avoid rate limiting
       const results = await processBatch(
         drivers,
         async (driver) => {
@@ -92,8 +94,8 @@ export const DriverCredentialsUploader = () => {
           updateProgress();
           return result;
         },
-        1,
-        10000
+        1,  // Process one at a time
+        15000  // 15 second delay between items
       );
       
       toast.dismiss(toastId);
