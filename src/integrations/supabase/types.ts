@@ -137,6 +137,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_driver_account: {
+        Args: { p_email: string; p_password: string; p_driver_id: string }
+        Returns: string
+      }
       has_role: {
         Args:
           | { _user_id: string; _role: Database["public"]["Enums"]["app_role"] }
