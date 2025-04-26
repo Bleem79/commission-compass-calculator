@@ -12,6 +12,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      // Clear admin notification flag before logging out
+      sessionStorage.removeItem('adminNotificationShown');
+      
       await supabase.auth.signOut();
       setUser(null);
       toast({

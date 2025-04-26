@@ -32,6 +32,8 @@ export const useAuthState = () => {
       if (event === 'SIGNED_OUT') {
         console.log("User signed out, clearing auth state");
         setUser(null);
+        // Clear admin notification flag when user signs out
+        sessionStorage.removeItem('adminNotificationShown');
       } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && newSession?.user) {
         console.log("User signed in or token refreshed:", newSession.user.email);
         const userEmail = newSession.user.email || 'User';

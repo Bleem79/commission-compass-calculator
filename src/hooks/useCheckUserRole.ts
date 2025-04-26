@@ -16,10 +16,15 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
           role: 'admin'
         });
         
-        toast({
-          title: "Admin Access Granted",
-          description: "You now have administrative privileges"
-        });
+        // Only show admin toast on initial login, not on session refreshes
+        const event = new Event('adminLoginEvent');
+        if (!sessionStorage.getItem('adminNotificationShown')) {
+          toast({
+            title: "Admin Access Granted",
+            description: "You now have administrative privileges"
+          });
+          sessionStorage.setItem('adminNotificationShown', 'true');
+        }
         
         return;
       }
@@ -64,11 +69,12 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
             role: userRole
           });
 
-          if (userRole === 'admin') {
+          if (userRole === 'admin' && !sessionStorage.getItem('adminNotificationShown')) {
             toast({
               title: "Admin Access Granted",
               description: "You now have administrative privileges"
             });
+            sessionStorage.setItem('adminNotificationShown', 'true');
           }
           
           console.log("User role set to:", userRole);
