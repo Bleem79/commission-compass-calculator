@@ -1,13 +1,12 @@
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import { processExcelFile } from "@/utils/excel/processExcelFile";
 import { createDriverAccount } from "@/services/driverAccountService";
 import { processBatch } from "@/utils/batchProcessor";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
+import { UploadForm } from "./upload/UploadForm";
+import { UploadProgress } from "./upload/UploadProgress";
+import { UploadResults } from "./upload/UploadResults";
 
 export const DriverCredentialsUploader = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -37,7 +36,6 @@ export const DriverCredentialsUploader = () => {
 
     setIsUploading(true);
     try {
-      // Process the Excel file
       const drivers = await processExcelFile(file);
       
       if (!drivers || drivers.length === 0) {
@@ -62,35 +60,22 @@ export const DriverCredentialsUploader = () => {
       
       let completedCount = 0;
       
-      // Track progress callback
-      const updateProgress = (success: boolean) => {
+      const updateProgress = () => {
         completedCount++;
         const newProgress = Math.round((completedCount / totalDrivers) * 100);
         setProgress(newProgress);
         toast.loading(`Processing: ${completedCount}/${totalDrivers} (${newProgress}%)`, { id: toastId });
       };
       
-      // Process with optimized batch parameters - reduce batch size for better reliability
       const results = await processBatch(
         drivers,
         async (driver) => {
-          try {
-            const result = await createDriverAccount(
-              driver.email, 
-              String(driver.password), 
-              driver.driverId
-            );
-            updateProgress(true);
-            return result;
-          } catch (error: any) {
-            // Log detailed error and provide more info
-            console.error(`Failed to create driver ${driver.email}:`, error);
-            updateProgress(false);
-            throw error;
-          }
+          const result = await createDriverAccount(driver.email, String(driver.password), driver.driverId);
+          updateProgress();
+          return result;
         },
-        3, // Reduce to 3 at a time for better reliability
-        5000 // Wait 5 seconds between batches to reduce rate limiting
+        3,
+        5000
       );
       
       toast.dismiss(toastId);
@@ -106,27 +91,13 @@ export const DriverCredentialsUploader = () => {
         toast.success(
           `Successfully processed ${results.success.length} driver${results.success.length > 1 ? 's' : ''}${
             results.errors.length > 0 ? ` (${results.errors.length} failed)` : ''
-          }`,
-          {
-            description: "Driver accounts created and roles assigned in the database",
-            action: {
-              label: "View Details",
-              onClick: () => console.log("Successful Drivers:", results.success)
-            }
-          }
+          }`
         );
       }
 
       if (results.errors.length > 0) {
-        console.error("Detailed error list:", results.errors);
-        
-        // Show first error in toast for immediate feedback
         toast.error(`Failed to create ${results.errors.length} driver account${results.errors.length > 1 ? 's' : ''}`, {
-          description: results.errors[0]?.error || "Unknown error",
-          action: {
-            label: "View All Errors",
-            onClick: () => console.error("Driver Creation Errors:", results.errors)
-          }
+          description: results.errors[0]?.error || "Unknown error"
         });
       }
 
@@ -151,71 +122,11 @@ export const DriverCredentialsUploader = () => {
 
   return (
     <div>
-      <input
-        type="file"
-        accept=".xlsx,.xls"
-        onChange={handleFileUpload}
-        className="hidden"
-        id="driver-excel-upload"
-      />
-      <Button
-        variant="outline"
-        disabled={isUploading}
-        onClick={() => document.getElementById('driver-excel-upload')?.click()}
-        className="w-full bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800 transition-colors flex items-center gap-2"
-      >
-        {isUploading ? (
-          "Processing..."
-        ) : (
-          <>
-            <FileText className="h-4 w-4" />
-            <span>Upload Driver Credentials</span>
-          </>
-        )}
-      </Button>
+      <UploadForm isUploading={isUploading} onFileSelect={handleFileUpload} />
       
-      {isUploading && (
-        <div className="mt-3">
-          <Progress value={progress} className="h-2" />
-          <p className="text-sm text-center mt-1">{progress}% Complete</p>
-        </div>
-      )}
+      {isUploading && <UploadProgress progress={progress} />}
       
-      {uploadStats && (
-        <Alert variant={uploadStats.failed > 0 ? "destructive" : "default"} className="mt-3">
-          <AlertTitle>Upload Results</AlertTitle>
-          <AlertDescription>
-            <div className="space-y-2">
-              <div>
-                Total: {uploadStats.total} | 
-                Successful: {uploadStats.success} | 
-                Failed: {uploadStats.failed}
-              </div>
-              
-              {uploadStats.failed > 0 && uploadStats.errors && (
-                <div className="text-sm mt-2">
-                  <strong>Common error reasons:</strong>
-                  <ul className="list-disc pl-5 mt-1">
-                    <li>Email already exists in system</li>
-                    <li>Driver ID already exists</li>
-                    <li>Network connection issues</li>
-                    <li>Rate limiting from the authentication service</li>
-                  </ul>
-                  
-                  <div className="mt-2 max-h-40 overflow-y-auto border border-red-200 rounded-md p-2 bg-red-50">
-                    <p className="font-semibold mb-1">Specific errors:</p>
-                    {uploadStats.errors.map((err, index) => (
-                      <div key={index} className="text-xs mb-1 pb-1 border-b border-red-100 last:border-0">
-                        <span className="font-medium">{err.email}:</span> {err.error}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
+      {uploadStats && <UploadResults stats={uploadStats} />}
     </div>
   );
 };
