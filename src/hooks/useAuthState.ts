@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/types/auth";
@@ -10,19 +10,24 @@ export const useAuthState = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isCheckingRole, setIsCheckingRole] = useState(false);
   const checkUserRole = useCheckUserRole(setUser);
+  const roleCheckInProgress = useRef(false);
 
   const refreshSession = async () => {
     try {
       const { data } = await supabase.auth.refreshSession();
       setSession(data.session);
-      if (data.session?.user && !isCheckingRole) {
-        setIsCheckingRole(true);
-        await checkUserRole(data.session.user.id, data.session.user.email || 'User');
-        setIsCheckingRole(false);
+      
+      if (data.session?.user && !roleCheckInProgress.current) {
+        roleCheckInProgress.current = true;
+        try {
+          await checkUserRole(data.session.user.id, data.session.user.email || 'User');
+        } finally {
+          roleCheckInProgress.current = false;
+        }
       }
     } catch (error) {
       console.error("Error refreshing session:", error);
-      setIsCheckingRole(false);
+      roleCheckInProgress.current = false;
     }
   };
 
@@ -38,23 +43,19 @@ export const useAuthState = () => {
         setUser(null);
         // Clear admin notification flag when user signs out
         sessionStorage.removeItem('adminNotificationShown');
-      } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && newSession?.user && !isCheckingRole) {
+      } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && newSession?.user && !roleCheckInProgress.current) {
         console.log("User signed in or token refreshed:", newSession.user.email);
         const userEmail = newSession.user.email || 'User';
         
-        // Use setTimeout to avoid blocking the auth flow
-        setTimeout(() => {
-          setIsCheckingRole(true);
+        // Prevent concurrent role checks
+        if (!roleCheckInProgress.current) {
+          roleCheckInProgress.current = true;
+          // Use a normal function call instead of setTimeout to reduce flickering
           checkUserRole(newSession.user.id, userEmail)
-            .finally(() => setIsCheckingRole(false));
-        }, 0);
-      } else if (event === 'USER_UPDATED' && newSession?.user && !isCheckingRole) {
-        // Use setTimeout to avoid blocking the auth flow
-        setTimeout(() => {
-          setIsCheckingRole(true);
-          checkUserRole(newSession.user.id, newSession.user.email || 'User')
-            .finally(() => setIsCheckingRole(false));
-        }, 0);
+            .finally(() => {
+              roleCheckInProgress.current = false;
+            });
+        }
       }
     });
     
@@ -65,18 +66,21 @@ export const useAuthState = () => {
         
         setSession(initialSession);
         
-        if (initialSession?.user && !isCheckingRole) {
+        if (initialSession?.user && !roleCheckInProgress.current) {
           console.log("Initial session found for:", initialSession.user.email);
-          setIsCheckingRole(true);
-          await checkUserRole(initialSession.user.id, initialSession.user.email || 'User');
-          setIsCheckingRole(false);
+          roleCheckInProgress.current = true;
+          try {
+            await checkUserRole(initialSession.user.id, initialSession.user.email || 'User');
+          } finally {
+            roleCheckInProgress.current = false;
+          }
         } else {
           console.log("No initial session found");
           setUser(null);
         }
       } catch (error) {
         console.error("Error checking initial session:", error);
-        setIsCheckingRole(false);
+        roleCheckInProgress.current = false;
       }
     };
     
@@ -85,7 +89,7 @@ export const useAuthState = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [checkUserRole, isCheckingRole]);
+  }, [checkUserRole]);
 
   return { user, setUser, session, refreshSession };
 };

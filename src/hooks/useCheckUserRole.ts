@@ -58,10 +58,10 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
           .from('user_roles')
           .select('role')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
 
-        if (roleError) {
-          console.log("Error fetching user role, checking if user is a driver");
+        if (roleError || !roleData) {
+          console.log("Error fetching user role or no role found, checking if user is a driver");
           
           // If no role found, check if user has driver credentials
           const { data: driverData, error: driverError } = await supabase
@@ -129,20 +129,6 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
           }
           
           console.log("User role set to:", userRole);
-        } else {
-          console.log("No role found for user, defaulting to guest");
-          setUser(prevUser => {
-            // Only update if role is different or user is null
-            if (!prevUser || prevUser.role !== 'guest') {
-              return {
-                id: userId,
-                username: userEmail,
-                email: userEmail,
-                role: 'guest'
-              };
-            }
-            return prevUser;
-          });
         }
       } catch (error) {
         console.error("Error checking user role in database:", error);
