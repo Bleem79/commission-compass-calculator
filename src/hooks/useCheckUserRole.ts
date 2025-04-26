@@ -9,11 +9,17 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
       // Specific check for erico.ariata@outlook.com
       if (userEmail === 'erico.ariata@outlook.com') {
         console.log("Found specific user erico.ariata@outlook.com - setting as admin");
-        setUser({
-          id: userId,
-          username: userEmail,
-          email: userEmail,
-          role: 'admin'
+        setUser(prevUser => {
+          // Only update if role is different or user is null
+          if (!prevUser || prevUser.role !== 'admin') {
+            return {
+              id: userId,
+              username: userEmail,
+              email: userEmail,
+              role: 'admin'
+            };
+          }
+          return prevUser;
         });
         
         // Only show admin toast on initial login, not on session refreshes
@@ -31,11 +37,17 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
       // Check for guest account
       if (userEmail === 'guest@amantaximena.com') {
         console.log("Guest account detected - setting role as guest");
-        setUser({
-          id: userId,
-          username: "Guest User",
-          email: userEmail,
-          role: 'guest'
+        setUser(prevUser => {
+          // Only update if role is different or user is null
+          if (!prevUser || prevUser.role !== 'guest') {
+            return {
+              id: userId,
+              username: "Guest User",
+              email: userEmail,
+              role: 'guest'
+            };
+          }
+          return prevUser;
         });
         return;
       }
@@ -60,22 +72,34 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
             
           if (!driverError && driverData) {
             console.log("User identified as driver with ID:", driverData.driver_id);
-            setUser({
-              id: userId,
-              username: userEmail,
-              email: userEmail,
-              role: 'driver'
+            setUser(prevUser => {
+              // Only update if role is different or user is null
+              if (!prevUser || prevUser.role !== 'driver') {
+                return {
+                  id: userId,
+                  username: userEmail,
+                  email: userEmail,
+                  role: 'driver'
+                };
+              }
+              return prevUser;
             });
             return;
           }
           
           // Default to guest if no specific role found
           console.log("No specific role found for user, defaulting to guest");
-          setUser({
-            id: userId,
-            username: userEmail,
-            email: userEmail,
-            role: 'guest'
+          setUser(prevUser => {
+            // Only update if role is different or user is null
+            if (!prevUser || prevUser.role !== 'guest') {
+              return {
+                id: userId,
+                username: userEmail,
+                email: userEmail,
+                role: 'guest'
+              };
+            }
+            return prevUser;
           });
           return;
         }
@@ -83,11 +107,17 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
         if (roleData) {
           const userRole = roleData.role;
           
-          setUser({
-            id: userId,
-            username: userEmail,
-            email: userEmail,
-            role: userRole
+          setUser(prevUser => {
+            // Only update if role is different or user is null
+            if (!prevUser || prevUser.role !== userRole) {
+              return {
+                id: userId,
+                username: userEmail,
+                email: userEmail,
+                role: userRole
+              };
+            }
+            return prevUser;
           });
 
           if (userRole === 'admin' && !sessionStorage.getItem('adminNotificationShown')) {
@@ -101,29 +131,47 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
           console.log("User role set to:", userRole);
         } else {
           console.log("No role found for user, defaulting to guest");
-          setUser({
-            id: userId,
-            username: userEmail,
-            email: userEmail,
-            role: 'guest'
+          setUser(prevUser => {
+            // Only update if role is different or user is null
+            if (!prevUser || prevUser.role !== 'guest') {
+              return {
+                id: userId,
+                username: userEmail,
+                email: userEmail,
+                role: 'guest'
+              };
+            }
+            return prevUser;
           });
         }
       } catch (error) {
         console.error("Error checking user role in database:", error);
-        setUser({
-          id: userId,
-          username: userEmail,
-          email: userEmail,
-          role: 'guest'
+        setUser(prevUser => {
+          // Only update if role is different or user is null
+          if (!prevUser || prevUser.role !== 'guest') {
+            return {
+              id: userId,
+              username: userEmail,
+              email: userEmail,
+              role: 'guest'
+            };
+          }
+          return prevUser;
         });
       }
     } catch (error) {
       console.error("Error in checkUserRole function:", error);
-      setUser({
-        id: userId,
-        username: userEmail,
-        email: userEmail,
-        role: 'guest'
+      setUser(prevUser => {
+        // Only update if role is different or user is null
+        if (!prevUser || prevUser.role !== 'guest') {
+          return {
+            id: userId,
+            username: userEmail,
+            email: userEmail,
+            role: 'guest'
+          };
+        }
+        return prevUser;
       });
     }
   };
