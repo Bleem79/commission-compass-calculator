@@ -2,6 +2,21 @@
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError } from "@supabase/supabase-js";
 
+// Define a type for the user object returned by supabase.auth.admin.listUsers()
+interface SupabaseUser {
+  id: string;
+  email?: string;
+  app_metadata?: Record<string, any>;
+  user_metadata?: Record<string, any>;
+  created_at?: string;
+}
+
+// Define the response type for the listUsers function
+interface ListUsersResponse {
+  users?: SupabaseUser[];
+  total?: number;
+}
+
 export const createDriverAccount = async (email: string, password: string, driverId: string) => {
   console.log(`Attempting to create driver account for ${email} with Driver ID: ${driverId}`);
 
@@ -34,14 +49,17 @@ export const createDriverAccount = async (email: string, password: string, drive
         }
         
         // Check if email is already registered in auth system
-        const { data: userList, error: usersError } = await supabase.auth.admin.listUsers();
+        const { data: listUsersData, error: usersError } = await supabase.auth.admin.listUsers();
         
         if (usersError) {
           console.error(`Error checking existing users: ${usersError.message}`);
           throw usersError;
         }
         
-        const existingUser = userList?.users?.find(user => user.email === email);
+        // Properly type the response to avoid TypeScript errors
+        const userList: ListUsersResponse = listUsersData || { users: [] };
+        
+        const existingUser = userList.users?.find(user => user.email === email);
         if (existingUser) {
           throw new Error(`Email ${email} is already registered`);
         }
