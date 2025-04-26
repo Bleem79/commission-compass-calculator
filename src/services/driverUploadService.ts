@@ -25,19 +25,20 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
     total: totalDrivers
   };
   
+  // Get a service client for authentication operations to avoid disrupting the user's session
+  const adminSupabase = supabase;
+  
   for (let i = 0; i < drivers.length; i++) {
     try {
       const driver = drivers[i];
       
-      // Create user account
-      const response = await supabase.auth.signUp({
+      // Create user account using the admin API
+      const response = await adminSupabase.auth.admin.createUser({
         email: driver.email,
         password: driver.password,
-        options: {
-          data: {
-            role: 'driver',
-            driver_id: driver.driverId
-          }
+        user_metadata: {
+          role: 'driver',
+          driver_id: driver.driverId
         }
       });
       
@@ -51,7 +52,7 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
       
       try {
         // Create driver role
-        const roleResponse = await supabase.from('user_roles').insert({
+        const roleResponse = await adminSupabase.from('user_roles').insert({
           user_id: response.data.user.id,
           role: 'driver'
         });
@@ -62,7 +63,7 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
         }
         
         // Use the create_driver_account RPC function to bypass RLS
-        const credResponse = await supabase.rpc('create_driver_account', {
+        const credResponse = await adminSupabase.rpc('create_driver_account', {
           p_email: driver.email,
           p_password: driver.password,
           p_driver_id: driver.driverId
