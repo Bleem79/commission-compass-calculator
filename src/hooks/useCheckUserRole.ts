@@ -17,7 +17,6 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
         });
         
         // Only show admin toast on initial login, not on session refreshes
-        const event = new Event('adminLoginEvent');
         if (!sessionStorage.getItem('adminNotificationShown')) {
           toast({
             title: "Admin Access Granted",
@@ -42,6 +41,7 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
       }
       
       try {
+        // Attempt to fetch the user role from the database
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('role')
@@ -49,6 +49,27 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
           .single();
 
         if (roleError) {
+          console.log("Error fetching user role, checking if user is a driver");
+          
+          // If no role found, check if user has driver credentials
+          const { data: driverData, error: driverError } = await supabase
+            .from('driver_credentials')
+            .select('driver_id')
+            .eq('user_id', userId)
+            .maybeSingle();
+            
+          if (!driverError && driverData) {
+            console.log("User identified as driver with ID:", driverData.driver_id);
+            setUser({
+              id: userId,
+              username: userEmail,
+              email: userEmail,
+              role: 'driver'
+            });
+            return;
+          }
+          
+          // Default to guest if no specific role found
           console.log("No specific role found for user, defaulting to guest");
           setUser({
             id: userId,

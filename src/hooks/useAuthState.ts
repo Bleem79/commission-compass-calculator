@@ -38,11 +38,13 @@ export const useAuthState = () => {
         console.log("User signed in or token refreshed:", newSession.user.email);
         const userEmail = newSession.user.email || 'User';
         
+        // Use setTimeout to avoid blocking the auth flow
         setTimeout(() => {
           checkUserRole(newSession.user.id, userEmail);
         }, 0);
       } else if (event === 'USER_UPDATED') {
         if (newSession?.user) {
+          // Use setTimeout to avoid blocking the auth flow
           setTimeout(() => {
             checkUserRole(newSession.user.id, newSession.user.email || 'User');
           }, 0);
