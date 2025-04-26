@@ -7,45 +7,45 @@ export const createDriverAccount = async (email: string, password: string, drive
   console.log(`Attempting to create driver account for ${email} with Driver ID: ${driverId}`);
 
   try {
-    const { emailStr, passwordStr, driverIdStr } = validateDriverData(email, password, driverId);
+    const validatedData = validateDriverData({ email, password, driverId });
     
-    const existingDrivers = await checkExistingDriver(driverIdStr);
+    const existingDrivers = await checkExistingDriver(validatedData.driverId);
     
     if (existingDrivers && existingDrivers.length > 0) {
-      throw new Error(`Driver with ID ${driverIdStr} already exists`);
+      throw new Error(`Driver with ID ${validatedData.driverId} already exists`);
     }
     
     const { data: authData, error: createError } = await supabase.auth.signUp({
-      email: emailStr,
-      password: passwordStr,
+      email: validatedData.email,
+      password: validatedData.password,
       options: {
         data: {
-          driver_id: driverIdStr
+          driver_id: validatedData.driverId
         }
       }
     });
 
     if (createError) {
       if (createError.message.includes('User already registered')) {
-        throw new Error(`Email ${emailStr} is already registered in the system`);
+        throw new Error(`Email ${validatedData.email} is already registered in the system`);
       } else if (createError.message.includes('password') || createError.message.includes('Password')) {
-        throw new Error(`Password for ${emailStr} doesn't meet requirements (at least 6 characters)`);
+        throw new Error(`Password for ${validatedData.email} doesn't meet requirements (at least 6 characters)`);
       } else {
         throw createError;
       }
     }
 
     if (!authData.user) {
-      throw new Error(`No user returned for ${emailStr}`);
+      throw new Error(`No user returned for ${validatedData.email}`);
     }
 
     console.log(`User created with ID: ${authData.user.id}`);
     
     await createDriverRole(authData.user.id);
-    const credData = await createDriverCredentials(authData.user.id, driverIdStr);
+    const credData = await createDriverCredentials(authData.user.id, validatedData.driverId);
 
     console.log(`Driver credentials created:`, credData);
-    console.log(`Successfully created driver account for ${emailStr} with Driver ID: ${driverIdStr}`);
+    console.log(`Successfully created driver account for ${validatedData.email} with Driver ID: ${validatedData.driverId}`);
     
     return authData;
     
