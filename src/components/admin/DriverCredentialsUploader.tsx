@@ -83,11 +83,6 @@ export const DriverCredentialsUploader = () => {
         setCurrentItem(completedCount);
         const newProgress = Math.round((completedCount / totalDrivers) * 100);
         setProgress(newProgress);
-        
-        toast.loading(`Processing: ${completedCount}/${totalDrivers} (${newProgress}%)`, { 
-          id: toastId,
-          duration: 0
-        });
       };
       
       const results = await processBatch(
@@ -139,10 +134,16 @@ export const DriverCredentialsUploader = () => {
   };
 
   return (
-    <div>
+    <div className="space-y-4">
       <UploadForm isUploading={isUploading} onFileSelect={handleFileUpload} />
       
-      {isUploading && <UploadProgress progress={progress} currentItem={currentItem} totalItems={totalItems} />}
+      {isUploading && (
+        <UploadProgress 
+          progress={progress}
+          currentItem={currentItem}
+          totalItems={totalItems}
+        />
+      )}
       
       {uploadStats && <UploadResults stats={uploadStats} />}
     </div>
