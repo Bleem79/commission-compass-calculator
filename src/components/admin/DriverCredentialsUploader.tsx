@@ -70,20 +70,27 @@ export const DriverCredentialsUploader = () => {
         toast.loading(`Processing: ${completedCount}/${totalDrivers} (${newProgress}%)`, { id: toastId });
       };
       
-      // Process with optimized batch parameters
+      // Process with optimized batch parameters - reduce batch size for better reliability
       const results = await processBatch(
         drivers,
         async (driver) => {
-          const result = await createDriverAccount(
-            driver.email, 
-            String(driver.password), 
-            driver.driverId
-          );
-          updateProgress(!!result);
-          return result;
+          try {
+            const result = await createDriverAccount(
+              driver.email, 
+              String(driver.password), 
+              driver.driverId
+            );
+            updateProgress(true);
+            return result;
+          } catch (error: any) {
+            // Log detailed error and provide more info
+            console.error(`Failed to create driver ${driver.email}:`, error);
+            updateProgress(false);
+            throw error;
+          }
         },
-        5, // Process 5 at a time for better efficiency
-        3000 // Wait 3 seconds between batches
+        3, // Reduce to 3 at a time for better reliability
+        5000 // Wait 5 seconds between batches to reduce rate limiting
       );
       
       toast.dismiss(toastId);
@@ -111,13 +118,13 @@ export const DriverCredentialsUploader = () => {
       }
 
       if (results.errors.length > 0) {
-        const errorMessage = results.errors.map(e => `${e.email}: ${e.error}`).join('\n');
         console.error("Detailed error list:", results.errors);
         
+        // Show first error in toast for immediate feedback
         toast.error(`Failed to create ${results.errors.length} driver account${results.errors.length > 1 ? 's' : ''}`, {
-          description: errorMessage.length > 100 ? errorMessage.substring(0, 100) + '...' : errorMessage,
+          description: results.errors[0]?.error || "Unknown error",
           action: {
-            label: "View Errors",
+            label: "View All Errors",
             onClick: () => console.error("Driver Creation Errors:", results.errors)
           }
         });
@@ -132,7 +139,7 @@ export const DriverCredentialsUploader = () => {
     } catch (error: any) {
       console.error("Error processing driver accounts:", error);
       toast.error("Failed to process driver accounts", {
-        description: error.message
+        description: error.message || "Unknown error occurred"
       });
     } finally {
       setIsUploading(false);
@@ -194,6 +201,15 @@ export const DriverCredentialsUploader = () => {
                     <li>Network connection issues</li>
                     <li>Rate limiting from the authentication service</li>
                   </ul>
+                  
+                  <div className="mt-2 max-h-40 overflow-y-auto border border-red-200 rounded-md p-2 bg-red-50">
+                    <p className="font-semibold mb-1">Specific errors:</p>
+                    {uploadStats.errors.map((err, index) => (
+                      <div key={index} className="text-xs mb-1 pb-1 border-b border-red-100 last:border-0">
+                        <span className="font-medium">{err.email}:</span> {err.error}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

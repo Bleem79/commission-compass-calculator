@@ -29,9 +29,9 @@ export const createDriverAccount = async (email: string, password: string, drive
     
     // Add retry mechanism for network issues
     let retryCount = 0;
-    const maxRetries = 2;
+    const maxRetries = 3;
     
-    while (retryCount < maxRetries) {
+    while (retryCount <= maxRetries) {
       try {
         // Check if driver already exists by ID
         const { data: existingDrivers, error: driverCheckError } = await supabase
@@ -59,7 +59,10 @@ export const createDriverAccount = async (email: string, password: string, drive
         // Properly type the response to avoid TypeScript errors
         const userList: ListUsersResponse = listUsersData || { users: [] };
         
-        const existingUser = userList.users?.find(user => user.email === email);
+        const existingUser = userList.users?.find(user => 
+          user.email && user.email.toLowerCase() === email.toLowerCase()
+        );
+        
         if (existingUser) {
           throw new Error(`Email ${email} is already registered`);
         }
@@ -76,7 +79,15 @@ export const createDriverAccount = async (email: string, password: string, drive
 
         if (createError) {
           console.error(`Authentication error for ${email}:`, createError);
-          throw createError;
+          
+          // Check for specific error types and provide more helpful messages
+          if (createError.message.includes('duplicate key value')) {
+            throw new Error(`Email ${email} is already registered in the system`);
+          } else if (createError.message.includes('minimum password length')) {
+            throw new Error(`Password for ${email} doesn't meet minimum requirements (at least 6 characters)`);
+          } else {
+            throw createError;
+          }
         }
 
         if (!authData.user) {
@@ -127,7 +138,7 @@ export const createDriverAccount = async (email: string, password: string, drive
           console.log(`Network error on attempt ${retryCount}. Retrying in ${retryCount}s...`);
           await new Promise(resolve => setTimeout(resolve, retryCount * 1000));
           
-          if (retryCount < maxRetries) {
+          if (retryCount <= maxRetries) {
             continue;
           }
         }
