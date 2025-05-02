@@ -1,10 +1,11 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Bell, BellDot } from "lucide-react";
+import { Bell, Home } from "lucide-react";
 import { AdminMessages } from "@/components/messages/AdminMessages";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface UserProfileProps {
   email?: string;
@@ -13,6 +14,7 @@ interface UserProfileProps {
 }
 
 export const UserProfile = ({ email, username, role }: UserProfileProps) => {
+  const navigate = useNavigate();
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
 
   const { data: hasUnreadMessages } = useQuery({
@@ -31,8 +33,8 @@ export const UserProfile = ({ email, username, role }: UserProfileProps) => {
     refetchInterval: 30000, // Check for new messages every 30 seconds
   });
 
-  const handleNotificationClick = () => {
-    setIsMessagesOpen(true);
+  const handleGoHome = () => {
+    navigate('/home');
   };
 
   return (
@@ -52,15 +54,11 @@ export const UserProfile = ({ email, username, role }: UserProfileProps) => {
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
-            onClick={handleNotificationClick}
-            className="flex items-center gap-2 text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+            onClick={handleGoHome}
+            className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
           >
-            {hasUnreadMessages ? (
-              <BellDot className="h-5 w-5" />
-            ) : (
-              <Bell className="h-5 w-5" />
-            )}
-            <span>Open Me</span>
+            <Home className="h-5 w-5" />
+            <span>Back to Home</span>
           </Button>
         </div>
       </div>
