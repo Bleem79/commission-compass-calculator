@@ -5,8 +5,8 @@ import { toast } from "@/hooks/use-toast";
 import { commissionData } from "@/constants/calculator";
 import type { NextTierInfo } from "@/types/calculator";
 import { CalculatorHeader } from "@/components/calculator/CalculatorHeader";
-import { AdminActionButtons } from "@/components/admin/AdminActionButtons";
 import { CalculatorContainer } from "@/components/calculator/CalculatorContainer";
+import { UserProfile } from "@/components/calculator/UserProfile";
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -92,7 +92,6 @@ const Dashboard = () => {
         }
       }
       setNextTierInfo(tiers);
-
     } else {
       setAverageDailyIncome(undefined);
       setCommissionPercentage(undefined);
@@ -117,11 +116,19 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 flex flex-col justify-start items-center p-2 md:p-6">
-      <div className="w-full max-w-3xl mx-auto">
-        <div className="flex flex-col gap-4 md:gap-6">
+    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 flex flex-col justify-start items-center p-6 md:p-10">
+      <div className="w-full max-w-4xl mx-auto">
+        <div className="flex flex-col gap-6">
           <CalculatorHeader userRole={user?.role} onLogout={handleLogout} />
-          <AdminActionButtons />
+          
+          {user && (
+            <UserProfile 
+              email={user.email} 
+              username={user.username} 
+              role={user.role}
+            />
+          )}
+          
           <CalculatorContainer
             month={month}
             shiftType={shiftType}

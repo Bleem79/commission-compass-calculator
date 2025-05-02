@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { Bell, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface CalculatorHeaderProps {
   userRole?: string;
@@ -10,27 +11,40 @@ interface CalculatorHeaderProps {
 }
 
 export const CalculatorHeader = ({ userRole, onLogout }: CalculatorHeaderProps) => {
-  // Debug the role being received
-  console.log("CalculatorHeader received role:", userRole);
+  const navigate = useNavigate();
+  
+  const handleViewCommissionTable = () => {
+    navigate('/commission-table');
+  };
   
   return (
-    <div className="flex items-center justify-between w-full">
-      <div className="flex items-center space-x-4">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-indigo-800">
+    <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
+      <div className="flex items-center">
+        <h1 className="text-3xl font-bold text-indigo-800">
           Commission Percentage Calculator
         </h1>
       </div>
-      <div className="flex items-center space-x-2">
+      
+      <div className="flex items-center gap-4">
         {userRole && (
-          <span className="text-sm text-muted-foreground mr-2">
+          <span className="text-slate-600">
             Role: {userRole}
           </span>
         )}
+        
+        <Button 
+          variant="outline" 
+          className="text-slate-700 border-slate-300 bg-white hover:bg-slate-50"
+          onClick={handleViewCommissionTable}
+        >
+          View Commission Table
+        </Button>
+        
         <Button 
           variant="destructive" 
           size="sm" 
           onClick={onLogout}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 bg-red-500 hover:bg-red-600"
         >
           <LogOut className="h-4 w-4" />
           Logout

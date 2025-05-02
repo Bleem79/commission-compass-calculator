@@ -39,8 +39,8 @@ export const UserProfile = ({ email, username, role }: UserProfileProps) => {
     <div className="mb-6 p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="bg-indigo-100 rounded-full p-2">
-            <span className="text-indigo-600">
+          <div className="bg-indigo-100 rounded-full p-3 h-10 w-10 flex items-center justify-center">
+            <span className="text-indigo-600 font-medium">
               {username?.charAt(0).toUpperCase() || email?.charAt(0).toUpperCase() || 'U'}
             </span>
           </div>
@@ -53,18 +53,14 @@ export const UserProfile = ({ email, username, role }: UserProfileProps) => {
           <Button
             variant="ghost"
             onClick={handleNotificationClick}
-            className={`flex items-center gap-2 transition-colors ${
-              hasUnreadMessages 
-                ? 'text-violet-600 hover:text-violet-700 hover:bg-violet-50' 
-                : 'text-violet-500 hover:text-violet-600 hover:bg-violet-50'
-            }`}
+            className="flex items-center gap-2 text-violet-600 hover:text-violet-700 hover:bg-violet-50"
           >
             {hasUnreadMessages ? (
-              <BellDot className="h-6 w-6" />
+              <BellDot className="h-5 w-5" />
             ) : (
-              <Bell className="h-6 w-6" />
+              <Bell className="h-5 w-5" />
             )}
-            <span className="font-medium">Open Me</span>
+            <span>Open Me</span>
           </Button>
         </div>
       </div>
