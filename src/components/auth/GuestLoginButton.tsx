@@ -34,7 +34,7 @@ export const GuestLoginButton = () => {
           title: "Guest Login Successful",
           description: "Welcome! You're logged in as a guest.",
         });
-        navigate("/dashboard");
+        navigate("/home");
       }
     } catch (err) {
       console.error("Guest login error:", err);

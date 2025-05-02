@@ -16,8 +16,8 @@ export const LoginForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Get the return path from location state, or default to dashboard
-  const from = location.state?.from || "/dashboard";
+  // Get the return path from location state, or default to home
+  const from = location.state?.from || "/home";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,8 +49,8 @@ export const LoginForm = () => {
           description: "You are now logged in",
         });
         
-        // Explicitly navigate to dashboard after login
-        navigate("/dashboard");
+        // Navigate to home page after login
+        navigate("/home");
       } else {
         // This shouldn't happen, but just in case
         setError("Login successful but no user data received");
