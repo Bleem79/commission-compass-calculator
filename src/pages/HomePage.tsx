@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -57,51 +58,9 @@ const HomePage = () => {
           />
         )}
 
-        {/* Feature Buttons */}
+        {/* Feature Buttons - First Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 mb-8">
-          <Card 
-            className="bg-gradient-to-br from-pink-400 to-pink-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40"
-            onClick={() => navigate("/info")}
-          >
-            <CardContent className="flex flex-col items-center justify-center h-full p-6">
-              <Info size={48} className="mb-3" />
-              <h2 className="text-lg font-medium text-center">Info</h2>
-            </CardContent>
-          </Card>
-          
-          <Card 
-            className="bg-gradient-to-br from-green-400 to-green-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40"
-            onClick={() => navigate("/m-fuel")}
-          >
-            <CardContent className="flex flex-col items-center justify-center h-full p-6">
-              <Percent size={48} className="mb-3" />
-              <h2 className="text-lg font-medium text-center">M-fuel %</h2>
-            </CardContent>
-          </Card>
-          
-          <Card 
-            className="bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40"
-            onClick={() => navigate("/hotspot")}
-          >
-            <CardContent className="flex flex-col items-center justify-center h-full p-6">
-              <Wifi size={48} className="mb-3" />
-              <h2 className="text-lg font-medium text-center">Hotspot</h2>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Other Menu Options */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          <Card 
-            className="bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40"
-            onClick={() => navigate("/commission-table")}
-          >
-            <CardContent className="flex flex-col items-center justify-center h-full p-6">
-              <ListCheck size={48} className="mb-3" />
-              <h2 className="text-lg font-medium text-center">View Commission Table</h2>
-            </CardContent>
-          </Card>
-          
+          {/* 1. Commission Percentage Calculator */}
           <Card 
             className="bg-gradient-to-br from-indigo-400 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40"
             onClick={() => navigate("/dashboard")}
@@ -112,6 +71,54 @@ const HomePage = () => {
             </CardContent>
           </Card>
           
+          {/* 2. View Commission Table */}
+          <Card 
+            className="bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40"
+            onClick={() => navigate("/commission-table")}
+          >
+            <CardContent className="flex flex-col items-center justify-center h-full p-6">
+              <ListCheck size={48} className="mb-3" />
+              <h2 className="text-lg font-medium text-center">View Commission Table</h2>
+            </CardContent>
+          </Card>
+          
+          {/* 3. M-fuel % */}
+          <Card 
+            className="bg-gradient-to-br from-green-400 to-green-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40"
+            onClick={() => navigate("/m-fuel")}
+          >
+            <CardContent className="flex flex-col items-center justify-center h-full p-6">
+              <Percent size={48} className="mb-3" />
+              <h2 className="text-lg font-medium text-center">M-fuel %</h2>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Second Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {/* 4. Hotspot */}
+          <Card 
+            className="bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40"
+            onClick={() => navigate("/hotspot")}
+          >
+            <CardContent className="flex flex-col items-center justify-center h-full p-6">
+              <Wifi size={48} className="mb-3" />
+              <h2 className="text-lg font-medium text-center">Hotspot</h2>
+            </CardContent>
+          </Card>
+          
+          {/* 5. Info */}
+          <Card 
+            className="bg-gradient-to-br from-pink-400 to-pink-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40"
+            onClick={() => navigate("/info")}
+          >
+            <CardContent className="flex flex-col items-center justify-center h-full p-6">
+              <Info size={48} className="mb-3" />
+              <h2 className="text-lg font-medium text-center">Info</h2>
+            </CardContent>
+          </Card>
+          
+          {/* 6. Open Me */}
           <Card 
             className="bg-gradient-to-br from-violet-400 to-violet-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40"
             onClick={() => setIsMessagesOpen(true)}
