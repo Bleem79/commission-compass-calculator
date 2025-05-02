@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, Home, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { commissionData } from "@/constants/calculator";
 
@@ -165,6 +165,10 @@ const CommissionTable = () => {
     navigate("/home");
   };
 
+  const handleBackToHome = () => {
+    navigate("/home");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-6 relative overflow-x-auto">
       <Button 
@@ -175,6 +179,16 @@ const CommissionTable = () => {
       >
         <X className="h-6 w-6 text-gray-600 hover:text-gray-900" />
       </Button>
+      
+      <Button
+        variant="outline"
+        className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-white hover:bg-indigo-50 text-indigo-700 border-indigo-200"
+        onClick={handleBackToHome}
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Home
+      </Button>
+      
       <div className="max-w-6xl mx-auto space-y-6">
         {renderSingleShiftBasicTable(singleShiftBasic)}
         {renderSingleShiftWithoutBasicTable(singleShiftWithoutBasic)}
