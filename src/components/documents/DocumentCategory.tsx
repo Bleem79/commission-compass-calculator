@@ -2,7 +2,7 @@
 import React from "react";
 import { DocumentViewer } from "./DocumentViewer";
 import { useAuth } from "@/contexts/AuthContext";
-import { FileImage, FilePdf } from "lucide-react";
+import { FileImage, FileText } from "lucide-react";
 
 interface DocumentCategoryProps {
   title: string;
@@ -24,7 +24,7 @@ export const DocumentCategory: React.FC<DocumentCategoryProps> = ({ title, bucke
         <DocumentViewer 
           bucketName={bucketName}
           title={title}
-          icon={title === "PDF" ? <FilePdf className="h-4 w-4" /> : <FileImage className="h-4 w-4" />}
+          icon={title === "PDF" ? <FileText className="h-4 w-4" /> : <FileImage className="h-4 w-4" />}
           isAdmin={isAdmin}
           canView={isGuest || isAdmin}
         />
