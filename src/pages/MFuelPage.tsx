@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Home } from "lucide-react";
+import { DocumentCategory } from "@/components/documents/DocumentCategory";
 
 const MFuelPage = () => {
   const navigate = useNavigate();
@@ -40,6 +41,15 @@ const MFuelPage = () => {
               The M-fuel percentage calculator functionality would be implemented here.
             </p>
           </div>
+          
+          {(user?.role === "admin" || user?.role === "guest") && (
+            <div className="mt-8 space-y-4">
+              <h3 className="text-xl font-semibold border-b border-indigo-100 pb-2">
+                Documents
+              </h3>
+              <DocumentCategory title="M-Fuel" bucketName="mfuel_documents" />
+            </div>
+          )}
         </div>
       </div>
     </div>

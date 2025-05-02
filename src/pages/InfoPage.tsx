@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Home } from "lucide-react";
+import { DocumentCategory } from "@/components/documents/DocumentCategory";
 
 const InfoPage = () => {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ const InfoPage = () => {
             This page contains important information for drivers.
           </p>
           
-          <div className="space-y-4 mt-6">
+          <div className="space-y-6 mt-6">
             <h3 className="text-xl font-semibold text-indigo-600">Company Policies</h3>
             <p className="text-gray-700">
               Details about company policies would be displayed here.
@@ -46,6 +47,15 @@ const InfoPage = () => {
               Contact details for support would be displayed here.
             </p>
           </div>
+          
+          {(user?.role === "admin" || user?.role === "guest") && (
+            <div className="mt-8 space-y-4">
+              <h3 className="text-xl font-semibold border-b border-indigo-100 pb-2">
+                Documents
+              </h3>
+              <DocumentCategory title="Info" bucketName="info_documents" />
+            </div>
+          )}
         </div>
       </div>
     </div>

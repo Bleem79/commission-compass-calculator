@@ -21,15 +21,18 @@ interface DocumentViewerProps {
   title: string;
   icon?: React.ReactNode;
   isAdmin: boolean;
+  canView: boolean;
 }
 
-export const DocumentViewer = ({ bucketName, title, icon, isAdmin }: DocumentViewerProps) => {
+export const DocumentViewer = ({ bucketName, title, icon, isAdmin, canView }: DocumentViewerProps) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
 
   const fetchDocuments = useCallback(async () => {
+    if (!canView) return;
+    
     try {
       const { data, error } = await supabase
         .from('documents')
@@ -46,13 +49,19 @@ export const DocumentViewer = ({ bucketName, title, icon, isAdmin }: DocumentVie
     } catch (err) {
       console.error("Unexpected error fetching documents:", err);
     }
-  }, [bucketName]);
+  }, [bucketName, canView]);
 
   useEffect(() => {
     if (isOpen) {
       fetchDocuments();
     }
   }, [isOpen, fetchDocuments]);
+
+  if (!canView && !isAdmin) {
+    return (
+      <p className="text-gray-500">You don't have permission to view these documents.</p>
+    );
+  }
 
   return (
     <>
@@ -64,7 +73,7 @@ export const DocumentViewer = ({ bucketName, title, icon, isAdmin }: DocumentVie
         }}
       >
         {icon && <span className="mr-2">{icon}</span>}
-        {title}
+        {isAdmin ? `Manage ${title} Documents` : `View ${title} Documents`}
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -72,7 +81,10 @@ export const DocumentViewer = ({ bucketName, title, icon, isAdmin }: DocumentVie
           <DialogHeader>
             <DialogTitle>{title} Documents</DialogTitle>
             <DialogDescription>
-              View and manage documents related to {title.toLowerCase()}.
+              {isAdmin ? 
+                `Upload and manage ${title.toLowerCase()} documents.` :
+                `View ${title.toLowerCase()} documents.`
+              }
             </DialogDescription>
           </DialogHeader>
 
