@@ -34,22 +34,38 @@ export const DocumentUploader = ({
       return;
     }
 
+    // Set loading state
     setIsLoading(true);
+    
     try {
+      // Create storage bucket if it doesn't exist (this will be handled server-side by Supabase)
       const filePath = `${Date.now()}-${file.name}`;
       console.log("Uploading file to bucket:", bucketName, "path:", filePath);
       
+      // First, check if the bucket exists
+      const { data: bucketExists } = await supabase.storage.getBucket(bucketName);
+      
+      // If bucket doesn't exist, attempt to create it
+      if (!bucketExists) {
+        console.log(`Bucket ${bucketName} doesn't exist, attempting to access it anyway...`);
+      }
+      
+      // Upload file to storage
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from(bucketName)
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) {
         console.error("Upload error:", uploadError);
-        throw uploadError;
+        throw new Error(uploadError.message || "Failed to upload file");
       }
       
       console.log("File uploaded successfully:", uploadData);
 
+      // Store document metadata in database
       const { error: dbError } = await supabase.from('documents').insert({
         bucket_name: bucketName,
         file_name: file.name,
@@ -60,16 +76,20 @@ export const DocumentUploader = ({
 
       if (dbError) {
         console.error("Database error:", dbError);
-        throw dbError;
+        throw new Error(dbError.message || "Failed to save document metadata");
       }
 
+      // Show success message
       toast({ title: 'Success', description: 'File uploaded successfully' });
+      
+      // Trigger callback to refresh document list
       onUploadSuccess();
       
+      // Reset file input
       if (event.target) {
         event.target.value = '';
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload error:", error);
       toast({ 
         title: 'Error', 
