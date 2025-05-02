@@ -7,15 +7,10 @@ import { Home } from "lucide-react";
 
 const MFuelPage = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const handleGoHome = () => {
     navigate('/home');
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
   };
 
   return (
@@ -31,12 +26,6 @@ const MFuelPage = () => {
               <Home size={16} />
               Back to Home
             </Button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium"
-            >
-              Logout
-            </button>
           </div>
         </div>
 

@@ -1,13 +1,13 @@
 
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Info, Percent, Wifi } from 'lucide-react';
+import { RefreshCw, Info, Percent, Wifi, Home } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 
 export const CalculatorActions = ({ onReset }: { onReset: () => void }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="grid grid-cols-4 gap-4 mt-4">
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
       <Button
         variant="secondary"
         onClick={onReset}
@@ -42,6 +42,15 @@ export const CalculatorActions = ({ onReset }: { onReset: () => void }) => {
       >
         <Wifi className="h-4 w-4" />
         Hotspot
+      </Button>
+      
+      <Button
+        variant="outline"
+        onClick={() => navigate('/home')}
+        className="flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
+      >
+        <Home className="h-4 w-4" />
+        Home
       </Button>
     </div>
   );
