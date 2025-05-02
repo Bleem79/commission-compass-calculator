@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LogOut } from 'lucide-react';
+import { LogOut, Home } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +17,10 @@ export const CalculatorHeader = ({ userRole, onLogout }: CalculatorHeaderProps) 
     navigate('/commission-table');
   };
   
+  const handleGoHome = () => {
+    navigate('/home');
+  };
+  
   return (
     <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
       <div className="flex items-center">
@@ -31,6 +35,15 @@ export const CalculatorHeader = ({ userRole, onLogout }: CalculatorHeaderProps) 
             Role: {userRole}
           </span>
         )}
+        
+        <Button 
+          variant="outline" 
+          className="text-slate-700 border-slate-300 bg-white hover:bg-slate-50 flex items-center gap-2"
+          onClick={handleGoHome}
+        >
+          <Home className="h-4 w-4" />
+          Home
+        </Button>
         
         <Button 
           variant="outline" 

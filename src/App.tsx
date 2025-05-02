@@ -8,8 +8,12 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import HomePage from "./pages/HomePage";
 import NotFound from "./pages/NotFound";
 import CommissionTable from "./pages/CommissionTable";
+import InfoPage from "./pages/InfoPage";
+import MFuelPage from "./pages/MFuelPage";
+import HotspotPage from "./pages/HotspotPage";
 import { useEffect } from "react";
 
 // Create a new QueryClient instance inside the component
@@ -50,7 +54,19 @@ const AppRoutes = () => {
       <Route path="/login" element={<AuthRoute />} />
       <Route 
         path="/" 
-        element={<Navigate to="/dashboard" replace />} 
+        element={<Navigate to="/home" replace />} 
+      />
+      <Route 
+        path="/home" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <HomePage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
       />
       <Route 
         path="/dashboard" 
@@ -76,6 +92,42 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/info" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <InfoPage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/m-fuel" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <MFuelPage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/hotspot" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <HotspotPage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -88,7 +140,7 @@ const AuthRoute = () => {
   
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/dashboard", { replace: true });
+      navigate("/home", { replace: true });
     }
   }, [isAuthenticated, navigate]);
   
