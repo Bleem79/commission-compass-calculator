@@ -38,19 +38,10 @@ export const DocumentUploader = ({
     setIsLoading(true);
     
     try {
-      // Create storage bucket if it doesn't exist (this will be handled server-side by Supabase)
       const filePath = `${Date.now()}-${file.name}`;
       console.log("Uploading file to bucket:", bucketName, "path:", filePath);
       
-      // First, check if the bucket exists
-      const { data: bucketExists } = await supabase.storage.getBucket(bucketName);
-      
-      // If bucket doesn't exist, attempt to create it
-      if (!bucketExists) {
-        console.log(`Bucket ${bucketName} doesn't exist, attempting to access it anyway...`);
-      }
-      
-      // Upload file to storage
+      // Upload file to storage with proper options
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from(bucketName)
         .upload(filePath, file, {
