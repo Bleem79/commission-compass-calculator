@@ -25,16 +25,13 @@ const HomePage = () => {
     
     setIsLoggingOut(true);
     try {
-      await logout();
-      // Navigate after successful logout
-      navigate("/login", { replace: true });
+      const success = await logout();
+      if (success) {
+        // Navigate after successful logout
+        navigate("/login", { replace: true });
+      }
     } catch (error) {
       console.error("Logout error:", error);
-      toast({
-        title: "Logout failed",
-        description: "There was an issue logging out. Please try again.",
-        variant: "destructive"
-      });
     } finally {
       setIsLoggingOut(false);
     }

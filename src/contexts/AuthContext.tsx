@@ -19,7 +19,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error("Supabase logout error:", error);
-        throw error;
+        toast({
+          title: "Logout Error",
+          description: "An error occurred during logout: " + error.message,
+          variant: "destructive"
+        });
+        return false;
       }
       
       // Clear user state
