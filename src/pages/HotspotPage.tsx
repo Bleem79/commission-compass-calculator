@@ -31,19 +31,8 @@ const HotspotPage = () => {
         </div>
 
         <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100 p-6">
-          <h2 className="text-2xl font-semibold text-indigo-700 mb-4">Hotspot Information</h2>
-          <p className="text-gray-700 mb-4">
-            This page would contain information about hotspot areas for drivers.
-          </p>
-          
-          <div className="mt-6">
-            <p className="text-gray-700">
-              Hotspot information and any relevant tools would be displayed here.
-            </p>
-          </div>
-          
           {(user?.role === "admin" || user?.role === "guest") && (
-            <div className="mt-8 space-y-4">
+            <div className="space-y-4">
               <h3 className="text-xl font-semibold border-b border-indigo-100 pb-2">
                 Documents
               </h3>
