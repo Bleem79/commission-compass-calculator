@@ -10,7 +10,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, setUser, session, refreshSession } = useAuthState();
 
-  const logout = async () => {
+  const logout = async (): Promise<boolean> => {
     try {
       // Clear admin notification flag before logging out
       sessionStorage.removeItem('adminNotificationShown');
@@ -39,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "An unexpected error occurred during logout",
         variant: "destructive"
       });
-      throw error;
+      return false;
     }
   };
 

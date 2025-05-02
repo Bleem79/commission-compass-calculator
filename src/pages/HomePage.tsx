@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -26,11 +25,9 @@ const HomePage = () => {
     
     setIsLoggingOut(true);
     try {
-      const success = await logout();
-      if (success) {
-        // Navigate after successful logout
-        navigate("/login", { replace: true });
-      }
+      await logout();
+      // Navigate after successful logout
+      navigate("/login", { replace: true });
     } catch (error) {
       console.error("Logout error:", error);
       toast({
