@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -26,18 +25,31 @@ const HomePage = () => {
     
     setIsLoggingOut(true);
     try {
+      console.log("Starting logout process...");
       const success = await logout();
+      console.log("Logout result:", success);
+      
       if (success) {
-        // Navigate after successful logout
+        console.log("Logout successful, navigating to login page");
+        // Always navigate to login page on successful logout
         navigate("/login", { replace: true });
+      } else {
+        console.log("Logout was not successful");
+        toast({
+          title: "Logout Issue",
+          description: "There was a problem with the logout process. Please try again.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("Error in handleLogout:", error);
       toast({
         title: "Logout Error",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
+      // Even if there's an error, try to navigate to login page
+      navigate("/login", { replace: true });
     } finally {
       setIsLoggingOut(false);
     }
