@@ -19,15 +19,18 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    if (isLoggingOut) return; // Prevent multiple clicks
+    
+    setIsLoggingOut(true);
     try {
-      await logout();
-      toast({
-        title: "Logged out successfully",
-        description: "You have been logged out of your account"
-      });
-      navigate("/login", { replace: true });
+      const success = await logout();
+      if (success) {
+        // Navigate after successful logout
+        navigate("/login", { replace: true });
+      }
     } catch (error) {
       console.error("Logout error:", error);
       toast({
@@ -35,6 +38,8 @@ const HomePage = () => {
         description: "There was an issue logging out. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -56,9 +61,10 @@ const HomePage = () => {
             )}
             <button 
               onClick={handleLogout}
-              className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium"
+              disabled={isLoggingOut}
+              className={`flex items-center gap-2 ${isLoggingOut ? 'bg-gray-400' : 'bg-red-500 hover:bg-red-600'} text-white px-3 py-1 rounded text-sm font-medium transition-colors`}
             >
-              Logout
+              {isLoggingOut ? 'Logging out...' : 'Logout'}
             </button>
           </div>
         </div>

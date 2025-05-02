@@ -15,14 +15,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Clear admin notification flag before logging out
       sessionStorage.removeItem('adminNotificationShown');
       
+      // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase logout error:", error);
+        throw error;
+      }
       
+      // Clear user state
       setUser(null);
+      
+      // Show success toast
       toast({
         title: "Logged out",
         description: "You have been successfully logged out"
       });
+      
       return true;
     } catch (error) {
       console.error("Error during logout:", error);
