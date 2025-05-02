@@ -1,12 +1,9 @@
 
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Info, Percent, Wifi } from 'lucide-react';
-import { DocumentViewer } from "@/components/documents/DocumentViewer";
-import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export const CalculatorActions = ({ onReset }: { onReset: () => void }) => {
-  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   return (

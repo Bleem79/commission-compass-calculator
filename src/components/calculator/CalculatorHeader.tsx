@@ -1,16 +1,13 @@
 
 import React from 'react';
-import { LogOut } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 interface CalculatorHeaderProps {
   userRole?: string;
-  onLogout: () => void;
+  onLogout?: () => void;
 }
 
-export const CalculatorHeader = ({ userRole, onLogout }: CalculatorHeaderProps) => {
+export const CalculatorHeader = ({ userRole }: CalculatorHeaderProps) => {
   const navigate = useNavigate();
   
   return (
@@ -27,16 +24,6 @@ export const CalculatorHeader = ({ userRole, onLogout }: CalculatorHeaderProps) 
             Role: {userRole}
           </span>
         )}
-        
-        <Button 
-          variant="destructive" 
-          size="sm" 
-          onClick={onLogout}
-          className="flex items-center gap-2 bg-red-500 hover:bg-red-600"
-        >
-          <LogOut className="h-4 w-4" />
-          Logout
-        </Button>
       </div>
     </div>
   );

@@ -13,45 +13,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile } from "@/components/calculator/UserProfile";
 import { AdminMessages } from "@/components/messages/AdminMessages";
 
-const menuItems = [
-  {
-    title: "View Commission Table",
-    icon: ListCheck,
-    path: "/commission-table",
-    color: "bg-gradient-to-br from-blue-400 to-blue-600"
-  },
-  {
-    title: "Commission Percentage Calculator",
-    icon: Calculator,
-    path: "/dashboard",
-    color: "bg-gradient-to-br from-indigo-400 to-indigo-600"
-  },
-  {
-    title: "Open Me",
-    icon: Bell,
-    action: "messages",
-    color: "bg-gradient-to-br from-violet-400 to-violet-600"
-  },
-  {
-    title: "Info",
-    icon: Info,
-    path: "/info",
-    color: "bg-gradient-to-br from-pink-400 to-pink-600"
-  },
-  {
-    title: "M-fuel %",
-    icon: Percent,
-    path: "/m-fuel",
-    color: "bg-gradient-to-br from-green-400 to-green-600"
-  },
-  {
-    title: "Hotspot",
-    icon: Wifi,
-    path: "/hotspot",
-    color: "bg-gradient-to-br from-orange-400 to-orange-600"
-  }
-];
-
 const HomePage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
