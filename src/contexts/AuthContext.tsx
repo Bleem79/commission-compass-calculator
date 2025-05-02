@@ -15,12 +15,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Clear admin notification flag before logging out
       sessionStorage.removeItem('adminNotificationShown');
       
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
       setUser(null);
       toast({
         title: "Logged out",
         description: "You have been successfully logged out"
       });
+      return true;
     } catch (error) {
       console.error("Error during logout:", error);
       toast({
@@ -28,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "An unexpected error occurred during logout",
         variant: "destructive"
       });
+      throw error;
     }
   };
 

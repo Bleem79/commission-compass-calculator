@@ -13,15 +13,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile } from "@/components/calculator/UserProfile";
 import { AdminMessages } from "@/components/messages/AdminMessages";
+import { toast } from "@/hooks/use-toast";
 
 const HomePage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account"
+      });
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "There was an issue logging out. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
