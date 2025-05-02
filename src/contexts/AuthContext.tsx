@@ -15,6 +15,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Clear admin notification flag before logging out
       sessionStorage.removeItem('adminNotificationShown');
       
+      // If there's no active session, just clear the user state and return success
+      if (!session) {
+        console.log("No active session found during logout, clearing user state only");
+        setUser(null);
+        toast({
+          title: "Logged out",
+          description: "You have been successfully logged out"
+        });
+        return true;
+      }
+      
       // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) {

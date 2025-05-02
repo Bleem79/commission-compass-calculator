@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -32,6 +33,11 @@ const HomePage = () => {
       }
     } catch (error) {
       console.error("Logout error:", error);
+      toast({
+        title: "Logout Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoggingOut(false);
     }
