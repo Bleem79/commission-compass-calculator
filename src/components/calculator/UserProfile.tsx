@@ -54,6 +54,19 @@ export const UserProfile = ({ email, username, role }: UserProfileProps) => {
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
+            onClick={() => setIsMessagesOpen(true)}
+            className="relative flex items-center gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+          >
+            <Bell className="h-5 w-5" />
+            <span>Notifications</span>
+            {hasUnreadMessages && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                !
+              </span>
+            )}
+          </Button>
+          <Button
+            variant="ghost"
             onClick={handleGoHome}
             className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
           >

@@ -150,14 +150,14 @@ const HomePage = () => {
             </CardContent>
           </Card>
           
-          {/* 6. Open Me */}
+          {/* 6. Notifications */}
           <Card 
-            className="bg-gradient-to-br from-violet-400 to-violet-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40"
+            className="bg-gradient-to-br from-violet-400 to-violet-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40 relative"
             onClick={() => setIsMessagesOpen(true)}
           >
             <CardContent className="flex flex-col items-center justify-center h-full p-6">
               <Bell size={48} className="mb-3" />
-              <h2 className="text-lg font-medium text-center">Open Me</h2>
+              <h2 className="text-lg font-medium text-center">Notifications</h2>
             </CardContent>
           </Card>
         </div>
