@@ -1,7 +1,9 @@
+
 import { Button } from "@/components/ui/button";
 import { signInAsGuest } from "@/integrations/supabase/auth-utils";
 import { Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 export const GuestLoginButton = () => {
   const navigate = useNavigate();
@@ -9,10 +11,18 @@ export const GuestLoginButton = () => {
   const handleGuestLogin = async () => {
     try {
       await signInAsGuest();
+      toast({
+        title: "Welcome, Guest!",
+        description: "You've been signed in as a guest user",
+      });
       navigate("/home");
     } catch (error) {
       console.error("Guest login failed:", error);
-      // Handle error appropriately (e.g., display an error message)
+      toast({
+        title: "Login Failed",
+        description: "Unable to sign in as guest. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
