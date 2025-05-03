@@ -35,11 +35,11 @@ export const CalculatorForm = ({
       <div>
         <Label htmlFor="month">
           <Calendar className="mr-2 h-4 w-4 inline-block" />
-          Select Month
+          Select Current Month
         </Label>
         <Select onValueChange={onMonthChange} value={month}>
           <SelectTrigger className="w-full bg-input">
-            <SelectValue placeholder="Select month" />
+            <SelectValue placeholder="Select current month" />
           </SelectTrigger>
           <SelectContent>
             {months.map((m) => (
