@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { LogIn, UserCircle } from "lucide-react";
+import { LogIn, User, Key, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export const LoginForm = () => {
@@ -15,6 +15,7 @@ export const LoginForm = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // Get the return path from location state, or default to home
   const from = location.state?.from || "/home";
@@ -73,21 +74,23 @@ export const LoginForm = () => {
     }
   };
 
+  const toggleShowPassword = () => setShowPassword(!showPassword);
+
   return (
-    <form onSubmit={handleLogin} className="space-y-4">
+    <form onSubmit={handleLogin} className="space-y-5">
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-2 text-sm text-red-500">
+        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-500 border-l-4 border-red-500">
           {error}
         </div>
       )}
       <div className="space-y-2">
-        <Label htmlFor="identifier">Email or Driver ID</Label>
+        <Label htmlFor="identifier" className="text-sm font-medium text-gray-700">Email or Driver ID</Label>
         <div className="relative">
-          <UserCircle className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+          <User className="absolute left-3 top-2.5 h-5 w-5 text-purple-500" />
           <Input
             id="identifier"
             placeholder="Enter email or driver ID"
-            className="pl-10"
+            className="pl-10 border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             disabled={loading}
@@ -95,17 +98,32 @@ export const LoginForm = () => {
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          placeholder="Enter password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={loading}
-        />
+        <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
+        <div className="relative">
+          <Key className="absolute left-3 top-2.5 h-5 w-5 text-purple-500" />
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            placeholder="Enter password"
+            className="pl-10 pr-10 border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+          />
+          <button 
+            type="button" 
+            onClick={toggleShowPassword} 
+            className="absolute right-3 top-2.5 text-gray-400 hover:text-purple-600 transition-colors"
+          >
+            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button 
+        type="submit" 
+        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-md"
+        disabled={loading}
+      >
         {loading ? "Signing in..." : (
           <>
             <LogIn className="mr-2 h-4 w-4" />

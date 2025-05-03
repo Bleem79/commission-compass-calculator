@@ -1,61 +1,29 @@
-
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
+import { signInAsGuest } from "@/integrations/supabase/auth-utils";
+import { Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const GuestLoginButton = () => {
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleGuestLogin = async () => {
-    setLoading(true);
-    
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: 'guest@amantaximena.com',
-        password: 'Gm@4445'
-      });
-
-      if (error) {
-        console.error("Guest login error:", error);
-        toast({
-          title: "Guest Login Error",
-          description: error.message,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (data.user) {
-        console.log("Guest login successful with user ID:", data.user.id);
-        toast({
-          title: "Guest Login Successful",
-          description: "Welcome! You're logged in as a guest.",
-        });
-        navigate("/home");
-      }
-    } catch (err) {
-      console.error("Guest login error:", err);
-      toast({
-        title: "Guest Login Error",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+      await signInAsGuest();
+      navigate("/home");
+    } catch (error) {
+      console.error("Guest login failed:", error);
+      // Handle error appropriately (e.g., display an error message)
     }
   };
 
   return (
-    <Button 
-      variant="outline" 
-      className="w-full" 
+    <Button
+      variant="secondary"
+      className="w-full justify-center gap-2 bg-gray-100 text-gray-700 hover:bg-gray-200 shadow-sm"
       onClick={handleGuestLogin}
-      disabled={loading}
     >
-      {loading ? "Signing in..." : "Continue as Guest"}
+      <Sparkles className="h-4 w-4" />
+      Continue as Guest
     </Button>
   );
 };
