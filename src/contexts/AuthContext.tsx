@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthContextType } from "@/types/auth";
@@ -10,7 +10,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, setUser, session, refreshSession } = useAuthState();
 
-  const logout = async (): Promise<boolean> => {
+  const logout = useCallback(async (): Promise<boolean> => {
     try {
       // Clear admin notification flag before logging out
       sessionStorage.removeItem('adminNotificationShown');
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       return true; // Return true so user is redirected to login page
     }
-  };
+  }, [session, setUser]);
 
   return (
     <AuthContext.Provider

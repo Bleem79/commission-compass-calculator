@@ -11,6 +11,7 @@ export const useAuthState = () => {
   const [isCheckingRole, setIsCheckingRole] = useState(false);
   const checkUserRole = useCheckUserRole(setUser);
   const roleCheckInProgress = useRef(false);
+  const initialCheckComplete = useRef(false);
 
   const refreshSession = async () => {
     try {
@@ -32,9 +33,18 @@ export const useAuthState = () => {
   };
 
   useEffect(() => {
+    // Prevent multiple initializations
+    if (initialCheckComplete.current) return;
+    
     // Set up auth state change listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       console.log("Auth state changed:", event);
+      
+      // Don't update state if there's no change to avoid re-renders
+      if (JSON.stringify(session) === JSON.stringify(newSession)) {
+        console.log("Session unchanged, skipping update");
+        return;
+      }
       
       setSession(newSession);
       
@@ -59,12 +69,15 @@ export const useAuthState = () => {
       }
     });
     
-    // THEN check for existing session
+    // THEN check for existing session, but only once
     const checkInitialSession = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
-        setSession(initialSession);
+        // Only update state if there's an actual change
+        if (JSON.stringify(session) !== JSON.stringify(initialSession)) {
+          setSession(initialSession);
+        }
         
         if (initialSession?.user && !roleCheckInProgress.current) {
           console.log("Initial session found for:", initialSession.user.email);
@@ -78,6 +91,9 @@ export const useAuthState = () => {
           console.log("No initial session found");
           setUser(null);
         }
+        
+        // Mark initial check as complete to prevent duplicate initialization
+        initialCheckComplete.current = true;
       } catch (error) {
         console.error("Error checking initial session:", error);
         roleCheckInProgress.current = false;
