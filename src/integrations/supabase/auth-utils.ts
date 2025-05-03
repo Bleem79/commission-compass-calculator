@@ -15,15 +15,26 @@ export const signInAsGuest = async () => {
   const guestPassword = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
   
   try {
-    // Create a new guest account
-    const { data, error } = await supabase.auth.signInWithPassword({
+    // First create the guest account
+    const { error: signUpError } = await supabase.auth.signUp({
       email: guestEmail,
       password: guestPassword,
     });
     
-    if (error) {
-      console.error("Error creating guest account:", error);
-      throw error;
+    if (signUpError) {
+      console.error("Error creating guest account:", signUpError);
+      throw signUpError;
+    }
+    
+    // Then sign in with the created account
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email: guestEmail,
+      password: guestPassword,
+    });
+    
+    if (signInError) {
+      console.error("Error signing in as guest:", signInError);
+      throw signInError;
     }
     
     return data;
