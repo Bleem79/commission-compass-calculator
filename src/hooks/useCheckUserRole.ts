@@ -34,9 +34,9 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
         return;
       }
       
-      // Check for guest account
+      // Check for our permanent guest account
       if (userEmail === 'guest@amantaximena.com') {
-        console.log("Guest account detected - setting role as guest");
+        console.log("Permanent guest account detected - setting role as guest");
         setUser(prevUser => {
           // Only update if role is different or user is null
           if (!prevUser || prevUser.role !== 'guest') {
