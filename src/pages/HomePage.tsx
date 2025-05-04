@@ -36,9 +36,9 @@ const HomePage = () => {
       console.log("Starting logout process...");
       await logout();
       
-      // Immediately navigate to login page without waiting for state updates
-      console.log("Navigating to login after logout");
-      navigate("/login", { replace: true });
+      // Force a page refresh after logout to clear any stale state
+      console.log("Refreshing page after logout");
+      window.location.href = "/login";
     } catch (error) {
       console.error("Error in handleLogout:", error);
       toast({
@@ -48,10 +48,10 @@ const HomePage = () => {
       });
       setIsLoggingOut(false);
       
-      // Even if there's an error, try to navigate to login page
-      navigate("/login", { replace: true });
+      // Even if there's an error, force refresh to login page
+      window.location.href = "/login";
     }
-  }, [logout, navigate, isLoggingOut]);
+  }, [logout, isLoggingOut]);
 
   // Render memoized content to prevent unnecessary re-renders
   const renderFeatureButtons = useCallback(() => (
