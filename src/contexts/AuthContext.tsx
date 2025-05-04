@@ -26,39 +26,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
       }
       
-      try {
-        // Sign out from Supabase with error handling
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-          console.error("Supabase logout error:", error);
-          
-          // If the error is about missing session, still clear local state and consider it successful
-          if (error.message.includes("session missing") || error.message.includes("Auth session missing")) {
-            console.log("Session missing error, but proceeding with local logout");
-            setUser(null);
-            toast({
-              title: "Logged out",
-              description: "You have been successfully logged out"
-            });
-            return true;
-          }
-          
+      // Sign out from Supabase with error handling
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Supabase logout error:", error);
+        
+        // If the error is about missing session, still clear local state and consider it successful
+        if (error.message.includes("session missing") || error.message.includes("Auth session missing")) {
+          console.log("Session missing error, but proceeding with local logout");
+          setUser(null);
           toast({
-            title: "Logout Error",
-            description: "An error occurred during logout: " + error.message,
-            variant: "destructive"
+            title: "Logged out",
+            description: "You have been successfully logged out"
           });
-          return false;
+          return true;
         }
-      } catch (signOutError) {
-        console.error("Exception during signOut:", signOutError);
-        // Still proceed with local logout if signOut throws an exception
-        setUser(null);
+        
         toast({
-          title: "Logged out",
-          description: "You have been successfully logged out"
+          title: "Logout Error",
+          description: "An error occurred during logout: " + error.message,
+          variant: "destructive"
         });
-        return true;
+        return false;
       }
       
       // Clear user state
@@ -82,7 +71,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "You have been logged out locally, but there was a server error."
       });
       
-      return true; // Return true so user is redirected to login page
+      // Return true so user is redirected to login page regardless of server errors
+      return true;
     }
   }, [session, setUser]);
 

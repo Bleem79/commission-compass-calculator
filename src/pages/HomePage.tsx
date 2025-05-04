@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ListCheck, 
@@ -17,9 +17,16 @@ import { toast } from "@/hooks/use-toast";
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Check authentication status and redirect if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogout = useCallback(async () => {
     if (isLoggingOut) return; // Prevent multiple clicks
@@ -32,10 +39,7 @@ const HomePage = () => {
       
       if (success) {
         console.log("Logout successful, navigating to login page");
-        // Add a small delay before navigation to prevent UI flicker
-        setTimeout(() => {
-          navigate("/login", { replace: true });
-        }, 200);
+        navigate("/login", { replace: true });
       } else {
         console.log("Logout was not successful");
         toast({
@@ -43,6 +47,7 @@ const HomePage = () => {
           description: "There was a problem with the logout process. Please try again.",
           variant: "destructive"
         });
+        setIsLoggingOut(false);
       }
     } catch (error) {
       console.error("Error in handleLogout:", error);
@@ -51,12 +56,9 @@ const HomePage = () => {
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
-      // Even if there's an error, try to navigate to login page
-      setTimeout(() => {
-        navigate("/login", { replace: true });
-      }, 200);
-    } finally {
       setIsLoggingOut(false);
+      // Even if there's an error, try to navigate to login page
+      navigate("/login", { replace: true });
     }
   }, [logout, navigate, isLoggingOut]);
 
