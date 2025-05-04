@@ -10,8 +10,8 @@ export const signInAsGuest = async () => {
   // Use a permanent guest email
   const guestEmail = "guest@amantaximena.com";
   
-  // Fixed password for the guest account
-  const guestPassword = "guest-password-123";
+  // Updated password for the guest account
+  const guestPassword = "GuEst!@8564";
   
   try {
     // First attempt to sign in directly with the fixed credentials
