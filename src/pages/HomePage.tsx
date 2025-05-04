@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -24,6 +23,7 @@ const HomePage = () => {
   // Check authentication status and redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
+      console.log("Not authenticated in HomePage, redirecting to login");
       navigate("/login", { replace: true });
     }
   }, [isAuthenticated, navigate]);
@@ -34,22 +34,11 @@ const HomePage = () => {
     setIsLoggingOut(true);
     try {
       console.log("Starting logout process...");
-      const success = await logout();
-      console.log("Logout result:", success);
+      await logout();
       
-      if (success) {
-        console.log("Logout successful, navigating to login page");
-        // Force navigation to login page after logout
-        navigate("/login", { replace: true });
-      } else {
-        console.log("Logout was not successful");
-        toast({
-          title: "Logout Issue",
-          description: "There was a problem with the logout process. Please try again.",
-          variant: "destructive"
-        });
-        setIsLoggingOut(false);
-      }
+      // Immediately navigate to login page without waiting for state updates
+      console.log("Navigating to login after logout");
+      navigate("/login", { replace: true });
     } catch (error) {
       console.error("Error in handleLogout:", error);
       toast({
@@ -58,6 +47,7 @@ const HomePage = () => {
         variant: "destructive"
       });
       setIsLoggingOut(false);
+      
       // Even if there's an error, try to navigate to login page
       navigate("/login", { replace: true });
     }
