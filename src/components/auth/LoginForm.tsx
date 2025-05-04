@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { LogIn, User, Key, Eye, EyeOff } from "lucide-react";
+import { User, Key, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export const LoginForm = () => {
@@ -124,12 +124,13 @@ export const LoginForm = () => {
         className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-md"
         disabled={loading}
       >
-        {loading ? "Signing in..." : (
-          <>
-            <LogIn className="mr-2 h-4 w-4" />
-            Sign In
-          </>
-        )}
+        <div className="flex items-center justify-center">
+          {loading ? "Signing in..." : (
+            <>
+              <span className="mr-2">Sign In</span>
+            </>
+          )}
+        </div>
       </Button>
     </form>
   );

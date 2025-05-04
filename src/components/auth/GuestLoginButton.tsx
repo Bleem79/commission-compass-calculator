@@ -1,62 +1,59 @@
 
-import { Button } from "@/components/ui/button";
-import { signInAsGuest } from "@/integrations/supabase/auth-utils";
-import { Sparkles } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { loginAsGuest } from "@/integrations/supabase/auth-utils";
+import { toast } from "@/hooks/use-toast";
 
-export const GuestLoginButton = () => {
+export function GuestLoginButton() {
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleGuestLogin = async () => {
-    if (isLoggingIn) return; // Prevent multiple clicks
+    setIsLoading(true);
     
-    setIsLoggingIn(true);
     try {
-      await signInAsGuest();
+      const { error } = await loginAsGuest();
+      
+      if (error) {
+        console.error("Guest login error:", error);
+        toast({
+          title: "Guest Login Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       toast({
-        title: "Welcome, Guest!",
-        description: "You've been signed in as a guest user",
+        title: "Guest Login Successful",
+        description: "You're now logged in as a guest",
       });
-      // Add a small delay before navigating to ensure auth state has propagated
-      setTimeout(() => {
-        navigate("/home");
-      }, 300);
+
+      // Navigate to home page
+      navigate("/home");
     } catch (error) {
-      console.error("Guest login failed:", error);
+      console.error("Unexpected guest login error:", error);
       toast({
-        title: "Login Failed",
-        description: "Unable to sign in as guest. Please try again.",
-        variant: "destructive"
+        title: "Guest Login Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
       });
     } finally {
-      setIsLoggingIn(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <Button
-      variant="secondary"
-      className="w-full justify-center gap-2 bg-gray-100 text-gray-700 hover:bg-gray-200 shadow-sm"
+      variant="outline"
       onClick={handleGuestLogin}
-      disabled={isLoggingIn}
+      disabled={isLoading}
+      className="w-full border border-gray-200 hover:bg-gray-50 hover:text-purple-700 transition-all flex items-center justify-center"
     >
-      {isLoggingIn ? (
-        <span className="inline-flex items-center">
-          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          Signing in...
-        </span>
-      ) : (
-        <>
-          <Sparkles className="h-4 w-4" />
-          Continue as Guest
-        </>
-      )}
+      <div className="flex items-center">
+        {isLoading ? "Signing in..." : "Continue as Guest"}
+      </div>
     </Button>
   );
-};
+}
