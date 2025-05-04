@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { loginAsGuest } from "@/integrations/supabase/auth-utils";
+import { signInAsGuest } from "@/integrations/supabase/auth-utils";
 import { toast } from "@/hooks/use-toast";
 
 export function GuestLoginButton() {
@@ -13,13 +13,13 @@ export function GuestLoginButton() {
     setIsLoading(true);
     
     try {
-      const { error } = await loginAsGuest();
+      const result = await signInAsGuest();
       
-      if (error) {
-        console.error("Guest login error:", error);
+      if (result.error) {
+        console.error("Guest login error:", result.error);
         toast({
           title: "Guest Login Error",
-          description: error.message,
+          description: result.error.message,
           variant: "destructive",
         });
         return;
