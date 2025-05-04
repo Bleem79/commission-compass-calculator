@@ -39,6 +39,7 @@ const HomePage = () => {
       
       if (success) {
         console.log("Logout successful, navigating to login page");
+        // Force navigation to login page after logout
         navigate("/login", { replace: true });
       } else {
         console.log("Logout was not successful");
