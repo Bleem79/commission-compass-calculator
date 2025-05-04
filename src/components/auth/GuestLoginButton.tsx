@@ -15,11 +15,12 @@ export function GuestLoginButton() {
     try {
       const result = await signInAsGuest();
       
-      if (result.error) {
-        console.error("Guest login error:", result.error);
+      // Check if the authentication succeeded
+      if (!result.session || !result.user) {
+        console.error("Guest login failed: No session or user returned");
         toast({
           title: "Guest Login Error",
-          description: result.error.message,
+          description: "Failed to login as guest",
           variant: "destructive",
         });
         return;
