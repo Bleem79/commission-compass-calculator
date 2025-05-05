@@ -10,9 +10,16 @@ const Login = () => {
       <Card className="w-full max-w-md shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-t-lg"></div>
         <CardHeader className="space-y-1 text-center pb-2">
-          <CardTitle className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-            MyAman WebApp
-          </CardTitle>
+          <div className="flex items-center justify-center gap-3">
+            <img 
+              src="/lovable-uploads/57e5e156-ac46-4329-bf55-4dd9e46b4a04.png" 
+              alt="Aman Taxi Logo" 
+              className="h-12 w-auto"
+            />
+            <CardTitle className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              MyAman WebApp
+            </CardTitle>
+          </div>
           <p className="text-sm text-muted-foreground px-6">
             Sign in to access your commission calculator
           </p>
