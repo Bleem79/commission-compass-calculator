@@ -5,9 +5,17 @@ import { GuestLoginButton } from "@/components/auth/GuestLoginButton";
 
 const Login = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-400 to-purple-600">
-      <div className="absolute inset-0 bg-[url('https://transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-      <Card className="w-full max-w-md shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
+    <div className="flex min-h-screen items-center justify-center relative">
+      {/* Background image */}
+      <div 
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/lovable-uploads/3a73efa1-5537-4d31-80e5-c6209b34c881.png')" }}
+      >
+        {/* Overlay to make text more readable */}
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+      </div>
+      
+      <Card className="w-full max-w-md shadow-2xl border-0 bg-white/90 backdrop-blur-sm relative z-10">
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-t-lg"></div>
         <CardHeader className="space-y-1 text-center pb-2">
           <div className="flex items-center justify-center gap-3">
