@@ -14,8 +14,9 @@ interface DocumentUploaderProps {
   setIsLoading: (loading: boolean) => void;
 }
 
-// Get the Supabase URL from the client
+// Get the Supabase URL from environment
 const SUPABASE_URL = "https://iahpiswzhkshejncylvt.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhaHBpc3d6aGtzaGVqbmN5bHZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwNzgwNzMsImV4cCI6MjA2MDY1NDA3M30.KOrHbCrL8bDregbGgHFsyJ84FdH0_UL-YUJNSPEtARQ";
 
 export const DocumentUploader = ({ 
   bucketName, 
@@ -25,6 +26,7 @@ export const DocumentUploader = ({
   setIsLoading 
 }: DocumentUploaderProps) => {
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   
   const clearError = () => setUploadError(null);
   
@@ -49,44 +51,69 @@ export const DocumentUploader = ({
       const filePath = `${Date.now()}-${file.name}`;
       console.log("Uploading file to bucket:", bucketName, "path:", filePath);
       
-      // Create a blob from the file
-      const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type });
-      
-      // Try upload with fetch API as fallback approach
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        throw new Error("No active session found");
+      // Get session for auth
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        throw new Error(sessionError?.message || "No active session found");
       }
       
-      // First attempt with Supabase client
+      let uploadSuccessful = false;
+      let uploadError = null;
+      
+      // Try direct Supabase client upload first
       try {
-        const { error: uploadError } = await supabase.storage
+        const { error } = await supabase.storage
           .from(bucketName)
           .upload(filePath, file, {
             cacheControl: '3600',
             upsert: false
           });
 
-        if (uploadError) throw uploadError;
-      } catch (supabaseError) {
-        console.warn("Initial upload attempt failed, trying alternative method:", supabaseError);
-        
-        // If first attempt fails, try manual fetch approach
-        const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${bucketName}/${filePath}`;
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${sessionData.session.access_token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
-            'x-upsert': 'false',
-          },
-          body: fileBlob
-        });
-        
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          throw new Error(`Upload failed: ${uploadResponse.status} ${errorText}`);
+        if (error) {
+          console.warn("First upload method failed:", error);
+          uploadError = error;
+        } else {
+          uploadSuccessful = true;
         }
+      } catch (error) {
+        console.warn("First upload method exception:", error);
+        uploadError = error;
+      }
+      
+      // If first method fails, try fetch API approach
+      if (!uploadSuccessful) {
+        try {
+          // Create a blob from the file
+          const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type });
+          
+          console.log("Trying alternative upload method with fetch API");
+          const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${bucketName}/${filePath}`;
+          
+          const uploadResponse = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${sessionData.session.access_token}`,
+              'apikey': SUPABASE_ANON_KEY,
+              'x-upsert': 'false',
+              'Content-Type': file.type,
+            },
+            body: fileBlob
+          });
+          
+          if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text();
+            throw new Error(`Upload failed: ${uploadResponse.status} ${errorText}`);
+          }
+          
+          uploadSuccessful = true;
+        } catch (fetchError) {
+          console.error("Both upload methods failed:", fetchError);
+          throw fetchError;
+        }
+      }
+      
+      if (!uploadSuccessful) {
+        throw uploadError || new Error("Failed to upload file after multiple attempts");
       }
       
       // Store document metadata in database
@@ -115,6 +142,9 @@ export const DocumentUploader = ({
       if (event.target) {
         event.target.value = '';
       }
+      
+      // Reset retry count on success
+      setRetryCount(0);
     } catch (error: any) {
       console.error("Upload error:", error);
       
@@ -132,6 +162,9 @@ export const DocumentUploader = ({
       toast.error('Upload Failed', {
         description: errorMessage
       });
+      
+      // Increment retry count
+      setRetryCount(prev => prev + 1);
     } finally {
       setIsLoading(false);
     }
@@ -145,6 +178,11 @@ export const DocumentUploader = ({
             {uploadError}
             <div className="mt-2 text-xs">
               Try refreshing the page or checking your network connection.
+              {retryCount > 1 && (
+                <p className="mt-1 font-medium">
+                  If you're behind a firewall or VPN, try disabling it temporarily.
+                </p>
+              )}
             </div>
           </AlertDescription>
         </Alert>
@@ -164,7 +202,7 @@ export const DocumentUploader = ({
           variant="outline"
           onClick={() => document.getElementById(`file-upload-${bucketName}`)?.click()}
           disabled={isLoading}
-          className="relative"
+          className="relative w-full md:w-auto"
         >
           {isLoading ? (
             <>

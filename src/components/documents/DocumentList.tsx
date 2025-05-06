@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { File, FileX } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface Document {
   id: string;
@@ -26,17 +26,15 @@ export const DocumentList = ({ documents, isAdmin = false }: DocumentListProps) 
 
       if (error) {
         console.error("Error creating signed URL:", error);
-        toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        toast.error('Error', { description: error.message });
         return;
       }
 
       window.open(data.signedUrl, '_blank');
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error viewing document:", err);
-      toast({
-        title: 'Error',
-        description: 'Failed to open document',
-        variant: 'destructive'
+      toast.error('Error', {
+        description: 'Failed to open document'
       });
     }
   };
@@ -50,7 +48,7 @@ export const DocumentList = ({ documents, isAdmin = false }: DocumentListProps) 
 
       if (storageError) {
         console.error("Error deleting from storage:", storageError);
-        toast({ title: 'Error', description: storageError.message, variant: 'destructive' });
+        toast.error('Error', { description: storageError.message });
         return;
       }
 
@@ -62,17 +60,15 @@ export const DocumentList = ({ documents, isAdmin = false }: DocumentListProps) 
 
       if (dbError) {
         console.error("Error deleting from database:", dbError);
-        toast({ title: 'Error', description: dbError.message, variant: 'destructive' });
+        toast.error('Error', { description: dbError.message });
         return;
       }
 
-      toast({ title: 'Success', description: 'Document deleted successfully' });
-    } catch (err) {
+      toast.success('Success', { description: 'Document deleted successfully' });
+    } catch (err: any) {
       console.error("Error deleting document:", err);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete document',
-        variant: 'destructive'
+      toast.error('Error', {
+        description: 'Failed to delete document'
       });
     }
   };
