@@ -1,9 +1,10 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { FileUp, Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface DocumentUploaderProps {
   bucketName: string;
@@ -20,16 +21,20 @@ export const DocumentUploader = ({
   isLoading, 
   setIsLoading 
 }: DocumentUploaderProps) => {
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  
+  const clearError = () => setUploadError(null);
   
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    
+    // Clear any previous errors
+    clearError();
 
     if (!['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
-      toast({ 
-        title: 'Invalid file type', 
-        description: 'Please upload only PDF, JPG, or PNG files', 
-        variant: 'destructive' 
+      toast.error('Invalid file type', {
+        description: 'Please upload only PDF, JPG, or PNG files'
       });
       return;
     }
@@ -41,34 +46,46 @@ export const DocumentUploader = ({
       const filePath = `${Date.now()}-${file.name}`;
       console.log("Uploading file to bucket:", bucketName, "path:", filePath);
       
-      // Upload file to storage with proper options and timeout handling
-      const uploadPromise = supabase.storage
-        .from(bucketName)
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      // Create a blob from the file
+      const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type });
       
-      // Add timeout for the upload
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Upload timed out after 30 seconds")), 30000);
-      });
-      
-      // Race the upload against the timeout
-      const { error: uploadError, data: uploadData } = await Promise.race([
-        uploadPromise,
-        timeoutPromise.then(() => {
-          throw new Error("Upload timed out");
-        })
-      ]) as any;
-
-      if (uploadError) {
-        console.error("Upload error:", uploadError);
-        throw new Error(uploadError.message || "Failed to upload file");
+      // Try upload with fetch API as fallback approach
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error("No active session found");
       }
       
-      console.log("File uploaded successfully:", uploadData);
+      // First attempt with Supabase client
+      try {
+        const { error: uploadError } = await supabase.storage
+          .from(bucketName)
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
+        if (uploadError) throw uploadError;
+      } catch (supabaseError) {
+        console.warn("Initial upload attempt failed, trying alternative method:", supabaseError);
+        
+        // If first attempt fails, try manual fetch approach
+        const uploadUrl = `${supabase.supabaseUrl}/storage/v1/object/${bucketName}/${filePath}`;
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sessionData.session.access_token}`,
+            'apikey': supabase.supabaseKey,
+            'x-upsert': 'false',
+          },
+          body: fileBlob
+        });
+        
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          throw new Error(`Upload failed: ${uploadResponse.status} ${errorText}`);
+        }
+      }
+      
       // Store document metadata in database
       const { error: dbError } = await supabase.from('documents').insert({
         bucket_name: bucketName,
@@ -84,7 +101,9 @@ export const DocumentUploader = ({
       }
 
       // Show success message
-      toast({ title: 'Success', description: 'File uploaded successfully' });
+      toast.success('Success', { 
+        description: 'File uploaded successfully'
+      });
       
       // Trigger callback to refresh document list
       onUploadSuccess();
@@ -106,10 +125,9 @@ export const DocumentUploader = ({
         errorMessage = "Permission denied. You may not have access to upload to this location";
       }
       
-      toast({ 
-        title: 'Upload Failed', 
-        description: errorMessage, 
-        variant: 'destructive' 
+      setUploadError(errorMessage);
+      toast.error('Upload Failed', {
+        description: errorMessage
       });
     } finally {
       setIsLoading(false);
@@ -117,33 +135,47 @@ export const DocumentUploader = ({
   };
 
   return (
-    <div className="flex items-center gap-4">
-      <input
-        type="file"
-        id={`file-upload-${bucketName}`}
-        className="hidden"
-        accept=".pdf,.jpg,.jpeg,.png"
-        onChange={handleFileUpload}
-        disabled={isLoading}
-      />
-      <Button
-        variant="outline"
-        onClick={() => document.getElementById(`file-upload-${bucketName}`)?.click()}
-        disabled={isLoading}
-        className="relative"
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            <span>Uploading...</span>
-          </>
-        ) : (
-          <>
-            <FileUp className="mr-2 h-4 w-4" />
-            <span>Upload Document</span>
-          </>
-        )}
-      </Button>
+    <div className="flex flex-col gap-4">
+      {uploadError && (
+        <Alert variant="destructive" className="mb-2">
+          <AlertDescription>
+            {uploadError}
+            <div className="mt-2 text-xs">
+              Try refreshing the page or checking your network connection.
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="flex items-center gap-4">
+        <input
+          type="file"
+          id={`file-upload-${bucketName}`}
+          className="hidden"
+          accept=".pdf,.jpg,.jpeg,.png"
+          onChange={handleFileUpload}
+          disabled={isLoading}
+          onClick={clearError}
+        />
+        <Button
+          variant="outline"
+          onClick={() => document.getElementById(`file-upload-${bucketName}`)?.click()}
+          disabled={isLoading}
+          className="relative"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <span>Uploading...</span>
+            </>
+          ) : (
+            <>
+              <FileUp className="mr-2 h-4 w-4" />
+              <span>Upload Document</span>
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 };

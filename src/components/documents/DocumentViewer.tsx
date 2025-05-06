@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { DocumentUploader } from './DocumentUploader';
 import { DocumentList } from './DocumentList';
@@ -41,7 +41,7 @@ export const DocumentViewer = ({ bucketName, title, icon, isAdmin, canView }: Do
 
       if (error) {
         console.error("Error fetching documents:", error);
-        toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        toast.error('Error', { description: error.message });
         return;
       }
 

@@ -19,7 +19,7 @@ export const useDriverUpload = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [uploadStats, setUploadStats] = useState<UploadStats | null>(null);
   const processingRef = useRef<boolean>(false);
-  const { session, refreshSession } = useAuth(); // Use the auth context to manage session
+  const { session, refreshSession } = useAuth();
 
   const resetStats = () => {
     setUploadStats(null);
