@@ -14,6 +14,9 @@ interface DocumentUploaderProps {
   setIsLoading: (loading: boolean) => void;
 }
 
+// Get the Supabase URL from the client
+const SUPABASE_URL = "https://iahpiswzhkshejncylvt.supabase.co";
+
 export const DocumentUploader = ({ 
   bucketName, 
   userId, 
@@ -69,12 +72,12 @@ export const DocumentUploader = ({
         console.warn("Initial upload attempt failed, trying alternative method:", supabaseError);
         
         // If first attempt fails, try manual fetch approach
-        const uploadUrl = `${supabase.supabaseUrl}/storage/v1/object/${bucketName}/${filePath}`;
+        const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${bucketName}/${filePath}`;
         const uploadResponse = await fetch(uploadUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${sessionData.session.access_token}`,
-            'apikey': supabase.supabaseKey,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
             'x-upsert': 'false',
           },
           body: fileBlob
