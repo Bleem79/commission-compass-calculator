@@ -9,9 +9,9 @@ const Login = () => {
   
   // Check if image exists and can be loaded
   useEffect(() => {
-    // Using a stock background image that exists in the Unsplash collection
     const img = new Image();
-    img.src = "https://images.unsplash.com/photo-1470813740244-df37b8c1edcb";
+    // Use the locally uploaded image
+    img.src = "/lovable-uploads/039f42e6-8125-472b-9556-70d5237c3d6d.png";
     img.onload = () => setImageLoaded(true);
     img.onerror = (e) => {
       console.error("Error loading background image:", e);
@@ -24,7 +24,7 @@ const Login = () => {
       {/* Background image with fallback */}
       <div 
         className={`absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1470813740244-df37b8c1edcb')" }}
+        style={{ backgroundImage: "url('/lovable-uploads/039f42e6-8125-472b-9556-70d5237c3d6d.png')" }}
       >
         {/* Overlay to make text more readable */}
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
