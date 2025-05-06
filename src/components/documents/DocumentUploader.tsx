@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { FileUp } from 'lucide-react';
+import { FileUp, Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -25,10 +25,10 @@ export const DocumentUploader = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!['application/pdf', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+    if (!['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
       toast({ 
         title: 'Invalid file type', 
-        description: 'Please upload only PDF or JPG files', 
+        description: 'Please upload only PDF, JPG, or PNG files', 
         variant: 'destructive' 
       });
       return;
@@ -41,13 +41,26 @@ export const DocumentUploader = ({
       const filePath = `${Date.now()}-${file.name}`;
       console.log("Uploading file to bucket:", bucketName, "path:", filePath);
       
-      // Upload file to storage with proper options
-      const { error: uploadError, data: uploadData } = await supabase.storage
+      // Upload file to storage with proper options and timeout handling
+      const uploadPromise = supabase.storage
         .from(bucketName)
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
         });
+      
+      // Add timeout for the upload
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Upload timed out after 30 seconds")), 30000);
+      });
+      
+      // Race the upload against the timeout
+      const { error: uploadError, data: uploadData } = await Promise.race([
+        uploadPromise,
+        timeoutPromise.then(() => {
+          throw new Error("Upload timed out");
+        })
+      ]) as any;
 
       if (uploadError) {
         console.error("Upload error:", uploadError);
@@ -82,9 +95,20 @@ export const DocumentUploader = ({
       }
     } catch (error: any) {
       console.error("Upload error:", error);
+      
+      // More user-friendly error messages
+      let errorMessage = "Failed to upload file";
+      if (error.message?.includes("Failed to fetch") || error.message?.includes("Network Error")) {
+        errorMessage = "Network error. Please check your internet connection and try again";
+      } else if (error.message?.includes("timed out")) {
+        errorMessage = "Upload timed out. Please try again with a smaller file or check your connection";
+      } else if (error.message?.includes("permissions")) {
+        errorMessage = "Permission denied. You may not have access to upload to this location";
+      }
+      
       toast({ 
-        title: 'Error', 
-        description: error instanceof Error ? error.message : 'Failed to upload file', 
+        title: 'Upload Failed', 
+        description: errorMessage, 
         variant: 'destructive' 
       });
     } finally {
@@ -98,7 +122,7 @@ export const DocumentUploader = ({
         type="file"
         id={`file-upload-${bucketName}`}
         className="hidden"
-        accept=".pdf,.jpg,.jpeg"
+        accept=".pdf,.jpg,.jpeg,.png"
         onChange={handleFileUpload}
         disabled={isLoading}
       />
@@ -106,9 +130,19 @@ export const DocumentUploader = ({
         variant="outline"
         onClick={() => document.getElementById(`file-upload-${bucketName}`)?.click()}
         disabled={isLoading}
+        className="relative"
       >
-        <FileUp className="mr-2 h-4 w-4" />
-        {isLoading ? 'Uploading...' : 'Upload Document'}
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <span>Uploading...</span>
+          </>
+        ) : (
+          <>
+            <FileUp className="mr-2 h-4 w-4" />
+            <span>Upload Document</span>
+          </>
+        )}
       </Button>
     </div>
   );
