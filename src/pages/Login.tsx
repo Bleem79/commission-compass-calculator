@@ -2,38 +2,12 @@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { GuestLoginButton } from "@/components/auth/GuestLoginButton";
-import { useEffect, useState } from "react";
 
 const Login = () => {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  
-  // Check if image exists and can be loaded
-  useEffect(() => {
-    const img = new Image();
-    // Use the locally uploaded image
-    img.src = "/lovable-uploads/039f42e6-8125-472b-9556-70d5237c3d6d.png";
-    img.onload = () => setImageLoaded(true);
-    img.onerror = (e) => {
-      console.error("Error loading background image:", e);
-      setImageLoaded(false);
-    };
-  }, []);
-
   return (
-    <div className="flex min-h-screen items-center justify-center relative">
-      {/* Background image with fallback */}
-      <div 
-        className={`absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-        style={{ backgroundImage: "url('/lovable-uploads/039f42e6-8125-472b-9556-70d5237c3d6d.png')" }}
-      >
-        {/* Overlay to make text more readable */}
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-      </div>
-      
-      {/* Fallback background if image fails to load */}
-      {!imageLoaded && (
-        <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-500 to-purple-700"></div>
-      )}
+    <div className="flex min-h-screen items-center justify-center relative bg-[#D3E4FD]">
+      {/* Light blue gradient background */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#D3E4FD] to-[#A9CEFB]"></div>
       
       <Card className="w-full max-w-md shadow-2xl border-0 bg-white/90 backdrop-blur-sm relative z-10">
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-t-lg"></div>
