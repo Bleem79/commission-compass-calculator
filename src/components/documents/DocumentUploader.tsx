@@ -45,27 +45,30 @@ export const DocumentUploader = ({
     setIsLoading(true);
     
     try {
-      // Create a safe filename (no spaces, timestamped to avoid conflicts)
-      const filePath = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+      // Create a unique filename to avoid conflicts
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = fileName.replace(/\s+/g, '_');
+      
       console.log("Uploading file to bucket:", bucketName, "path:", filePath);
       
-      // Direct upload using explicitly created Supabase client
-      const supabaseUrl = "https://iahpiswzhkshejncylvt.supabase.co";
-      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhaHBpc3d6aGtzaGVqbmN5bHZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwNzgwNzMsImV4cCI6MjA2MDY1NDA3M30.KOrHbCrL8bDregbGgHFsyJ84FdH0_UL-YUJNSPEtARQ";
-      
-      // Try direct upload with existing client first
+      // Simple direct upload
       const { error: uploadError } = await supabase.storage
         .from(bucketName)
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true // Use upsert to override if file exists
         });
       
       if (uploadError) {
-        console.warn("Initial upload attempt failed:", uploadError.message);
         throw new Error(uploadError.message);
       }
       
+      // Get the public URL for the uploaded file
+      const { data: publicUrlData } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(filePath);
+        
       // Store document metadata in database
       const { error: dbError } = await supabase.from('documents').insert({
         bucket_name: bucketName,
@@ -109,6 +112,10 @@ export const DocumentUploader = ({
         errorMessage = "A file with this name already exists. Please rename your file and try again";
       } else if (error.message?.includes("fetch")) {
         errorMessage = "Network connection issue. Please check your internet connection and try again";
+      } else if (error.message?.includes("timeout")) {
+        errorMessage = "The upload timed out. Please try again with a smaller file or check your connection";
+      } else if (error.message?.includes("aborted")) {
+        errorMessage = "The upload was aborted. Please try again";
       }
       
       setUploadError(errorMessage);
@@ -177,3 +184,4 @@ export const DocumentUploader = ({
     </div>
   );
 };
+
