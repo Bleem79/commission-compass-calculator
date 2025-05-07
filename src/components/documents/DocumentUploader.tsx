@@ -14,10 +14,6 @@ interface DocumentUploaderProps {
   setIsLoading: (loading: boolean) => void;
 }
 
-// Get the Supabase URL from environment
-const SUPABASE_URL = "https://iahpiswzhkshejncylvt.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhaHBpc3d6aGtzaGVqbmN5bHZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwNzgwNzMsImV4cCI6MjA2MDY1NDA3M30.KOrHbCrL8bDregbGgHFsyJ84FdH0_UL-YUJNSPEtARQ";
-
 export const DocumentUploader = ({ 
   bucketName, 
   userId, 
@@ -27,7 +23,6 @@ export const DocumentUploader = ({
 }: DocumentUploaderProps) => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [networkStatus, setNetworkStatus] = useState<'online' | 'offline' | 'unknown'>('online');
   
   const clearError = () => setUploadError(null);
   
@@ -50,26 +45,25 @@ export const DocumentUploader = ({
     setIsLoading(true);
     
     try {
+      // Create a safe filename (no spaces, timestamped to avoid conflicts)
       const filePath = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
       console.log("Uploading file to bucket:", bucketName, "path:", filePath);
       
-      // Get session for auth
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session) {
-        throw new Error(sessionError?.message || "No active session found");
-      }
+      // Direct upload using explicitly created Supabase client
+      const supabaseUrl = "https://iahpiswzhkshejncylvt.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhaHBpc3d6aGtzaGVqbmN5bHZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwNzgwNzMsImV4cCI6MjA2MDY1NDA3M30.KOrHbCrL8bDregbGgHFsyJ84FdH0_UL-YUJNSPEtARQ";
       
-      // Try direct Supabase client upload
-      const { error } = await supabase.storage
+      // Try direct upload with existing client first
+      const { error: uploadError } = await supabase.storage
         .from(bucketName)
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
         });
-
-      if (error) {
-        console.warn("Upload failed:", error);
-        throw error;
+      
+      if (uploadError) {
+        console.warn("Initial upload attempt failed:", uploadError.message);
+        throw new Error(uploadError.message);
       }
       
       // Store document metadata in database
@@ -113,6 +107,8 @@ export const DocumentUploader = ({
         errorMessage = "Storage error. Please try with a smaller file or a different format";
       } else if (error.message?.includes("already exists")) {
         errorMessage = "A file with this name already exists. Please rename your file and try again";
+      } else if (error.message?.includes("fetch")) {
+        errorMessage = "Network connection issue. Please check your internet connection and try again";
       }
       
       setUploadError(errorMessage);
