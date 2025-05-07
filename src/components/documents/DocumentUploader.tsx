@@ -27,53 +27,7 @@ export const DocumentUploader = ({
 }: DocumentUploaderProps) => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [networkStatus, setNetworkStatus] = useState<'online' | 'offline' | 'unknown'>('unknown');
-  
-  // Check network status initially and when we get an error
-  const checkNetworkStatus = useCallback(async () => {
-    try {
-      // Simple network check
-      const online = navigator.onLine;
-      if (!online) {
-        setNetworkStatus('offline');
-        return false;
-      }
-      
-      // Additional ping test to confirm real connectivity
-      const pingResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucketName}?prefix=ping-test`, {
-        method: 'HEAD',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-        },
-        // Short timeout to quickly identify network issues
-        signal: AbortSignal.timeout(3000)
-      });
-      
-      setNetworkStatus('online');
-      return pingResponse.ok;
-    } catch (error) {
-      console.warn("Network check failed:", error);
-      setNetworkStatus('offline');
-      return false;
-    }
-  }, [bucketName]);
-  
-  // Check network status on component mount
-  useState(() => {
-    checkNetworkStatus();
-    
-    // Add event listeners for online/offline status
-    const handleOnline = () => setNetworkStatus('online');
-    const handleOffline = () => setNetworkStatus('offline');
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  });
+  const [networkStatus, setNetworkStatus] = useState<'online' | 'offline' | 'unknown'>('online');
   
   const clearError = () => setUploadError(null);
   
@@ -84,19 +38,10 @@ export const DocumentUploader = ({
     // Clear any previous errors
     clearError();
 
+    // Validate file type
     if (!['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
       toast.error('Invalid file type', {
         description: 'Please upload only PDF, JPG, or PNG files'
-      });
-      return;
-    }
-
-    // Check network status before attempting upload
-    const isOnline = await checkNetworkStatus();
-    if (!isOnline) {
-      setUploadError("Network error. Please check your internet connection and try again");
-      toast.error('Network error', {
-        description: 'Please check your internet connection and try again'
       });
       return;
     }
@@ -105,7 +50,7 @@ export const DocumentUploader = ({
     setIsLoading(true);
     
     try {
-      const filePath = `${Date.now()}-${file.name}`;
+      const filePath = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
       console.log("Uploading file to bucket:", bucketName, "path:", filePath);
       
       // Get session for auth
@@ -114,63 +59,17 @@ export const DocumentUploader = ({
         throw new Error(sessionError?.message || "No active session found");
       }
       
-      let uploadSuccessful = false;
-      let uploadError = null;
-      
-      // Try direct Supabase client upload first
-      try {
-        const { error } = await supabase.storage
-          .from(bucketName)
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
+      // Try direct Supabase client upload
+      const { error } = await supabase.storage
+        .from(bucketName)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-        if (error) {
-          console.warn("First upload method failed:", error);
-          uploadError = error;
-        } else {
-          uploadSuccessful = true;
-        }
-      } catch (error) {
-        console.warn("First upload method exception:", error);
-        uploadError = error;
-      }
-      
-      // If first method fails, try fetch API approach
-      if (!uploadSuccessful) {
-        try {
-          // Create a blob from the file
-          const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type });
-          
-          console.log("Trying alternative upload method with fetch API");
-          const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${bucketName}/${filePath}`;
-          
-          const uploadResponse = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${sessionData.session.access_token}`,
-              'apikey': SUPABASE_ANON_KEY,
-              'x-upsert': 'false',
-              'Content-Type': file.type,
-            },
-            body: fileBlob
-          });
-          
-          if (!uploadResponse.ok) {
-            const errorText = await uploadResponse.text();
-            throw new Error(`Upload failed: ${uploadResponse.status} ${errorText}`);
-          }
-          
-          uploadSuccessful = true;
-        } catch (fetchError) {
-          console.error("Both upload methods failed:", fetchError);
-          throw fetchError;
-        }
-      }
-      
-      if (!uploadSuccessful) {
-        throw uploadError || new Error("Failed to upload file after multiple attempts");
+      if (error) {
+        console.warn("Upload failed:", error);
+        throw error;
       }
       
       // Store document metadata in database
@@ -206,19 +105,14 @@ export const DocumentUploader = ({
     } catch (error: any) {
       console.error("Upload error:", error);
       
-      // Check network status again if there was an error
-      const isStillOnline = await checkNetworkStatus();
-      
       // More user-friendly error messages
       let errorMessage = "Failed to upload file";
-      if (!isStillOnline || 
-          error.message?.includes("Failed to fetch") || 
-          error.message?.includes("Network Error")) {
-        errorMessage = "Network error. Please check your internet connection and try again";
-      } else if (error.message?.includes("timed out")) {
-        errorMessage = "Upload timed out. Please try again with a smaller file or check your connection";
-      } else if (error.message?.includes("permissions")) {
+      if (error.message?.includes("permissions")) {
         errorMessage = "Permission denied. You may not have access to upload to this location";
+      } else if (error.message?.includes("storage error")) {
+        errorMessage = "Storage error. Please try with a smaller file or a different format";
+      } else if (error.message?.includes("already exists")) {
+        errorMessage = "A file with this name already exists. Please rename your file and try again";
       }
       
       setUploadError(errorMessage);
@@ -240,14 +134,11 @@ export const DocumentUploader = ({
           <AlertTriangle className="h-4 w-4 mr-2" />
           <AlertDescription>
             {uploadError}
-            <div className="mt-2 text-xs">
-              Try refreshing the page or checking your network connection.
-              {retryCount > 1 && (
-                <p className="mt-1 font-medium">
-                  If you're behind a firewall or VPN, try disabling it temporarily.
-                </p>
-              )}
-            </div>
+            {retryCount > 1 && (
+              <div className="mt-2 text-xs">
+                Try using a shorter file name or a different file format.
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -259,13 +150,13 @@ export const DocumentUploader = ({
           className="hidden"
           accept=".pdf,.jpg,.jpeg,.png"
           onChange={handleFileUpload}
-          disabled={isLoading || networkStatus === 'offline'}
+          disabled={isLoading}
           onClick={clearError}
         />
         <Button
           variant="outline"
           onClick={() => document.getElementById(`file-upload-${bucketName}`)?.click()}
-          disabled={isLoading || networkStatus === 'offline'}
+          disabled={isLoading}
           className="relative w-full md:w-auto"
         >
           {isLoading ? (
@@ -280,21 +171,13 @@ export const DocumentUploader = ({
             </>
           )}
         </Button>
-        
-        {networkStatus === 'offline' && (
-          <span className="text-destructive text-xs flex items-center">
-            <AlertTriangle className="h-3 w-3 mr-1" /> 
-            You appear to be offline
-          </span>
-        )}
       </div>
       
-      {retryCount > 2 && (
+      {retryCount > 0 && (
         <p className="text-xs text-muted-foreground mt-1">
-          Having trouble? Try uploading a smaller file or using a different browser.
+          Having trouble? Try uploading a smaller file or using a different file format.
         </p>
       )}
     </div>
   );
 };
-
