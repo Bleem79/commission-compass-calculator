@@ -13,7 +13,7 @@ export const commissionData = [
   { shiftType: "Single Shift", commissionType: "With Basic", from: 270, to: 299.99, percentage: 20, fixedIncentive: 400, basic: 300, hra: 500, totalFixedSalary: 800 },
   { shiftType: "Single Shift", commissionType: "With Basic", from: 300, to: 339.99, percentage: 25, fixedIncentive: 600, basic: 300, hra: 500, totalFixedSalary: 800 },
   { shiftType: "Single Shift", commissionType: "With Basic", from: 340, to: 379.99, percentage: 25, fixedIncentive: 800, basic: 300, hra: 500, totalFixedSalary: 800 },
-  { shiftType: "Single Shift", commissionType: "With Basic", from: 380, to: Infinity, percentage: 35, fixedIncentive: 100, basic: 300, hra: 500, totalFixedSalary: 800 },
+  { shiftType: "Single Shift", commissionType: "With Basic", from: 380, to: Infinity, percentage: 35, fixedIncentive: 1000, basic: 300, hra: 500, totalFixedSalary: 800 },
   
   // Single Shift Without Basic
   { shiftType: "Single Shift", commissionType: "With Out Basic", from: 0, to: 174.99, percentage: 5, fixedIncentive: 0, noOfTrips: null, slabs: null, amount: null },
