@@ -19,9 +19,9 @@ const CommissionTable = () => {
     navigate("/home");
   };
 
-  const singleShiftBasic = filterCommissionData("Single Shift", "With Basic");
-  const singleShiftWithoutBasic = filterCommissionData("Single Shift", "With Out Basic");
-  const doubleShift = filterCommissionData("Double Shift", "With Basic");
+  const singleShiftBasic = filterCommissionData(commissionData, "Single Shift", "With Basic");
+  const singleShiftWithoutBasic = filterCommissionData(commissionData, "Single Shift", "With Out Basic");
+  const doubleShift = filterCommissionData(commissionData, "Double Shift", "With Basic");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-6 relative overflow-x-auto">

@@ -24,8 +24,8 @@ export const getBackgroundColor = (percentage: number) => {
 };
 
 // Utility function to filter data based on shift type and commission type
-export const filterCommissionData = (data: any[], shiftType: string, commissionType?: string) => {
-  return data
+export const filterCommissionData = (array: any[], shiftType: string, commissionType?: string) => {
+  return array
     .filter(item => {
       if (commissionType) {
         return item.shiftType === shiftType && item.commissionType === commissionType;
