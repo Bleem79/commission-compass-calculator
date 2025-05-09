@@ -31,7 +31,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (totalIncome !== undefined && workingDays !== undefined && workingDays > 0 && month !== "" && shiftType !== "" && commissionType !== "") {
-      // Calculate average daily income properly
+      // Calculate average daily income with proper precision
       const income = Number((totalIncome / workingDays).toFixed(2));
       console.log("Average daily income calculated:", income);
       setAverageDailyIncome(income);
@@ -75,7 +75,7 @@ const Dashboard = () => {
         }
       }
 
-      // Calculate next tiers
+      // Calculate next tiers with precise values
       let tiers: NextTierInfo[] = [];
       
       if (sortedData.length > 0) {
