@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,24 +34,27 @@ const Dashboard = () => {
       const income = totalIncome / workingDays;
       setAverageDailyIncome(income);
 
-      const matchedTier = commissionData.find(
-        (item) =>
-          item.shiftType === shiftType &&
-          item.commissionType === commissionType &&
-          income >= item.from &&
-          income <= item.to
+      // Filter data based on the user selected shift type and commission type
+      const filteredData = commissionData.filter(
+        (item) => item.shiftType === shiftType && item.commissionType === commissionType
+      );
+      
+      // Sort filtered data by the 'from' value to ensure proper tier comparison
+      const sortedData = [...filteredData].sort((a, b) => a.from - b.from);
+      
+      // Find matching tier based on average daily income
+      const matchedTier = sortedData.find(
+        (item) => income >= item.from && income <= item.to
       );
 
       if (matchedTier) {
         setCommissionPercentage(matchedTier.percentage);
       } else {
-        const aboveTier = commissionData.find(
-          (item) =>
-            item.shiftType === shiftType &&
-            item.commissionType === commissionType &&
-            item.to === Infinity &&
-            income >= item.from
-        );
+        // Check for the highest tier (when income is above the highest defined range)
+        const aboveTier = sortedData
+          .filter(item => item.to === Infinity)
+          .find(item => income >= item.from);
+          
         if (aboveTier) {
           setCommissionPercentage(aboveTier.percentage);
         } else {
@@ -62,35 +66,25 @@ const Dashboard = () => {
         }
       }
 
-      const currentTier = commissionData.find(
-        (item) =>
-          item.shiftType === shiftType &&
-          item.commissionType === commissionType &&
-          income >= item.from &&
-          income <= item.to
-      ) || commissionData.find(
-        (item) =>
-          item.shiftType === shiftType &&
-          item.commissionType === commissionType &&
-          item.to === Infinity &&
-          income >= item.from
-      );
-
-      const currentIndex = currentTier ? commissionData.indexOf(currentTier) : -1;
+      // Determine current tier
+      const currentTier = matchedTier || sortedData
+        .filter(item => item.to === Infinity)
+        .find(item => income >= item.from);
+        
+      // Calculate next tiers
       let tiers: NextTierInfo[] = [];
-      if (currentIndex !== -1) {
-        let nextIndex = currentIndex + 1;
-        while (nextIndex < commissionData.length) {
-          const nextTier = commissionData[nextIndex];
-          if (nextTier.shiftType === shiftType && nextTier.commissionType === commissionType) {
-            tiers.push({
-              percentage: nextTier.percentage,
-              amountNeeded: Math.max(0, (nextTier.from - income) * workingDays),
-            });
-          }
-          nextIndex++;
-        }
+      
+      if (sortedData.length > 0) {
+        // Find all tiers higher than current income
+        tiers = sortedData
+          .filter(tier => tier.from > income)
+          .map(tier => ({
+            percentage: tier.percentage,
+            amountNeeded: Math.max(0, (tier.from - income) * workingDays),
+          }))
+          .sort((a, b) => a.amountNeeded - b.amountNeeded);
       }
+      
       setNextTierInfo(tiers);
     } else {
       setAverageDailyIncome(undefined);
