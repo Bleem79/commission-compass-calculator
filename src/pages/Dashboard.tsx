@@ -31,32 +31,41 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (totalIncome !== undefined && workingDays !== undefined && workingDays > 0 && month !== "" && shiftType !== "" && commissionType !== "") {
-      const income = totalIncome / workingDays;
+      // Calculate average daily income properly
+      const income = Number((totalIncome / workingDays).toFixed(2));
+      console.log("Average daily income calculated:", income);
       setAverageDailyIncome(income);
 
       // Filter data based on the user selected shift type and commission type
-      const filteredData = commissionData.filter(
+      let filteredData = commissionData.filter(
         (item) => item.shiftType === shiftType && item.commissionType === commissionType
       );
       
       // Sort filtered data by the 'from' value to ensure proper tier comparison
       const sortedData = [...filteredData].sort((a, b) => a.from - b.from);
+      console.log("Sorted commission data:", sortedData);
       
       // Find matching tier based on average daily income
-      const matchedTier = sortedData.find(
-        (item) => income >= item.from && income <= item.to
-      );
+      let matchedTier = null;
+      for (const tier of sortedData) {
+        if (income >= tier.from && income <= tier.to) {
+          matchedTier = tier;
+          break;
+        }
+      }
 
       if (matchedTier) {
+        console.log("Matched tier found:", matchedTier);
         setCommissionPercentage(matchedTier.percentage);
       } else {
         // Check for the highest tier (when income is above the highest defined range)
-        const aboveTier = sortedData
-          .filter(item => item.to === Infinity)
-          .find(item => income >= item.from);
+        const highestTier = sortedData
+          .filter(item => income >= item.from)
+          .sort((a, b) => b.from - a.from)[0];
           
-        if (aboveTier) {
-          setCommissionPercentage(aboveTier.percentage);
+        if (highestTier) {
+          console.log("Highest applicable tier found:", highestTier);
+          setCommissionPercentage(highestTier.percentage);
         } else {
           setCommissionPercentage(0);
           toast({
@@ -66,11 +75,6 @@ const Dashboard = () => {
         }
       }
 
-      // Determine current tier
-      const currentTier = matchedTier || sortedData
-        .filter(item => item.to === Infinity)
-        .find(item => income >= item.from);
-        
       // Calculate next tiers
       let tiers: NextTierInfo[] = [];
       
@@ -80,11 +84,12 @@ const Dashboard = () => {
           .filter(tier => tier.from > income)
           .map(tier => ({
             percentage: tier.percentage,
-            amountNeeded: Math.max(0, (tier.from - income) * workingDays),
+            amountNeeded: Math.max(0, Number(((tier.from - income) * workingDays).toFixed(2))),
           }))
           .sort((a, b) => a.amountNeeded - b.amountNeeded);
       }
       
+      console.log("Next tier info:", tiers);
       setNextTierInfo(tiers);
     } else {
       setAverageDailyIncome(undefined);
