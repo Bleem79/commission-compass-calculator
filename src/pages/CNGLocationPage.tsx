@@ -6,27 +6,31 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile } from "@/components/calculator/UserProfile";
 
-// CNG location data with only area names
+// CNG location data with properly formatted Google Maps embed URLs
 const cngLocations = [
   {
     id: 1,
     name: "Al Mirqab",
-    url: "https://maps.app.goo.gl/29Cn1UbFJ2v41hbD7"
+    url: "https://maps.app.goo.gl/29Cn1UbFJ2v41hbD7",
+    embedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3607.848954444767!2d55.3859973!3d25.2930979!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f5d346b0343d7%3A0xbcac7fb5dde6836a!2sAl%20Mirqab%20-%20Dubai!5e0!3m2!1sen!2sae!4v1652883612774!5m2!1sen!2sae"
   },
   {
     id: 2,
     name: "Maysaloon",
-    url: "https://maps.app.goo.gl/3YE7fXz1bZTiWJBs6"
+    url: "https://maps.app.goo.gl/3YE7fXz1bZTiWJBs6",
+    embedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3608.2630531374716!2d55.4003829!3d25.2819871!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f5d7c27b223dd%3A0xf76c360ba5af34d5!2sMaysaloon%20-%20Dubai!5e0!3m2!1sen!2sae!4v1652883712774!5m2!1sen!2sae"
   },
   {
     id: 3,
     name: "Al Shahba",
-    url: "https://maps.app.goo.gl/nT8JLk91Tjm8L72u5"
+    url: "https://maps.app.goo.gl/nT8JLk91Tjm8L72u5",
+    embedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3607.621026121312!2d55.3879364!3d25.3003995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f5d2d957c078b%3A0x4ac0c3829d763cc9!2sAl%20Shahba%20-%20Dubai!5e0!3m2!1sen!2sae!4v1652883812774!5m2!1sen!2sae"
   },
   {
     id: 4,
     name: "Samnan",
-    url: "https://maps.app.goo.gl/2XhRoq5Rmv22qpAy5"
+    url: "https://maps.app.goo.gl/2XhRoq5Rmv22qpAy5",
+    embedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3606.79307496303!2d55.4052132!3d25.3240741!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f5c3b4050b571%3A0xb8e3c99a4625cc5c!2sSamnan%20-%20Dubai!5e0!3m2!1sen!2sae!4v1652883912774!5m2!1sen!2sae"
   }
 ];
 
@@ -34,9 +38,9 @@ const CNGLocationPage = () => {
   const { user } = useAuth();
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
 
-  const openLocation = (url: string) => {
-    setSelectedLocation(url);
+  const openLocation = (url: string, embedUrl: string) => {
     window.open(url, "_blank");
+    setSelectedLocation(embedUrl);
   };
   
   return (
@@ -75,7 +79,7 @@ const CNGLocationPage = () => {
                 
                 <div className="mt-4 flex justify-end">
                   <Button
-                    onClick={() => openLocation(location.url)}
+                    onClick={() => openLocation(location.url, location.embedUrl)}
                     className="bg-indigo-600 hover:bg-indigo-700 flex items-center gap-2"
                   >
                     <Navigation size={18} />
