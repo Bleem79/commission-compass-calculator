@@ -91,7 +91,7 @@ const CNGLocationPage = () => {
           <div className="w-full h-[500px] rounded-lg overflow-hidden border-2 border-indigo-300">
             <iframe
               title="Google Maps"
-              src={`${selectedLocation.replace('maps.app.goo.gl', 'www.google.com/maps/embed')}`}
+              src={selectedLocation}
               width="100%"
               height="100%"
               style={{ border: 0 }}
