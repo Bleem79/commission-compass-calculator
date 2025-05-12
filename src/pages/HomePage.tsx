@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -6,7 +7,8 @@ import {
   Bell, 
   Info, 
   Percent, 
-  Wifi 
+  Wifi,
+  MapPin
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -93,7 +95,7 @@ const HomePage = () => {
       </div>
 
       {/* Second Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
         {/* 4. Hotspot */}
         <Card 
           className="bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40"
@@ -124,6 +126,17 @@ const HomePage = () => {
           <CardContent className="flex flex-col items-center justify-center h-full p-6">
             <Bell size={48} className="mb-3" />
             <h2 className="text-lg font-medium text-center">Notifications</h2>
+          </CardContent>
+        </Card>
+
+        {/* 7. NEW - CNG Location */}
+        <Card 
+          className="bg-gradient-to-br from-teal-400 to-teal-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-40"
+          onClick={() => navigate("/cng-location")}
+        >
+          <CardContent className="flex flex-col items-center justify-center h-full p-6">
+            <MapPin size={48} className="mb-3" />
+            <h2 className="text-lg font-medium text-center">CNG Location</h2>
           </CardContent>
         </Card>
       </div>

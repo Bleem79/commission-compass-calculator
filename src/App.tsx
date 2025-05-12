@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +13,7 @@ import CommissionTable from "./pages/CommissionTable";
 import InfoPage from "./pages/InfoPage";
 import MFuelPage from "./pages/MFuelPage";
 import HotspotPage from "./pages/HotspotPage";
+import CNGLocationPage from "./pages/CNGLocationPage";
 import { useEffect } from "react";
 
 // Create a new QueryClient instance inside the component
@@ -123,6 +123,18 @@ const AppRoutes = () => {
             <SidebarProvider>
               <div className="min-h-screen w-full">
                 <HotspotPage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/cng-location" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <CNGLocationPage />
               </div>
             </SidebarProvider>
           </ProtectedRoute>
