@@ -10,22 +10,22 @@ import { UserProfile } from "@/components/calculator/UserProfile";
 const cngLocations = [
   {
     id: 1,
-    name: "MGL CNG Gas Station",
+    name: "MGL CNG Gas Station - Al Mirqab",
     url: "https://maps.app.goo.gl/29Cn1UbFJ2v41hbD7"
   },
   {
     id: 2,
-    name: "Khajdo CNG Station",
+    name: "Khajdo CNG Station - Maysaloon",
     url: "https://maps.app.goo.gl/3YE7fXz1bZTiWJBs6"
   },
   {
     id: 3,
-    name: "Hari Om CNG Pump",
+    name: "Hari Om CNG Pump - Al Shahba",
     url: "https://maps.app.goo.gl/nT8JLk91Tjm8L72u5"
   },
   {
     id: 4,
-    name: "Adani CNG Station",
+    name: "Adani CNG Station - Samnan",
     url: "https://maps.app.goo.gl/2XhRoq5Rmv22qpAy5"
   }
 ];
