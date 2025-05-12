@@ -42,21 +42,26 @@ const CNGLocationPage = () => {
   const { user } = useAuth();
   const [mapUrl, setMapUrl] = useState<string>("");
   
-  // Generate the map URL with markers for all locations
+  // Generate the map URL with correct parameters for Google Maps embed API
   useEffect(() => {
-    // Base Google Maps embed URL
-    let baseUrl = "https://www.google.com/maps/embed/v1/view?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8";
+    // Use the "place" API mode with the q parameter instead of markers
+    // Center the map around Dubai with the right zoom level
+    const apiKey = "AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8";
     
-    // Add all locations as markers
-    const markersParam = cngLocations.map((loc, index) => {
-      return `&markers=color:red%7Clabel:${index + 1}%7C${loc.lat},${loc.lng}`;
-    }).join('');
+    // Use the Map mode instead of place for multiple locations
+    const mapMode = "https://www.google.com/maps/embed/v1/map";
     
-    // Center the map around Dubai
-    const centerParam = "&center=25.2819,55.3900&zoom=13";
+    // Define center and zoom
+    const center = "25.2930,55.3900"; // Center of Dubai
+    const zoom = "12";
     
-    // Combine all parameters
-    setMapUrl(`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=Dubai+CNG+stations${centerParam}${markersParam}`);
+    // Add markers for all locations
+    const markers = cngLocations.map(loc => {
+      return `${loc.lat},${loc.lng}`;
+    }).join('|');
+    
+    // Build the final URL with correct parameters
+    setMapUrl(`${mapMode}?key=${apiKey}&center=${center}&zoom=${zoom}&markers=${markers}`);
   }, []);
 
   const openLocation = (url: string) => {
