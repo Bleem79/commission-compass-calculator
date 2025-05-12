@@ -6,26 +6,26 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile } from "@/components/calculator/UserProfile";
 
-// CNG location data with names and Google Maps URLs
+// CNG location data with only area names
 const cngLocations = [
   {
     id: 1,
-    name: "MGL CNG Gas Station - Al Mirqab",
+    name: "Al Mirqab",
     url: "https://maps.app.goo.gl/29Cn1UbFJ2v41hbD7"
   },
   {
     id: 2,
-    name: "Khajdo CNG Station - Maysaloon",
+    name: "Maysaloon",
     url: "https://maps.app.goo.gl/3YE7fXz1bZTiWJBs6"
   },
   {
     id: 3,
-    name: "Hari Om CNG Pump - Al Shahba",
+    name: "Al Shahba",
     url: "https://maps.app.goo.gl/nT8JLk91Tjm8L72u5"
   },
   {
     id: 4,
-    name: "Adani CNG Station - Samnan",
+    name: "Samnan",
     url: "https://maps.app.goo.gl/2XhRoq5Rmv22qpAy5"
   }
 ];
