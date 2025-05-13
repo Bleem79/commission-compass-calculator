@@ -43,21 +43,18 @@ const CNGLocationPage = () => {
   const [mapUrl, setMapUrl] = useState<string>("");
   
   useEffect(() => {
-    // Create embed URL using the proper format for Google Maps with multiple markers
-    const baseUrl = "https://www.google.com/maps/embed/v1/place";
+    // For the Google Maps Embed API, we need to use a different approach
+    // The API doesn't support multiple markers in the simple way we were trying
+    // Let's create a URL that shows the area with a good zoom level
     const apiKey = "AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8"; // This is a public demo API key
     
     // Calculate center point
     const centerLat = cngLocations.reduce((sum, loc) => sum + loc.lat, 0) / cngLocations.length;
     const centerLng = cngLocations.reduce((sum, loc) => sum + loc.lng, 0) / cngLocations.length;
     
-    // Create a markers string for all locations
-    const markers = cngLocations.map(loc => 
-      `&markers=color:red%7Clabel:${loc.id}%7C${loc.lat},${loc.lng}`
-    ).join('');
-    
-    // Build the embed URL with all markers
-    const embedUrl = `${baseUrl}?key=${apiKey}&q=Sharjah,UAE&center=${centerLat},${centerLng}&zoom=12${markers}`;
+    // Create the embed URL that focuses on Sharjah area
+    // For embed maps, we can use a basic map view centered on the locations
+    const embedUrl = `https://www.google.com/maps/embed/v1/search?key=${apiKey}&q=CNG+stations+in+Sharjah+UAE&center=${centerLat},${centerLng}&zoom=12`;
     
     setMapUrl(embedUrl);
   }, []);
