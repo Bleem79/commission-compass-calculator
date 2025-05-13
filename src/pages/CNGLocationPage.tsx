@@ -43,18 +43,17 @@ const CNGLocationPage = () => {
   const [mapUrl, setMapUrl] = useState<string>("");
   
   useEffect(() => {
-    // Create a map that focuses on Dubai and shows all CNG locations
-    const baseUrl = "https://maps.google.com/maps";
+    // Create embed URL using the proper format for Google Maps with multiple markers
+    const baseUrl = "https://www.google.com/maps/embed/v1/view";
+    const apiKey = "AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8"; // This is a public demo API key
     
-    // Generate location markers for each CNG station
-    const locationQuery = cngLocations.map(loc => 
-      `${loc.name}+CNG+Station+@${loc.lat},${loc.lng}`
-    ).join('|');
+    // Set the center point to an average of all locations
+    const centerLat = cngLocations.reduce((sum, loc) => sum + loc.lat, 0) / cngLocations.length;
+    const centerLng = cngLocations.reduce((sum, loc) => sum + loc.lng, 0) / cngLocations.length;
     
-    // Build a URL with all locations marked on the map
-    const embeddedMapUrl = `${baseUrl}?q=${locationQuery}&z=12&output=embed`;
+    let embedUrl = `${baseUrl}?key=${apiKey}&center=${centerLat},${centerLng}&zoom=12`;
     
-    setMapUrl(embeddedMapUrl);
+    setMapUrl(embedUrl);
   }, []);
 
   const openLocation = (url: string) => {
