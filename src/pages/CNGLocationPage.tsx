@@ -44,14 +44,20 @@ const CNGLocationPage = () => {
   
   useEffect(() => {
     // Create embed URL using the proper format for Google Maps with multiple markers
-    const baseUrl = "https://www.google.com/maps/embed/v1/view";
+    const baseUrl = "https://www.google.com/maps/embed/v1/place";
     const apiKey = "AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8"; // This is a public demo API key
     
-    // Set the center point to an average of all locations
+    // Calculate center point
     const centerLat = cngLocations.reduce((sum, loc) => sum + loc.lat, 0) / cngLocations.length;
     const centerLng = cngLocations.reduce((sum, loc) => sum + loc.lng, 0) / cngLocations.length;
     
-    let embedUrl = `${baseUrl}?key=${apiKey}&center=${centerLat},${centerLng}&zoom=12`;
+    // Create a markers string for all locations
+    const markers = cngLocations.map(loc => 
+      `&markers=color:red%7Clabel:${loc.id}%7C${loc.lat},${loc.lng}`
+    ).join('');
+    
+    // Build the embed URL with all markers
+    const embedUrl = `${baseUrl}?key=${apiKey}&q=Sharjah,UAE&center=${centerLat},${centerLng}&zoom=12${markers}`;
     
     setMapUrl(embedUrl);
   }, []);
