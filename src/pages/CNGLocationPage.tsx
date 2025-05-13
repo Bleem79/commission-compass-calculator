@@ -44,24 +44,12 @@ const CNGLocationPage = () => {
   
   // Generate the map URL with correct parameters for Google Maps embed API
   useEffect(() => {
-    // Use the "place" API mode with the q parameter instead of markers
-    // Center the map around Dubai with the right zoom level
-    const apiKey = "AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8";
-    
-    // Use the Map mode instead of place for multiple locations
-    const mapMode = "https://www.google.com/maps/embed/v1/map";
-    
-    // Define center and zoom
+    // Using a different approach with iframe HTML format instead of the API
     const center = "25.2930,55.3900"; // Center of Dubai
     const zoom = "12";
     
-    // Add markers for all locations
-    const markers = cngLocations.map(loc => {
-      return `${loc.lat},${loc.lng}`;
-    }).join('|');
-    
-    // Build the final URL with correct parameters
-    setMapUrl(`${mapMode}?key=${apiKey}&center=${center}&zoom=${zoom}&markers=${markers}`);
+    // Build a simple Google Maps embed URL that works reliably
+    setMapUrl(`https://maps.google.com/maps?q=CNG+Stations+Dubai&z=${zoom}&ie=UTF8&iwloc=&output=embed`);
   }, []);
 
   const openLocation = (url: string) => {
