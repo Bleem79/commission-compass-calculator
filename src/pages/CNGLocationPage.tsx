@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile } from "@/components/calculator/UserProfile";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 // CNG location data with properly formatted Google Maps embed URLs
 const cngLocations = [
@@ -39,17 +40,18 @@ const cngLocations = [
   }
 ];
 
+// The unique callback name to avoid conflicts
+const GOOGLE_MAPS_CALLBACK = "initGoogleMap_CNG";
+
 const CNGLocationPage = () => {
   const { user } = useAuth();
   const [mapUrl, setMapUrl] = useState<string>("");
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapError, setMapError] = useState<boolean>(false);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
+  const scriptRef = useRef<HTMLScriptElement | null>(null);
   
   useEffect(() => {
-    // For the Google Maps Embed API, we'll use a more reliable approach
-    // using a static image as fallback if the interactive map fails
-    
     // Calculate center point
     const centerLat = cngLocations.reduce((sum, loc) => sum + loc.lat, 0) / cngLocations.length;
     const centerLng = cngLocations.reduce((sum, loc) => sum + loc.lng, 0) / cngLocations.length;
@@ -57,30 +59,14 @@ const CNGLocationPage = () => {
     // Safer API key handling
     const apiKey = "AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8"; // This is a public demo API key
     
-    // Create iframe source for embedded map
+    // Create static map URL as fallback
     const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=13&size=600x400&maptype=roadmap&key=${apiKey}`;
     setMapUrl(staticMapUrl);
     
-    // Load Google Maps API in a safer way
+    // Safely load Google Maps API
     const loadGoogleMapsScript = () => {
-      // Remove any existing Google Maps scripts to avoid conflicts
-      const existingScripts = document.querySelectorAll('script[src*="maps.googleapis.com/maps/api"]');
-      existingScripts.forEach(script => script.remove());
-      
-      // Create a new script element
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initGoogleMap`;
-      script.async = true;
-      script.defer = true;
-      
-      // Handle errors
-      script.onerror = () => {
-        console.error("Google Maps script failed to load");
-        setMapError(true);
-      };
-      
-      // Define the initialization function on the window object
-      window.initGoogleMap = function() {
+      // Define the initialization function with unique name to avoid conflicts
+      window[GOOGLE_MAPS_CALLBACK] = function() {
         try {
           if (mapRef.current && window.google && window.google.maps) {
             const mapOptions = {
@@ -102,7 +88,7 @@ const CNGLocationPage = () => {
                 },
                 icon: {
                   path: window.google.maps.SymbolPath.CIRCLE,
-                  fillColor: "#0EA5E9", // Ocean Blue color
+                  fillColor: "#0EA5E9",
                   fillOpacity: 1,
                   strokeWeight: 0,
                   scale: 10
@@ -118,6 +104,24 @@ const CNGLocationPage = () => {
         }
       };
       
+      // Create a new script element
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${GOOGLE_MAPS_CALLBACK}&loading=async`;
+      script.async = true;
+      script.defer = true;
+      
+      // Handle errors
+      script.onerror = () => {
+        console.error("Google Maps script failed to load");
+        setMapError(true);
+        // Clean up the global function if script fails to load
+        if (window[GOOGLE_MAPS_CALLBACK]) {
+          window[GOOGLE_MAPS_CALLBACK] = undefined;
+        }
+      };
+      
+      // Save reference to script for cleanup
+      scriptRef.current = script;
       document.head.appendChild(script);
     };
     
@@ -125,14 +129,15 @@ const CNGLocationPage = () => {
     
     // Clean up function
     return () => {
-      if (window.initGoogleMap) {
-        // @ts-ignore - we need to clean up the global function
-        window.initGoogleMap = undefined;
+      // Clean up the global function
+      if (window[GOOGLE_MAPS_CALLBACK]) {
+        window[GOOGLE_MAPS_CALLBACK] = undefined;
       }
       
-      const script = document.querySelector('script[src*="maps.googleapis.com/maps/api"]');
-      if (script) {
-        script.remove();
+      // Clean up script element if it exists
+      if (scriptRef.current && document.head.contains(scriptRef.current)) {
+        document.head.removeChild(scriptRef.current);
+        scriptRef.current = null;
       }
     };
   }, []);
@@ -172,11 +177,13 @@ const CNGLocationPage = () => {
                 </AlertDescription>
               </Alert>
               <div className="mt-4">
-                <img 
-                  src={mapUrl} 
-                  alt="Static map of CNG locations" 
-                  className="rounded-lg shadow-md max-w-full" 
-                />
+                <AspectRatio ratio={16/9} className="max-w-full overflow-hidden">
+                  <img 
+                    src={mapUrl} 
+                    alt="Static map of CNG locations" 
+                    className="rounded-lg shadow-md w-full h-full object-cover" 
+                  />
+                </AspectRatio>
               </div>
             </div>
           ) : (

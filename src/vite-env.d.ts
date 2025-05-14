@@ -3,7 +3,7 @@
 
 // Google Maps API types
 interface Window {
-  initGoogleMap?: () => void;
+  [key: string]: any; // Allow dynamic property names for map initialization functions
   google?: {
     maps: {
       Map: new (element: HTMLElement, options: any) => any;
