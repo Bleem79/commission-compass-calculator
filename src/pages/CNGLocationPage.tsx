@@ -64,17 +64,19 @@ const CNGLocationPage = () => {
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap`;
       script.async = true;
       script.defer = true;
+      
+      // Define the initMap function on the window object before loading the script
       window.initMap = function() {
         if (mapRef.current) {
           const mapOptions = {
             center: { lat: centerLat, lng: centerLng },
             zoom: 13,
           };
-          const map = new google.maps.Map(mapRef.current, mapOptions);
+          const map = new window.google.maps.Map(mapRef.current, mapOptions);
           
           // Add blue markers for each location
           cngLocations.forEach(location => {
-            new google.maps.Marker({
+            new window.google.maps.Marker({
               position: { lat: location.lat, lng: location.lng },
               map: map,
               title: location.name,
@@ -83,7 +85,7 @@ const CNGLocationPage = () => {
                 color: "white"
               },
               icon: {
-                path: google.maps.SymbolPath.CIRCLE,
+                path: window.google.maps.SymbolPath.CIRCLE,
                 fillColor: "#0EA5E9", // Ocean Blue color
                 fillOpacity: 1,
                 strokeWeight: 0,
@@ -93,8 +95,11 @@ const CNGLocationPage = () => {
           });
         }
       };
+      
       document.head.appendChild(script);
     };
+    
+    loadGoogleMapsScript();
     
     // Clean up function to remove the script
     return () => {
