@@ -40,9 +40,6 @@ const cngLocations = [
   }
 ];
 
-// The unique callback name to avoid conflicts
-const GOOGLE_MAPS_CALLBACK = "initGoogleMapCNG";
-
 // API Key (this is a demo key)
 const API_KEY = "AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8";
 
@@ -52,7 +49,6 @@ const CNGLocationPage = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapError, setMapError] = useState<boolean>(false);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
-  const isMounted = useRef<boolean>(true);
   
   // Calculate center point for static map fallback
   const centerLat = cngLocations.reduce((sum, loc) => sum + loc.lat, 0) / cngLocations.length;
@@ -64,107 +60,105 @@ const CNGLocationPage = () => {
     setMapUrl(staticMapUrl);
   }, []);
 
-  // Initialize map when Google Maps API is loaded
-  const initMap = () => {
-    if (!isMounted.current || !mapRef.current || !window.google || !window.google.maps) {
-      return;
-    }
-
-    try {
-      const mapOptions = {
-        center: { lat: centerLat, lng: centerLng },
-        zoom: 13,
-      };
-      
-      const map = new window.google.maps.Map(mapRef.current, mapOptions);
-      
-      // Add markers for each location
-      cngLocations.forEach(location => {
-        new window.google.maps.Marker({
-          position: { lat: location.lat, lng: location.lng },
-          map: map,
-          title: location.name,
-          label: {
-            text: location.id.toString(),
-            color: "white"
-          },
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            fillColor: "#0EA5E9",
-            fillOpacity: 1,
-            strokeWeight: 0,
-            scale: 10
-          }
-        });
-      });
-      
-      setMapLoaded(true);
-    } catch (error) {
-      console.error("Error initializing Google Map:", error);
-      setMapError(true);
-    }
-  };
-
-  // Load the Google Maps script with proper cleanup
+  // Initialize Google Maps with a safer pattern
   useEffect(() => {
-    // Set mounted flag to true
-    isMounted.current = true;
+    // Generate a unique callback name for this component instance
+    const callbackName = `initGoogleMapCNG_${Date.now()}`;
+    
+    // Signal to track if component is still mounted
+    let isMounted = true;
+    
+    // Initialize map function
+    const initMap = () => {
+      if (!isMounted || !mapRef.current || !window.google || !window.google.maps) {
+        return;
+      }
 
-    // Define callback function for Google Maps
-    window[GOOGLE_MAPS_CALLBACK] = function() {
-      if (isMounted.current) {
-        initMap();
+      try {
+        const mapOptions = {
+          center: { lat: centerLat, lng: centerLng },
+          zoom: 13,
+        };
+        
+        const map = new window.google.maps.Map(mapRef.current, mapOptions);
+        
+        // Add markers for each location
+        cngLocations.forEach(location => {
+          new window.google.maps.Marker({
+            position: { lat: location.lat, lng: location.lng },
+            map: map,
+            title: location.name,
+            label: {
+              text: location.id.toString(),
+              color: "white"
+            },
+            icon: {
+              path: window.google.maps.SymbolPath.CIRCLE,
+              fillColor: "#0EA5E9",
+              fillOpacity: 1,
+              strokeWeight: 0,
+              scale: 10
+            }
+          });
+        });
+        
+        if (isMounted) {
+          setMapLoaded(true);
+        }
+      } catch (error) {
+        console.error("Error initializing Google Map:", error);
+        if (isMounted) {
+          setMapError(true);
+        }
       }
     };
+
+    // Register the init callback
+    window[callbackName] = function() {
+      initMap();
+    };
     
-    // Function to load Google Maps script
-    const loadGoogleMapsScript = () => {
-      // Return early if Google Maps is already loaded
+    const loadMap = () => {
+      // If Google Maps is already loaded
       if (window.google && window.google.maps) {
         initMap();
         return;
       }
-
-      // Create and add script - only create a new script if one doesn't exist already
-      let script = document.getElementById("google-maps-script") as HTMLScriptElement | null;
       
-      if (!script) {
-        script = document.createElement('script');
-        script.id = "google-maps-script";
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=${GOOGLE_MAPS_CALLBACK}&loading=async`;
-        script.async = true;
-        script.defer = true;
-        script.onerror = () => {
-          if (isMounted.current) {
-            console.error("Google Maps script failed to load");
-            setMapError(true);
-          }
-        };
-
-        document.head.appendChild(script);
-      }
+      // Create a script element for Google Maps API
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=${callbackName}&loading=async`;
+      script.async = true;
+      script.defer = true;
+      script.id = `google-maps-script-${Date.now()}`; // Unique ID
+      
+      script.onerror = () => {
+        if (isMounted) {
+          console.error("Google Maps script failed to load");
+          setMapError(true);
+        }
+      };
+      
+      document.head.appendChild(script);
     };
-
-    // Load the script
-    loadGoogleMapsScript();
-
+    
+    // Load the map
+    loadMap();
+    
     // Cleanup function
     return () => {
-      // Mark component as unmounted
-      isMounted.current = false;
+      isMounted = false;
       
-      // Clean up callback
-      if (window[GOOGLE_MAPS_CALLBACK]) {
-        window[GOOGLE_MAPS_CALLBACK] = undefined;
+      // Clean up the callback
+      if (window[callbackName]) {
+        window[callbackName] = undefined;
       }
       
-      // Only try to remove the script if it exists in the DOM
-      const script = document.getElementById("google-maps-script");
-      if (script && script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
+      // We don't need to remove the script tag manually
+      // This avoids the DOM error when React tries to remove it twice
+      // The browser will clean up orphaned script tags
     };
-  }, []);
+  }, [centerLat, centerLng]);
 
   const openLocation = (url: string) => {
     window.open(url, "_blank");
