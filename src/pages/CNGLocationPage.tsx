@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
-import { Map as MapIcon, Navigation } from "lucide-react";
+import { Navigation } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,7 +41,10 @@ const cngLocations = [
 ];
 
 // The unique callback name to avoid conflicts
-const GOOGLE_MAPS_CALLBACK = "initGoogleMap_CNG";
+const GOOGLE_MAPS_CALLBACK = "initGoogleMapCNG";
+
+// API Key (this is a demo key)
+const API_KEY = "AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8";
 
 const CNGLocationPage = () => {
   const { user } = useAuth();
@@ -49,114 +52,120 @@ const CNGLocationPage = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapError, setMapError] = useState<boolean>(false);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
-  const scriptRef = useRef<HTMLScriptElement | null>(null);
+  const isMounted = useRef<boolean>(true);
   
-  useEffect(() => {
-    // Calculate center point
-    const centerLat = cngLocations.reduce((sum, loc) => sum + loc.lat, 0) / cngLocations.length;
-    const centerLng = cngLocations.reduce((sum, loc) => sum + loc.lng, 0) / cngLocations.length;
+  // Calculate center point for static map fallback
+  const centerLat = cngLocations.reduce((sum, loc) => sum + loc.lat, 0) / cngLocations.length;
+  const centerLng = cngLocations.reduce((sum, loc) => sum + loc.lng, 0) / cngLocations.length;
+
+  // Script loading helper function with proper cleanup
+  const loadGoogleMapsScript = () => {
+    if (!isMounted.current) return;
     
-    // Safer API key handling
-    const apiKey = "AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8"; // This is a public demo API key
-    
-    // Create static map URL as fallback
-    const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=13&size=600x400&maptype=roadmap&key=${apiKey}`;
-    setMapUrl(staticMapUrl);
-    
-    // Safety check to prevent duplicate script loading
+    // Return early if Google Maps is already loaded
+    if (window.google && window.google.maps) {
+      initMap();
+      return;
+    }
+
+    // Make sure we don't have the callback function defined already
     if (window[GOOGLE_MAPS_CALLBACK]) {
-      // If the callback already exists, it means the script is already loaded or loading
-      // We should clear it to prevent issues
       window[GOOGLE_MAPS_CALLBACK] = undefined;
     }
-    
-    // Safely load Google Maps API
-    const loadGoogleMapsScript = () => {
-      // Define the initialization function with unique name to avoid conflicts
-      window[GOOGLE_MAPS_CALLBACK] = function() {
-        try {
-          if (mapRef.current && window.google && window.google.maps) {
-            const mapOptions = {
-              center: { lat: centerLat, lng: centerLng },
-              zoom: 13,
-            };
-            
-            const map = new window.google.maps.Map(mapRef.current, mapOptions);
-            
-            // Add markers for each location
-            cngLocations.forEach(location => {
-              new window.google.maps.Marker({
-                position: { lat: location.lat, lng: location.lng },
-                map: map,
-                title: location.name,
-                label: {
-                  text: location.id.toString(),
-                  color: "white"
-                },
-                icon: {
-                  path: window.google.maps.SymbolPath.CIRCLE,
-                  fillColor: "#0EA5E9",
-                  fillOpacity: 1,
-                  strokeWeight: 0,
-                  scale: 10
-                }
-              });
-            });
-            
-            setMapLoaded(true);
-          }
-        } catch (error) {
-          console.error("Error initializing Google Map:", error);
-          setMapError(true);
-        }
-      };
-      
-      // Create a new script element only if it doesn't exist
-      if (!scriptRef.current) {
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${GOOGLE_MAPS_CALLBACK}&loading=async`;
-        script.async = true;
-        script.defer = true;
-        
-        // Handle errors
-        script.onerror = () => {
-          console.error("Google Maps script failed to load");
-          setMapError(true);
-          // Clean up the global function if script fails to load
-          if (window[GOOGLE_MAPS_CALLBACK]) {
-            window[GOOGLE_MAPS_CALLBACK] = undefined;
-          }
-        };
-        
-        // Save reference to script for cleanup
-        scriptRef.current = script;
-        document.head.appendChild(script);
+
+    // Define callback function for Google Maps
+    window[GOOGLE_MAPS_CALLBACK] = function() {
+      if (isMounted.current) {
+        initMap();
       }
     };
-    
-    loadGoogleMapsScript();
-    
-    // Clean up function
+
+    // Create and add script
+    const script = document.createElement('script');
+    script.id = "google-maps-script";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=${GOOGLE_MAPS_CALLBACK}&loading=async`;
+    script.async = true;
+    script.defer = true;
+    script.onerror = () => {
+      if (isMounted.current) {
+        console.error("Google Maps script failed to load");
+        setMapError(true);
+      }
+    };
+
+    document.head.appendChild(script);
+
     return () => {
-      // Clean up the global function
+      // Clean up callback
       if (window[GOOGLE_MAPS_CALLBACK]) {
         window[GOOGLE_MAPS_CALLBACK] = undefined;
       }
       
-      // Clean up script element if it exists and is still in DOM
-      if (scriptRef.current) {
-        // First check if the script element is actually in the document
-        // to prevent the removeChild error
-        const script = scriptRef.current;
-        const isInDocument = document.head.contains(script);
-        
-        if (isInDocument) {
-          document.head.removeChild(script);
-        }
-        
-        // Clear reference regardless
-        scriptRef.current = null;
+      // Remove script if it exists in document
+      const existingScript = document.getElementById("google-maps-script");
+      if (existingScript && existingScript.parentNode) {
+        existingScript.parentNode.removeChild(existingScript);
       }
+    };
+  };
+
+  // Initialize map when Google Maps API is loaded
+  const initMap = () => {
+    if (!isMounted.current || !mapRef.current || !window.google || !window.google.maps) {
+      return;
+    }
+
+    try {
+      const mapOptions = {
+        center: { lat: centerLat, lng: centerLng },
+        zoom: 13,
+      };
+      
+      const map = new window.google.maps.Map(mapRef.current, mapOptions);
+      
+      // Add markers for each location
+      cngLocations.forEach(location => {
+        new window.google.maps.Marker({
+          position: { lat: location.lat, lng: location.lng },
+          map: map,
+          title: location.name,
+          label: {
+            text: location.id.toString(),
+            color: "white"
+          },
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            fillColor: "#0EA5E9",
+            fillOpacity: 1,
+            strokeWeight: 0,
+            scale: 10
+          }
+        });
+      });
+      
+      setMapLoaded(true);
+    } catch (error) {
+      console.error("Error initializing Google Map:", error);
+      setMapError(true);
+    }
+  };
+
+  // Set up the static map URL for fallback
+  useEffect(() => {
+    const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=13&size=600x400&maptype=roadmap&key=${API_KEY}`;
+    setMapUrl(staticMapUrl);
+  }, []);
+  
+  // Load the Google Maps script
+  useEffect(() => {
+    const cleanup = loadGoogleMapsScript();
+    
+    return () => {
+      // Mark component as unmounted to prevent state updates
+      isMounted.current = false;
+      
+      // Call the cleanup function if it exists
+      if (cleanup) cleanup();
     };
   }, []);
 
