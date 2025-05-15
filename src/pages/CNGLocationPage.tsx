@@ -53,61 +53,17 @@ const CNGLocationPage = () => {
   const [mapError, setMapError] = useState<boolean>(false);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const isMounted = useRef<boolean>(true);
+  const scriptRef = useRef<HTMLScriptElement | null>(null);
   
   // Calculate center point for static map fallback
   const centerLat = cngLocations.reduce((sum, loc) => sum + loc.lat, 0) / cngLocations.length;
   const centerLng = cngLocations.reduce((sum, loc) => sum + loc.lng, 0) / cngLocations.length;
 
-  // Script loading helper function with proper cleanup
-  const loadGoogleMapsScript = () => {
-    if (!isMounted.current) return;
-    
-    // Return early if Google Maps is already loaded
-    if (window.google && window.google.maps) {
-      initMap();
-      return;
-    }
-
-    // Make sure we don't have the callback function defined already
-    if (window[GOOGLE_MAPS_CALLBACK]) {
-      window[GOOGLE_MAPS_CALLBACK] = undefined;
-    }
-
-    // Define callback function for Google Maps
-    window[GOOGLE_MAPS_CALLBACK] = function() {
-      if (isMounted.current) {
-        initMap();
-      }
-    };
-
-    // Create and add script
-    const script = document.createElement('script');
-    script.id = "google-maps-script";
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=${GOOGLE_MAPS_CALLBACK}&loading=async`;
-    script.async = true;
-    script.defer = true;
-    script.onerror = () => {
-      if (isMounted.current) {
-        console.error("Google Maps script failed to load");
-        setMapError(true);
-      }
-    };
-
-    document.head.appendChild(script);
-
-    return () => {
-      // Clean up callback
-      if (window[GOOGLE_MAPS_CALLBACK]) {
-        window[GOOGLE_MAPS_CALLBACK] = undefined;
-      }
-      
-      // Remove script if it exists in document
-      const existingScript = document.getElementById("google-maps-script");
-      if (existingScript && existingScript.parentNode) {
-        existingScript.parentNode.removeChild(existingScript);
-      }
-    };
-  };
+  // Set up the static map URL for fallback
+  useEffect(() => {
+    const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=13&size=600x400&maptype=roadmap&key=${API_KEY}`;
+    setMapUrl(staticMapUrl);
+  }, []);
 
   // Initialize map when Google Maps API is loaded
   const initMap = () => {
@@ -150,22 +106,74 @@ const CNGLocationPage = () => {
     }
   };
 
-  // Set up the static map URL for fallback
+  // Load the Google Maps script with proper cleanup
   useEffect(() => {
-    const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=13&size=600x400&maptype=roadmap&key=${API_KEY}`;
-    setMapUrl(staticMapUrl);
-  }, []);
-  
-  // Load the Google Maps script
-  useEffect(() => {
-    const cleanup = loadGoogleMapsScript();
+    // Set mounted flag to true
+    isMounted.current = true;
     
+    // Function to load Google Maps script
+    const loadGoogleMapsScript = () => {
+      // Return early if Google Maps is already loaded
+      if (window.google && window.google.maps) {
+        initMap();
+        return;
+      }
+
+      // Remove any existing callback
+      if (window[GOOGLE_MAPS_CALLBACK]) {
+        window[GOOGLE_MAPS_CALLBACK] = undefined;
+      }
+
+      // Define callback function for Google Maps
+      window[GOOGLE_MAPS_CALLBACK] = function() {
+        if (isMounted.current) {
+          initMap();
+        }
+      };
+
+      // Remove any existing Google Maps script first
+      const existingScript = document.getElementById("google-maps-script");
+      if (existingScript && existingScript.parentNode) {
+        existingScript.parentNode.removeChild(existingScript);
+      }
+
+      // Create and add script
+      const script = document.createElement('script');
+      script.id = "google-maps-script";
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=${GOOGLE_MAPS_CALLBACK}&loading=async`;
+      script.async = true;
+      script.defer = true;
+      script.onerror = () => {
+        if (isMounted.current) {
+          console.error("Google Maps script failed to load");
+          setMapError(true);
+        }
+      };
+
+      document.head.appendChild(script);
+      scriptRef.current = script;
+    };
+
+    // Load the script
+    loadGoogleMapsScript();
+
+    // Cleanup function
     return () => {
-      // Mark component as unmounted to prevent state updates
+      // Mark component as unmounted
       isMounted.current = false;
       
-      // Call the cleanup function if it exists
-      if (cleanup) cleanup();
+      // Clean up callback
+      if (window[GOOGLE_MAPS_CALLBACK]) {
+        window[GOOGLE_MAPS_CALLBACK] = undefined;
+      }
+      
+      // Safely remove the script tag if it exists and is still in the DOM
+      if (scriptRef.current && document.head.contains(scriptRef.current)) {
+        document.head.removeChild(scriptRef.current);
+      }
+      
+      // Nullify the reference
+      scriptRef.current = null;
     };
   }, []);
 
