@@ -63,6 +63,13 @@ const CNGLocationPage = () => {
     const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=13&size=600x400&maptype=roadmap&key=${apiKey}`;
     setMapUrl(staticMapUrl);
     
+    // Safety check to prevent duplicate script loading
+    if (window[GOOGLE_MAPS_CALLBACK]) {
+      // If the callback already exists, it means the script is already loaded or loading
+      // We should clear it to prevent issues
+      window[GOOGLE_MAPS_CALLBACK] = undefined;
+    }
+    
     // Safely load Google Maps API
     const loadGoogleMapsScript = () => {
       // Define the initialization function with unique name to avoid conflicts
@@ -104,25 +111,27 @@ const CNGLocationPage = () => {
         }
       };
       
-      // Create a new script element
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${GOOGLE_MAPS_CALLBACK}&loading=async`;
-      script.async = true;
-      script.defer = true;
-      
-      // Handle errors
-      script.onerror = () => {
-        console.error("Google Maps script failed to load");
-        setMapError(true);
-        // Clean up the global function if script fails to load
-        if (window[GOOGLE_MAPS_CALLBACK]) {
-          window[GOOGLE_MAPS_CALLBACK] = undefined;
-        }
-      };
-      
-      // Save reference to script for cleanup
-      scriptRef.current = script;
-      document.head.appendChild(script);
+      // Create a new script element only if it doesn't exist
+      if (!scriptRef.current) {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${GOOGLE_MAPS_CALLBACK}&loading=async`;
+        script.async = true;
+        script.defer = true;
+        
+        // Handle errors
+        script.onerror = () => {
+          console.error("Google Maps script failed to load");
+          setMapError(true);
+          // Clean up the global function if script fails to load
+          if (window[GOOGLE_MAPS_CALLBACK]) {
+            window[GOOGLE_MAPS_CALLBACK] = undefined;
+          }
+        };
+        
+        // Save reference to script for cleanup
+        scriptRef.current = script;
+        document.head.appendChild(script);
+      }
     };
     
     loadGoogleMapsScript();
@@ -134,9 +143,18 @@ const CNGLocationPage = () => {
         window[GOOGLE_MAPS_CALLBACK] = undefined;
       }
       
-      // Clean up script element if it exists
-      if (scriptRef.current && document.head.contains(scriptRef.current)) {
-        document.head.removeChild(scriptRef.current);
+      // Clean up script element if it exists and is still in DOM
+      if (scriptRef.current) {
+        // First check if the script element is actually in the document
+        // to prevent the removeChild error
+        const script = scriptRef.current;
+        const isInDocument = document.head.contains(script);
+        
+        if (isInDocument) {
+          document.head.removeChild(script);
+        }
+        
+        // Clear reference regardless
         scriptRef.current = null;
       }
     };
