@@ -1,22 +1,11 @@
 
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
 const Index = () => {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Redirect to login page
-    navigate("/login");
-  }, [navigate]);
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <p className="text-xl text-gray-600">Redirecting...</p>
-      </div>
-    </div>
-  );
+  // Instead of using useNavigate which might cause DOM issues during initial render,
+  // we'll use the Navigate component which handles redirects more cleanly
+  return <Navigate to="/login" replace />;
 };
 
 export default Index;

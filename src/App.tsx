@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +15,7 @@ import MFuelPage from "./pages/MFuelPage";
 import HotspotPage from "./pages/HotspotPage";
 import CNGLocationPage from "./pages/CNGLocationPage";
 import { useEffect } from "react";
+import Index from "./pages/Index";
 
 // Create a new QueryClient instance inside the component
 // to ensure it's created in the proper React context
@@ -53,10 +53,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<AuthRoute />} />
-      <Route 
-        path="/" 
-        element={<Navigate to="/home" replace />} 
-      />
+      <Route path="/" element={<Index />} />
       <Route 
         path="/home" 
         element={
