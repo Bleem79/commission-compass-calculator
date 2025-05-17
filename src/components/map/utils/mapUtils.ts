@@ -55,12 +55,20 @@ export const loadGoogleMapsScript = ({
 /**
  * Creates a marker for the Google Map
  */
-export const createMapMarker = (map: google.maps.Map, marker: {
-  id: number;
-  name: string;
-  lat: number;
-  lng: number;
-}) => {
+export const createMapMarker = (
+  map: google.maps.Map, 
+  marker: {
+    id: number;
+    name: string;
+    lat: number;
+    lng: number;
+  }
+): google.maps.Marker => {
+  // Ensure the Google Maps API is loaded
+  if (!window.google || !window.google.maps) {
+    throw new Error("Google Maps API not loaded");
+  }
+
   return new window.google.maps.Marker({
     position: { lat: marker.lat, lng: marker.lng },
     map,
@@ -78,3 +86,14 @@ export const createMapMarker = (map: google.maps.Map, marker: {
     },
   });
 };
+
+/**
+ * Type definition for Google Maps marker options
+ */
+export interface GoogleMapMarker {
+  id: number;
+  name: string;
+  lat: number;
+  lng: number;
+}
+
