@@ -60,46 +60,45 @@ const CNGLocationPage = () => {
     setMapUrl(staticMapUrl);
   }, []);
 
-  // Initialize Google Maps with a safer pattern
+  // Initialize Google Maps with a safer approach
   useEffect(() => {
-    // Generate a unique callback name for this component instance
-    const callbackName = `initGoogleMapCNG_${Date.now()}`;
-    
-    // Signal to track if component is still mounted
+    // Prevent potential issues with fast unmounting
     let isMounted = true;
     
-    // Initialize map function
-    const initMap = () => {
-      if (!isMounted || !mapRef.current || !window.google || !window.google.maps) {
-        return;
-      }
-
+    // Generate a unique global callback name
+    const callbackName = `initGoogleMapCNG_${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Create the initialization function
+    window[callbackName] = function() {
+      if (!isMounted || !mapRef.current || !window.google?.maps) return;
+      
       try {
-        const mapOptions = {
+        // Create map instance
+        const map = new window.google.maps.Map(mapRef.current, {
           center: { lat: centerLat, lng: centerLng },
           zoom: 13,
-        };
+        });
         
-        const map = new window.google.maps.Map(mapRef.current, mapOptions);
-        
-        // Add markers for each location
+        // Add markers
         cngLocations.forEach(location => {
-          new window.google.maps.Marker({
-            position: { lat: location.lat, lng: location.lng },
-            map: map,
-            title: location.name,
-            label: {
-              text: location.id.toString(),
-              color: "white"
-            },
-            icon: {
-              path: window.google.maps.SymbolPath.CIRCLE,
-              fillColor: "#0EA5E9",
-              fillOpacity: 1,
-              strokeWeight: 0,
-              scale: 10
-            }
-          });
+          if (window.google?.maps) {
+            new window.google.maps.Marker({
+              position: { lat: location.lat, lng: location.lng },
+              map: map,
+              title: location.name,
+              label: {
+                text: location.id.toString(),
+                color: "white"
+              },
+              icon: {
+                path: window.google.maps.SymbolPath.CIRCLE,
+                fillColor: "#0EA5E9",
+                fillOpacity: 1,
+                strokeWeight: 0,
+                scale: 10
+              }
+            });
+          }
         });
         
         if (isMounted) {
@@ -112,25 +111,21 @@ const CNGLocationPage = () => {
         }
       }
     };
-
-    // Register the init callback
-    window[callbackName] = function() {
-      initMap();
-    };
     
+    // Load the Google Maps script
     const loadMap = () => {
       // If Google Maps is already loaded
       if (window.google && window.google.maps) {
-        initMap();
+        window[callbackName]();
         return;
       }
       
-      // Create a script element for Google Maps API
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=${callbackName}&loading=async`;
+      // Create script element
+      const script = document.createElement("script");
+      script.id = `google-maps-api-${callbackName}`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=${callbackName}`;
       script.async = true;
       script.defer = true;
-      script.id = `google-maps-script-${Date.now()}`; // Unique ID
       
       script.onerror = () => {
         if (isMounted) {
@@ -139,27 +134,30 @@ const CNGLocationPage = () => {
         }
       };
       
+      // Append script to document
       document.head.appendChild(script);
     };
     
-    // Load the map
+    // Start loading the map
     loadMap();
     
-    // Cleanup function
+    // Clean up function
     return () => {
+      // Mark component as unmounted
       isMounted = false;
       
-      // Clean up the callback
+      // Clean up the global callback
       if (window[callbackName]) {
         window[callbackName] = undefined;
       }
       
-      // We don't need to remove the script tag manually
-      // This avoids the DOM error when React tries to remove it twice
-      // The browser will clean up orphaned script tags
+      // Note: We don't remove the script tag manually
+      // The browser will handle cleanup of script tags
+      // Attempting to remove it explicitly can cause the removeChild error
     };
   }, [centerLat, centerLng]);
 
+  // Open location in Google Maps
   const openLocation = (url: string) => {
     window.open(url, "_blank");
   };
