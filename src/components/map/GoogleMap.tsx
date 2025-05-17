@@ -27,6 +27,8 @@ const GoogleMap: React.FC<GoogleMapProps> = memo(({
   onLoad,
 }) => {
   const mountedRef = useRef(true);
+  const didCallErrorRef = useRef(false);
+  const didCallLoadRef = useRef(false);
   
   const { mapRef, mapLoaded, mapError } = useGoogleMaps({
     apiKey,
@@ -34,12 +36,14 @@ const GoogleMap: React.FC<GoogleMapProps> = memo(({
     zoom,
     markers,
     onError: () => {
-      if (mountedRef.current && onError) {
+      if (mountedRef.current && onError && !didCallErrorRef.current) {
+        didCallErrorRef.current = true;
         onError();
       }
     },
     onLoad: () => {
-      if (mountedRef.current && onLoad) {
+      if (mountedRef.current && onLoad && !didCallLoadRef.current) {
+        didCallLoadRef.current = true;
         onLoad();
       }
     },
@@ -48,6 +52,8 @@ const GoogleMap: React.FC<GoogleMapProps> = memo(({
   useEffect(() => {
     // Component mount
     mountedRef.current = true;
+    didCallErrorRef.current = false;
+    didCallLoadRef.current = false;
     
     // Cleanup on unmount
     return () => {
@@ -63,7 +69,7 @@ const GoogleMap: React.FC<GoogleMapProps> = memo(({
       aria-label={mapLoaded ? "Google Map" : "Loading map..."}
     >
       {(!mapLoaded || mapError) && (
-        <MapLoadingIndicator isError={mapError} />
+        <MapLoadingIndicator key="map-loading-indicator" isError={mapError} />
       )}
     </div>
   );

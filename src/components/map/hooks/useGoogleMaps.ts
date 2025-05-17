@@ -34,17 +34,18 @@ export const useGoogleMaps = ({
   const mapInitialized = useRef<boolean>(false);
   
   // Generate a unique callback name for this map instance that persists across renders
-  // Ensure it's stable and won't cause memory leaks
   const callbackName = useRef(`initMap_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`);
   
   // Clear any existing markers
   const clearMarkers = useCallback(() => {
-    markersRef.current.forEach(marker => {
-      if (marker) {
-        marker.setMap(null);
-      }
-    });
-    markersRef.current = [];
+    if (markersRef.current.length > 0) {
+      markersRef.current.forEach(marker => {
+        if (marker) {
+          marker.setMap(null);
+        }
+      });
+      markersRef.current = [];
+    }
   }, []);
   
   // Initialize the map
@@ -70,12 +71,21 @@ export const useGoogleMaps = ({
       if (mapInstance.current) {
         clearMarkers();
       } else {
-        // Create the map
-        mapInstance.current = new window.google.maps.Map(mapRef.current, {
-          center,
-          zoom,
-          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-        });
+        try {
+          // Create the map
+          mapInstance.current = new window.google.maps.Map(mapRef.current, {
+            center,
+            zoom,
+            mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+          });
+        } catch (err) {
+          console.error("Failed to create map instance:", err);
+          if (isMounted.current) {
+            setMapError(true);
+            if (onError) onError();
+          }
+          return;
+        }
       }
       
       const map = mapInstance.current;
@@ -90,29 +100,31 @@ export const useGoogleMaps = ({
       map.setZoom(zoom);
       
       // Add markers
-      markers.forEach((markerData) => {
-        try {
-          const marker = new window.google.maps.Marker({
-            position: { lat: markerData.lat, lng: markerData.lng },
-            map,
-            title: markerData.name,
-            label: {
-              text: markerData.id.toString(),
-              color: "white",
-            },
-            icon: {
-              path: window.google.maps.SymbolPath.CIRCLE,
-              fillColor: "#0EA5E9",
-              fillOpacity: 1,
-              strokeWeight: 0,
-              scale: 10,
-            },
-          });
-          markersRef.current.push(marker);
-        } catch (err) {
-          console.error("Failed to create marker:", err);
-        }
-      });
+      if (markers && markers.length > 0) {
+        markers.forEach((markerData) => {
+          try {
+            const marker = new window.google.maps.Marker({
+              position: { lat: markerData.lat, lng: markerData.lng },
+              map,
+              title: markerData.name,
+              label: {
+                text: markerData.id.toString(),
+                color: "white",
+              },
+              icon: {
+                path: window.google.maps.SymbolPath.CIRCLE,
+                fillColor: "#0EA5E9",
+                fillOpacity: 1,
+                strokeWeight: 0,
+                scale: 10,
+              },
+            });
+            markersRef.current.push(marker);
+          } catch (err) {
+            console.error("Failed to create marker:", err);
+          }
+        });
+      }
       
       mapInitialized.current = true;
       
@@ -137,7 +149,6 @@ export const useGoogleMaps = ({
     isMounted.current = true;
     
     // Define the Google Maps callback function
-    // Safe to redefine even if already initialized
     window[callbackName.current] = function() {
       if (isMounted.current) {
         initializeMap();
@@ -167,8 +178,10 @@ export const useGoogleMaps = ({
       // Clean up the markers
       clearMarkers();
       
+      // Clear map instance
+      mapInstance.current = null;
+      
       // Clean up the callback function but don't remove script
-      // This prevents DOM manipulation errors
       cleanupGoogleMapsScript(callbackName.current);
     };
   }, [apiKey, initializeMap, onError, clearMarkers]);
@@ -185,29 +198,31 @@ export const useGoogleMaps = ({
       
       if (mapInstance.current) {
         const map = mapInstance.current;
-        markers.forEach((markerData) => {
-          try {
-            const marker = new window.google.maps.Marker({
-              position: { lat: markerData.lat, lng: markerData.lng },
-              map,
-              title: markerData.name,
-              label: {
-                text: markerData.id.toString(),
-                color: "white",
-              },
-              icon: {
-                path: window.google.maps.SymbolPath.CIRCLE,
-                fillColor: "#0EA5E9",
-                fillOpacity: 1,
-                strokeWeight: 0,
-                scale: 10,
-              },
-            });
-            markersRef.current.push(marker);
-          } catch (err) {
-            console.error("Failed to update marker:", err);
-          }
-        });
+        if (markers && markers.length > 0) {
+          markers.forEach((markerData) => {
+            try {
+              const marker = new window.google.maps.Marker({
+                position: { lat: markerData.lat, lng: markerData.lng },
+                map,
+                title: markerData.name,
+                label: {
+                  text: markerData.id.toString(),
+                  color: "white",
+                },
+                icon: {
+                  path: window.google.maps.SymbolPath.CIRCLE,
+                  fillColor: "#0EA5E9",
+                  fillOpacity: 1,
+                  strokeWeight: 0,
+                  scale: 10,
+                },
+              });
+              markersRef.current.push(marker);
+            } catch (err) {
+              console.error("Failed to update marker:", err);
+            }
+          });
+        }
       }
     }
   }, [center, zoom, markers, clearMarkers]);

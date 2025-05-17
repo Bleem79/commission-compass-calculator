@@ -1,3 +1,4 @@
+
 interface LoadScriptProps {
   apiKey: string;
   callbackName: string;
@@ -82,7 +83,7 @@ export const loadGoogleMapsScript = ({
 
 /**
  * Utility to clean up Google Maps callback
- * Note: We don't physically remove the script tag to prevent DOM issues
+ * ONLY clears the callback function, doesn't remove script tag
  */
 export const cleanupGoogleMapsScript = (callbackName: string) => {
   // Only clear the callback function, don't remove the script
