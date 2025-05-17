@@ -1,5 +1,5 @@
 
-import React, { memo, useEffect } from "react";
+import React, { memo, useEffect, useRef } from "react";
 import { useGoogleMaps } from "./hooks/useGoogleMaps";
 import { MapLoadingIndicator } from "./MapLoadingIndicator";
 
@@ -26,18 +26,33 @@ const GoogleMap: React.FC<GoogleMapProps> = memo(({
   onError,
   onLoad,
 }) => {
+  const mountedRef = useRef(true);
+  
   const { mapRef, mapLoaded, mapError } = useGoogleMaps({
     apiKey,
     center,
     zoom,
     markers,
-    onError,
-    onLoad,
+    onError: () => {
+      if (mountedRef.current && onError) {
+        onError();
+      }
+    },
+    onLoad: () => {
+      if (mountedRef.current && onLoad) {
+        onLoad();
+      }
+    },
   });
   
   useEffect(() => {
+    // Component mount
+    mountedRef.current = true;
+    
+    // Cleanup on unmount
     return () => {
-      // Component cleanup logic if needed
+      console.log("GoogleMap component unmounting");
+      mountedRef.current = false;
     };
   }, []);
   

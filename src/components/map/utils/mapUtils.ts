@@ -73,11 +73,11 @@ export const loadGoogleMapsScript = ({
 };
 
 /**
- * Utility to clean up Google Maps script
+ * Utility to clean up Google Maps callback
  * Note: We don't physically remove the script tag anymore to avoid DOM issues
  */
 export const cleanupGoogleMapsScript = (callbackName: string) => {
-  // Clear callback function
+  // Only clear the callback function, don't remove the script
   if (window[callbackName]) {
     window[callbackName] = null;
   }

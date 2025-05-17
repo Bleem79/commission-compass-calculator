@@ -30,8 +30,9 @@ export const useGoogleMaps = ({
   const mapInstance = useRef<any>(null);
   const isMounted = useRef(true);
   const scriptAdded = useRef(false);
+  const markersRef = useRef<any[]>([]);
   
-  // Generate a unique callback name for this map instance
+  // Generate a unique callback name for this map instance that persists across renders
   const callbackName = useRef(`initMap_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`);
   
   // Initialize the map
@@ -62,14 +63,22 @@ export const useGoogleMaps = ({
       
       mapInstance.current = map;
       
+      // Clean up any previous markers
+      markersRef.current.forEach(marker => {
+        if (marker) {
+          marker.setMap(null);
+        }
+      });
+      markersRef.current = [];
+      
       // Add markers
-      markers.forEach((marker) => {
-        new window.google.maps.Marker({
-          position: { lat: marker.lat, lng: marker.lng },
+      markers.forEach((markerData) => {
+        const marker = new window.google.maps.Marker({
+          position: { lat: markerData.lat, lng: markerData.lng },
           map,
-          title: marker.name,
+          title: markerData.name,
           label: {
-            text: marker.id.toString(),
+            text: markerData.id.toString(),
             color: "white",
           },
           icon: {
@@ -80,6 +89,7 @@ export const useGoogleMaps = ({
             scale: 10,
           },
         });
+        markersRef.current.push(marker);
       });
       
       if (isMounted.current) {
@@ -97,6 +107,7 @@ export const useGoogleMaps = ({
     }
   }, [center, markers, onError, onLoad, zoom]);
   
+  // Set up the Google Maps callback and script loading
   useEffect(() => {
     // Set up mounted ref for cleanup
     isMounted.current = true;
@@ -125,16 +136,22 @@ export const useGoogleMaps = ({
     
     // Cleanup function
     return () => {
-      console.log("GoogleMap component unmounting");
+      console.log("GoogleMap hook cleanup running");
       isMounted.current = false;
       
-      // Clean up the callback function
-      if (window[callbackName.current]) {
-        cleanupGoogleMapsScript(callbackName.current);
+      // Clean up the map instance and markers
+      if (mapInstance.current) {
+        markersRef.current.forEach(marker => {
+          if (marker) {
+            marker.setMap(null);
+          }
+        });
+        markersRef.current = [];
+        mapInstance.current = null;
       }
       
-      // Clear map instance
-      mapInstance.current = null;
+      // Clean up the callback function but don't remove script
+      cleanupGoogleMapsScript(callbackName.current);
     };
   }, [apiKey, initializeMap, onError]);
   
