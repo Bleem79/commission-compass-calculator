@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile } from "@/components/calculator/UserProfile";
@@ -48,31 +48,44 @@ const CNGLocationPage = () => {
   const [mapError, setMapError] = useState<boolean>(false);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   
+  // Use a ref to track mount state
+  const isMountedRef = useRef(true);
+  
   // Calculate center point for static map fallback
   const centerLat = cngLocations.reduce((sum, loc) => sum + loc.lat, 0) / cngLocations.length;
   const centerLng = cngLocations.reduce((sum, loc) => sum + loc.lng, 0) / cngLocations.length;
 
-  // Set up the static map URL for fallback - use useEffect to set it once
+  // Set up the static map URL for fallback
   useEffect(() => {
+    if (!isMountedRef.current) return;
+    
     const markers = cngLocations.map(loc => 
       `&markers=color:blue%7Clabel:${loc.id}%7C${loc.lat},${loc.lng}`
     ).join('');
     
     const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=13&size=600x400&maptype=roadmap${markers}&key=${API_KEY}`;
     setMapUrl(staticMapUrl);
+    
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [centerLat, centerLng]);
 
-  // Open location in Google Maps - use useCallback to prevent recreating this function
+  // Open location in Google Maps
   const openLocation = useCallback((url: string) => {
     window.open(url, "_blank");
   }, []);
   
   const handleMapError = useCallback(() => {
-    setMapError(true);
+    if (isMountedRef.current) {
+      setMapError(true);
+    }
   }, []);
   
   const handleMapLoad = useCallback(() => {
-    setMapLoaded(true);
+    if (isMountedRef.current) {
+      setMapLoaded(true);
+    }
   }, []);
   
   return (
@@ -111,7 +124,6 @@ const CNGLocationPage = () => {
             </div>
           ) : (
             <GoogleMap
-              key="cng-location-map" 
               apiKey={API_KEY}
               center={{ lat: centerLat, lng: centerLng }}
               zoom={13}

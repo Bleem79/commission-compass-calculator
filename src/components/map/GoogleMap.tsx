@@ -25,28 +25,25 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const scriptRef = useRef<HTMLScriptElement | null>(null);
+  const googleMapScriptId = "google-maps-api-script";
   
-  // Use a ref to track mounted state
-  const isMountedRef = useRef(true);
+  // Create a unique ID for this instance
+  const instanceId = useRef(`map-instance-${Math.random().toString(36).substring(2, 9)}`);
   
   useEffect(() => {
-    // Set mounted to true
-    isMountedRef.current = true;
+    let isMounted = true;
+    const callbackName = `initMap${instanceId.current}`;
     
-    // Generate a unique callback name for this map instance
-    const callbackName = `initGoogleMap_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Define the map initialization callback
+    // Define the callback function
     window[callbackName] = function() {
-      if (!isMountedRef.current || !mapRef.current || !window.google?.maps) return;
+      if (!isMounted || !mapRef.current || !window.google?.maps) return;
       
       try {
         // Create map instance
         const map = new window.google.maps.Map(mapRef.current, {
           center: center,
           zoom: zoom,
-          mapTypeId: 'roadmap', // Use string literal instead of MapTypeId.ROADMAP
+          mapTypeId: 'roadmap',
         });
         
         // Add markers
@@ -71,61 +68,66 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
           }
         });
         
-        if (isMountedRef.current) {
+        if (isMounted) {
           setMapLoaded(true);
           if (onLoad) onLoad();
         }
       } catch (error) {
         console.error("Error initializing Google Map:", error);
-        if (isMountedRef.current && onError) {
+        if (isMounted && onError) {
           onError();
         }
       }
     };
     
-    // Function to load the map
-    const loadMap = () => {
-      // If Google Maps is already loaded
-      if (window.google && window.google.maps) {
-        window[callbackName]();
+    const loadGoogleMapsScript = () => {
+      // Check if script already exists
+      if (document.getElementById(googleMapScriptId)) {
+        // If Google Maps is already loaded and initialized
+        if (window.google && window.google.maps) {
+          window[callbackName]();
+        } else {
+          // Wait for the existing script to load
+          const existingScript = document.getElementById(googleMapScriptId) as HTMLScriptElement;
+          existingScript.addEventListener('load', () => {
+            if (isMounted) {
+              window[callbackName]();
+            }
+          });
+        }
         return;
       }
       
-      // Create script element
+      // Create a new script element if it doesn't exist
       const script = document.createElement("script");
-      script.id = `google-maps-api-${callbackName}`;
+      script.id = googleMapScriptId;
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName}&loading=async`;
       script.async = true;
       script.defer = true;
       
       script.onerror = () => {
-        if (isMountedRef.current && onError) {
+        if (isMounted && onError) {
           onError();
         }
       };
       
-      // Store the script element in a ref
-      scriptRef.current = script;
-      
-      // Append script to document
+      // Append the script to the document head
       document.head.appendChild(script);
     };
     
-    // Start loading the map
-    loadMap();
+    loadGoogleMapsScript();
     
-    // Clean up function
+    // Cleanup function
     return () => {
-      // Mark component as unmounted
-      isMountedRef.current = false;
+      isMounted = false;
       
-      // Clean up the global callback
+      // Clean up the callback
       if (window[callbackName]) {
         window[callbackName] = undefined;
       }
       
-      // Important: Don't manually remove the script tag - let the browser handle it
-      // This prevents the "removeChild" error
+      // Do NOT remove the script element - this is what causes the error
+      // Let the browser handle the script lifecycle
     };
   }, [apiKey, center, zoom, markers, onError, onLoad]);
   
