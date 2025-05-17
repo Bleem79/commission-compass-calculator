@@ -8,6 +8,12 @@ interface Window {
     maps: {
       Map: new (element: HTMLElement, options: any) => any;
       Marker: new (options: any) => any;
+      MapTypeId: {
+        ROADMAP: string;
+        SATELLITE: string;
+        HYBRID: string;
+        TERRAIN: string;
+      };
       SymbolPath: {
         CIRCLE: number;
       };

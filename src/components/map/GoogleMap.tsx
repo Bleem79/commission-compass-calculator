@@ -45,7 +45,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         const map = new window.google.maps.Map(mapRef.current, {
           center: center,
           zoom: zoom,
-          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+          mapTypeId: 'roadmap', // Use string literal instead of MapTypeId.ROADMAP
         });
         
         // Add markers
