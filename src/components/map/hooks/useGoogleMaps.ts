@@ -31,9 +31,21 @@ export const useGoogleMaps = ({
   const isMounted = useRef(true);
   const scriptAdded = useRef(false);
   const markersRef = useRef<any[]>([]);
+  const mapInitialized = useRef<boolean>(false);
   
   // Generate a unique callback name for this map instance that persists across renders
+  // Ensure it's stable and won't cause memory leaks
   const callbackName = useRef(`initMap_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`);
+  
+  // Clear any existing markers
+  const clearMarkers = useCallback(() => {
+    markersRef.current.forEach(marker => {
+      if (marker) {
+        marker.setMap(null);
+      }
+    });
+    markersRef.current = [];
+  }, []);
   
   // Initialize the map
   const initializeMap = useCallback(() => {
@@ -54,43 +66,55 @@ export const useGoogleMaps = ({
 
       console.log("Initializing Google Map with center:", center);
       
-      // Create the map
-      const map = new window.google.maps.Map(mapRef.current, {
-        center,
-        zoom,
-        mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-      });
+      // If map was already initialized, clean up first
+      if (mapInstance.current) {
+        clearMarkers();
+      } else {
+        // Create the map
+        mapInstance.current = new window.google.maps.Map(mapRef.current, {
+          center,
+          zoom,
+          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+        });
+      }
       
-      mapInstance.current = map;
+      const map = mapInstance.current;
       
-      // Clean up any previous markers
-      markersRef.current.forEach(marker => {
-        if (marker) {
-          marker.setMap(null);
-        }
-      });
-      markersRef.current = [];
+      if (!map) {
+        console.error("Failed to create map instance");
+        return;
+      }
+      
+      // Update map center and zoom
+      map.setCenter(center);
+      map.setZoom(zoom);
       
       // Add markers
       markers.forEach((markerData) => {
-        const marker = new window.google.maps.Marker({
-          position: { lat: markerData.lat, lng: markerData.lng },
-          map,
-          title: markerData.name,
-          label: {
-            text: markerData.id.toString(),
-            color: "white",
-          },
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            fillColor: "#0EA5E9",
-            fillOpacity: 1,
-            strokeWeight: 0,
-            scale: 10,
-          },
-        });
-        markersRef.current.push(marker);
+        try {
+          const marker = new window.google.maps.Marker({
+            position: { lat: markerData.lat, lng: markerData.lng },
+            map,
+            title: markerData.name,
+            label: {
+              text: markerData.id.toString(),
+              color: "white",
+            },
+            icon: {
+              path: window.google.maps.SymbolPath.CIRCLE,
+              fillColor: "#0EA5E9",
+              fillOpacity: 1,
+              strokeWeight: 0,
+              scale: 10,
+            },
+          });
+          markersRef.current.push(marker);
+        } catch (err) {
+          console.error("Failed to create marker:", err);
+        }
       });
+      
+      mapInitialized.current = true;
       
       if (isMounted.current) {
         setMapLoaded(true);
@@ -105,7 +129,7 @@ export const useGoogleMaps = ({
         if (onError) onError();
       }
     }
-  }, [center, markers, onError, onLoad, zoom]);
+  }, [center, markers, onError, onLoad, zoom, clearMarkers]);
   
   // Set up the Google Maps callback and script loading
   useEffect(() => {
@@ -113,6 +137,7 @@ export const useGoogleMaps = ({
     isMounted.current = true;
     
     // Define the Google Maps callback function
+    // Safe to redefine even if already initialized
     window[callbackName.current] = function() {
       if (isMounted.current) {
         initializeMap();
@@ -139,21 +164,53 @@ export const useGoogleMaps = ({
       console.log("GoogleMap hook cleanup running");
       isMounted.current = false;
       
-      // Clean up the map instance and markers
-      if (mapInstance.current) {
-        markersRef.current.forEach(marker => {
-          if (marker) {
-            marker.setMap(null);
-          }
-        });
-        markersRef.current = [];
-        mapInstance.current = null;
-      }
+      // Clean up the markers
+      clearMarkers();
       
       // Clean up the callback function but don't remove script
+      // This prevents DOM manipulation errors
       cleanupGoogleMapsScript(callbackName.current);
     };
-  }, [apiKey, initializeMap, onError]);
+  }, [apiKey, initializeMap, onError, clearMarkers]);
+  
+  // Update map when center, zoom, or markers change
+  useEffect(() => {
+    if (mapInitialized.current && mapInstance.current) {
+      // Update map center and zoom
+      mapInstance.current.setCenter(center);
+      mapInstance.current.setZoom(zoom);
+      
+      // Clear and recreate markers
+      clearMarkers();
+      
+      if (mapInstance.current) {
+        const map = mapInstance.current;
+        markers.forEach((markerData) => {
+          try {
+            const marker = new window.google.maps.Marker({
+              position: { lat: markerData.lat, lng: markerData.lng },
+              map,
+              title: markerData.name,
+              label: {
+                text: markerData.id.toString(),
+                color: "white",
+              },
+              icon: {
+                path: window.google.maps.SymbolPath.CIRCLE,
+                fillColor: "#0EA5E9",
+                fillOpacity: 1,
+                strokeWeight: 0,
+                scale: 10,
+              },
+            });
+            markersRef.current.push(marker);
+          } catch (err) {
+            console.error("Failed to update marker:", err);
+          }
+        });
+      }
+    }
+  }, [center, zoom, markers, clearMarkers]);
   
   return { mapRef, mapLoaded, mapError };
 };

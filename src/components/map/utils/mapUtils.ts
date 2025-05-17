@@ -1,4 +1,3 @@
-
 interface LoadScriptProps {
   apiKey: string;
   callbackName: string;
@@ -17,6 +16,9 @@ export interface GoogleMapMarker {
   lat: number;
   lng: number;
 }
+
+// Keep track of loaded scripts globally to prevent duplicate loading
+const loadedScripts: Record<string, boolean> = {};
 
 /**
  * Utility function to load the Google Maps script
@@ -66,7 +68,13 @@ export const loadGoogleMapsScript = ({
     if (isMounted.current) {
       onError();
     }
+    
+    // Mark script as not loaded
+    loadedScripts[scriptId] = false;
   };
+  
+  // Track loaded scripts
+  loadedScripts[scriptId] = true;
   
   console.log("Adding Google Maps script to document");
   document.head.appendChild(script);
@@ -74,7 +82,7 @@ export const loadGoogleMapsScript = ({
 
 /**
  * Utility to clean up Google Maps callback
- * Note: We don't physically remove the script tag anymore to avoid DOM issues
+ * Note: We don't physically remove the script tag to prevent DOM issues
  */
 export const cleanupGoogleMapsScript = (callbackName: string) => {
   // Only clear the callback function, don't remove the script
