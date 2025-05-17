@@ -26,20 +26,30 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState(false);
-  const isMounted = useRef(true);
   const mapInstance = useRef<any>(null);
+  const isMounted = useRef(true);
   const scriptLoaded = useRef(false);
   
-  // Generate a truly unique callback name for this component instance
-  const callbackName = useRef(`initMap_${Math.random().toString(36).substring(2, 11)}`);
+  // Generate a unique callback name with timestamp for this component instance
+  const callbackName = useRef(`initMap_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`);
   
   useEffect(() => {
-    // Set up mounted ref
+    // Set up mounted ref for cleanup tracking
     isMounted.current = true;
     
     // Function to initialize the map
     const initializeMap = () => {
-      if (!isMounted.current || !mapRef.current || !window.google?.maps) {
+      if (!isMounted.current || !mapRef.current) {
+        return;
+      }
+
+      // Check if Google Maps is available
+      if (!window.google?.maps) {
+        console.error("Google Maps API not available");
+        if (isMounted.current) {
+          setMapError(true);
+          if (onError) onError();
+        }
         return;
       }
 
@@ -96,7 +106,9 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     window[callbackName.current] = () => {
       scriptLoaded.current = true;
       console.log("Google Maps script loaded, initializing map");
-      initializeMap();
+      if (isMounted.current) {
+        initializeMap();
+      }
     };
     
     // Check if Google Maps API is already loaded
@@ -109,12 +121,12 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     
     // Helper to load the Google Maps script
     const loadGoogleMapsScript = () => {
-      // Check for existing script
+      // Remove existing script if there's a callback mismatch to avoid conflicts
       const existingScript = document.getElementById("google-maps-api-script") as HTMLScriptElement | null;
       
       if (existingScript) {
         console.log("Google Maps script already exists, adding listener");
-        // Script already exists
+        
         if (!scriptLoaded.current) {
           existingScript.addEventListener("load", () => {
             if (isMounted.current) {
@@ -125,7 +137,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
           });
         }
         
-        // Also check if the script might have already loaded
+        // Check if the script might have already loaded
         if (window.google && window.google.maps) {
           scriptLoaded.current = true;
           console.log("Google Maps already available, initializing map");
@@ -135,7 +147,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         return;
       }
       
-      // Create and add the script
+      // Create and add the script with our callback
       const script = document.createElement("script");
       script.id = "google-maps-api-script";
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName.current}&loading=async&v=weekly`;
@@ -156,15 +168,22 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     
     loadGoogleMapsScript();
     
-    // Cleanup function
+    // Cleanup function - CRITICAL for preventing the "removeChild" error
     return () => {
       console.log("GoogleMap component unmounting, cleaning up");
       isMounted.current = false;
       
-      // Clean up the callback
+      // Clean up the callback only if it exists
       if (window[callbackName.current]) {
-        delete window[callbackName.current];
+        try {
+          delete window[callbackName.current];
+        } catch (e) {
+          console.warn("Failed to clean up map callback:", e);
+          window[callbackName.current] = undefined;
+        }
       }
+
+      // Don't remove the script since other components might be using it
     };
   }, [apiKey, center.lat, center.lng, zoom, markers, onError, onLoad]);
   

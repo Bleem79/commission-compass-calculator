@@ -48,7 +48,7 @@ const CNGLocationPage = () => {
   const [mapUrl, setMapUrl] = useState<string>("");
   const [mapError, setMapError] = useState<boolean>(false);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
-  const [mapKey, setMapKey] = useState<number>(Date.now()); // Use timestamp for better uniqueness
+  const [mapKey, setMapKey] = useState<number>(Date.now());
   const mountedRef = useRef(true);
   
   // Calculate center point for static map fallback
@@ -58,6 +58,8 @@ const CNGLocationPage = () => {
 
   // Set up the static map URL for fallback
   useEffect(() => {
+    mountedRef.current = true;
+    
     const markers = cngLocations.map(loc => 
       `&markers=color:blue%7Clabel:${loc.id}%7C${loc.lat},${loc.lng}`
     ).join('');
@@ -81,7 +83,7 @@ const CNGLocationPage = () => {
     setMapError(true);
     toast({
       title: "Map Loading Error",
-      description: "Unable to load the interactive map. You can still view individual locations using the cards below.",
+      description: "Unable to load the interactive map. Using static map fallback.",
       variant: "destructive"
     });
     console.error("Failed to load Google Maps. Using static map fallback.");
@@ -89,6 +91,7 @@ const CNGLocationPage = () => {
   
   const handleMapLoad = useCallback(() => {
     if (!mountedRef.current) return;
+    
     setMapLoaded(true);
     console.log("Google Maps loaded successfully");
   }, []);
@@ -149,7 +152,7 @@ const CNGLocationPage = () => {
             </div>
           ) : (
             <GoogleMap
-              key={mapKey} // Force remount if needed
+              key={mapKey}
               apiKey={API_KEY}
               center={mapCenter}
               zoom={13}
