@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { loadGoogleMapsScript, cleanupGoogleMapsScript } from "../utils/mapUtils";
 
 interface UseGoogleMapsProps {
@@ -34,73 +34,73 @@ export const useGoogleMaps = ({
   // Generate a unique callback name for this map instance
   const callbackName = useRef(`initMap_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`);
   
-  useEffect(() => {
-    // Set up mounted ref for cleanup
-    isMounted.current = true;
-    
-    // Function to initialize the map
-    const initializeMap = () => {
-      if (!isMounted.current || !mapRef.current) {
-        return;
-      }
+  // Initialize the map
+  const initializeMap = useCallback(() => {
+    if (!isMounted.current || !mapRef.current) {
+      return;
+    }
 
-      try {
-        // Check if Google Maps API is loaded properly
-        if (!window.google || !window.google.maps) {
-          console.error("Google Maps API not loaded properly");
-          if (isMounted.current) {
-            setMapError(true);
-            if (onError) onError();
-          }
-          return;
-        }
-
-        console.log("Initializing Google Map with center:", center);
-        
-        // Create the map
-        const map = new window.google.maps.Map(mapRef.current, {
-          center,
-          zoom,
-          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-        });
-        
-        mapInstance.current = map;
-        
-        // Add markers
-        markers.forEach((marker) => {
-          new window.google.maps.Marker({
-            position: { lat: marker.lat, lng: marker.lng },
-            map,
-            title: marker.name,
-            label: {
-              text: marker.id.toString(),
-              color: "white",
-            },
-            icon: {
-              path: window.google.maps.SymbolPath.CIRCLE,
-              fillColor: "#0EA5E9",
-              fillOpacity: 1,
-              strokeWeight: 0,
-              scale: 10,
-            },
-          });
-        });
-        
-        if (isMounted.current) {
-          setMapLoaded(true);
-          setMapError(false);
-          if (onLoad) onLoad();
-          console.log("Google Maps loaded successfully");
-        }
-      } catch (error) {
-        console.error("Error initializing Google Map:", error);
+    try {
+      // Check if Google Maps API is loaded properly
+      if (!window.google || !window.google.maps) {
+        console.error("Google Maps API not loaded properly");
         if (isMounted.current) {
           setMapError(true);
           if (onError) onError();
         }
+        return;
       }
-    };
 
+      console.log("Initializing Google Map with center:", center);
+      
+      // Create the map
+      const map = new window.google.maps.Map(mapRef.current, {
+        center,
+        zoom,
+        mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+      });
+      
+      mapInstance.current = map;
+      
+      // Add markers
+      markers.forEach((marker) => {
+        new window.google.maps.Marker({
+          position: { lat: marker.lat, lng: marker.lng },
+          map,
+          title: marker.name,
+          label: {
+            text: marker.id.toString(),
+            color: "white",
+          },
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            fillColor: "#0EA5E9",
+            fillOpacity: 1,
+            strokeWeight: 0,
+            scale: 10,
+          },
+        });
+      });
+      
+      if (isMounted.current) {
+        setMapLoaded(true);
+        setMapError(false);
+        if (onLoad) onLoad();
+        console.log("Google Maps loaded successfully");
+      }
+    } catch (error) {
+      console.error("Error initializing Google Map:", error);
+      if (isMounted.current) {
+        setMapError(true);
+        if (onError) onError();
+      }
+    }
+  }, [center, markers, onError, onLoad, zoom]);
+  
+  useEffect(() => {
+    // Set up mounted ref for cleanup
+    isMounted.current = true;
+    
     // Define the Google Maps callback function
     window[callbackName.current] = function() {
       if (isMounted.current) {
@@ -128,10 +128,15 @@ export const useGoogleMaps = ({
       console.log("GoogleMap component unmounting");
       isMounted.current = false;
       
-      // Clean up the callback function and script tag
-      cleanupGoogleMapsScript(callbackName.current);
+      // Clean up the callback function
+      if (window[callbackName.current]) {
+        cleanupGoogleMapsScript(callbackName.current);
+      }
+      
+      // Clear map instance
+      mapInstance.current = null;
     };
-  }, [apiKey, center.lat, center.lng, zoom, markers, onError, onLoad]);
+  }, [apiKey, initializeMap, onError]);
   
   return { mapRef, mapLoaded, mapError };
 };

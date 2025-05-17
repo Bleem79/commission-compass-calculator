@@ -1,5 +1,5 @@
 
-import React, { memo } from "react";
+import React, { memo, useEffect } from "react";
 import { useGoogleMaps } from "./hooks/useGoogleMaps";
 import { MapLoadingIndicator } from "./MapLoadingIndicator";
 
@@ -34,6 +34,12 @@ const GoogleMap: React.FC<GoogleMapProps> = memo(({
     onError,
     onLoad,
   });
+  
+  useEffect(() => {
+    return () => {
+      // Component cleanup logic if needed
+    };
+  }, []);
   
   return (
     <div 

@@ -66,9 +66,6 @@ export const loadGoogleMapsScript = ({
     if (isMounted.current) {
       onError();
     }
-    
-    // Mark script as removable
-    script.dataset.removable = "true";
   };
   
   console.log("Adding Google Maps script to document");
@@ -77,22 +74,12 @@ export const loadGoogleMapsScript = ({
 
 /**
  * Utility to clean up Google Maps script
+ * Note: We don't physically remove the script tag anymore to avoid DOM issues
  */
 export const cleanupGoogleMapsScript = (callbackName: string) => {
   // Clear callback function
   if (window[callbackName]) {
     window[callbackName] = null;
-  }
-  
-  // Only attempt to remove scripts marked as removable
-  const scriptId = `google-maps-script-${callbackName}`;
-  const script = document.getElementById(scriptId);
-  if (script && script.dataset.removable === "true") {
-    try {
-      document.head.removeChild(script);
-    } catch (err) {
-      console.warn("Could not remove Google Maps script:", err);
-    }
   }
 };
 
