@@ -28,6 +28,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   const [mapError, setMapError] = useState(false);
   const isMounted = useRef(true);
   const mapInstance = useRef<any>(null);
+  const scriptLoaded = useRef(false);
   
   // Generate a truly unique callback name for this component instance
   const callbackName = useRef(`initMap_${Math.random().toString(36).substring(2, 11)}`);
@@ -43,11 +44,13 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       }
 
       try {
+        console.log("Initializing Google Map with center:", center);
+        
         // Create the map instance
         const map = new window.google.maps.Map(mapRef.current, {
           center,
           zoom,
-          mapTypeId: "roadmap",
+          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
         });
         
         mapInstance.current = map;
@@ -78,6 +81,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
           setMapLoaded(true);
           setMapError(false);
           if (onLoad) onLoad();
+          console.log("Google Map loaded successfully");
         }
       } catch (error) {
         console.error("Error initializing Google Map:", error);
@@ -90,30 +94,41 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
     // Define the callback function that Google Maps will call
     window[callbackName.current] = () => {
+      scriptLoaded.current = true;
+      console.log("Google Maps script loaded, initializing map");
       initializeMap();
     };
     
     // Check if Google Maps API is already loaded
     if (window.google && window.google.maps) {
-      // Maps API already loaded, initialize map directly
+      console.log("Google Maps already loaded, initializing map directly");
+      scriptLoaded.current = true;
       initializeMap();
       return;
     }
     
     // Helper to load the Google Maps script
     const loadGoogleMapsScript = () => {
+      // Check for existing script
       const existingScript = document.getElementById("google-maps-api-script") as HTMLScriptElement | null;
       
       if (existingScript) {
-        // Script already exists, add a load listener
-        existingScript.addEventListener("load", () => {
-          if (isMounted.current) {
-            initializeMap();
-          }
-        });
+        console.log("Google Maps script already exists, adding listener");
+        // Script already exists
+        if (!scriptLoaded.current) {
+          existingScript.addEventListener("load", () => {
+            if (isMounted.current) {
+              scriptLoaded.current = true;
+              console.log("Existing script loaded, initializing map");
+              initializeMap();
+            }
+          });
+        }
         
         // Also check if the script might have already loaded
         if (window.google && window.google.maps) {
+          scriptLoaded.current = true;
+          console.log("Google Maps already available, initializing map");
           initializeMap();
         }
         
@@ -123,17 +138,19 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       // Create and add the script
       const script = document.createElement("script");
       script.id = "google-maps-api-script";
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName.current}&loading=async`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName.current}&loading=async&v=weekly`;
       script.async = true;
       script.defer = true;
       
       script.onerror = () => {
+        console.error("Failed to load Google Maps script");
         if (isMounted.current) {
           setMapError(true);
           if (onError) onError();
         }
       };
       
+      console.log("Adding Google Maps script to document");
       document.head.appendChild(script);
     };
     
@@ -141,16 +158,15 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     
     // Cleanup function
     return () => {
+      console.log("GoogleMap component unmounting, cleaning up");
       isMounted.current = false;
       
       // Clean up the callback
       if (window[callbackName.current]) {
-        window[callbackName.current] = undefined;
+        delete window[callbackName.current];
       }
-      
-      // Don't remove the script - let the browser handle it
     };
-  }, [apiKey, center, zoom, markers, onError, onLoad]);
+  }, [apiKey, center.lat, center.lng, zoom, markers, onError, onLoad]);
   
   return (
     <div 

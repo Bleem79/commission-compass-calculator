@@ -16,6 +16,10 @@ interface Window {
       };
       SymbolPath: {
         CIRCLE: number;
+        FORWARD_CLOSED_ARROW: number;
+        FORWARD_OPEN_ARROW: number;
+        BACKWARD_CLOSED_ARROW: number;
+        BACKWARD_OPEN_ARROW: number;
       };
     };
   };

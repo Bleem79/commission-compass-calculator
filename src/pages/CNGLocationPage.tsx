@@ -48,11 +48,13 @@ const CNGLocationPage = () => {
   const [mapUrl, setMapUrl] = useState<string>("");
   const [mapError, setMapError] = useState<boolean>(false);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
-  const [mapKey, setMapKey] = useState<number>(1); // Used to force remount
+  const [mapKey, setMapKey] = useState<number>(Date.now()); // Use timestamp for better uniqueness
+  const mountedRef = useRef(true);
   
   // Calculate center point for static map fallback
   const centerLat = cngLocations.reduce((sum, loc) => sum + loc.lat, 0) / cngLocations.length;
   const centerLng = cngLocations.reduce((sum, loc) => sum + loc.lng, 0) / cngLocations.length;
+  const mapCenter = { lat: centerLat, lng: centerLng };
 
   // Set up the static map URL for fallback
   useEffect(() => {
@@ -62,6 +64,10 @@ const CNGLocationPage = () => {
     
     const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=13&size=600x400&maptype=roadmap${markers}&key=${API_KEY}`;
     setMapUrl(staticMapUrl);
+    
+    return () => {
+      mountedRef.current = false;
+    };
   }, [centerLat, centerLng]);
 
   // Open location in Google Maps
@@ -70,18 +76,33 @@ const CNGLocationPage = () => {
   }, []);
   
   const handleMapError = useCallback(() => {
+    if (!mountedRef.current) return;
+    
     setMapError(true);
     toast({
-      title: "Map Error",
-      description: "Unable to load the interactive map. Using static map instead.",
+      title: "Map Loading Error",
+      description: "Unable to load the interactive map. You can still view individual locations using the cards below.",
       variant: "destructive"
     });
-    // Force remount of the component as a last resort
-    setMapKey(prev => prev + 1);
+    console.error("Failed to load Google Maps. Using static map fallback.");
   }, []);
   
   const handleMapLoad = useCallback(() => {
+    if (!mountedRef.current) return;
     setMapLoaded(true);
+    console.log("Google Maps loaded successfully");
+  }, []);
+  
+  // Retry loading the map on error
+  const retryMapLoad = useCallback(() => {
+    setMapKey(Date.now());
+    setMapError(false);
+    setMapLoaded(false);
+    
+    toast({
+      title: "Retrying Map Load",
+      description: "Attempting to load the map again..."
+    });
   }, []);
   
   return (
@@ -108,21 +129,29 @@ const CNGLocationPage = () => {
         <div className="w-full h-[500px] rounded-lg overflow-hidden border-2 border-indigo-300 mb-8 relative">
           {mapError ? (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
-              <Alert variant="destructive" className="max-w-md">
+              <Alert variant="destructive" className="max-w-md mb-4">
                 <AlertTitle>Map Loading Error</AlertTitle>
                 <AlertDescription>
                   Unable to load the interactive map. You can still view individual locations using the cards below.
                 </AlertDescription>
               </Alert>
+              
               <div className="mt-4">
                 <StaticMap mapUrl={mapUrl} alt="Static map of CNG locations" />
               </div>
+              
+              <button 
+                onClick={retryMapLoad}
+                className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+              >
+                Retry Loading Map
+              </button>
             </div>
           ) : (
             <GoogleMap
               key={mapKey} // Force remount if needed
               apiKey={API_KEY}
-              center={{ lat: centerLat, lng: centerLng }}
+              center={mapCenter}
               zoom={13}
               markers={cngLocations.map(loc => ({
                 id: loc.id,
