@@ -6,7 +6,7 @@ import { UserProfile } from "@/components/calculator/UserProfile";
 import GoogleMap from "@/components/map/GoogleMap";
 import StaticMap from "@/components/map/StaticMap";
 import LocationCard from "@/components/map/LocationCard";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 // CNG location data with properly formatted Google Maps embed URLs
 const cngLocations = [
@@ -56,7 +56,7 @@ const CNGLocationPage = () => {
   const centerLng = cngLocations.reduce((sum, loc) => sum + loc.lng, 0) / cngLocations.length;
   const mapCenter = { lat: centerLat, lng: centerLng };
 
-  // Set up the static map URL for fallback
+  // Set up static map URL for fallback
   useEffect(() => {
     mountedRef.current = true;
     
@@ -81,10 +81,8 @@ const CNGLocationPage = () => {
     if (!mountedRef.current) return;
     
     setMapError(true);
-    toast({
-      title: "Map Loading Error",
-      description: "Unable to load the interactive map. Using static map fallback.",
-      variant: "destructive"
+    toast.error("Map Loading Error", {
+      description: "Unable to load the interactive map. Using static map fallback."
     });
     console.error("Failed to load Google Maps. Using static map fallback.");
   }, []);
@@ -93,6 +91,9 @@ const CNGLocationPage = () => {
     if (!mountedRef.current) return;
     
     setMapLoaded(true);
+    toast.success("Map Loaded", {
+      description: "Google Maps loaded successfully."
+    });
     console.log("Google Maps loaded successfully");
   }, []);
   
@@ -102,8 +103,7 @@ const CNGLocationPage = () => {
     setMapError(false);
     setMapLoaded(false);
     
-    toast({
-      title: "Retrying Map Load",
+    toast.info("Retrying Map Load", {
       description: "Attempting to load the map again..."
     });
   }, []);
