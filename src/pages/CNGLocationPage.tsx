@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile } from "@/components/calculator/UserProfile";
@@ -52,24 +52,28 @@ const CNGLocationPage = () => {
   const centerLat = cngLocations.reduce((sum, loc) => sum + loc.lat, 0) / cngLocations.length;
   const centerLng = cngLocations.reduce((sum, loc) => sum + loc.lng, 0) / cngLocations.length;
 
-  // Set up the static map URL for fallback
+  // Set up the static map URL for fallback - use useEffect to set it once
   useEffect(() => {
-    const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=13&size=600x400&maptype=roadmap&key=${API_KEY}`;
+    const markers = cngLocations.map(loc => 
+      `&markers=color:blue%7Clabel:${loc.id}%7C${loc.lat},${loc.lng}`
+    ).join('');
+    
+    const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=13&size=600x400&maptype=roadmap${markers}&key=${API_KEY}`;
     setMapUrl(staticMapUrl);
-  }, []);
+  }, [centerLat, centerLng]);
 
-  // Open location in Google Maps
-  const openLocation = (url: string) => {
+  // Open location in Google Maps - use useCallback to prevent recreating this function
+  const openLocation = useCallback((url: string) => {
     window.open(url, "_blank");
-  };
+  }, []);
   
-  const handleMapError = () => {
+  const handleMapError = useCallback(() => {
     setMapError(true);
-  };
+  }, []);
   
-  const handleMapLoad = () => {
+  const handleMapLoad = useCallback(() => {
     setMapLoaded(true);
-  };
+  }, []);
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-6 md:p-10">
@@ -107,6 +111,7 @@ const CNGLocationPage = () => {
             </div>
           ) : (
             <GoogleMap
+              key="cng-location-map" 
               apiKey={API_KEY}
               center={{ lat: centerLat, lng: centerLng }}
               zoom={13}

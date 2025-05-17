@@ -25,6 +25,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const scriptRef = useRef<HTMLScriptElement | null>(null);
   
   // Use a ref to track mounted state
   const isMountedRef = useRef(true);
@@ -76,8 +77,8 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         }
       } catch (error) {
         console.error("Error initializing Google Map:", error);
-        if (isMountedRef.current) {
-          if (onError) onError();
+        if (isMountedRef.current && onError) {
+          onError();
         }
       }
     };
@@ -103,6 +104,9 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         }
       };
       
+      // Store the script element in a ref
+      scriptRef.current = script;
+      
       // Append script to document
       document.head.appendChild(script);
     };
@@ -115,10 +119,13 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       // Mark component as unmounted
       isMountedRef.current = false;
       
-      // Clean up the global callback - don't attempt to remove script tags
+      // Clean up the global callback
       if (window[callbackName]) {
         window[callbackName] = undefined;
       }
+      
+      // Important: Don't manually remove the script tag - let the browser handle it
+      // This prevents the "removeChild" error
     };
   }, [apiKey, center, zoom, markers, onError, onLoad]);
   
