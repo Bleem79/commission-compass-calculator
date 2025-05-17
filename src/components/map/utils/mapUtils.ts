@@ -1,4 +1,3 @@
-
 interface LoadScriptProps {
   apiKey: string;
   callbackName: string;
@@ -6,6 +5,16 @@ interface LoadScriptProps {
   onError: () => void;
   isMounted: React.MutableRefObject<boolean>;
   scriptAdded: React.MutableRefObject<boolean>;
+}
+
+/**
+ * Type definition for Google Maps marker options
+ */
+export interface GoogleMapMarker {
+  id: number;
+  name: string;
+  lat: number;
+  lng: number;
 }
 
 /**
@@ -56,14 +65,9 @@ export const loadGoogleMapsScript = ({
  * Creates a marker for the Google Map
  */
 export const createMapMarker = (
-  map: google.maps.Map, 
-  marker: {
-    id: number;
-    name: string;
-    lat: number;
-    lng: number;
-  }
-): google.maps.Marker => {
+  map: any, // Use 'any' type instead of google.maps.Map
+  marker: GoogleMapMarker
+): any => { // Use 'any' type instead of google.maps.Marker
   // Ensure the Google Maps API is loaded
   if (!window.google || !window.google.maps) {
     throw new Error("Google Maps API not loaded");
@@ -86,14 +90,3 @@ export const createMapMarker = (
     },
   });
 };
-
-/**
- * Type definition for Google Maps marker options
- */
-export interface GoogleMapMarker {
-  id: number;
-  name: string;
-  lat: number;
-  lng: number;
-}
-
