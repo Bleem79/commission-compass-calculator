@@ -1,6 +1,6 @@
 
 import { useEffect, useRef, useState } from "react";
-import { loadGoogleMapsScript } from "../utils/mapUtils";
+import { loadGoogleMapsScript, cleanupGoogleMapsScript } from "../utils/mapUtils";
 
 interface UseGoogleMapsProps {
   apiKey: string;
@@ -90,7 +90,7 @@ export const useGoogleMaps = ({
           setMapLoaded(true);
           setMapError(false);
           if (onLoad) onLoad();
-          console.log("Google Map loaded successfully");
+          console.log("Google Maps loaded successfully");
         }
       } catch (error) {
         console.error("Error initializing Google Map:", error);
@@ -128,10 +128,8 @@ export const useGoogleMaps = ({
       console.log("GoogleMap component unmounting");
       isMounted.current = false;
       
-      // Clean up the callback function
-      if (window[callbackName.current]) {
-        window[callbackName.current] = null;
-      }
+      // Clean up the callback function and script tag
+      cleanupGoogleMapsScript(callbackName.current);
     };
   }, [apiKey, center.lat, center.lng, zoom, markers, onError, onLoad]);
   

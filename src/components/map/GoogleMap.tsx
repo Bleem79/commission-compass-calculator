@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { useGoogleMaps } from "./hooks/useGoogleMaps";
 import { MapLoadingIndicator } from "./MapLoadingIndicator";
 
@@ -17,7 +17,8 @@ interface GoogleMapProps {
   onLoad?: () => void;
 }
 
-const GoogleMap: React.FC<GoogleMapProps> = ({
+// Using memo to prevent unnecessary re-renders
+const GoogleMap: React.FC<GoogleMapProps> = memo(({
   apiKey,
   center,
   zoom = 13,
@@ -45,6 +46,8 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       )}
     </div>
   );
-};
+});
+
+GoogleMap.displayName = "GoogleMap";
 
 export default GoogleMap;

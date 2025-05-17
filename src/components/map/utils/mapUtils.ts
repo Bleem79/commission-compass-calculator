@@ -1,3 +1,4 @@
+
 interface LoadScriptProps {
   apiKey: string;
   callbackName: string;
@@ -42,10 +43,20 @@ export const loadGoogleMapsScript = ({
   
   scriptAdded.current = true;
   
+  // Create unique script ID based on callback name
+  const scriptId = `google-maps-script-${callbackName}`;
+  
+  // Check if script already exists in DOM
+  const existingScript = document.getElementById(scriptId);
+  if (existingScript) {
+    console.log("Google Maps script already in DOM, waiting for callback");
+    return;
+  }
+  
   // Create new script element
   const script = document.createElement("script");
-  script.id = `google-maps-script-${callbackName}`;
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName}`;
+  script.id = scriptId;
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName}&loading=async`;
   script.async = true;
   script.defer = true;
   
@@ -55,10 +66,34 @@ export const loadGoogleMapsScript = ({
     if (isMounted.current) {
       onError();
     }
+    
+    // Mark script as removable
+    script.dataset.removable = "true";
   };
   
   console.log("Adding Google Maps script to document");
   document.head.appendChild(script);
+};
+
+/**
+ * Utility to clean up Google Maps script
+ */
+export const cleanupGoogleMapsScript = (callbackName: string) => {
+  // Clear callback function
+  if (window[callbackName]) {
+    window[callbackName] = null;
+  }
+  
+  // Only attempt to remove scripts marked as removable
+  const scriptId = `google-maps-script-${callbackName}`;
+  const script = document.getElementById(scriptId);
+  if (script && script.dataset.removable === "true") {
+    try {
+      document.head.removeChild(script);
+    } catch (err) {
+      console.warn("Could not remove Google Maps script:", err);
+    }
+  }
 };
 
 /**
