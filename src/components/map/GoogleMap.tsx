@@ -25,93 +25,115 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const googleMapScriptId = "google-maps-api-script";
+  const [mapError, setMapError] = useState(false);
+  const isMounted = useRef(true);
+  const mapInstance = useRef<any>(null);
   
-  // Create a unique ID for this instance
-  const instanceId = useRef(`map-instance-${Math.random().toString(36).substring(2, 9)}`);
+  // Generate a truly unique callback name for this component instance
+  const callbackName = useRef(`initMap_${Math.random().toString(36).substring(2, 11)}`);
   
   useEffect(() => {
-    let isMounted = true;
-    const callbackName = `initMap${instanceId.current}`;
+    // Set up mounted ref
+    isMounted.current = true;
     
-    // Define the callback function
-    window[callbackName] = function() {
-      if (!isMounted || !mapRef.current || !window.google?.maps) return;
-      
+    // Function to initialize the map
+    const initializeMap = () => {
+      if (!isMounted.current || !mapRef.current || !window.google?.maps) {
+        return;
+      }
+
       try {
-        // Create map instance
+        // Create the map instance
         const map = new window.google.maps.Map(mapRef.current, {
-          center: center,
-          zoom: zoom,
-          mapTypeId: 'roadmap',
+          center,
+          zoom,
+          mapTypeId: "roadmap",
         });
         
-        // Add markers
-        markers.forEach(marker => {
+        mapInstance.current = map;
+        
+        // Add markers to the map
+        markers.forEach((marker) => {
           if (window.google?.maps) {
             new window.google.maps.Marker({
               position: { lat: marker.lat, lng: marker.lng },
-              map: map,
+              map,
               title: marker.name,
               label: {
                 text: marker.id.toString(),
-                color: "white"
+                color: "white",
               },
               icon: {
                 path: window.google.maps.SymbolPath.CIRCLE,
                 fillColor: "#0EA5E9",
                 fillOpacity: 1,
                 strokeWeight: 0,
-                scale: 10
-              }
+                scale: 10,
+              },
             });
           }
         });
         
-        if (isMounted) {
+        if (isMounted.current) {
           setMapLoaded(true);
+          setMapError(false);
           if (onLoad) onLoad();
         }
       } catch (error) {
         console.error("Error initializing Google Map:", error);
-        if (isMounted && onError) {
-          onError();
+        if (isMounted.current) {
+          setMapError(true);
+          if (onError) onError();
         }
       }
     };
+
+    // Define the callback function that Google Maps will call
+    window[callbackName.current] = () => {
+      initializeMap();
+    };
     
+    // Check if Google Maps API is already loaded
+    if (window.google && window.google.maps) {
+      // Maps API already loaded, initialize map directly
+      initializeMap();
+      return;
+    }
+    
+    // Helper to load the Google Maps script
     const loadGoogleMapsScript = () => {
-      // Check if script already exists
-      if (document.getElementById(googleMapScriptId)) {
-        // If Google Maps is already loaded and initialized
+      const existingScript = document.getElementById("google-maps-api-script") as HTMLScriptElement | null;
+      
+      if (existingScript) {
+        // Script already exists, add a load listener
+        existingScript.addEventListener("load", () => {
+          if (isMounted.current) {
+            initializeMap();
+          }
+        });
+        
+        // Also check if the script might have already loaded
         if (window.google && window.google.maps) {
-          window[callbackName]();
-        } else {
-          // Wait for the existing script to load
-          const existingScript = document.getElementById(googleMapScriptId) as HTMLScriptElement;
-          existingScript.addEventListener('load', () => {
-            if (isMounted) {
-              window[callbackName]();
-            }
-          });
+          initializeMap();
         }
+        
         return;
       }
       
-      // Create a new script element if it doesn't exist
+      // Create and add the script
       const script = document.createElement("script");
-      script.id = googleMapScriptId;
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName}&loading=async`;
+      script.id = "google-maps-api-script";
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName.current}&loading=async`;
       script.async = true;
       script.defer = true;
       
       script.onerror = () => {
-        if (isMounted && onError) {
-          onError();
+        if (isMounted.current) {
+          setMapError(true);
+          if (onError) onError();
         }
       };
       
-      // Append the script to the document head
       document.head.appendChild(script);
     };
     
@@ -119,29 +141,30 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     
     // Cleanup function
     return () => {
-      isMounted = false;
+      isMounted.current = false;
       
       // Clean up the callback
-      if (window[callbackName]) {
-        window[callbackName] = undefined;
+      if (window[callbackName.current]) {
+        window[callbackName.current] = undefined;
       }
       
-      // Do NOT remove the script element - this is what causes the error
-      // Let the browser handle the script lifecycle
+      // Don't remove the script - let the browser handle it
     };
   }, [apiKey, center, zoom, markers, onError, onLoad]);
   
   return (
     <div 
       ref={mapRef} 
-      className="w-full h-full"
+      className="w-full h-full relative"
       aria-label={mapLoaded ? "Google Map" : "Loading map..."}
     >
-      {!mapLoaded && (
+      {(!mapLoaded || mapError) && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           <div className="flex flex-col items-center">
             <div className="h-8 w-8 border-4 border-t-indigo-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-gray-500">Loading map...</p>
+            <p className="text-gray-500">
+              {mapError ? "Error loading map" : "Loading map..."}
+            </p>
           </div>
         </div>
       )}

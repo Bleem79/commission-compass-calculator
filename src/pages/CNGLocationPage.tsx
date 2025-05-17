@@ -6,6 +6,7 @@ import { UserProfile } from "@/components/calculator/UserProfile";
 import GoogleMap from "@/components/map/GoogleMap";
 import StaticMap from "@/components/map/StaticMap";
 import LocationCard from "@/components/map/LocationCard";
+import { toast } from "@/hooks/use-toast";
 
 // CNG location data with properly formatted Google Maps embed URLs
 const cngLocations = [
@@ -47,9 +48,7 @@ const CNGLocationPage = () => {
   const [mapUrl, setMapUrl] = useState<string>("");
   const [mapError, setMapError] = useState<boolean>(false);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
-  
-  // Use a ref to track mount state
-  const isMountedRef = useRef(true);
+  const [mapKey, setMapKey] = useState<number>(1); // Used to force remount
   
   // Calculate center point for static map fallback
   const centerLat = cngLocations.reduce((sum, loc) => sum + loc.lat, 0) / cngLocations.length;
@@ -57,18 +56,12 @@ const CNGLocationPage = () => {
 
   // Set up the static map URL for fallback
   useEffect(() => {
-    if (!isMountedRef.current) return;
-    
     const markers = cngLocations.map(loc => 
       `&markers=color:blue%7Clabel:${loc.id}%7C${loc.lat},${loc.lng}`
     ).join('');
     
     const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=13&size=600x400&maptype=roadmap${markers}&key=${API_KEY}`;
     setMapUrl(staticMapUrl);
-    
-    return () => {
-      isMountedRef.current = false;
-    };
   }, [centerLat, centerLng]);
 
   // Open location in Google Maps
@@ -77,15 +70,18 @@ const CNGLocationPage = () => {
   }, []);
   
   const handleMapError = useCallback(() => {
-    if (isMountedRef.current) {
-      setMapError(true);
-    }
+    setMapError(true);
+    toast({
+      title: "Map Error",
+      description: "Unable to load the interactive map. Using static map instead.",
+      variant: "destructive"
+    });
+    // Force remount of the component as a last resort
+    setMapKey(prev => prev + 1);
   }, []);
   
   const handleMapLoad = useCallback(() => {
-    if (isMountedRef.current) {
-      setMapLoaded(true);
-    }
+    setMapLoaded(true);
   }, []);
   
   return (
@@ -124,6 +120,7 @@ const CNGLocationPage = () => {
             </div>
           ) : (
             <GoogleMap
+              key={mapKey} // Force remount if needed
               apiKey={API_KEY}
               center={{ lat: centerLat, lng: centerLng }}
               zoom={13}
