@@ -20,6 +20,7 @@ export const useGoogleMapMarkers = ({
   isMapInitialized 
 }: UseGoogleMapMarkersProps) => {
   const markersRef = useRef<any[]>([]);
+  const lastMarkersLength = useRef<number>(0);
   
   // Clear any existing markers
   const clearMarkers = useCallback(() => {
@@ -44,7 +45,13 @@ export const useGoogleMapMarkers = ({
       return;
     }
     
+    // Avoid unnecessary marker updates
+    if (markers.length === lastMarkersLength.current && markersRef.current.length === markers.length) {
+      return;
+    }
+    
     clearMarkers();
+    lastMarkersLength.current = markers.length;
     
     if (markers && markers.length > 0) {
       const newMarkers = [];

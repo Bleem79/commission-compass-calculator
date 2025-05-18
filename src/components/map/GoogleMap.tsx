@@ -58,15 +58,34 @@ const GoogleMap: React.FC<GoogleMapProps> = memo(({
     // Cleanup on unmount
     return () => {
       mountedRef.current = false;
+      
+      // Add a slight delay to let React finish DOM operations before we cleanup
+      // This helps prevent the "removeChild" Node error
+      if (mapRef.current) {
+        const container = mapRef.current;
+        setTimeout(() => {
+          try {
+            // Remove all child elements from the map container
+            while (container && container.firstChild) {
+              container.removeChild(container.firstChild);
+            }
+          } catch (e) {
+            console.warn("Map cleanup warning:", e);
+          }
+        }, 0);
+      }
     };
   }, []);
   
   return (
     <div 
-      ref={mapRef} 
       className="w-full h-full relative"
       aria-label={mapLoaded ? "Google Map" : "Loading map..."}
     >
+      <div
+        ref={mapRef} 
+        className="w-full h-full"
+      />
       {(!mapLoaded || mapError) && (
         <MapLoadingIndicator key="map-loading-indicator" isError={mapError} />
       )}

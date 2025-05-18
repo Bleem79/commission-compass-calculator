@@ -20,6 +20,7 @@ export interface GoogleMapMarker {
 
 // Keep track of loaded scripts globally to prevent duplicate loading
 const loadedScripts: Record<string, boolean> = {};
+const scriptLoadingInProgress: Record<string, boolean> = {};
 
 /**
  * Utility function to load the Google Maps script
@@ -56,6 +57,14 @@ export const loadGoogleMapsScript = ({
     return;
   }
   
+  // Check if script is currently loading
+  if (scriptLoadingInProgress[scriptId]) {
+    console.log("Google Maps script is currently loading");
+    return;
+  }
+  
+  scriptLoadingInProgress[scriptId] = true;
+  
   try {
     // Create new script element
     const script = document.createElement("script");
@@ -67,6 +76,10 @@ export const loadGoogleMapsScript = ({
     // Handle script loading error
     script.onerror = () => {
       console.error("Failed to load Google Maps script");
+      
+      // Clean up loading state
+      scriptLoadingInProgress[scriptId] = false;
+      
       if (isMounted.current) {
         onError();
       }
@@ -75,13 +88,20 @@ export const loadGoogleMapsScript = ({
       loadedScripts[scriptId] = false;
     };
     
-    // Track loaded scripts
-    loadedScripts[scriptId] = true;
+    // Handle script load success
+    script.onload = () => {
+      scriptLoadingInProgress[scriptId] = false;
+      loadedScripts[scriptId] = true;
+    };
     
     console.log("Adding Google Maps script to document");
     document.head.appendChild(script);
   } catch (err) {
     console.error("Error adding script to document:", err);
+    
+    // Clean up loading state
+    scriptLoadingInProgress[scriptId] = false;
+    
     if (isMounted.current) {
       onError();
     }

@@ -42,12 +42,21 @@ export const useGoogleMapInstance = ({
             center,
             zoom,
             mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-            // Adding these options might help prevent DOM manipulation issues
             disableDefaultUI: false,
             zoomControl: true,
           };
           
+          // Create new map instance
           mapInstance.current = new window.google.maps.Map(mapRef.current, mapOptions);
+          
+          // Set flag after map is created
+          mapInitialized.current = true;
+          setMapLoaded(true);
+          setMapError(false);
+          
+          if (onMapCreate) {
+            onMapCreate();
+          }
         } catch (err) {
           console.error("Failed to create map instance:", err);
           setMapError(true);
@@ -55,31 +64,21 @@ export const useGoogleMapInstance = ({
           return;
         }
       }
-      
       // Update map properties if instance exists
-      if (mapInstance.current) {
+      else if (mapInstance.current) {
         try {
           mapInstance.current.setCenter(center);
           mapInstance.current.setZoom(zoom);
-          
-          mapInitialized.current = true;
-          setMapLoaded(true);
-          setMapError(false);
-          
-          if (onMapCreate && !mapLoaded) {
-            onMapCreate();
-          }
         } catch (err) {
           console.error("Error updating map properties:", err);
         }
       }
-      
     } catch (error) {
       console.error("Error initializing Google Map:", error);
       setMapError(true);
       if (onMapError) onMapError();
     }
-  }, [center, zoom, onMapCreate, onMapError, mapLoaded]);
+  }, [center, zoom, onMapCreate, onMapError]);
   
   // Update map center and zoom when props change
   useEffect(() => {
@@ -96,10 +95,17 @@ export const useGoogleMapInstance = ({
   // Cleanup function for unmounting
   useEffect(() => {
     return () => {
+      // Explicitly clear the map instance before React unmounts the container
+      if (mapInstance.current && mapRef.current) {
+        try {
+          // Set map to null - this is important to remove event listeners
+          mapInstance.current = null;
+        } catch (error) {
+          console.error("Error during map cleanup:", error);
+        }
+      }
+      
       mapInitialized.current = false;
-      // We don't need to explicitly clean up the map instance
-      // Just null our reference to it
-      mapInstance.current = null;
     };
   }, []);
   

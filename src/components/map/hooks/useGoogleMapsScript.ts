@@ -24,11 +24,13 @@ export const useGoogleMapsScript = ({
     isMounted.current = true;
     
     // Define the Google Maps callback function
-    window[callbackName.current] = function() {
-      if (isMounted.current) {
-        onScriptLoad();
-      }
-    };
+    if (!window[callbackName.current]) {
+      window[callbackName.current] = function() {
+        if (isMounted.current) {
+          onScriptLoad();
+        }
+      };
+    }
     
     // Check if Google Maps is already loaded
     const isGoogleMapsLoaded = Boolean(
