@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,8 +39,8 @@ const cngLocations = [
   }
 ];
 
-// Use a different API key for testing - this is still a demo key
-const API_KEY = "AIzaSyBIwzALxUPNbatRBj3Xi1Uhp0fFzwWNBkE";
+// Updated API key for Google Maps
+const API_KEY = "AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg"; // Using a Google Maps demo key
 
 const CNGLocationPage = () => {
   const { user } = useAuth();

@@ -1,5 +1,5 @@
 
-import { useCallback, useRef, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Marker {
   id: number;
@@ -20,16 +20,16 @@ export const useGoogleMapMarkers = ({
   isMapInitialized 
 }: UseGoogleMapMarkersProps) => {
   const markersRef = useRef<any[]>([]);
-  const lastMarkersLength = useRef<number>(0);
+  const markersDataRef = useRef<Marker[]>([]);
   const isMounted = useRef(true);
-  const [activeMarkers, setActiveMarkers] = useState<any[]>([]);
   
-  // Clear any existing markers
-  const clearMarkers = useCallback(() => {
-    if (!isMounted.current) return;
-    
-    if (activeMarkers.length > 0) {
-      activeMarkers.forEach(marker => {
+  // Use this reference for cleanup to avoid state updates on unmounted component
+  markersDataRef.current = markers;
+  
+  // Clear any existing markers - Used during cleanup
+  const clearMarkers = () => {
+    if (markersRef.current.length > 0) {
+      markersRef.current.forEach(marker => {
         if (marker) {
           try {
             marker.setMap(null);
@@ -38,30 +38,24 @@ export const useGoogleMapMarkers = ({
           }
         }
       });
-      setActiveMarkers([]);
+      markersRef.current = [];
     }
-  }, [activeMarkers]);
+  };
   
-  // Update markers
-  const updateMarkers = useCallback(() => {
-    if (!isMounted.current) return;
-    
+  // Create markers when map is ready and markers data is available
+  useEffect(() => {
     // Only create markers if we have all dependencies
     if (!isMapInitialized || !map || !window.google || !window.google.maps) {
       return;
     }
     
-    // Avoid unnecessary marker updates
-    if (markers.length === lastMarkersLength.current && activeMarkers.length === markers.length) {
-      return;
-    }
-    
+    // Clear previous markers
     clearMarkers();
-    lastMarkersLength.current = markers.length;
+    
+    // Create new markers
+    const newMarkers: any[] = [];
     
     if (markers && markers.length > 0) {
-      const newMarkers = [];
-      
       for (const markerData of markers) {
         try {
           const marker = new window.google.maps.Marker({
@@ -86,24 +80,23 @@ export const useGoogleMapMarkers = ({
         }
       }
       
-      // Only update reference after all markers are created
+      // Update markers reference
       markersRef.current = newMarkers;
-      setActiveMarkers(newMarkers);
     }
-  }, [map, markers, isMapInitialized, clearMarkers, activeMarkers]);
+    
+    // Cleanup function
+    return () => {
+      clearMarkers();
+    };
+  }, [map, markers, isMapInitialized]);
   
+  // Make sure all markers are cleared on unmount
   useEffect(() => {
     isMounted.current = true;
-    
-    if (isMapInitialized && map) {
-      updateMarkers();
-    }
     
     return () => {
       isMounted.current = false;
       clearMarkers();
     };
-  }, [markers, map, updateMarkers, clearMarkers, isMapInitialized]);
-  
-  return { clearMarkers };
+  }, []);
 };

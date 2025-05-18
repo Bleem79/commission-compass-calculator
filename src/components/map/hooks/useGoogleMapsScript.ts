@@ -1,6 +1,5 @@
 
 import { useEffect, useRef, useState } from "react";
-import { loadGoogleMapsScript, cleanupGoogleMapsScript } from "../utils/mapUtils";
 
 interface UseGoogleMapsScriptProps {
   apiKey: string;
@@ -23,14 +22,12 @@ export const useGoogleMapsScript = ({
     isMounted.current = true;
     
     // Define the Google Maps callback function
-    if (!window[callbackName.current]) {
-      window[callbackName.current] = function() {
-        if (isMounted.current) {
-          setIsScriptLoaded(true);
-          onScriptLoad();
-        }
-      };
-    }
+    window[callbackName.current] = function() {
+      if (isMounted.current) {
+        setIsScriptLoaded(true);
+        onScriptLoad();
+      }
+    };
     
     // Check if Google Maps is already loaded
     const isGoogleMapsLoaded = Boolean(
@@ -43,32 +40,51 @@ export const useGoogleMapsScript = ({
       // If already loaded, call callback
       setIsScriptLoaded(true);
       setTimeout(onScriptLoad, 0);
-    } else {
-      loadGoogleMapsScript({
-        apiKey,
-        callbackName: callbackName.current,
-        onInitialize: () => {
-          if (isMounted.current) {
-            setIsScriptLoaded(true);
-            onScriptLoad();
-          }
-        },
-        onError: () => {
+      return;
+    }
+    
+    // Load the Google Maps script if it's not already loaded
+    const loadScript = () => {
+      if (scriptAdded.current) return;
+      
+      scriptAdded.current = true;
+      
+      const scriptId = `google-maps-script-${callbackName.current}`;
+      let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+      
+      // If script doesn't exist, create it
+      if (!script) {
+        script = document.createElement('script');
+        script.id = scriptId;
+        script.type = 'text/javascript';
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName.current}`;
+        script.async = true;
+        script.defer = true;
+        
+        script.onerror = () => {
           if (isMounted.current) {
             onError();
           }
-        },
-        isMounted,
-        scriptAdded
-      });
-    }
+        };
+        
+        document.head.appendChild(script);
+      }
+    };
     
-    // Cleanup function that's safer for React
+    loadScript();
+    
+    // Cleanup function
     return () => {
       isMounted.current = false;
       
-      // Only clean up callback, don't remove script
-      cleanupGoogleMapsScript(callbackName.current);
+      // Clean up callback
+      if (window[callbackName.current]) {
+        try {
+          delete window[callbackName.current];
+        } catch (e) {
+          window[callbackName.current] = undefined;
+        }
+      }
     };
   }, [apiKey, onScriptLoad, onError]);
   
