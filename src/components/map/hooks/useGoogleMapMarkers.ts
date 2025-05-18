@@ -26,7 +26,11 @@ export const useGoogleMapMarkers = ({
     if (markersRef.current.length > 0) {
       markersRef.current.forEach(marker => {
         if (marker) {
-          marker.setMap(null);
+          try {
+            marker.setMap(null);
+          } catch (err) {
+            console.error("Error clearing marker:", err);
+          }
         }
       });
       markersRef.current = [];
@@ -35,6 +39,7 @@ export const useGoogleMapMarkers = ({
   
   // Update markers
   const updateMarkers = useCallback(() => {
+    // Only create markers if we have all dependencies
     if (!isMapInitialized || !map || !window.google || !window.google.maps) {
       return;
     }
@@ -42,7 +47,9 @@ export const useGoogleMapMarkers = ({
     clearMarkers();
     
     if (markers && markers.length > 0) {
-      markers.forEach((markerData) => {
+      const newMarkers = [];
+      
+      for (const markerData of markers) {
         try {
           const marker = new window.google.maps.Marker({
             position: { lat: markerData.lat, lng: markerData.lng },
@@ -60,11 +67,14 @@ export const useGoogleMapMarkers = ({
               scale: 10,
             },
           });
-          markersRef.current.push(marker);
+          newMarkers.push(marker);
         } catch (err) {
           console.error("Failed to create marker:", err);
         }
-      });
+      }
+      
+      // Only update reference after all markers are created
+      markersRef.current = newMarkers;
     }
   }, [map, markers, isMapInitialized, clearMarkers]);
   

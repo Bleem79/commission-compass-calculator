@@ -32,10 +32,10 @@ export const loadGoogleMapsScript = ({
   isMounted,
   scriptAdded
 }: LoadScriptProps) => {
-  // Check if script is already loaded
-  if (window.google && window.google.maps) {
+  // Check if script is already loaded and available
+  if (window.google && window.google.maps && typeof window.google.maps.Map === 'function') {
     console.log("Google Maps already loaded, initializing directly");
-    onInitialize();
+    setTimeout(onInitialize, 0);
     return;
   }
   
@@ -56,29 +56,36 @@ export const loadGoogleMapsScript = ({
     return;
   }
   
-  // Create new script element
-  const script = document.createElement("script");
-  script.id = scriptId;
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName}&loading=async`;
-  script.async = true;
-  script.defer = true;
-  
-  // Handle script loading error
-  script.onerror = () => {
-    console.error("Failed to load Google Maps script");
+  try {
+    // Create new script element
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName}&loading=async`;
+    script.async = true;
+    script.defer = true;
+    
+    // Handle script loading error
+    script.onerror = () => {
+      console.error("Failed to load Google Maps script");
+      if (isMounted.current) {
+        onError();
+      }
+      
+      // Mark script as not loaded
+      loadedScripts[scriptId] = false;
+    };
+    
+    // Track loaded scripts
+    loadedScripts[scriptId] = true;
+    
+    console.log("Adding Google Maps script to document");
+    document.head.appendChild(script);
+  } catch (err) {
+    console.error("Error adding script to document:", err);
     if (isMounted.current) {
       onError();
     }
-    
-    // Mark script as not loaded
-    loadedScripts[scriptId] = false;
-  };
-  
-  // Track loaded scripts
-  loadedScripts[scriptId] = true;
-  
-  console.log("Adding Google Maps script to document");
-  document.head.appendChild(script);
+  }
 };
 
 /**
@@ -88,7 +95,7 @@ export const loadGoogleMapsScript = ({
 export const cleanupGoogleMapsScript = (callbackName: string) => {
   // Only clear the callback function, don't remove the script
   if (window[callbackName]) {
-    window[callbackName] = null;
+    delete window[callbackName];
   }
 };
 
@@ -104,20 +111,25 @@ export const createMapMarker = (
     throw new Error("Google Maps API not loaded");
   }
 
-  return new window.google.maps.Marker({
-    position: { lat: marker.lat, lng: marker.lng },
-    map,
-    title: marker.name,
-    label: {
-      text: marker.id.toString(),
-      color: "white",
-    },
-    icon: {
-      path: window.google.maps.SymbolPath.CIRCLE,
-      fillColor: "#0EA5E9",
-      fillOpacity: 1,
-      strokeWeight: 0,
-      scale: 10,
-    },
-  });
+  try {
+    return new window.google.maps.Marker({
+      position: { lat: marker.lat, lng: marker.lng },
+      map,
+      title: marker.name,
+      label: {
+        text: marker.id.toString(),
+        color: "white",
+      },
+      icon: {
+        path: window.google.maps.SymbolPath.CIRCLE,
+        fillColor: "#0EA5E9",
+        fillOpacity: 1,
+        strokeWeight: 0,
+        scale: 10,
+      },
+    });
+  } catch (err) {
+    console.error("Error creating map marker:", err);
+    throw err;
+  }
 };

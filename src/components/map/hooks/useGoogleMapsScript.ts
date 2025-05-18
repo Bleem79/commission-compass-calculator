@@ -30,8 +30,15 @@ export const useGoogleMapsScript = ({
       }
     };
     
-    // Load the Google Maps script
-    if (!window.google || !window.google.maps) {
+    // Check if Google Maps is already loaded
+    const isGoogleMapsLoaded = Boolean(
+      window.google && 
+      window.google.maps && 
+      typeof window.google.maps.Map === 'function'
+    );
+
+    // Load the Google Maps script if not already loaded
+    if (!isGoogleMapsLoaded) {
       loadGoogleMapsScript({
         apiKey,
         callbackName: callbackName.current,
@@ -46,7 +53,7 @@ export const useGoogleMapsScript = ({
       });
     } else {
       // If Google Maps is already loaded, just call the callback
-      onScriptLoad();
+      setTimeout(onScriptLoad, 0);
     }
     
     // Cleanup function
@@ -55,12 +62,12 @@ export const useGoogleMapsScript = ({
       
       // Clean up the callback function but don't remove script
       if (window[callbackName.current]) {
-        cleanupGoogleMapsScript(callbackName.current);
+        delete window[callbackName.current];
       }
     };
   }, [apiKey, onScriptLoad, onError]);
   
   return {
-    isScriptLoaded: window.google && window.google.maps ? true : false
+    isScriptLoaded: Boolean(window.google && window.google.maps && typeof window.google.maps.Map === 'function')
   };
 };

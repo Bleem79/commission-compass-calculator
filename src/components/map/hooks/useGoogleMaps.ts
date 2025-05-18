@@ -62,7 +62,7 @@ export const useGoogleMaps = ({
   });
 
   // Initialize Google Maps script loading
-  useGoogleMapsScript({
+  const { isScriptLoaded } = useGoogleMapsScript({
     apiKey,
     onScriptLoad: initializeMap,
     onError: handleMapError
@@ -78,11 +78,17 @@ export const useGoogleMaps = ({
   // Set up mounted ref for cleanup
   useEffect(() => {
     isMounted.current = true;
+    didCallErrorRef.current = false;
+    didCallLoadRef.current = false;
     
     return () => {
       isMounted.current = false;
     };
   }, []);
 
-  return { mapRef, mapLoaded, mapError };
+  return { 
+    mapRef, 
+    mapLoaded: mapLoaded && isScriptLoaded, 
+    mapError 
+  };
 };
