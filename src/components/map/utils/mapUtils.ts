@@ -66,12 +66,13 @@ export const loadGoogleMapsScript = ({
   scriptLoadingInProgress[scriptId] = true;
   
   try {
-    // Create new script element
+    // Create new script element with specific options to work better with React
     const script = document.createElement("script");
     script.id = scriptId;
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName}&loading=async`;
     script.async = true;
     script.defer = true;
+    script.nonce = ""; // Help with CSP issues
     
     // Handle script loading error
     script.onerror = () => {

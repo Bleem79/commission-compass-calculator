@@ -21,9 +21,12 @@ export const useGoogleMapMarkers = ({
 }: UseGoogleMapMarkersProps) => {
   const markersRef = useRef<any[]>([]);
   const lastMarkersLength = useRef<number>(0);
+  const isMounted = useRef(true);
   
   // Clear any existing markers
   const clearMarkers = useCallback(() => {
+    if (!isMounted.current) return;
+    
     if (markersRef.current.length > 0) {
       markersRef.current.forEach(marker => {
         if (marker) {
@@ -40,6 +43,8 @@ export const useGoogleMapMarkers = ({
   
   // Update markers
   const updateMarkers = useCallback(() => {
+    if (!isMounted.current) return;
+    
     // Only create markers if we have all dependencies
     if (!isMapInitialized || !map || !window.google || !window.google.maps) {
       return;
@@ -86,9 +91,11 @@ export const useGoogleMapMarkers = ({
   }, [map, markers, isMapInitialized, clearMarkers]);
   
   useEffect(() => {
+    isMounted.current = true;
     updateMarkers();
     
     return () => {
+      isMounted.current = false;
       clearMarkers();
     };
   }, [markers, map, updateMarkers, clearMarkers]);

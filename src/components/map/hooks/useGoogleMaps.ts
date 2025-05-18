@@ -68,12 +68,14 @@ export const useGoogleMaps = ({
     onError: handleMapError
   });
 
-  // Initialize markers management
-  useGoogleMapMarkers({
-    map: mapInstance,
-    markers,
-    isMapInitialized
-  });
+  // Initialize markers management - only if map is initialized
+  if (isMapInitialized && mapInstance) {
+    useGoogleMapMarkers({
+      map: mapInstance,
+      markers,
+      isMapInitialized
+    });
+  }
   
   // Set up mounted ref for cleanup
   useEffect(() => {

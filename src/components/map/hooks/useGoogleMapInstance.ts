@@ -22,7 +22,7 @@ export const useGoogleMapInstance = ({
   
   // Initialize the map
   const initializeMap = useCallback(() => {
-    if (!mapRef.current) {
+    if (!mapRef.current || mapInitialized.current) {
       return;
     }
 
@@ -35,43 +35,30 @@ export const useGoogleMapInstance = ({
         return;
       }
 
-      // Only create a new map instance if one doesn't exist and the ref is valid
-      if (!mapInstance.current && mapRef.current) {
-        try {
-          const mapOptions = {
-            center,
-            zoom,
-            mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-            disableDefaultUI: false,
-            zoomControl: true,
-          };
-          
-          // Create new map instance
-          mapInstance.current = new window.google.maps.Map(mapRef.current, mapOptions);
-          
-          // Set flag after map is created
-          mapInitialized.current = true;
-          setMapLoaded(true);
-          setMapError(false);
-          
-          if (onMapCreate) {
-            onMapCreate();
-          }
-        } catch (err) {
-          console.error("Failed to create map instance:", err);
-          setMapError(true);
-          if (onMapError) onMapError();
-          return;
+      try {
+        const mapOptions = {
+          center,
+          zoom,
+          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+          disableDefaultUI: false,
+          zoomControl: true,
+        };
+        
+        // Create new map instance
+        mapInstance.current = new window.google.maps.Map(mapRef.current, mapOptions);
+        
+        // Set flag after map is created
+        mapInitialized.current = true;
+        setMapLoaded(true);
+        setMapError(false);
+        
+        if (onMapCreate) {
+          onMapCreate();
         }
-      }
-      // Update map properties if instance exists
-      else if (mapInstance.current) {
-        try {
-          mapInstance.current.setCenter(center);
-          mapInstance.current.setZoom(zoom);
-        } catch (err) {
-          console.error("Error updating map properties:", err);
-        }
+      } catch (err) {
+        console.error("Failed to create map instance:", err);
+        setMapError(true);
+        if (onMapError) onMapError();
       }
     } catch (error) {
       console.error("Error initializing Google Map:", error);
@@ -92,20 +79,19 @@ export const useGoogleMapInstance = ({
     }
   }, [center, zoom]);
   
-  // Cleanup function for unmounting
+  // Completely prevent unmount cleanup issues
   useEffect(() => {
     return () => {
-      // Explicitly clear the map instance before React unmounts the container
-      if (mapInstance.current && mapRef.current) {
+      // Important! Nullify map instance first before React removes container
+      if (mapInstance.current) {
         try {
           // Set map to null - this is important to remove event listeners
           mapInstance.current = null;
+          mapInitialized.current = false;
         } catch (error) {
           console.error("Error during map cleanup:", error);
         }
       }
-      
-      mapInitialized.current = false;
     };
   }, []);
   

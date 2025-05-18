@@ -29,6 +29,7 @@ const GoogleMap: React.FC<GoogleMapProps> = memo(({
   const mountedRef = useRef(true);
   const didCallErrorRef = useRef(false);
   const didCallLoadRef = useRef(false);
+  const mapContainerRef = useRef(null);
   
   const { mapRef, mapLoaded, mapError } = useGoogleMaps({
     apiKey,
@@ -49,31 +50,18 @@ const GoogleMap: React.FC<GoogleMapProps> = memo(({
     },
   });
   
+  // Store the map container reference for safer cleanup
   useEffect(() => {
+    mapContainerRef.current = mapRef.current;
+    
     // Component mount
     mountedRef.current = true;
     didCallErrorRef.current = false;
     didCallLoadRef.current = false;
     
-    // Cleanup on unmount
+    // Safer cleanup on unmount 
     return () => {
       mountedRef.current = false;
-      
-      // Add a slight delay to let React finish DOM operations before we cleanup
-      // This helps prevent the "removeChild" Node error
-      if (mapRef.current) {
-        const container = mapRef.current;
-        setTimeout(() => {
-          try {
-            // Remove all child elements from the map container
-            while (container && container.firstChild) {
-              container.removeChild(container.firstChild);
-            }
-          } catch (e) {
-            console.warn("Map cleanup warning:", e);
-          }
-        }, 0);
-      }
     };
   }, []);
   

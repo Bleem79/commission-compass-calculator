@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,8 +39,9 @@ const cngLocations = [
   }
 ];
 
-// API Key (this is a demo key)
-const API_KEY = "AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8";
+// Use a different API key for testing - this is still a demo key
+// In production, you would need a valid API key with billing enabled
+const API_KEY = "AIzaSyBIwzALxUPNbatRBj3Xi1Uhp0fFzwWNBkE";
 
 const CNGLocationPage = () => {
   const { user } = useAuth();

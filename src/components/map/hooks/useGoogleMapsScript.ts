@@ -15,8 +15,6 @@ export const useGoogleMapsScript = ({
 }: UseGoogleMapsScriptProps) => {
   const isMounted = useRef(true);
   const scriptAdded = useRef(false);
-  
-  // Generate a unique callback name for this map instance that persists across renders
   const callbackName = useRef(`initMap_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`);
   
   useEffect(() => {
@@ -39,7 +37,6 @@ export const useGoogleMapsScript = ({
       typeof window.google.maps.Map === 'function'
     );
 
-    // Load the Google Maps script if not already loaded
     if (!isGoogleMapsLoaded) {
       loadGoogleMapsScript({
         apiKey,
@@ -54,18 +51,16 @@ export const useGoogleMapsScript = ({
         scriptAdded
       });
     } else {
-      // If Google Maps is already loaded, just call the callback
+      // If already loaded, call callback
       setTimeout(onScriptLoad, 0);
     }
     
-    // Cleanup function
+    // Cleanup function that's safer for React
     return () => {
       isMounted.current = false;
       
-      // Clean up the callback function but don't remove script
-      if (window[callbackName.current]) {
-        delete window[callbackName.current];
-      }
+      // Only clean up callback, don't remove script
+      cleanupGoogleMapsScript(callbackName.current);
     };
   }, [apiKey, onScriptLoad, onError]);
   
