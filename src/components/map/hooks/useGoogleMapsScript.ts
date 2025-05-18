@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { loadGoogleMapsScript, cleanupGoogleMapsScript } from "../utils/mapUtils";
 
 interface UseGoogleMapsScriptProps {
@@ -16,6 +16,7 @@ export const useGoogleMapsScript = ({
   const isMounted = useRef(true);
   const scriptAdded = useRef(false);
   const callbackName = useRef(`initMap_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`);
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   
   useEffect(() => {
     // Set up mounted ref for cleanup
@@ -25,6 +26,7 @@ export const useGoogleMapsScript = ({
     if (!window[callbackName.current]) {
       window[callbackName.current] = function() {
         if (isMounted.current) {
+          setIsScriptLoaded(true);
           onScriptLoad();
         }
       };
@@ -37,11 +39,20 @@ export const useGoogleMapsScript = ({
       typeof window.google.maps.Map === 'function'
     );
 
-    if (!isGoogleMapsLoaded) {
+    if (isGoogleMapsLoaded) {
+      // If already loaded, call callback
+      setIsScriptLoaded(true);
+      setTimeout(onScriptLoad, 0);
+    } else {
       loadGoogleMapsScript({
         apiKey,
         callbackName: callbackName.current,
-        onInitialize: onScriptLoad,
+        onInitialize: () => {
+          if (isMounted.current) {
+            setIsScriptLoaded(true);
+            onScriptLoad();
+          }
+        },
         onError: () => {
           if (isMounted.current) {
             onError();
@@ -50,9 +61,6 @@ export const useGoogleMapsScript = ({
         isMounted,
         scriptAdded
       });
-    } else {
-      // If already loaded, call callback
-      setTimeout(onScriptLoad, 0);
     }
     
     // Cleanup function that's safer for React
@@ -65,6 +73,6 @@ export const useGoogleMapsScript = ({
   }, [apiKey, onScriptLoad, onError]);
   
   return {
-    isScriptLoaded: Boolean(window.google && window.google.maps && typeof window.google.maps.Map === 'function')
+    isScriptLoaded
   };
 };

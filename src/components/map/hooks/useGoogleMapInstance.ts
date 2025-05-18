@@ -15,14 +15,14 @@ export const useGoogleMapInstance = ({
   onMapError,
 }: UseGoogleMapInstanceProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<any>(null);
+  const [mapInstance, setMapInstance] = useState<any>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState(false);
-  const mapInitialized = useRef<boolean>(false);
+  const [isMapInitialized, setIsMapInitialized] = useState(false);
   
   // Initialize the map
   const initializeMap = useCallback(() => {
-    if (!mapRef.current || mapInitialized.current) {
+    if (!mapRef.current || isMapInitialized) {
       return;
     }
 
@@ -45,12 +45,13 @@ export const useGoogleMapInstance = ({
         };
         
         // Create new map instance
-        mapInstance.current = new window.google.maps.Map(mapRef.current, mapOptions);
+        const newMapInstance = new window.google.maps.Map(mapRef.current, mapOptions);
         
         // Set flag after map is created
-        mapInitialized.current = true;
+        setIsMapInitialized(true);
         setMapLoaded(true);
         setMapError(false);
+        setMapInstance(newMapInstance);
         
         if (onMapCreate) {
           onMapCreate();
@@ -65,42 +66,35 @@ export const useGoogleMapInstance = ({
       setMapError(true);
       if (onMapError) onMapError();
     }
-  }, [center, zoom, onMapCreate, onMapError]);
+  }, [center, zoom, onMapCreate, onMapError, isMapInitialized]);
   
   // Update map center and zoom when props change
   useEffect(() => {
-    if (mapInitialized.current && mapInstance.current) {
+    if (isMapInitialized && mapInstance) {
       try {
-        mapInstance.current.setCenter(center);
-        mapInstance.current.setZoom(zoom);
+        mapInstance.setCenter(center);
+        mapInstance.setZoom(zoom);
       } catch (error) {
         console.error("Error updating map center/zoom:", error);
       }
     }
-  }, [center, zoom]);
+  }, [center, zoom, mapInstance, isMapInitialized]);
   
   // Completely prevent unmount cleanup issues
   useEffect(() => {
     return () => {
-      // Important! Nullify map instance first before React removes container
-      if (mapInstance.current) {
-        try {
-          // Set map to null - this is important to remove event listeners
-          mapInstance.current = null;
-          mapInitialized.current = false;
-        } catch (error) {
-          console.error("Error during map cleanup:", error);
-        }
-      }
+      // Important! Nullify map instance on unmount
+      setMapInstance(null);
+      setIsMapInitialized(false);
     };
   }, []);
   
   return { 
     mapRef, 
-    mapInstance: mapInstance.current, 
+    mapInstance, 
     mapLoaded, 
     mapError, 
     initializeMap, 
-    isMapInitialized: mapInitialized.current 
+    isMapInitialized 
   };
 };

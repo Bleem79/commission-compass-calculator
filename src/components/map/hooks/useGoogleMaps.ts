@@ -1,5 +1,5 @@
 
-import { useCallback, useRef, useEffect } from "react";
+import { useCallback, useRef, useEffect, useState } from "react";
 import { useGoogleMapsScript } from "./useGoogleMapsScript";
 import { useGoogleMapInstance } from "./useGoogleMapInstance";
 import { useGoogleMapMarkers } from "./useGoogleMapMarkers";
@@ -29,6 +29,7 @@ export const useGoogleMaps = ({
   const isMounted = useRef(true);
   const didCallErrorRef = useRef(false);
   const didCallLoadRef = useRef(false);
+  const [shouldUpdateMarkers, setShouldUpdateMarkers] = useState(false);
 
   // Handle map creation success
   const handleMapCreated = useCallback(() => {
@@ -67,15 +68,20 @@ export const useGoogleMaps = ({
     onScriptLoad: initializeMap,
     onError: handleMapError
   });
+  
+  // Set up markers effect to trigger when map is initialized
+  useEffect(() => {
+    if (isMapInitialized && mapInstance) {
+      setShouldUpdateMarkers(true);
+    }
+  }, [isMapInitialized, mapInstance]);
 
   // Initialize markers management - only if map is initialized
-  if (isMapInitialized && mapInstance) {
-    useGoogleMapMarkers({
-      map: mapInstance,
-      markers,
-      isMapInitialized
-    });
-  }
+  useGoogleMapMarkers({
+    map: mapInstance,
+    markers,
+    isMapInitialized: shouldUpdateMarkers
+  });
   
   // Set up mounted ref for cleanup
   useEffect(() => {

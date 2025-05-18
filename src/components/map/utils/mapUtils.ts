@@ -116,7 +116,12 @@ export const loadGoogleMapsScript = ({
 export const cleanupGoogleMapsScript = (callbackName: string) => {
   // Only clear the callback function, don't remove the script
   if (window[callbackName]) {
-    delete window[callbackName];
+    try {
+      delete window[callbackName];
+    } catch (e) {
+      // For older browsers that don't support delete on window
+      window[callbackName] = undefined;
+    }
   }
 };
 

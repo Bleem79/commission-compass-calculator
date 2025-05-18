@@ -29,31 +29,32 @@ const GoogleMap: React.FC<GoogleMapProps> = memo(({
   const mountedRef = useRef(true);
   const didCallErrorRef = useRef(false);
   const didCallLoadRef = useRef(false);
-  const mapContainerRef = useRef(null);
+  
+  const handleError = React.useCallback(() => {
+    if (mountedRef.current && onError && !didCallErrorRef.current) {
+      didCallErrorRef.current = true;
+      onError();
+    }
+  }, [onError]);
+  
+  const handleLoad = React.useCallback(() => {
+    if (mountedRef.current && onLoad && !didCallLoadRef.current) {
+      didCallLoadRef.current = true;
+      onLoad();
+    }
+  }, [onLoad]);
   
   const { mapRef, mapLoaded, mapError } = useGoogleMaps({
     apiKey,
     center,
     zoom,
     markers,
-    onError: () => {
-      if (mountedRef.current && onError && !didCallErrorRef.current) {
-        didCallErrorRef.current = true;
-        onError();
-      }
-    },
-    onLoad: () => {
-      if (mountedRef.current && onLoad && !didCallLoadRef.current) {
-        didCallLoadRef.current = true;
-        onLoad();
-      }
-    },
+    onError: handleError,
+    onLoad: handleLoad,
   });
   
   // Store the map container reference for safer cleanup
   useEffect(() => {
-    mapContainerRef.current = mapRef.current;
-    
     // Component mount
     mountedRef.current = true;
     didCallErrorRef.current = false;

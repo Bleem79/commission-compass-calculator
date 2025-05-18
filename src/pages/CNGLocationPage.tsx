@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,7 +41,6 @@ const cngLocations = [
 ];
 
 // Use a different API key for testing - this is still a demo key
-// In production, you would need a valid API key with billing enabled
 const API_KEY = "AIzaSyBIwzALxUPNbatRBj3Xi1Uhp0fFzwWNBkE";
 
 const CNGLocationPage = () => {
@@ -156,12 +156,7 @@ const CNGLocationPage = () => {
               apiKey={API_KEY}
               center={mapCenter}
               zoom={13}
-              markers={cngLocations.map(loc => ({
-                id: loc.id,
-                name: loc.name,
-                lat: loc.lat,
-                lng: loc.lng
-              }))}
+              markers={cngLocations}
               onError={handleMapError}
               onLoad={handleMapLoad}
             />

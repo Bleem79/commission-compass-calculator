@@ -1,5 +1,5 @@
 
-import { useCallback, useRef, useEffect } from "react";
+import { useCallback, useRef, useEffect, useState } from "react";
 
 interface Marker {
   id: number;
@@ -22,13 +22,14 @@ export const useGoogleMapMarkers = ({
   const markersRef = useRef<any[]>([]);
   const lastMarkersLength = useRef<number>(0);
   const isMounted = useRef(true);
+  const [activeMarkers, setActiveMarkers] = useState<any[]>([]);
   
   // Clear any existing markers
   const clearMarkers = useCallback(() => {
     if (!isMounted.current) return;
     
-    if (markersRef.current.length > 0) {
-      markersRef.current.forEach(marker => {
+    if (activeMarkers.length > 0) {
+      activeMarkers.forEach(marker => {
         if (marker) {
           try {
             marker.setMap(null);
@@ -37,9 +38,9 @@ export const useGoogleMapMarkers = ({
           }
         }
       });
-      markersRef.current = [];
+      setActiveMarkers([]);
     }
-  }, []);
+  }, [activeMarkers]);
   
   // Update markers
   const updateMarkers = useCallback(() => {
@@ -51,7 +52,7 @@ export const useGoogleMapMarkers = ({
     }
     
     // Avoid unnecessary marker updates
-    if (markers.length === lastMarkersLength.current && markersRef.current.length === markers.length) {
+    if (markers.length === lastMarkersLength.current && activeMarkers.length === markers.length) {
       return;
     }
     
@@ -87,18 +88,22 @@ export const useGoogleMapMarkers = ({
       
       // Only update reference after all markers are created
       markersRef.current = newMarkers;
+      setActiveMarkers(newMarkers);
     }
-  }, [map, markers, isMapInitialized, clearMarkers]);
+  }, [map, markers, isMapInitialized, clearMarkers, activeMarkers]);
   
   useEffect(() => {
     isMounted.current = true;
-    updateMarkers();
+    
+    if (isMapInitialized && map) {
+      updateMarkers();
+    }
     
     return () => {
       isMounted.current = false;
       clearMarkers();
     };
-  }, [markers, map, updateMarkers, clearMarkers]);
+  }, [markers, map, updateMarkers, clearMarkers, isMapInitialized]);
   
   return { clearMarkers };
 };
