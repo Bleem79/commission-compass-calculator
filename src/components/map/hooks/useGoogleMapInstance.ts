@@ -38,7 +38,7 @@ export const useGoogleMapInstance = ({
       console.log("Initializing Google Map with center:", center);
       
       // Create the map if it doesn't exist
-      if (!mapInstance.current) {
+      if (!mapInstance.current && mapRef.current) {
         try {
           mapInstance.current = new window.google.maps.Map(mapRef.current, {
             center,
@@ -53,23 +53,17 @@ export const useGoogleMapInstance = ({
         }
       }
       
-      // Update map properties
-      const map = mapInstance.current;
-      if (!map) {
-        console.error("Failed to create map instance");
-        return;
+      // Update map properties if instance exists
+      if (mapInstance.current) {
+        mapInstance.current.setCenter(center);
+        mapInstance.current.setZoom(zoom);
+        
+        mapInitialized.current = true;
+        setMapLoaded(true);
+        setMapError(false);
+        
+        if (onMapCreate) onMapCreate();
       }
-      
-      // Update map center and zoom
-      map.setCenter(center);
-      map.setZoom(zoom);
-      
-      mapInitialized.current = true;
-      setMapLoaded(true);
-      setMapError(false);
-      
-      if (onMapCreate) onMapCreate();
-      console.log("Google Maps loaded successfully");
       
     } catch (error) {
       console.error("Error initializing Google Map:", error);
@@ -81,16 +75,24 @@ export const useGoogleMapInstance = ({
   // Update map center and zoom when props change
   useEffect(() => {
     if (mapInitialized.current && mapInstance.current) {
-      mapInstance.current.setCenter(center);
-      mapInstance.current.setZoom(zoom);
+      try {
+        mapInstance.current.setCenter(center);
+        mapInstance.current.setZoom(zoom);
+      } catch (error) {
+        console.error("Error updating map center/zoom:", error);
+      }
     }
   }, [center, zoom]);
   
   // Cleanup function for unmounting
   useEffect(() => {
     return () => {
-      console.log("Map instance cleanup");
-      mapInstance.current = null;
+      if (mapInstance.current) {
+        // Perform any necessary cleanup for the map instance
+        // Note: Google Maps doesn't have a specific destroy method,
+        // but we can null out our reference
+        mapInstance.current = null;
+      }
       mapInitialized.current = false;
     };
   }, []);

@@ -57,7 +57,6 @@ const GoogleMap: React.FC<GoogleMapProps> = memo(({
     
     // Cleanup on unmount
     return () => {
-      console.log("GoogleMap component unmounting");
       mountedRef.current = false;
     };
   }, []);

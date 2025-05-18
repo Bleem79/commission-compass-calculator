@@ -1,5 +1,5 @@
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import { useGoogleMapsScript } from "./useGoogleMapsScript";
 import { useGoogleMapInstance } from "./useGoogleMapInstance";
 import { useGoogleMapMarkers } from "./useGoogleMapMarkers";
@@ -74,6 +74,15 @@ export const useGoogleMaps = ({
     markers,
     isMapInitialized
   });
+  
+  // Set up mounted ref for cleanup
+  useEffect(() => {
+    isMounted.current = true;
+    
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   return { mapRef, mapLoaded, mapError };
 };

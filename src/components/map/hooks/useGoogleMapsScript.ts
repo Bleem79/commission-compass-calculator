@@ -31,26 +31,32 @@ export const useGoogleMapsScript = ({
     };
     
     // Load the Google Maps script
-    loadGoogleMapsScript({
-      apiKey,
-      callbackName: callbackName.current,
-      onInitialize: onScriptLoad,
-      onError: () => {
-        if (isMounted.current) {
-          onError();
-        }
-      },
-      isMounted,
-      scriptAdded
-    });
+    if (!window.google || !window.google.maps) {
+      loadGoogleMapsScript({
+        apiKey,
+        callbackName: callbackName.current,
+        onInitialize: onScriptLoad,
+        onError: () => {
+          if (isMounted.current) {
+            onError();
+          }
+        },
+        isMounted,
+        scriptAdded
+      });
+    } else {
+      // If Google Maps is already loaded, just call the callback
+      onScriptLoad();
+    }
     
     // Cleanup function
     return () => {
-      console.log("GoogleMapsScript hook cleanup running");
       isMounted.current = false;
       
       // Clean up the callback function but don't remove script
-      cleanupGoogleMapsScript(callbackName.current);
+      if (window[callbackName.current]) {
+        cleanupGoogleMapsScript(callbackName.current);
+      }
     };
   }, [apiKey, onScriptLoad, onError]);
   

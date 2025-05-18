@@ -35,7 +35,7 @@ export const useGoogleMapMarkers = ({
   
   // Update markers
   const updateMarkers = useCallback(() => {
-    if (!isMapInitialized || !map) {
+    if (!isMapInitialized || !map || !window.google || !window.google.maps) {
       return;
     }
     
