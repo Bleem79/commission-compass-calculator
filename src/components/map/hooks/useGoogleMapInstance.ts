@@ -1,4 +1,3 @@
-
 import { useRef, useState, useCallback, useEffect } from "react";
 
 interface UseGoogleMapInstanceProps {
@@ -20,9 +19,25 @@ export const useGoogleMapInstance = ({
   const [mapError, setMapError] = useState(false);
   const [isMapInitialized, setIsMapInitialized] = useState(false);
   
+  // Stable callback refs
+  const onMapCreateRef = useRef(onMapCreate);
+  const onMapErrorRef = useRef(onMapError);
+  
+  useEffect(() => {
+    onMapCreateRef.current = onMapCreate;
+    onMapErrorRef.current = onMapError;
+  }, [onMapCreate, onMapError]);
+  
   // Initialize the map
   const initializeMap = useCallback(() => {
-    if (!mapRef.current || isMapInitialized || !window.google || !window.google.maps) {
+    if (!mapRef.current || isMapInitialized) {
+      return;
+    }
+    
+    if (!window.google?.maps?.Map) {
+      console.error("Google Maps API not loaded");
+      setMapError(true);
+      onMapErrorRef.current?.();
       return;
     }
 
@@ -33,28 +48,36 @@ export const useGoogleMapInstance = ({
         mapTypeId: window.google.maps.MapTypeId.ROADMAP,
         disableDefaultUI: false,
         zoomControl: true,
+        mapTypeControl: true,
+        streetViewControl: false,
+        fullscreenControl: true,
       };
       
-      // Create new map instance
-      const newMapInstance = new window.google.maps.Map(mapRef.current, mapOptions);
+      mapInstanceRef.current = new window.google.maps.Map(mapRef.current, mapOptions);
       
-      // Store reference to map instance
-      mapInstanceRef.current = newMapInstance;
+      // Listen for tiles loaded event
+      window.google.maps.event.addListenerOnce(mapInstanceRef.current, 'tilesloaded', () => {
+        setIsMapInitialized(true);
+        setMapLoaded(true);
+        setMapError(false);
+        onMapCreateRef.current?.();
+      });
       
-      // Set flags
-      setIsMapInitialized(true);
-      setMapLoaded(true);
-      setMapError(false);
+      // Set a timeout as fallback
+      setTimeout(() => {
+        if (!mapLoaded && mapInstanceRef.current) {
+          setIsMapInitialized(true);
+          setMapLoaded(true);
+          onMapCreateRef.current?.();
+        }
+      }, 3000);
       
-      if (onMapCreate) {
-        onMapCreate();
-      }
     } catch (err) {
       console.error("Failed to create map instance:", err);
       setMapError(true);
-      if (onMapError) onMapError();
+      onMapErrorRef.current?.();
     }
-  }, [center, zoom, onMapCreate, onMapError, isMapInitialized]);
+  }, [center, zoom, isMapInitialized, mapLoaded]);
   
   // Update map center and zoom when props change
   useEffect(() => {
@@ -71,7 +94,6 @@ export const useGoogleMapInstance = ({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      // Nullify map instance on unmount to prevent memory leaks
       mapInstanceRef.current = null;
       setIsMapInitialized(false);
     };

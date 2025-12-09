@@ -1,4 +1,3 @@
-
 import React, { memo, useEffect, useRef } from "react";
 import { useGoogleMaps } from "./hooks/useGoogleMaps";
 import { MapLoadingIndicator } from "./MapLoadingIndicator";
@@ -17,7 +16,6 @@ interface GoogleMapProps {
   onLoad?: () => void;
 }
 
-// Using memo to prevent unnecessary re-renders
 const GoogleMap: React.FC<GoogleMapProps> = memo(({
   apiKey,
   center,
@@ -53,14 +51,11 @@ const GoogleMap: React.FC<GoogleMapProps> = memo(({
     onLoad: handleLoad,
   });
   
-  // Store the map container reference for safer cleanup
   useEffect(() => {
-    // Component mount
     mountedRef.current = true;
     didCallErrorRef.current = false;
     didCallLoadRef.current = false;
     
-    // Safer cleanup on unmount 
     return () => {
       mountedRef.current = false;
     };
@@ -76,7 +71,7 @@ const GoogleMap: React.FC<GoogleMapProps> = memo(({
         className="w-full h-full"
       />
       {(!mapLoaded || mapError) && (
-        <MapLoadingIndicator key="map-loading-indicator" isError={mapError} />
+        <MapLoadingIndicator isError={mapError} />
       )}
     </div>
   );

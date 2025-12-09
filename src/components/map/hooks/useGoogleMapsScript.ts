@@ -1,5 +1,4 @@
-
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 interface UseGoogleMapsScriptProps {
   apiKey: string;
@@ -13,82 +12,96 @@ export const useGoogleMapsScript = ({
   onError,
 }: UseGoogleMapsScriptProps) => {
   const isMounted = useRef(true);
-  const scriptAdded = useRef(false);
-  const callbackName = useRef(`initMap_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const callbackName = useRef(`initMap_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`);
+  
+  // Stable callback refs to avoid dependency changes
+  const onScriptLoadRef = useRef(onScriptLoad);
+  const onErrorRef = useRef(onError);
   
   useEffect(() => {
-    // Set up mounted ref for cleanup
+    onScriptLoadRef.current = onScriptLoad;
+    onErrorRef.current = onError;
+  }, [onScriptLoad, onError]);
+  
+  useEffect(() => {
     isMounted.current = true;
-    
-    // Define the Google Maps callback function
-    window[callbackName.current] = function() {
-      if (isMounted.current) {
-        setIsScriptLoaded(true);
-        onScriptLoad();
-      }
-    };
+    const currentCallback = callbackName.current;
     
     // Check if Google Maps is already loaded
-    const isGoogleMapsLoaded = Boolean(
-      window.google && 
-      window.google.maps && 
-      typeof window.google.maps.Map === 'function'
-    );
-
-    if (isGoogleMapsLoaded) {
-      // If already loaded, call callback
+    if (window.google?.maps?.Map) {
       setIsScriptLoaded(true);
-      setTimeout(onScriptLoad, 0);
+      onScriptLoadRef.current();
       return;
     }
     
-    // Load the Google Maps script if it's not already loaded
-    const loadScript = () => {
-      if (scriptAdded.current) return;
-      
-      scriptAdded.current = true;
-      
-      const scriptId = `google-maps-script-${callbackName.current}`;
-      let script = document.getElementById(scriptId) as HTMLScriptElement | null;
-      
-      // If script doesn't exist, create it
-      if (!script) {
-        script = document.createElement('script');
-        script.id = scriptId;
-        script.type = 'text/javascript';
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName.current}`;
-        script.async = true;
-        script.defer = true;
-        
-        script.onerror = () => {
+    // Check if script is already in the DOM
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]');
+    if (existingScript) {
+      // Wait for it to load
+      const checkLoaded = setInterval(() => {
+        if (window.google?.maps?.Map) {
+          clearInterval(checkLoaded);
           if (isMounted.current) {
-            onError();
+            setIsScriptLoaded(true);
+            onScriptLoadRef.current();
           }
-        };
-        
-        document.head.appendChild(script);
+        }
+      }, 100);
+      
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        clearInterval(checkLoaded);
+        if (!window.google?.maps?.Map && isMounted.current) {
+          setHasError(true);
+          onErrorRef.current();
+        }
+      }, 10000);
+      
+      return () => {
+        clearInterval(checkLoaded);
+        isMounted.current = false;
+      };
+    }
+    
+    // Define callback function
+    (window as any)[currentCallback] = () => {
+      if (isMounted.current) {
+        setIsScriptLoaded(true);
+        onScriptLoadRef.current();
       }
     };
     
-    loadScript();
+    // Create and add script with async loading
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${currentCallback}&loading=async`;
+    script.async = true;
+    script.defer = true;
     
-    // Cleanup function
+    script.onerror = () => {
+      if (isMounted.current) {
+        setHasError(true);
+        onErrorRef.current();
+      }
+    };
+    
+    document.head.appendChild(script);
+    
+    // Cleanup
     return () => {
       isMounted.current = false;
       
       // Clean up callback
-      if (window[callbackName.current]) {
+      if ((window as any)[currentCallback]) {
         try {
-          delete window[callbackName.current];
-        } catch (e) {
-          window[callbackName.current] = undefined;
+          delete (window as any)[currentCallback];
+        } catch {
+          (window as any)[currentCallback] = undefined;
         }
       }
     };
-  }, [apiKey, onScriptLoad, onError]);
+  }, [apiKey]);
   
-  return {
-    isScriptLoaded
-  };
+  return { isScriptLoaded, hasError };
 };
