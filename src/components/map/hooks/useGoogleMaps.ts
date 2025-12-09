@@ -1,5 +1,4 @@
-
-import { useCallback, useRef, useEffect, useState } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import { useGoogleMapsScript } from "./useGoogleMapsScript";
 import { useGoogleMapInstance } from "./useGoogleMapInstance";
 import { useGoogleMapMarkers } from "./useGoogleMapMarkers";
@@ -64,13 +63,11 @@ export const useGoogleMaps = ({
   // Initialize Google Maps script loading
   const { isScriptLoaded } = useGoogleMapsScript({
     apiKey,
-    onScriptLoad: () => {
-      initializeMap();
-    },
+    onScriptLoad: initializeMap,
     onError: handleMapError
   });
   
-  // Handle markers - called at top level (proper hook usage)
+  // Handle markers at top level (proper hook usage)
   useGoogleMapMarkers({
     map: mapInstance,
     markers,
