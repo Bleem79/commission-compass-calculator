@@ -63,11 +63,15 @@ export const AdminMessages = ({
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+      
       const { error } = await supabase
         .from('admin_messages')
         .insert([{ 
           content, 
-          created_by: user?.id,
+          created_by: user.id,
           is_admin: true 
         }]);
       
@@ -174,9 +178,10 @@ export const AdminMessages = ({
               />
               <Button 
                 onClick={handleSend}
-                disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                disabled={!newMessage.trim() || sendMessageMutation.isPending || !user?.id}
+                className="w-full"
               >
-                Send Message
+                {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
               </Button>
             </div>
           )}
