@@ -31,6 +31,10 @@ export const CalculatorResults = ({
         )}
       </div>
       
+      <p className="text-red-600 text-sm font-medium">
+        Actual working days will be calculated at the end of the month
+      </p>
+      
       <NextTierList tiers={nextTierInfo} />
     </div>
   );
