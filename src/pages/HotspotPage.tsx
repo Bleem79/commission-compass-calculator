@@ -27,6 +27,18 @@ const HotspotPage = () => {
       lat: 25.322572,
       lng: 55.3874166,
     },
+    {
+      id: 3,
+      name: "Top 3- Al Nahda",
+      lat: 25.3019448,
+      lng: 55.3761806,
+    },
+    {
+      id: 4,
+      name: "Top 4- Sharjah Industrial Area",
+      lat: 25.3090368,
+      lng: 55.4208324,
+    },
   ];
 
   // Pink dashed boundary line coordinates (Al Qasimiah border) - matches the reference image
