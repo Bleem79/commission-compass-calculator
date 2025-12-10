@@ -11,16 +11,16 @@ export const CalculatorHeader = ({ userRole }: CalculatorHeaderProps) => {
   const navigate = useNavigate();
   
   return (
-    <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
+    <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
       <div className="flex items-center">
-        <h1 className="text-3xl font-bold text-indigo-800">
-          Commission Percentage Calculator
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-indigo-800">
+          Commission Calculator
         </h1>
       </div>
       
       <div className="flex items-center gap-4">
         {userRole && (
-          <span className="text-slate-600">
+          <span className="text-sm sm:text-base text-slate-600">
             Role: {userRole}
           </span>
         )}

@@ -48,11 +48,10 @@ const LocationCard = ({
           <Button
             onClick={() => onOpenLocation(url)}
             size="sm"
-            className="flex-shrink-0 flex items-center gap-1.5 md:gap-2"
+            className="flex-shrink-0 flex items-center gap-1.5 h-9 px-3"
           >
-            <Navigation size={16} className="md:w-[18px] md:h-[18px]" />
-            <span className="hidden xs:inline">Open in Maps</span>
-            <span className="xs:hidden">Maps</span>
+            <Navigation size={16} />
+            <span>Maps</span>
           </Button>
         </div>
       </CardContent>

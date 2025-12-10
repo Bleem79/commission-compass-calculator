@@ -137,26 +137,26 @@ export const AdminMessages = ({
   };
 
   const MessagesContent = () => (
-    <div className="flex flex-col gap-4 px-4 pb-4">
-      <ScrollArea className="h-[250px] sm:h-[300px] w-full rounded-md border p-4">
+    <div className="flex flex-col gap-4 px-4 pb-6">
+      <ScrollArea className="h-[40vh] sm:h-[300px] w-full rounded-md border bg-background p-3 sm:p-4">
         {messages?.length === 0 ? (
-          <p className="text-center text-muted-foreground">No messages yet</p>
+          <p className="text-center text-muted-foreground py-8">No messages yet</p>
         ) : (
           <div className="flex flex-col gap-3">
             {messages?.map((message) => (
               <div
                 key={message.id}
-                className="rounded-lg bg-secondary/50 p-3 relative group"
+                className="rounded-lg bg-secondary p-3 relative group border border-border/50"
               >
-                <p className="text-sm pr-8">{message.content}</p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-sm pr-8 whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
+                <p className="text-xs text-muted-foreground mt-2">
                   {new Date(message.created_at).toLocaleString()}
                 </p>
                 {isAdmin && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                    className="absolute right-1 top-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-8 w-8"
                     onClick={() => handleDelete(message.id)}
                   >
                     <Trash2 className="h-4 w-4 text-destructive hover:text-destructive/90" />
@@ -169,17 +169,17 @@ export const AdminMessages = ({
       </ScrollArea>
 
       {isAdmin && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <Textarea
             placeholder="Type your message here..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            className="min-h-[80px] sm:min-h-[100px]"
+            className="min-h-[80px] text-base"
           />
           <Button 
             onClick={handleSend}
             disabled={!newMessage.trim() || sendMessageMutation.isPending || !user?.id}
-            className="w-full"
+            className="w-full h-11 text-base"
           >
             {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
           </Button>
@@ -191,9 +191,9 @@ export const AdminMessages = ({
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={onClose}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle className="text-xl font-bold">
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader className="pb-2">
+            <DrawerTitle className="text-lg font-bold text-center">
               {isAdmin ? "Send Messages to Users" : "Admin Messages"}
             </DrawerTitle>
           </DrawerHeader>
