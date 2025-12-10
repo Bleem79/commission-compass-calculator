@@ -1,7 +1,7 @@
-
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { GuestLoginButton } from "@/components/auth/GuestLoginButton";
+import amanLogo from "@/assets/aman-logo.png";
 
 const Login = () => {
   return (
@@ -14,7 +14,7 @@ const Login = () => {
         <CardHeader className="space-y-1 text-center pb-2">
           <div className="flex items-center justify-center gap-3">
             <img 
-              src="/lovable-uploads/57e5e156-ac46-4329-bf55-4dd9e46b4a04.png" 
+              src={amanLogo} 
               alt="Aman Taxi Logo" 
               className="h-12 w-auto"
             />
