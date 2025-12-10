@@ -20,16 +20,21 @@ const HotspotPage = () => {
     lng: 55.3960874,
   };
 
-  // Pink dashed boundary line coordinates (Al Qasimiah border)
+  // Pink dashed boundary line coordinates (Al Qasimiah border) - matches the reference image
   const boundaryLineCoords: [number, number][] = [
-    [25.3565, 55.376],
-    [25.3558, 55.382],
-    [25.3555, 55.388],
-    [25.3548, 55.394],
-    [25.3542, 55.400],
-    [25.3538, 55.406],
-    [25.3535, 55.412],
-    [25.3530, 55.418],
+    [25.3580, 55.362], // Start near Al Jubail/waterfront
+    [25.3578, 55.367],
+    [25.3575, 55.372],
+    [25.3570, 55.377], // Near Al Mareija
+    [25.3568, 55.382],
+    [25.3565, 55.387], // Near Rolla Square Park
+    [25.3560, 55.392],
+    [25.3558, 55.397],
+    [25.3555, 55.402], // Near Al Manakh
+    [25.3550, 55.407],
+    [25.3548, 55.412], // Near Al Fayha Park
+    [25.3545, 55.417],
+    [25.3540, 55.422], // End past Al Fayha Park
   ];
 
   useEffect(() => {
