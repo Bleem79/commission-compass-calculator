@@ -148,7 +148,7 @@ export const AdminMessages = ({
                 key={message.id}
                 className="rounded-lg bg-secondary p-3 relative group border border-border/50"
               >
-                <p className="text-sm pr-8 whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
+                <p className="text-sm pr-8 whitespace-pre-wrap break-words leading-relaxed text-foreground">{message.content}</p>
                 <p className="text-xs text-muted-foreground mt-2">
                   {new Date(message.created_at).toLocaleString()}
                 </p>
