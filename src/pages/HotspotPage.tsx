@@ -186,17 +186,6 @@ const HotspotPage = () => {
           </div>
         </div>
 
-        {/* Documents Section */}
-        <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100 p-4 md:p-6">
-          {(user?.role === "admin" || user?.role === "guest") && (
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold border-b border-indigo-100 pb-2">
-                Documents
-              </h3>
-              <DocumentCategory title="Hotspot" bucketName="hotspot_documents" />
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
