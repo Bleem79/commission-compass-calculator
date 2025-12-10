@@ -178,6 +178,16 @@ const HomePage = () => {
 
         {/* Feature Buttons */}
         {renderFeatureButtons()}
+
+        {/* Footer */}
+        <footer className="mt-8 sm:mt-12 flex flex-col items-center justify-center gap-2 py-4 border-t border-gray-200">
+          <img 
+            src="/lovable-uploads/aman-logo-footer.png" 
+            alt="Aman Taxi Sharjah" 
+            className="h-8 sm:h-10 object-contain"
+          />
+          <p className="text-xs sm:text-sm text-gray-500">All Rights Reserved</p>
+        </footer>
       </div>
 
       {/* Messages Dialog */}
