@@ -1,8 +1,6 @@
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-
-// Force rebuild with react-leaflet v4.2.1
 
 interface MarkerData {
   id: number;
@@ -30,46 +28,57 @@ const defaultIcon = L.icon({
   shadowSize: [41, 41],
 });
 
-const LeafletMap: React.FC<LeafletMapProps> = ({
+const LeafletMap = ({
   center,
   zoom = 13,
   markers,
   onMarkerClick,
-}) => {
-  return (
-    <MapContainer
-      center={[center.lat, center.lng]}
-      zoom={zoom}
-      className="w-full h-full rounded-lg"
-      scrollWheelZoom={true}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {markers.map((marker) => (
-        <Marker
-          key={marker.id}
-          position={[marker.lat, marker.lng]}
-          icon={defaultIcon}
-        >
-          <Popup>
-            <div className="p-1">
-              <strong className="text-primary">{marker.name}</strong>
-              {marker.url && onMarkerClick && (
-                <button
-                  onClick={() => onMarkerClick(marker.url!)}
-                  className="mt-2 block w-full text-sm text-primary hover:underline"
-                >
-                  Open in Google Maps →
-                </button>
-              )}
-            </div>
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
-  );
+}: LeafletMapProps) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    // Initialize map
+    const map = L.map(mapRef.current).setView([center.lat, center.lng], zoom);
+    mapInstanceRef.current = map;
+
+    // Add tile layer (OpenStreetMap)
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+
+    // Add markers
+    markers.forEach((marker) => {
+      const leafletMarker = L.marker([marker.lat, marker.lng], { icon: defaultIcon }).addTo(map);
+      
+      const popupContent = document.createElement("div");
+      popupContent.className = "p-1";
+      popupContent.innerHTML = `<strong style="color: hsl(var(--primary))">${marker.name}</strong>`;
+      
+      if (marker.url && onMarkerClick) {
+        const button = document.createElement("button");
+        button.textContent = "Open in Google Maps →";
+        button.className = "mt-2 block w-full text-sm hover:underline";
+        button.style.color = "hsl(var(--primary))";
+        button.onclick = () => onMarkerClick(marker.url!);
+        popupContent.appendChild(button);
+      }
+      
+      leafletMarker.bindPopup(popupContent);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [center, zoom, markers, onMarkerClick]);
+
+  return <div ref={mapRef} className="w-full h-full rounded-lg" />;
 };
 
 export default LeafletMap;
