@@ -28,6 +28,25 @@ export const useGoogleMapInstance = ({
     onMapErrorRef.current = onMapError;
   }, [onMapCreate, onMapError]);
   
+  // Detect Google Maps authentication errors
+  const checkForAuthError = useCallback(() => {
+    if (!mapRef.current) return false;
+    
+    // Check for error messages in the map container
+    const errorElement = mapRef.current.querySelector('.gm-err-container, .gm-err-message');
+    if (errorElement) {
+      return true;
+    }
+    
+    // Check for the "Sorry! Something went wrong" text
+    const textContent = mapRef.current.textContent || '';
+    if (textContent.includes('Sorry!') || textContent.includes('Something went wrong')) {
+      return true;
+    }
+    
+    return false;
+  }, []);
+  
   // Initialize the map
   const initializeMap = useCallback(() => {
     if (!mapRef.current || isMapInitialized) {
@@ -55,8 +74,37 @@ export const useGoogleMapInstance = ({
       
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, mapOptions);
       
+      // Check for auth errors periodically after map creation
+      let errorCheckCount = 0;
+      const errorCheckInterval = setInterval(() => {
+        errorCheckCount++;
+        
+        if (checkForAuthError()) {
+          clearInterval(errorCheckInterval);
+          console.error("Google Maps authentication error detected");
+          setMapError(true);
+          setIsMapInitialized(false);
+          onMapErrorRef.current?.();
+          return;
+        }
+        
+        // Stop checking after 5 seconds
+        if (errorCheckCount > 25) {
+          clearInterval(errorCheckInterval);
+        }
+      }, 200);
+      
       // Listen for tiles loaded event
       window.google.maps.event.addListenerOnce(mapInstanceRef.current, 'tilesloaded', () => {
+        clearInterval(errorCheckInterval);
+        
+        // Double check for auth errors even after tiles loaded
+        if (checkForAuthError()) {
+          setMapError(true);
+          onMapErrorRef.current?.();
+          return;
+        }
+        
         setIsMapInitialized(true);
         setMapLoaded(true);
         setMapError(false);
@@ -65,7 +113,14 @@ export const useGoogleMapInstance = ({
       
       // Set a timeout as fallback
       setTimeout(() => {
-        if (!mapLoaded && mapInstanceRef.current) {
+        if (checkForAuthError()) {
+          clearInterval(errorCheckInterval);
+          setMapError(true);
+          onMapErrorRef.current?.();
+          return;
+        }
+        
+        if (!mapLoaded && mapInstanceRef.current && !mapError) {
           setIsMapInitialized(true);
           setMapLoaded(true);
           onMapCreateRef.current?.();
@@ -77,7 +132,7 @@ export const useGoogleMapInstance = ({
       setMapError(true);
       onMapErrorRef.current?.();
     }
-  }, [center, zoom, isMapInitialized, mapLoaded]);
+  }, [center, zoom, isMapInitialized, mapLoaded, mapError, checkForAuthError]);
   
   // Update map center and zoom when props change
   useEffect(() => {
