@@ -59,23 +59,6 @@ const HotspotPage = () => {
     },
   ];
 
-  // Pink dashed boundary line coordinates (Al Qasimiah border) - matches the reference image
-  const boundaryLineCoords: [number, number][] = [
-    [25.3580, 55.362], // Start near Al Jubail/waterfront
-    [25.3578, 55.367],
-    [25.3575, 55.372],
-    [25.3570, 55.377], // Near Al Mareija
-    [25.3568, 55.382],
-    [25.3565, 55.387], // Near Rolla Square Park
-    [25.3560, 55.392],
-    [25.3558, 55.397],
-    [25.3555, 55.402], // Near Al Manakh
-    [25.3550, 55.407],
-    [25.3548, 55.412], // Near Al Fayha Park
-    [25.3545, 55.417],
-    [25.3540, 55.422], // End past Al Fayha Park
-  ];
-
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
@@ -86,7 +69,7 @@ const HotspotPage = () => {
     // Initialize the map
     const map = L.map(mapRef.current).setView(
       [centerLat, centerLng],
-      13
+      12
     );
 
     // Add ESRI World Street Map tiles (English labels)
@@ -96,14 +79,6 @@ const HotspotPage = () => {
         attribution: "Tiles &copy; Esri",
       }
     ).addTo(map);
-
-    // Add the pink dashed boundary line
-    L.polyline(boundaryLineCoords, {
-      color: "#EC4899",
-      weight: 4,
-      dashArray: "10, 10",
-      opacity: 0.9,
-    }).addTo(map);
 
     // Add markers for each hotspot location
     hotspotLocations.forEach((location) => {
