@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, X, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, X, FileText, Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DocumentUploader } from "@/components/documents/DocumentUploader";
@@ -75,6 +75,37 @@ const MFuelPage = () => {
     }
   };
 
+  const deleteDocument = async (document: Document) => {
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from(document.bucket_name)
+        .remove([document.file_path]);
+
+      if (storageError) {
+        toast.error("Error deleting file from storage");
+        return;
+      }
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', document.id);
+
+      if (dbError) {
+        toast.error("Error deleting document record");
+        return;
+      }
+
+      toast.success("Document deleted successfully");
+      fetchDocuments();
+    } catch (err) {
+      console.error("Error deleting document:", err);
+      toast.error("Failed to delete document");
+    }
+  };
+
   const handleClose = () => {
     navigate("/home");
   };
@@ -136,14 +167,26 @@ const MFuelPage = () => {
                       <FileText className="h-5 w-5 text-indigo-600" />
                       <span className="text-gray-700">{doc.file_name}</span>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => viewDocument(doc)}
-                      className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
-                    >
-                      View
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => viewDocument(doc)}
+                        className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                      >
+                        View
+                      </Button>
+                      {isAdmin && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteDocument(doc)}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
