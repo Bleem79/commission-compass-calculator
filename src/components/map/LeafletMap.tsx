@@ -1,6 +1,6 @@
 import React from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import { Icon } from "leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 interface MarkerData {
@@ -19,7 +19,7 @@ interface LeafletMapProps {
 }
 
 // Fix for default marker icons in Leaflet with bundlers
-const defaultIcon = new Icon({
+const defaultIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
