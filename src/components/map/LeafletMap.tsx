@@ -8,6 +8,7 @@ interface MarkerData {
   lat: number;
   lng: number;
   url?: string;
+  distance?: number | null;
 }
 
 interface LeafletMapProps {
@@ -15,6 +16,7 @@ interface LeafletMapProps {
   zoom?: number;
   markers: MarkerData[];
   onMarkerClick?: (url: string) => void;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 // Fix for default marker icons in Leaflet with bundlers
@@ -28,11 +30,34 @@ const defaultIcon = L.icon({
   shadowSize: [41, 41],
 });
 
+// User location marker (blue dot)
+const userIcon = L.divIcon({
+  className: "user-location-marker",
+  html: `<div style="
+    width: 16px;
+    height: 16px;
+    background-color: #3b82f6;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  "></div>`,
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
+
+const formatDistance = (distance: number): string => {
+  if (distance < 1) {
+    return `${Math.round(distance * 1000)} m`;
+  }
+  return `${distance.toFixed(1)} km`;
+};
+
 const LeafletMap = ({
   center,
   zoom = 13,
   markers,
   onMarkerClick,
+  userLocation,
 }: LeafletMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -46,17 +71,33 @@ const LeafletMap = ({
 
     // Add tile layer (OpenStreetMap)
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
+
+    // Add user location marker if available
+    if (userLocation) {
+      L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
+        .addTo(map)
+        .bindPopup("<strong>Your Location</strong>");
+    }
 
     // Add markers
     markers.forEach((marker) => {
-      const leafletMarker = L.marker([marker.lat, marker.lng], { icon: defaultIcon }).addTo(map);
-      
+      const leafletMarker = L.marker([marker.lat, marker.lng], {
+        icon: defaultIcon,
+      }).addTo(map);
+
       const popupContent = document.createElement("div");
       popupContent.className = "p-1";
-      popupContent.innerHTML = `<strong style="color: hsl(var(--primary))">${marker.name}</strong>`;
       
+      let distanceText = "";
+      if (marker.distance !== null && marker.distance !== undefined) {
+        distanceText = `<p style="color: #666; font-size: 12px; margin-top: 4px;">📍 ${formatDistance(marker.distance)}</p>`;
+      }
+      
+      popupContent.innerHTML = `<strong style="color: hsl(var(--primary))">${marker.name}</strong>${distanceText}`;
+
       if (marker.url && onMarkerClick) {
         const button = document.createElement("button");
         button.textContent = "Open in Google Maps →";
@@ -65,7 +106,7 @@ const LeafletMap = ({
         button.onclick = () => onMarkerClick(marker.url!);
         popupContent.appendChild(button);
       }
-      
+
       leafletMarker.bindPopup(popupContent);
     });
 
@@ -76,7 +117,7 @@ const LeafletMap = ({
         mapInstanceRef.current = null;
       }
     };
-  }, [center, zoom, markers, onMarkerClick]);
+  }, [center, zoom, markers, onMarkerClick, userLocation]);
 
   return <div ref={mapRef} className="w-full h-full rounded-lg" />;
 };
