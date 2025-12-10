@@ -69,10 +69,10 @@ const LeafletMap = ({
     const map = L.map(mapRef.current).setView([center.lat, center.lng], zoom);
     mapInstanceRef.current = map;
 
-    // Add tile layer with English labels (OpenStreetMap with English names)
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    // Add tile layer with English labels (ESRI World Street Map)
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        'Tiles &copy; Esri',
       maxZoom: 19,
     }).addTo(map);
 
