@@ -3,16 +3,25 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { commissionData } from "@/constants/calculator";
+import { commissionData, months } from "@/constants/calculator";
 import type { NextTierInfo } from "@/types/calculator";
 import { CalculatorHeader } from "@/components/calculator/CalculatorHeader";
 import { CalculatorContainer } from "@/components/calculator/CalculatorContainer";
 import { UserProfile } from "@/components/calculator/UserProfile";
 
+// Get current month in format matching months array (e.g., "25-Dec")
+const getCurrentMonth = () => {
+  const now = new Date();
+  const year = now.getFullYear().toString().slice(-2);
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const currentMonthStr = `${year}-${monthNames[now.getMonth()]}`;
+  return months.includes(currentMonthStr) ? currentMonthStr : "";
+};
+
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [month, setMonth] = useState("");
+  const [month, setMonth] = useState(getCurrentMonth());
   const [shiftType, setShiftType] = useState("");
   const [commissionType, setCommissionType] = useState("");
   const [totalIncome, setTotalIncome] = useState<number | undefined>(undefined);
