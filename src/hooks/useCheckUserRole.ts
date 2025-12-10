@@ -6,9 +6,10 @@ import { User } from "@/types/auth";
 export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<User | null>>) => {
   return async (userId: string, userEmail: string) => {
     try {
-      // Specific check for erico.ariata@outlook.com
-      if (userEmail === 'erico.ariata@outlook.com') {
-        console.log("Found specific user erico.ariata@outlook.com - setting as admin");
+      // Specific check for admin emails
+      const adminEmails = ['erico.ariata@outlook.com', 'binu@amantaxi.com'];
+      if (adminEmails.includes(userEmail.toLowerCase())) {
+        console.log("Found admin user - setting as admin:", userEmail);
         setUser(prevUser => {
           // Only update if role is different or user is null
           if (!prevUser || prevUser.role !== 'admin') {
