@@ -150,10 +150,11 @@ export type Database = {
       has_admin_role: { Args: { user_id: string }; Returns: boolean }
       has_role:
         | {
-            Args: { role_name: string }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public.has_role(role_name => text), public.has_role(role_name => app_role). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
           }
         | {
             Args: { role_name: Database["public"]["Enums"]["app_role"] }
@@ -162,11 +163,10 @@ export type Database = {
             } & "Could not choose the best candidate function between: public.has_role(role_name => text), public.has_role(role_name => app_role). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
         | {
-            Args: {
-              _role: Database["public"]["Enums"]["app_role"]
-              _user_id: string
-            }
-            Returns: boolean
+            Args: { role_name: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.has_role(role_name => text), public.has_role(role_name => app_role). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
       is_guest_account: { Args: { email: string }; Returns: boolean }
     }
