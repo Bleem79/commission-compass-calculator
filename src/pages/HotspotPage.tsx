@@ -39,6 +39,24 @@ const HotspotPage = () => {
       lat: 25.3090368,
       lng: 55.4208324,
     },
+    {
+      id: 5,
+      name: "Top 5- Al Sharq",
+      lat: 25.3661404,
+      lng: 55.4016444,
+    },
+    {
+      id: 6,
+      name: "Top 6- Muweileh",
+      lat: 25.3096921,
+      lng: 55.4626017,
+    },
+    {
+      id: 7,
+      name: "Top 7- Al Gharb",
+      lat: 25.3550736,
+      lng: 55.391724,
+    },
   ];
 
   // Pink dashed boundary line coordinates (Al Qasimiah border) - matches the reference image
