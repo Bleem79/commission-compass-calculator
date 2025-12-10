@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Navigation } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,24 +17,24 @@ const LocationCard: React.FC<LocationCardProps> = ({
   onOpenLocation
 }) => {
   return (
-    <Card className="bg-white shadow-md hover:shadow-lg transition-all">
-      <CardContent className="p-6">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center">
-            <div className="h-8 w-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">
+    <Card className="bg-card shadow-md hover:shadow-lg transition-all">
+      <CardContent className="p-4 md:p-6">
+        <div className="flex justify-between items-center gap-3">
+          <div className="flex items-center min-w-0">
+            <div className="h-8 w-8 flex-shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center mr-3 text-sm font-bold">
               {id}
             </div>
-            <h3 className="text-lg font-medium">{name}</h3>
+            <h3 className="text-base md:text-lg font-medium text-foreground truncate">{name}</h3>
           </div>
-        </div>
-        
-        <div className="mt-4 flex justify-end">
+          
           <Button
             onClick={() => onOpenLocation(url)}
-            className="bg-indigo-600 hover:bg-indigo-700 flex items-center gap-2"
+            size="sm"
+            className="flex-shrink-0 flex items-center gap-1.5 md:gap-2"
           >
-            <Navigation size={18} />
-            Open in Maps
+            <Navigation size={16} className="md:w-[18px] md:h-[18px]" />
+            <span className="hidden xs:inline">Open in Maps</span>
+            <span className="xs:hidden">Maps</span>
           </Button>
         </div>
       </CardContent>

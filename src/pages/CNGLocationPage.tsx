@@ -108,13 +108,13 @@ const CNGLocationPage = () => {
   }, []);
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-6 md:p-10">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted to-muted/50 p-4 md:p-6 lg:p-10">
       <div className="max-w-6xl mx-auto">
-        <div className="w-full mb-8">
-          <h1 className="text-3xl font-bold text-indigo-800 mb-4">
+        <div className="w-full mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-primary mb-3 md:mb-4">
             CNG Locations
           </h1>
-          <p className="text-slate-600 mb-6">
+          <p className="text-sm md:text-base text-muted-foreground mb-4 md:mb-6">
             Find nearby CNG stations for refueling. Click on a station to view its location on Google Maps.
           </p>
           
@@ -127,24 +127,25 @@ const CNGLocationPage = () => {
           )}
         </div>
 
-        {/* Map section with error handling */}
-        <div className="w-full h-[500px] rounded-lg overflow-hidden border-2 border-indigo-300 mb-8 relative">
+        {/* Map section with error handling - responsive height */}
+        <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] rounded-lg overflow-hidden border-2 border-border mb-6 md:mb-8 relative bg-muted">
           {mapError ? (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
-              <Alert variant="destructive" className="max-w-md mb-4">
-                <AlertTitle>Map Loading Error</AlertTitle>
-                <AlertDescription>
-                  Unable to load the interactive map. You can still view individual locations using the cards below.
-                </AlertDescription>
-              </Alert>
-              
-              <div className="mt-4">
-                <StaticMap mapUrl={mapUrl} alt="Static map of CNG locations" />
+            <div className="w-full h-full flex flex-col items-center justify-center p-4">
+              <div className="text-center mb-4">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Map Unavailable</h3>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                  Unable to load interactive map. Use the cards below to navigate to each location.
+                </p>
               </div>
               
               <button 
                 onClick={retryMapLoad}
-                className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm"
               >
                 Retry Loading Map
               </button>
@@ -162,8 +163,8 @@ const CNGLocationPage = () => {
           )}
         </div>
 
-        <h2 className="text-2xl font-semibold text-indigo-700 mb-4">CNG Station Directory</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <h2 className="text-xl md:text-2xl font-semibold text-primary mb-4">CNG Station Directory</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 mb-8">
           {cngLocations.map((location) => (
             <LocationCard
               key={location.id}
