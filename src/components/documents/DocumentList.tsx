@@ -22,7 +22,7 @@ export const DocumentList = ({ documents, isAdmin = false }: DocumentListProps) 
     try {
       const { data, error } = await supabase.storage
         .from(document.bucket_name)
-        .createSignedUrl(document.file_path, 60);
+        .createSignedUrl(document.file_path, 3600); // 1 hour expiry
 
       if (error) {
         console.error("Error creating signed URL:", error);
@@ -30,7 +30,14 @@ export const DocumentList = ({ documents, isAdmin = false }: DocumentListProps) 
         return;
       }
 
-      window.open(data.signedUrl, '_blank');
+      // Create a temporary link and click it - works better on iOS Safari
+      const link = window.document.createElement('a');
+      link.href = data.signedUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
     } catch (err: any) {
       console.error("Error viewing document:", err);
       toast.error('Error', {
