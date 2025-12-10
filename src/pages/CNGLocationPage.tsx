@@ -11,29 +11,29 @@ const cngLocations = [
     id: 1,
     name: "Al Mirqab (771)",
     url: "https://maps.app.goo.gl/29Cn1UbFJ2v41hbD7",
-    lat: 25.3550,
-    lng: 55.3945,
+    lat: 25.388179251322544,
+    lng: 55.41933347301315,
   },
   {
     id: 2,
     name: "Maysaloon (783)",
     url: "https://maps.app.goo.gl/3YE7fXz1bZTiWJBs6",
-    lat: 25.3465,
-    lng: 55.4155,
+    lat: 25.36441023851886,
+    lng: 55.4043490141414,
   },
   {
     id: 3,
     name: "Al Shahba (769)",
     url: "https://maps.app.goo.gl/nT8JLk91Tjm8L72u5",
-    lat: 25.3175,
-    lng: 55.4235,
+    lat: 25.32848025828055,
+    lng: 55.43204902883553,
   },
   {
     id: 4,
     name: "Samnan (799)",
     url: "https://maps.app.goo.gl/2XhRoq5Rmv22qpAy5",
-    lat: 25.3755,
-    lng: 55.4205,
+    lat: 25.341210543133734,
+    lng: 55.41791154972364,
   }
 ];
 
