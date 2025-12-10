@@ -22,9 +22,10 @@ interface DocumentViewerProps {
   icon?: React.ReactNode;
   isAdmin: boolean;
   canView: boolean;
+  autoDisplay?: boolean;
 }
 
-export const DocumentViewer = ({ bucketName, title, icon, isAdmin, canView }: DocumentViewerProps) => {
+export const DocumentViewer = ({ bucketName, title, icon, isAdmin, canView, autoDisplay = false }: DocumentViewerProps) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,14 +53,23 @@ export const DocumentViewer = ({ bucketName, title, icon, isAdmin, canView }: Do
   }, [bucketName, canView]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen || autoDisplay) {
       fetchDocuments();
     }
-  }, [isOpen, fetchDocuments]);
+  }, [isOpen, autoDisplay, fetchDocuments]);
 
   if (!canView && !isAdmin) {
     return (
       <p className="text-gray-500">You don't have permission to view these documents.</p>
+    );
+  }
+
+  // Auto-display mode for guests - show documents directly
+  if (autoDisplay && !isAdmin) {
+    return (
+      <div className="space-y-4">
+        <DocumentList documents={documents} isAdmin={false} />
+      </div>
     );
   }
 

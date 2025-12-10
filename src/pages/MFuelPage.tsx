@@ -36,7 +36,7 @@ const MFuelPage = () => {
               <h3 className="text-xl font-semibold border-b border-indigo-100 pb-2">
                 Documents
               </h3>
-              <DocumentCategory title="M-Fuel" bucketName="mfuel_documents" />
+              <DocumentCategory title="M-Fuel" bucketName="mfuel_documents" autoDisplayForGuests={true} />
             </div>
           )}
         </div>

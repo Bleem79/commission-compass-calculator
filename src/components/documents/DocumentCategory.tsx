@@ -7,9 +7,10 @@ import { FileImage, FileText } from "lucide-react";
 interface DocumentCategoryProps {
   title: string;
   bucketName: string;
+  autoDisplayForGuests?: boolean;
 }
 
-export const DocumentCategory: React.FC<DocumentCategoryProps> = ({ title, bucketName }) => {
+export const DocumentCategory: React.FC<DocumentCategoryProps> = ({ title, bucketName, autoDisplayForGuests = false }) => {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const isGuest = user?.role === "guest";
@@ -27,6 +28,7 @@ export const DocumentCategory: React.FC<DocumentCategoryProps> = ({ title, bucke
           icon={title === "PDF" ? <FileText className="h-4 w-4" /> : <FileImage className="h-4 w-4" />}
           isAdmin={isAdmin}
           canView={isGuest || isAdmin}
+          autoDisplay={autoDisplayForGuests && isGuest}
         />
       ) : (
         <p className="text-gray-500">
