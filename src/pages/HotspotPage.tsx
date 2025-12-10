@@ -20,44 +20,55 @@ const HotspotPage = () => {
       name: "Top 1- Al Qasimiah",
       lat: 25.3435926,
       lng: 55.3960874,
+      googleMapsUrl: "https://www.google.com/maps/place/Hay+Al+Qasimiah+-+Sharjah/@25.3427558,55.3748056,4076m/data=!3m2!1e3!4b1!4m6!3m5!1s0x3e5f5bd03489bdb5:0x3769999c6a02985e!8m2!3d25.3435926!4d55.3960874",
     },
     {
       id: 2,
       name: "Top 2- Al Majaz",
       lat: 25.322572,
       lng: 55.3874166,
+      googleMapsUrl: "https://www.google.com/maps/place/Al+Majaz+-+Sharjah/@25.338269,55.3959631,6854m/data=!3m1!1e3!4m6!3m5!1s0x3e5f5bc023b9ae1f:0xbce03df60d9b845e!8m2!3d25.322572!4d55.3874166",
     },
     {
       id: 3,
       name: "Top 3- Al Nahda",
       lat: 25.3019448,
       lng: 55.3761806,
+      googleMapsUrl: "https://www.google.com/maps/place/Hay+Al+Nahda+-+Sharjah/@25.3034626,55.3702951,3428m/data=!3m1!1e3!4m6!3m5!1s0x3e5f5c769ceaebc5:0x87ef0a2e9e93dfdc!8m2!3d25.3019448!4d55.3761806",
     },
     {
       id: 4,
       name: "Top 4- Sharjah Industrial Area",
       lat: 25.3090368,
       lng: 55.4208324,
+      googleMapsUrl: "https://www.google.com/maps/place/Industrial+Area+-+Sharjah/@25.3001447,55.3907926,16308m/data=!3m1!1e3!4m6!3m5!1s0x3e5f5ec7d43763cd:0xe46c75259954fcf1!8m2!3d25.3090368!4d55.4208324",
     },
     {
       id: 5,
       name: "Top 5- Al Sharq",
       lat: 25.3661404,
       lng: 55.4016444,
+      googleMapsUrl: "https://www.google.com/maps/place/Hay+Al+Sharq+-+Sharjah/@25.3673183,55.393429,4075m/data=!3m2!1e3!4b1!4m6!3m5!1s0x3e5f5a214ff9db81:0xf05b844fb31e8e41!8m2!3d25.3661404!4d55.4016444",
     },
     {
       id: 6,
       name: "Top 6- Muweileh",
       lat: 25.3096921,
       lng: 55.4626017,
+      googleMapsUrl: "https://www.google.com/maps/place/Muwaileh+Commercial+-+Sharjah/@25.3072153,55.4414291,8153m/data=!3m2!1e3!4b1!4m6!3m5!1s0x3e5f5f1ab69d4249:0x127fa82fc0a859b4!8m2!3d25.3096921!4d55.4626017",
     },
     {
       id: 7,
       name: "Top 7- Al Gharb",
       lat: 25.3550736,
       lng: 55.391724,
+      googleMapsUrl: "https://www.google.com/maps/place/Hay+Al+Gharb+-+Sharjah/@25.3581384,55.3860706,2038m/data=!3m2!1e3!4b1!4m6!3m5!1s0x3e5f5a2dabcde77b:0x2c936421fee8ea66!8m2!3d25.3550736!4d55.391724",
     },
   ];
+
+  const openGoogleMaps = (url: string) => {
+    window.open(url, "_blank");
+  };
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -98,6 +109,7 @@ const HotspotPage = () => {
             color: white;
             font-weight: bold;
             font-size: 14px;
+            cursor: pointer;
           ">${location.id}</div>
         `,
         iconSize: [32, 32],
@@ -109,11 +121,10 @@ const HotspotPage = () => {
         icon: customIcon,
       }).addTo(map);
 
-      marker.bindPopup(
-        `<div style="text-align: center; padding: 4px;">
-          <strong>${location.name}</strong>
-        </div>`
-      );
+      // Open Google Maps on marker click
+      marker.on("click", () => {
+        window.open(location.googleMapsUrl, "_blank");
+      });
     });
 
     mapInstanceRef.current = map;
@@ -161,11 +172,15 @@ const HotspotPage = () => {
           {/* Location List */}
           <div className="mt-4 space-y-2">
             {hotspotLocations.map((location) => (
-              <div key={location.id} className="flex items-center gap-2 text-sm text-indigo-700">
+              <div 
+                key={location.id} 
+                className="flex items-center gap-2 text-sm text-indigo-700 cursor-pointer hover:bg-indigo-50 p-2 rounded-lg transition-colors"
+                onClick={() => openGoogleMaps(location.googleMapsUrl)}
+              >
                 <span className="bg-sky-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
                   {location.id}
                 </span>
-                <span>{location.name}</span>
+                <span className="hover:underline">{location.name}</span>
               </div>
             ))}
           </div>
