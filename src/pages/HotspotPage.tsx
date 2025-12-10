@@ -14,11 +14,20 @@ const HotspotPage = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
-  const hotspotLocation = {
-    name: "Top 1- Al Qasimiah",
-    lat: 25.3435926,
-    lng: 55.3960874,
-  };
+  const hotspotLocations = [
+    {
+      id: 1,
+      name: "Top 1- Al Qasimiah",
+      lat: 25.3435926,
+      lng: 55.3960874,
+    },
+    {
+      id: 2,
+      name: "Top 2- Al Majaz",
+      lat: 25.322572,
+      lng: 55.3874166,
+    },
+  ];
 
   // Pink dashed boundary line coordinates (Al Qasimiah border) - matches the reference image
   const boundaryLineCoords: [number, number][] = [
@@ -40,10 +49,14 @@ const HotspotPage = () => {
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
+    // Calculate center point between all locations
+    const centerLat = hotspotLocations.reduce((sum, loc) => sum + loc.lat, 0) / hotspotLocations.length;
+    const centerLng = hotspotLocations.reduce((sum, loc) => sum + loc.lng, 0) / hotspotLocations.length;
+
     // Initialize the map
     const map = L.map(mapRef.current).setView(
-      [hotspotLocation.lat, hotspotLocation.lng],
-      14
+      [centerLat, centerLng],
+      13
     );
 
     // Add ESRI World Street Map tiles (English labels)
@@ -62,41 +75,41 @@ const HotspotPage = () => {
       opacity: 0.9,
     }).addTo(map);
 
-    // Create custom marker icon
-    const customIcon = L.divIcon({
-      className: "custom-marker",
-      html: `
-        <div style="
-          background-color: #0EA5E9;
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          border: 3px solid white;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: bold;
-          font-size: 14px;
-        ">1</div>
-      `,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-      popupAnchor: [0, -16],
+    // Add markers for each hotspot location
+    hotspotLocations.forEach((location) => {
+      const customIcon = L.divIcon({
+        className: "custom-marker",
+        html: `
+          <div style="
+            background-color: #0EA5E9;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+          ">${location.id}</div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -16],
+      });
+
+      const marker = L.marker([location.lat, location.lng], {
+        icon: customIcon,
+      }).addTo(map);
+
+      marker.bindPopup(
+        `<div style="text-align: center; padding: 4px;">
+          <strong>${location.name}</strong>
+        </div>`
+      );
     });
-
-    // Add marker
-    const marker = L.marker([hotspotLocation.lat, hotspotLocation.lng], {
-      icon: customIcon,
-    }).addTo(map);
-
-    // Add popup
-    marker.bindPopup(
-      `<div style="text-align: center; padding: 4px;">
-        <strong>${hotspotLocation.name}</strong>
-      </div>`
-    );
 
     mapInstanceRef.current = map;
 
@@ -133,13 +146,24 @@ const HotspotPage = () => {
           <div className="flex items-center gap-2 mb-4">
             <MapPin className="text-indigo-600" size={20} />
             <h3 className="text-xl font-semibold text-indigo-800">
-              {hotspotLocation.name}
+              Hotspot Locations
             </h3>
           </div>
           <div
             ref={mapRef}
             className="w-full h-[300px] md:h-[400px] rounded-lg overflow-hidden border border-indigo-200"
           />
+          {/* Location List */}
+          <div className="mt-4 space-y-2">
+            {hotspotLocations.map((location) => (
+              <div key={location.id} className="flex items-center gap-2 text-sm text-indigo-700">
+                <span className="bg-sky-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+                  {location.id}
+                </span>
+                <span>{location.name}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Documents Section */}
