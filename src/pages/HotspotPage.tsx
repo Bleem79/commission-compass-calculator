@@ -20,13 +20,25 @@ const HotspotPage = () => {
     lng: 55.3960874,
   };
 
+  // Pink dashed boundary line coordinates (Al Qasimiah border)
+  const boundaryLineCoords: [number, number][] = [
+    [25.3565, 55.376],
+    [25.3558, 55.382],
+    [25.3555, 55.388],
+    [25.3548, 55.394],
+    [25.3542, 55.400],
+    [25.3538, 55.406],
+    [25.3535, 55.412],
+    [25.3530, 55.418],
+  ];
+
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
     // Initialize the map
     const map = L.map(mapRef.current).setView(
       [hotspotLocation.lat, hotspotLocation.lng],
-      15
+      14
     );
 
     // Add ESRI World Street Map tiles (English labels)
@@ -36,6 +48,14 @@ const HotspotPage = () => {
         attribution: "Tiles &copy; Esri",
       }
     ).addTo(map);
+
+    // Add the pink dashed boundary line
+    L.polyline(boundaryLineCoords, {
+      color: "#EC4899",
+      weight: 4,
+      dashArray: "10, 10",
+      opacity: 0.9,
+    }).addTo(map);
 
     // Create custom marker icon
     const customIcon = L.divIcon({
