@@ -88,26 +88,23 @@ const LeafletMap = ({
         icon: defaultIcon,
       }).addTo(map);
 
-      const popupContent = document.createElement("div");
-      popupContent.className = "p-1";
-      
+      // Click on marker opens Google Maps directly
+      if (marker.url && onMarkerClick) {
+        leafletMarker.on("click", () => {
+          onMarkerClick(marker.url!);
+        });
+      }
+
+      // Also add popup with info
       let distanceText = "";
       if (marker.distance !== null && marker.distance !== undefined) {
-        distanceText = `<p style="color: #666; font-size: 12px; margin-top: 4px;">📍 ${formatDistance(marker.distance)}</p>`;
+        distanceText = `<br><span style="color: #666; font-size: 12px;">📍 ${formatDistance(marker.distance)}</span>`;
       }
       
-      popupContent.innerHTML = `<strong style="color: hsl(var(--primary))">${marker.name}</strong>${distanceText}`;
-
-      if (marker.url && onMarkerClick) {
-        const button = document.createElement("button");
-        button.textContent = "Open in Google Maps →";
-        button.className = "mt-2 block w-full text-sm hover:underline";
-        button.style.color = "hsl(var(--primary))";
-        button.onclick = () => onMarkerClick(marker.url!);
-        popupContent.appendChild(button);
-      }
-
-      leafletMarker.bindPopup(popupContent);
+      leafletMarker.bindTooltip(
+        `<strong>${marker.name}</strong>${distanceText}`,
+        { direction: "top", offset: [0, -35] }
+      );
     });
 
     // Cleanup on unmount
