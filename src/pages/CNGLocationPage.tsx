@@ -38,7 +38,7 @@ const cngLocations = [
   {
     id: 5,
     name: "Ajman (Hemaidiya) - 695",
-    url: "https://maps.app.goo.gl/hemaidiya695",
+    url: "https://www.google.com/maps?q=25.38729778575349,55.553135482097005",
     lat: 25.38729778575349,
     lng: 55.553135482097005,
   }
