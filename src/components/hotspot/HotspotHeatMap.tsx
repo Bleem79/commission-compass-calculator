@@ -64,7 +64,7 @@ const HotspotHeatMap = () => {
             </div>
 
             {/* Progress Bar */}
-            <div className="flex-1 h-8 bg-gray-100 rounded-full overflow-hidden relative">
+            <div className="flex-1 h-8 bg-gray-100 rounded-full overflow-hidden">
               <div
                 className={`h-full bg-gradient-to-r ${getHeatColorBar(
                   item.percentage
@@ -73,9 +73,6 @@ const HotspotHeatMap = () => {
                   width: `${(item.percentage / maxPercentage) * 100}%`,
                 }}
               />
-              <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700">
-                {item.percentage}%
-              </span>
             </div>
           </div>
         ))}
