@@ -45,26 +45,30 @@ const HotspotHeatMap = () => {
         </h3>
       </div>
 
-      {/* Heat Map Bars */}
-      <div className="space-y-3">
-        {hotspotData.map((item) => (
-          <div key={item.id} className="flex items-center gap-3">
-            {/* Rank Badge */}
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 ${getHeatColor(
-                item.percentage
-              )}`}
-            >
-              {item.id}
+      {/* Side by Side Layout */}
+      <div className="flex flex-col md:flex-row gap-4">
+        {/* Location List - Left Side */}
+        <div className="md:w-1/2 space-y-3">
+          {hotspotData.map((item) => (
+            <div key={item.id} className="flex items-center gap-3 h-8">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 ${getHeatColor(
+                  item.percentage
+                )}`}
+              >
+                {item.id}
+              </div>
+              <div className="text-sm font-medium text-indigo-800">
+                Top {item.id}- {item.name}
+              </div>
             </div>
+          ))}
+        </div>
 
-            {/* Location Name */}
-            <div className="w-32 md:w-44 text-sm font-medium text-indigo-800 truncate">
-              {item.name}
-            </div>
-
-            {/* Progress Bar */}
-            <div className="flex-1 h-8 bg-gray-100 rounded-full overflow-hidden">
+        {/* Heat Bars - Right Side */}
+        <div className="md:w-1/2 space-y-3">
+          {hotspotData.map((item) => (
+            <div key={item.id} className="h-8 bg-gray-100 rounded-full overflow-hidden">
               <div
                 className={`h-full bg-gradient-to-r ${getHeatColorBar(
                   item.percentage
@@ -74,8 +78,8 @@ const HotspotHeatMap = () => {
                 }}
               />
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Legend */}
