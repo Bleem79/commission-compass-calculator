@@ -139,6 +139,15 @@ const HotspotPage = () => {
       });
 
       const marker = L.marker([location.lat, location.lng], { icon: customIcon }).addTo(map);
+      
+      // Add tooltip showing location name and percentage
+      marker.bindTooltip(`<strong>${location.name}</strong><br>${location.percentage}%`, {
+        permanent: false,
+        direction: "top",
+        offset: [0, -16],
+        className: "custom-tooltip",
+      });
+      
       marker.on("click", () => window.open(location.googleMapsUrl, "_blank"));
     });
 
