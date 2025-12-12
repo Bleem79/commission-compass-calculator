@@ -140,8 +140,8 @@ const HotspotPage = () => {
 
       const marker = L.marker([location.lat, location.lng], { icon: customIcon }).addTo(map);
       
-      // Add tooltip showing location name and percentage
-      marker.bindTooltip(`<strong>${location.name}</strong><br>${location.percentage}%`, {
+      // Add tooltip showing location name
+      marker.bindTooltip(`<strong>${location.name}</strong>`, {
         permanent: false,
         direction: "top",
         offset: [0, -16],
