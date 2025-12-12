@@ -1,12 +1,11 @@
-
 import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Home, MapPin } from "lucide-react";
-import { DocumentCategory } from "@/components/documents/DocumentCategory";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import HotspotHeatMap from "@/components/hotspot/HotspotHeatMap";
 
 const HotspotPage = () => {
   const navigate = useNavigate();
@@ -186,6 +185,8 @@ const HotspotPage = () => {
           </div>
         </div>
 
+        {/* Heat Map Section */}
+        <HotspotHeatMap />
       </div>
     </div>
   );
