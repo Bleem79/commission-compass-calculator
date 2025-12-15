@@ -8,7 +8,8 @@ import {
   Info, 
   Percent, 
   Wifi,
-  MapPin
+  MapPin,
+  CalendarDays
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,7 +19,7 @@ import { toast } from "@/hooks/use-toast";
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -140,6 +141,22 @@ const HomePage = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Admin Only Section */}
+      {isAdmin && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mt-3 sm:mt-6">
+          {/* 8. Last Month 5 or 6days Driver Income - Admin Only */}
+          <Card 
+            className="bg-gradient-to-br from-rose-400 to-rose-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-28 sm:h-40"
+            onClick={() => navigate("/driver-income")}
+          >
+            <CardContent className="flex flex-col items-center justify-center h-full p-3 sm:p-6">
+              <CalendarDays size={32} className="mb-2 sm:mb-3 sm:w-12 sm:h-12" />
+              <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">Last Month 5 or 6days Driver Income</h2>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </>
   ), [navigate]);
 

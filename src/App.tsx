@@ -14,6 +14,7 @@ import InfoPage from "./pages/InfoPage";
 import MFuelPage from "./pages/MFuelPage";
 import HotspotPage from "./pages/HotspotPage";
 import CNGLocationPage from "./pages/CNGLocationPage";
+import DriverIncomePage from "./pages/DriverIncomePage";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 
@@ -133,6 +134,18 @@ const AppRoutes = () => {
             <SidebarProvider>
               <div className="min-h-screen w-full">
                 <CNGLocationPage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver-income" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <DriverIncomePage />
               </div>
             </SidebarProvider>
           </ProtectedRoute>
