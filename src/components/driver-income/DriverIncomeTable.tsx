@@ -26,6 +26,7 @@ interface DriverIncomeTableProps {
   selectedYear: string;
   onMonthChange: (month: string) => void;
   onYearChange: (year: string) => void;
+  isAdmin: boolean;
 }
 
 const months = [
@@ -43,7 +44,8 @@ export const DriverIncomeTable = ({
   selectedMonth,
   selectedYear,
   onMonthChange,
-  onYearChange
+  onYearChange,
+  isAdmin
 }: DriverIncomeTableProps) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -134,7 +136,7 @@ export const DriverIncomeTable = ({
           </Select>
         </div>
 
-        {filteredData.length > 0 && (
+        {isAdmin && filteredData.length > 0 && (
           <Button
             variant="outline"
             size="sm"
@@ -168,7 +170,7 @@ export const DriverIncomeTable = ({
                   <TableHead className="font-semibold text-right">Total Income</TableHead>
                   <TableHead className="font-semibold text-right">Avg Daily</TableHead>
                   <TableHead className="font-semibold">Month/Year</TableHead>
-                  <TableHead className="font-semibold text-center">Actions</TableHead>
+                  {isAdmin && <TableHead className="font-semibold text-center">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -186,21 +188,23 @@ export const DriverIncomeTable = ({
                     <TableCell className="text-right">{row.total_income.toFixed(2)}</TableCell>
                     <TableCell className="text-right">{row.average_daily_income?.toFixed(2) || '-'}</TableCell>
                     <TableCell>{row.month} {row.year}</TableCell>
-                    <TableCell className="text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(row.id)}
-                        disabled={deletingId === row.id}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        {deletingId === row.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TableCell>
+                    {isAdmin && (
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(row.id)}
+                          disabled={deletingId === row.id}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          {deletingId === row.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
