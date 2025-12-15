@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile } from "@/components/calculator/UserProfile";
 import { AdminMessages } from "@/components/messages/AdminMessages";
+import { DriverIncomeAuthDialog } from "@/components/driver-income/DriverIncomeAuthDialog";
 import { toast } from "@/hooks/use-toast";
 
 const HomePage = () => {
@@ -22,6 +23,7 @@ const HomePage = () => {
   const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isDriverIncomeDialogOpen, setIsDriverIncomeDialogOpen] = useState(false);
 
   // Check authentication status and redirect if not authenticated
   useEffect(() => {
@@ -142,23 +144,21 @@ const HomePage = () => {
         </Card>
       </div>
 
-      {/* Admin Only Section */}
-      {isAdmin && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mt-3 sm:mt-6">
-          {/* 8. Last Month 5 or 6days Driver Income - Admin Only */}
-          <Card 
-            className="bg-gradient-to-br from-rose-400 to-rose-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-28 sm:h-40"
-            onClick={() => navigate("/driver-income")}
-          >
-            <CardContent className="flex flex-col items-center justify-center h-full p-3 sm:p-6">
-              <CalendarDays size={32} className="mb-2 sm:mb-3 sm:w-12 sm:h-12" />
-              <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">Last Month 5 or 6days Driver Income</h2>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Driver Income Section - Available to all users */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mt-3 sm:mt-6">
+        {/* Last Month 5 or 6days Driver Income */}
+        <Card 
+          className="bg-gradient-to-br from-rose-400 to-rose-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-28 sm:h-40"
+          onClick={() => isAdmin ? navigate("/driver-income") : setIsDriverIncomeDialogOpen(true)}
+        >
+          <CardContent className="flex flex-col items-center justify-center h-full p-3 sm:p-6">
+            <CalendarDays size={32} className="mb-2 sm:mb-3 sm:w-12 sm:h-12" />
+            <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">Last Month 5 or 6days Driver Income</h2>
+          </CardContent>
+        </Card>
+      </div>
     </>
-  ), [navigate]);
+  ), [navigate, isAdmin]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-4 sm:p-6 md:p-10">
@@ -211,6 +211,12 @@ const HomePage = () => {
       <AdminMessages
         isOpen={isMessagesOpen}
         onClose={() => setIsMessagesOpen(false)}
+      />
+
+      {/* Driver Income Auth Dialog */}
+      <DriverIncomeAuthDialog
+        isOpen={isDriverIncomeDialogOpen}
+        onClose={() => setIsDriverIncomeDialogOpen(false)}
       />
     </div>
   );
