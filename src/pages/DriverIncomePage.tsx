@@ -2,27 +2,31 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, X, Loader2, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, X, Upload, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { DocumentUploader } from "@/components/documents/DocumentUploader";
+import { DriverIncomeUploader } from "@/components/driver-income/DriverIncomeUploader";
+import { DriverIncomeTable } from "@/components/driver-income/DriverIncomeTable";
 
-interface Document {
+interface DriverIncomeData {
   id: string;
-  file_name: string;
-  file_path: string;
-  file_type: string;
-  bucket_name: string;
+  driver_id: string;
+  driver_name: string | null;
+  working_days: number;
+  total_income: number;
+  average_daily_income: number | null;
+  month: string;
+  year: number;
+  created_at: string;
 }
 
 const DriverIncomePage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isAdmin, user } = useAuth();
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [imageUrls, setImageUrls] = useState<{ [key: string]: string }>({});
+  const [incomeData, setIncomeData] = useState<DriverIncomeData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
   const [showUploader, setShowUploader] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState("All");
+  const [selectedYear, setSelectedYear] = useState("All");
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -32,76 +36,41 @@ const DriverIncomePage = () => {
     }
   }, [isAuthenticated, isAdmin, navigate]);
 
-  const fetchDocuments = useCallback(async () => {
+  const fetchIncomeData = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('documents')
+      let query = supabase
+        .from('driver_income')
         .select('*')
-        .eq('bucket_name', 'driver_income_documents');
+        .order('created_at', { ascending: false });
+
+      if (selectedMonth !== "All") {
+        query = query.eq('month', selectedMonth);
+      }
+      if (selectedYear !== "All") {
+        query = query.eq('year', parseInt(selectedYear, 10));
+      }
+
+      const { data, error } = await query;
 
       if (error) {
-        console.error("Error fetching documents:", error);
-        toast.error('Error', { description: error.message });
+        console.error("Error fetching income data:", error);
         return;
       }
 
-      setDocuments(data || []);
-
-      // Get signed URLs for all image documents
-      const urls: { [key: string]: string } = {};
-      for (const doc of data || []) {
-        if (doc.file_type.startsWith('image/')) {
-          const { data: signedData, error: signedError } = await supabase.storage
-            .from(doc.bucket_name)
-            .createSignedUrl(doc.file_path, 3600);
-
-          if (!signedError && signedData) {
-            urls[doc.id] = signedData.signedUrl;
-          }
-        }
-      }
-      setImageUrls(urls);
+      setIncomeData(data || []);
     } catch (err) {
-      console.error("Unexpected error fetching documents:", err);
+      console.error("Unexpected error fetching income data:", err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   useEffect(() => {
     if (isAdmin) {
-      fetchDocuments();
+      fetchIncomeData();
     }
-  }, [fetchDocuments, isAdmin]);
-
-  const deleteDocument = async (document: Document) => {
-    try {
-      const { error: storageError } = await supabase.storage
-        .from(document.bucket_name)
-        .remove([document.file_path]);
-
-      if (storageError) {
-        toast.error("Error deleting file from storage");
-        return;
-      }
-
-      const { error: dbError } = await supabase
-        .from('documents')
-        .delete()
-        .eq('id', document.id);
-
-      if (dbError) {
-        toast.error("Error deleting document record");
-        return;
-      }
-
-      toast.success("Document deleted successfully");
-      fetchDocuments();
-    } catch (err) {
-      console.error("Error deleting document:", err);
-      toast.error("Failed to delete document");
-    }
-  };
+  }, [fetchIncomeData, isAdmin]);
 
   const handleClose = () => {
     navigate("/home");
@@ -112,7 +81,7 @@ const DriverIncomePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-6 relative overflow-x-auto">
+    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-4 sm:p-6 relative overflow-x-auto">
       <Button 
         variant="ghost" 
         size="icon" 
@@ -128,81 +97,52 @@ const DriverIncomePage = () => {
         onClick={handleClose}
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Home
+        <span className="hidden sm:inline">Back to Home</span>
       </Button>
 
       <div className="max-w-6xl mx-auto pt-16">
-        <h1 className="text-xl sm:text-2xl font-bold text-indigo-800 mb-6">
-          Last Month 5 or 6days Driver Income
-        </h1>
-
-        {/* Admin Upload Section */}
-        {user?.id && (
-          <div className="mb-4 flex justify-end">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h1 className="text-lg sm:text-2xl font-bold text-indigo-800 flex items-center gap-2">
+            <FileSpreadsheet className="h-6 w-6" />
+            Last Month 5 or 6days Driver Income
+          </h1>
+          
+          {user?.id && (
             <Button
               variant="outline"
               onClick={() => setShowUploader(!showUploader)}
               className="flex items-center gap-2 bg-white hover:bg-indigo-50 text-indigo-700 border-indigo-200"
             >
               <Upload className="h-4 w-4" />
-              {showUploader ? 'Hide Uploader' : 'Upload Document'}
+              {showUploader ? 'Hide Uploader' : 'Import Excel/CSV'}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
 
+        {/* Upload Section */}
         {showUploader && user?.id && (
-          <div className="mb-6 bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100 p-6">
-            <DocumentUploader
-              bucketName="driver_income_documents"
+          <div className="mb-6 bg-white/80 backdrop-blur-sm rounded-lg border border-indigo-100 p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Import Driver Income Data</h2>
+            <DriverIncomeUploader
               userId={user.id}
               onUploadSuccess={() => {
-                fetchDocuments();
+                fetchIncomeData();
                 setShowUploader(false);
               }}
-              isLoading={isUploading}
-              setIsLoading={setIsUploading}
             />
           </div>
         )}
 
-        {/* Documents Display */}
-        <div className="space-y-6">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-            </div>
-          ) : documents.length === 0 ? (
-            <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100 p-8 text-center">
-              <p className="text-gray-500">No documents available. Upload driver income data to get started.</p>
-            </div>
-          ) : (
-            documents.map((doc) => (
-              <div key={doc.id} className="relative">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => deleteDocument(doc)}
-                  className="absolute top-2 right-2 z-10 text-red-600 border-red-200 hover:bg-red-50 bg-white"
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Delete
-                </Button>
-                
-                {doc.file_type.startsWith('image/') && imageUrls[doc.id] ? (
-                  <img
-                    src={imageUrls[doc.id]}
-                    alt={doc.file_name}
-                    className="w-full rounded-lg shadow-lg border border-indigo-100"
-                  />
-                ) : (
-                  <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100 p-6">
-                    <p className="text-gray-700">{doc.file_name}</p>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
+        {/* Data Table */}
+        <DriverIncomeTable
+          data={incomeData}
+          isLoading={isLoading}
+          onDataChange={fetchIncomeData}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          onMonthChange={setSelectedMonth}
+          onYearChange={setSelectedYear}
+        />
       </div>
     </div>
   );

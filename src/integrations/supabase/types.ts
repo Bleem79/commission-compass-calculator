@@ -92,6 +92,45 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_income: {
+        Row: {
+          average_daily_income: number | null
+          created_at: string
+          driver_id: string
+          driver_name: string | null
+          id: string
+          month: string
+          total_income: number
+          uploaded_by: string
+          working_days: number
+          year: number
+        }
+        Insert: {
+          average_daily_income?: number | null
+          created_at?: string
+          driver_id: string
+          driver_name?: string | null
+          id?: string
+          month: string
+          total_income: number
+          uploaded_by: string
+          working_days: number
+          year: number
+        }
+        Update: {
+          average_daily_income?: number | null
+          created_at?: string
+          driver_id?: string
+          driver_name?: string | null
+          id?: string
+          month?: string
+          total_income?: number
+          uploaded_by?: string
+          working_days?: number
+          year?: number
+        }
+        Relationships: []
+      }
       uploaded_files: {
         Row: {
           category: string
