@@ -31,10 +31,8 @@ const DriverIncomePage = () => {
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login", { replace: true });
-    } else if (!isAdmin) {
-      navigate("/home", { replace: true });
     }
-  }, [isAuthenticated, isAdmin, navigate]);
+  }, [isAuthenticated, navigate]);
 
   const fetchIncomeData = useCallback(async () => {
     setIsLoading(true);
@@ -67,18 +65,14 @@ const DriverIncomePage = () => {
   }, [selectedMonth, selectedYear]);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isAuthenticated) {
       fetchIncomeData();
     }
-  }, [fetchIncomeData, isAdmin]);
+  }, [fetchIncomeData, isAuthenticated]);
 
   const handleClose = () => {
     navigate("/home");
   };
-
-  if (!isAdmin) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-4 sm:p-6 relative overflow-x-auto">
@@ -107,7 +101,7 @@ const DriverIncomePage = () => {
             Last Month 5 or 6days Driver Income
           </h1>
           
-          {user?.id && (
+          {isAdmin && user?.id && (
             <Button
               variant="outline"
               onClick={() => setShowUploader(!showUploader)}
@@ -119,8 +113,8 @@ const DriverIncomePage = () => {
           )}
         </div>
 
-        {/* Upload Section */}
-        {showUploader && user?.id && (
+        {/* Upload Section - Admin Only */}
+        {isAdmin && showUploader && user?.id && (
           <div className="mb-6 bg-white/80 backdrop-blur-sm rounded-lg border border-indigo-100 p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Import Driver Income Data</h2>
             <DriverIncomeUploader
@@ -142,6 +136,7 @@ const DriverIncomePage = () => {
           selectedYear={selectedYear}
           onMonthChange={setSelectedMonth}
           onYearChange={setSelectedYear}
+          isAdmin={isAdmin}
         />
       </div>
     </div>
