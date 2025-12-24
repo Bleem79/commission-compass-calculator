@@ -4,7 +4,9 @@ export interface DriverIncomeRow {
   driver_id: string;
   driver_name: string | null;
   working_days: number;
+  total_trips: number | null;
   total_income: number;
+  shift: string | null;
   average_daily_income: number | null;
 }
 
@@ -33,22 +35,18 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
             const lowerKey = String(key).toLowerCase().trim().replace(/\s+/g, '_');
             
             // Map variations of column names
-            if (lowerKey.includes('driver') && lowerKey.includes('id') || lowerKey === 'driverid') {
+            if (lowerKey.includes('driver') && lowerKey.includes('id') || lowerKey === 'driverid' || lowerKey === 'driver_id') {
               normalized.driver_id = row[key];
-            } else if (lowerKey.includes('driver') && lowerKey.includes('name') || lowerKey === 'name' || lowerKey === 'drivername') {
+            } else if (lowerKey.includes('driver') && lowerKey.includes('name') || lowerKey === 'name' || lowerKey === 'drivername' || lowerKey === 'driver_name') {
               normalized.driver_name = row[key];
-            } else if (lowerKey.includes('wrk') && lowerKey.includes('day') || lowerKey.includes('working') && lowerKey.includes('day') || lowerKey === 'days' || lowerKey === 'wrkdays') {
+            } else if (lowerKey.includes('wrk') || lowerKey.includes('working') && lowerKey.includes('day') || lowerKey === 'days' || lowerKey === 'wrkdays') {
               normalized.working_days = row[key];
+            } else if (lowerKey === 'totaltrips' || lowerKey === 'total_trips' || lowerKey.includes('trips')) {
+              normalized.total_trips = row[key];
             } else if (lowerKey === 'totalincome' || (lowerKey.includes('total') && lowerKey.includes('income'))) {
               normalized.total_income = row[key];
-            } else if (lowerKey === 'drvrincome' || lowerKey === 'driverincome' || lowerKey.includes('average') || lowerKey.includes('daily') || lowerKey === 'avg') {
-              normalized.average_daily_income = row[key];
-            } else if (lowerKey === 'total_trips' || lowerKey === 'totaltrips' || lowerKey.includes('trips')) {
-              normalized.total_trips = row[key];
             } else if (lowerKey === 'shift') {
               normalized.shift = row[key];
-            } else if (lowerKey === 'date') {
-              normalized.date = row[key];
             } else {
               normalized[lowerKey] = row[key];
             }
@@ -60,33 +58,33 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
         // Check required columns
         const firstRow = normalizedData[0] || {};
         if (!('driver_id' in firstRow) || !('working_days' in firstRow) || !('total_income' in firstRow)) {
-          throw new Error("Required columns missing. Please ensure the file contains: Driver ID, Working Days, Total Income");
+          throw new Error("Required columns missing. Please ensure the file contains: Driver ID, WrkDays, TotalIncome");
         }
         
         // Validate and clean data
         const cleanedData: DriverIncomeRow[] = normalizedData.map((row: any, index) => {
           if (!row.driver_id || row.working_days === undefined || row.total_income === undefined) {
-            throw new Error(`Row ${index + 2} is missing required fields (Driver ID, Working Days, or Total Income)`);
+            throw new Error(`Row ${index + 2} is missing required fields (Driver ID, WrkDays, or TotalIncome)`);
           }
           
           const driver_id = String(row.driver_id).trim();
           const driver_name = row.driver_name ? String(row.driver_name).trim() : null;
           const working_days = parseInt(String(row.working_days), 10);
+          const total_trips = row.total_trips !== undefined ? parseInt(String(row.total_trips), 10) : null;
           const total_income = parseFloat(String(row.total_income).replace(/[^0-9.-]/g, ''));
+          const shift = row.shift ? String(row.shift).trim() : null;
           
           if (isNaN(working_days) || working_days < 0) {
-            throw new Error(`Invalid working days in row ${index + 2}`);
+            throw new Error(`Invalid WrkDays in row ${index + 2}`);
           }
           
           if (isNaN(total_income)) {
-            throw new Error(`Invalid total income in row ${index + 2}`);
+            throw new Error(`Invalid TotalIncome in row ${index + 2}`);
           }
           
-          // Calculate average if not provided
+          // Calculate average if working days > 0
           let average_daily_income: number | null = null;
-          if (row.average_daily_income !== undefined) {
-            average_daily_income = parseFloat(String(row.average_daily_income).replace(/[^0-9.-]/g, ''));
-          } else if (working_days > 0) {
+          if (working_days > 0) {
             average_daily_income = Math.round((total_income / working_days) * 100) / 100;
           }
           
@@ -94,7 +92,9 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
             driver_id,
             driver_name,
             working_days,
+            total_trips: total_trips !== null && !isNaN(total_trips) ? total_trips : null,
             total_income,
+            shift,
             average_daily_income
           };
         });

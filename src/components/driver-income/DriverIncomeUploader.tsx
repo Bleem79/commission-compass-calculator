@@ -94,7 +94,9 @@ export const DriverIncomeUploader = ({
         driver_id: row.driver_id,
         driver_name: row.driver_name,
         working_days: row.working_days,
+        total_trips: row.total_trips,
         total_income: row.total_income,
+        shift: row.shift,
         average_daily_income: row.average_daily_income,
         month: monthNames[now.getMonth()],
         year: now.getFullYear(),
@@ -131,10 +133,12 @@ export const DriverIncomeUploader = ({
   };
 
   const downloadTemplate = () => {
-    const csvContent = `Driver ID,Date,Driver Name,Total Trips,WrkDays,TotalIncome,DrvrIncome,Shift
-100525,26-04-25,MUHAMMAD SIDDIQUE AMIR AHMED,10,1,184.75,119.32,1- W/O Basic
-100955,26-04-25,ABDUL ROUF POOMANGAL,15,1,592.50,413.18,1- W/O Basic
-101680,26-04-25,KHAIR MUHAMMAD SHAJI MUHAMMAD,18,1,324.75,201.94,1- W/O Basic`;
+    const csvContent = `Driver ID,Driver Name,WrkDays,Total Trips,TotalIncome,Shift
+100525,MUHAMMAD SIDDIQUE AMIR AHMED,5,84,1739.5,1- W/O Basic
+100955,ABDUL ROUF POOMANGAL,5,132,2533,1- W/O Basic
+101692,MOHAMMED JAFAR IQBAL ABDUL BASHAR,5,98,2192,1- W/O Basic
+101709,NOOR MUHAMMAD KHAN,5,108,2034.75,1- W/O Basic
+102141,GUL MUHAMMAD KHAN MUNASIB KHAN,5,102,2236.25,1- W/O Basic`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -185,7 +189,7 @@ export const DriverIncomeUploader = ({
             className="mt-1"
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Required: Driver ID, WrkDays, TotalIncome
+            Required: Driver ID, Driver Name, WrkDays, Total Trips, TotalIncome, Shift
           </p>
         </div>
         <Button
@@ -238,9 +242,10 @@ export const DriverIncomeUploader = ({
               <tr className="border-b border-border">
                 <th className="text-left p-2">Driver ID</th>
                 <th className="text-left p-2">Name</th>
-                <th className="text-right p-2">Days</th>
-                <th className="text-right p-2">Total Income</th>
-                <th className="text-right p-2">Avg Daily</th>
+                <th className="text-right p-2">WrkDays</th>
+                <th className="text-right p-2">Total Trips</th>
+                <th className="text-right p-2">TotalIncome</th>
+                <th className="text-left p-2">Shift</th>
               </tr>
             </thead>
             <tbody>
@@ -249,8 +254,9 @@ export const DriverIncomeUploader = ({
                   <td className="p-2">{row.driver_id}</td>
                   <td className="p-2">{row.driver_name || '-'}</td>
                   <td className="text-right p-2">{row.working_days}</td>
+                  <td className="text-right p-2">{row.total_trips ?? '-'}</td>
                   <td className="text-right p-2">{row.total_income.toFixed(2)}</td>
-                  <td className="text-right p-2">{row.average_daily_income?.toFixed(2) || '-'}</td>
+                  <td className="p-2">{row.shift || '-'}</td>
                 </tr>
               ))}
             </tbody>

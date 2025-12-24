@@ -10,7 +10,9 @@ interface DriverIncomeData {
   driver_id: string;
   driver_name: string | null;
   working_days: number;
+  total_trips: number | null;
   total_income: number;
+  shift: string | null;
   average_daily_income: number | null;
   month: string;
   year: number;
@@ -117,10 +119,11 @@ export const DriverIncomeTable = ({
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead className="font-semibold">Driver ID</TableHead>
-                  <TableHead className="font-semibold">Name</TableHead>
-                  <TableHead className="font-semibold text-center">Working Days</TableHead>
-                  <TableHead className="font-semibold text-right">Total Income</TableHead>
-                  <TableHead className="font-semibold text-right">Avg Daily</TableHead>
+                  <TableHead className="font-semibold">Driver Name</TableHead>
+                  <TableHead className="font-semibold text-center">WrkDays</TableHead>
+                  <TableHead className="font-semibold text-center">Total Trips</TableHead>
+                  <TableHead className="font-semibold text-right">TotalIncome</TableHead>
+                  <TableHead className="font-semibold">Shift</TableHead>
                   {isAdmin && <TableHead className="font-semibold text-center">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
@@ -133,11 +136,12 @@ export const DriverIncomeTable = ({
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         row.working_days === 5 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
                       }`}>
-                        {row.working_days} days
+                        {row.working_days}
                       </span>
                     </TableCell>
+                    <TableCell className="text-center">{row.total_trips ?? '-'}</TableCell>
                     <TableCell className="text-right">{row.total_income.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{row.average_daily_income?.toFixed(2) || '-'}</TableCell>
+                    <TableCell>{row.shift || '-'}</TableCell>
                     {isAdmin && (
                       <TableCell className="text-center">
                         <Button
