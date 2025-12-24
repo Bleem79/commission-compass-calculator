@@ -55,6 +55,24 @@ const DriverIncomePage = () => {
     fetchDriverInfo();
   }, [isAdmin, user?.id]);
 
+  // Fetch report heading from settings
+  useEffect(() => {
+    const fetchReportHeading = async () => {
+      const { data } = await supabase
+        .from('driver_income_settings')
+        .select('report_heading')
+        .limit(1)
+        .maybeSingle();
+      
+      if (data?.report_heading) {
+        setReportHeading(data.report_heading);
+      }
+    };
+    if (isAuthenticated) {
+      fetchReportHeading();
+    }
+  }, [isAuthenticated]);
+
   const fetchIncomeData = useCallback(async () => {
     setIsLoading(true);
     try {

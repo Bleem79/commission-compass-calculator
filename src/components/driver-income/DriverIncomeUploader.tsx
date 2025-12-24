@@ -120,6 +120,24 @@ export const DriverIncomeUploader = ({
         });
       }
 
+      // Save the report heading to settings
+      const { data: existingSettings } = await supabase
+        .from('driver_income_settings')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+
+      if (existingSettings) {
+        await supabase
+          .from('driver_income_settings')
+          .update({ report_heading: reportHeading, updated_at: new Date().toISOString(), updated_by: userId } as any)
+          .eq('id', existingSettings.id);
+      } else {
+        await supabase
+          .from('driver_income_settings')
+          .insert({ report_heading: reportHeading, updated_by: userId } as any);
+      }
+
       toast.success(`Successfully imported ${insertData.length} driver income records (previous data removed)`);
       setSelectedFile(null);
       setPreviewData(null);
