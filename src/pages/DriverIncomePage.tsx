@@ -37,23 +37,48 @@ const DriverIncomePage = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Fetch driver info for non-admin users
+  // Fetch/link driver info for non-admin users
   useEffect(() => {
     const fetchDriverInfo = async () => {
-      if (!isAdmin && user?.id) {
-        const { data } = await supabase
-          .from('driver_credentials')
-          .select('driver_id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        if (data) {
-          setDriverInfo({ driverId: data.driver_id });
+      if (isAdmin || !user?.id) return;
+
+      // If user logged in with a driver temp email, use RPC to ensure credentials are linked
+      const email = (user.email || "").toLowerCase();
+      const driverIdFromEmail = email.endsWith("@driver.temp")
+        ? email.split("@")[0].trim()
+        : null;
+
+      if (driverIdFromEmail) {
+        const { data: credentialRows, error: credError } = await supabase.rpc(
+          "get_driver_credentials",
+          {
+            p_driver_id: driverIdFromEmail,
+            p_user_id: user.id,
+          }
+        );
+
+        const credentials = credentialRows && credentialRows.length > 0 ? credentialRows[0] : null;
+
+        if (!credError && credentials?.driver_id) {
+          setDriverInfo({ driverId: credentials.driver_id });
+          return;
         }
       }
+
+      // Fallback: lookup by user_id
+      const { data } = await supabase
+        .from("driver_credentials")
+        .select("driver_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (data?.driver_id) {
+        setDriverInfo({ driverId: data.driver_id });
+      }
     };
+
     fetchDriverInfo();
-  }, [isAdmin, user?.id]);
+  }, [isAdmin, user?.id, user?.email]);
 
   // Fetch report heading from settings
   useEffect(() => {
