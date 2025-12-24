@@ -5,8 +5,8 @@ import { validateDriverData } from "@/utils/driverValidation";
 import { processCSVFile } from "@/utils/csv/processCSVFile";
 
 interface DriverUploadResult {
-  success: Array<{ email: string; driverId: string }>;
-  errors: Array<{ email: string; error: string }>;
+  success: Array<{ driverId: string }>;
+  errors: Array<{ driverId: string; error: string }>;
   total: number;
 }
 
@@ -22,8 +22,8 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
   
   // Process drivers one by one and collect results
   const results = {
-    success: [] as { email: string; driverId: string }[],
-    errors: [] as { email: string; error: string }[],
+    success: [] as { driverId: string }[],
+    errors: [] as { driverId: string; error: string }[],
     total: totalDrivers
   };
   
@@ -37,7 +37,6 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
       
       // Validate driver data first
       const validatedData = validateDriverData({
-        email: driver.email,
         password: driver.password,
         driverId: driver.driverId
       });
@@ -63,8 +62,7 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
         options: {
           data: {
             role: 'driver',
-            driver_id: validatedData.driverId,
-            original_email: validatedData.email // Store original email in metadata
+            driver_id: validatedData.driverId
           },
           // Critical: Do not automatically sign in as the new user
           emailRedirectTo: window.location.origin
@@ -76,7 +74,7 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
       }
       
       if (!response.data.user) {
-        throw new Error(`Failed to create user account for ${validatedData.email}`);
+        throw new Error(`Failed to create user account for Driver ID: ${validatedData.driverId}`);
       }
       
       try {
@@ -87,7 +85,7 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
         });
         
         if (roleResponse.error) {
-          console.error(`Error creating role for ${validatedData.email}:`, roleResponse.error);
+          console.error(`Error creating role for ${validatedData.driverId}:`, roleResponse.error);
           throw roleResponse.error;
         }
         
@@ -98,29 +96,29 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
         }).select();
         
         if (credResponse.error) {
-          console.error(`Error creating driver credentials for ${validatedData.email}:`, credResponse.error);
+          console.error(`Error creating driver credentials for ${validatedData.driverId}:`, credResponse.error);
           throw credResponse.error;
         }
       } catch (insertError: any) {
         // If we fail after user creation, log the error but still count as success
         // since the user account was created
-        console.warn(`Created user account for ${validatedData.email} but had issues with role/credentials: ${insertError.message}`);
+        console.warn(`Created user account for ${validatedData.driverId} but had issues with role/credentials: ${insertError.message}`);
       }
       
-      results.success.push({ email: validatedData.email, driverId: validatedData.driverId });
-      console.log(`Successfully created account for ${validatedData.email}`);
+      results.success.push({ driverId: validatedData.driverId });
+      console.log(`Successfully created account for Driver ID: ${validatedData.driverId}`);
       
     } catch (error: any) {
-      console.error(`Error creating account for ${drivers[i].email}:`, error);
+      console.error(`Error creating account for ${drivers[i].driverId}:`, error);
       results.errors.push({ 
-        email: drivers[i].email, 
+        driverId: drivers[i].driverId, 
         error: error.message || 'Unknown error occurred'
       });
     }
     
     // Add delay between processing each driver to avoid rate limiting
     if (i < drivers.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced to 1 second delay between creations
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
     // Every few records, check if the session is still active and restore it if needed

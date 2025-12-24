@@ -9,7 +9,7 @@ interface UploadStats {
   total: number;
   success: number;
   failed: number;
-  errors?: Array<{ email: string; error: string }>;
+  errors?: Array<{ driverId: string; error: string }>;
 }
 
 export const useDriverUpload = () => {

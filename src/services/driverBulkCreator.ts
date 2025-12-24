@@ -12,13 +12,13 @@ export const bulkCreateDriverAccounts = async (drivers: DriverData[]): Promise<D
 
   for (const driver of drivers) {
     try {
-      await createDriverAccount(driver.email, driver.password, driver.driverId);
-      results.success.push({ email: driver.email, driverId: driver.driverId });
-      console.log(`Successfully created account for ${driver.email}`);
+      await createDriverAccount(driver.password, driver.driverId);
+      results.success.push({ driverId: driver.driverId });
+      console.log(`Successfully created account for Driver ID: ${driver.driverId}`);
     } catch (error: any) {
-      console.error(`Error creating account for ${driver.email}:`, error);
+      console.error(`Error creating account for ${driver.driverId}:`, error);
       results.errors.push({ 
-        email: driver.email, 
+        driverId: driver.driverId, 
         error: error.message || 'Unknown error occurred'
       });
     }

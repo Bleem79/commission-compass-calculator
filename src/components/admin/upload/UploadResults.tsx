@@ -6,7 +6,7 @@ interface UploadResultsProps {
     total: number;
     success: number;
     failed: number;
-    errors?: Array<{ email: string; error: string }>;
+    errors?: Array<{ driverId: string; error: string }>;
   };
 }
 
@@ -51,7 +51,7 @@ export const UploadResults = ({ stats }: UploadResultsProps) => {
               <strong>Common error reasons:</strong>
               <ul className="list-disc pl-5 mt-1">
                 {groupedErrors?.duplicates?.length ? (
-                  <li>{groupedErrors.duplicates.length} error(s) due to duplicates (email or driver ID already exists)</li>
+                  <li>{groupedErrors.duplicates.length} error(s) due to duplicates (driver ID already exists)</li>
                 ) : null}
                 {groupedErrors?.rateLimits?.length ? (
                   <li>{groupedErrors.rateLimits.length} error(s) due to rate limiting from Supabase</li>
@@ -67,7 +67,7 @@ export const UploadResults = ({ stats }: UploadResultsProps) => {
                 <p className="font-semibold mb-1">Failed accounts ({stats.errors.length}):</p>
                 {stats.errors.map((err, index) => (
                   <div key={index} className="text-xs mb-1 pb-1 border-b border-red-100 last:border-0">
-                    <span className="font-medium">{err.email}:</span> {err.error}
+                    <span className="font-medium">Driver ID {err.driverId}:</span> {err.error}
                   </div>
                 ))}
               </div>
