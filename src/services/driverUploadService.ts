@@ -81,10 +81,18 @@ export const uploadDriverCredential = async (
             role: 'driver',
             driver_id: validatedData.driverId
           },
-          // Critical: Do not automatically sign in as the new user
           emailRedirectTo: window.location.origin
         }
       });
+      
+      // CRITICAL: Restore admin session immediately after signUp
+      // signUp automatically logs in as the new user, breaking admin permissions
+      if (currentSession?.session) {
+        await supabase.auth.setSession({
+          access_token: currentSession.session.access_token,
+          refresh_token: currentSession.session.refresh_token
+        });
+      }
       
       if (response.error) {
         throw response.error;

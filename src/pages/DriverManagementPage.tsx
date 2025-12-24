@@ -346,13 +346,8 @@ const DriverManagementPage = () => {
                 </span>
               </div>
             ) : filteredDrivers.length === 0 ? (
-              <div className="flex items-center justify-center py-8">
-                <RefreshCw className="h-6 w-6 animate-spin text-slate-400" />
-                <span className="ml-2 text-slate-600">Loading drivers...</span>
-              </div>
-            ) : filteredDrivers.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
-                {searchTerm ? "No drivers found matching your search" : "No drivers registered yet"}
+                {searchTerm ? "No drivers found matching your search" : "No drivers registered yet. Upload a CSV to add drivers."}
               </div>
             ) : (
               <div className="overflow-x-auto">
