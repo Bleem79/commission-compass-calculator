@@ -73,7 +73,7 @@ export const DriverIncomeReceipt = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 print-receipt">
       <div className="flex justify-end print:hidden">
         <Button onClick={handlePrint} variant="outline" className="gap-2">
           <Printer className="h-4 w-4" />
@@ -81,7 +81,7 @@ export const DriverIncomeReceipt = ({
         </Button>
       </div>
       {Object.entries(groupedData).map(([period, records]) => (
-        <Card key={period} className="bg-white shadow-lg overflow-hidden">
+        <Card key={period} className="bg-white shadow-lg overflow-hidden card">
           {/* Header with logo */}
           <CardHeader className="bg-gradient-to-r from-amber-50 to-amber-100 p-4 border-b">
             <div className="flex items-center justify-center gap-3">
@@ -96,7 +96,7 @@ export const DriverIncomeReceipt = ({
           <CardContent className="p-6 space-y-4">
             {/* Custom Report Heading */}
             {reportHeading && (
-              <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 rounded-lg font-bold text-lg mb-4">
+              <div className="report-heading bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 rounded-lg font-bold text-lg mb-4">
                 {reportHeading}
               </div>
             )}
@@ -104,7 +104,7 @@ export const DriverIncomeReceipt = ({
             {records.map((record) => (
               <div key={record.id} className="space-y-4 border-b border-gray-200 pb-6 last:border-b-0">
                 {/* Driver Info Section */}
-                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="driver-info bg-gray-50 rounded-lg p-4 space-y-2">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <span className="text-gray-500 text-sm">Driver ID</span>
