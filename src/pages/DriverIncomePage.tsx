@@ -38,24 +38,26 @@ const DriverIncomePage = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Fetch/link driver info for non-admin users - use session.user for accurate ID
+  // Fetch/link driver info for non-admin users - always use the real authenticated Supabase user
   useEffect(() => {
     const fetchDriverInfo = async () => {
-      if (isAdmin) return;
+      if (!isAuthenticated || isAdmin) return;
 
-      // Use session.user for accurate user ID (context user can be stale)
-      const sessionUser = session?.user;
-      const actualUserId = sessionUser?.id || user?.id;
-      const actualEmail = (sessionUser?.email || user?.email || "").toLowerCase();
+      // Get the current authed user directly from Supabase to avoid stale context
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+
+      const actualUserId = authUser?.id || user?.id;
+      const actualEmail = (authUser?.email || user?.email || "").toLowerCase();
 
       if (!actualUserId) return;
 
-      // Debug info
       setDebugInfo({
-        sessionUserId: sessionUser?.id || "none",
+        sessionUserId: authUser?.id || "none",
         contextUserId: user?.id || "none",
         email: actualEmail,
-        linkedVia: "pending..."
+        linkedVia: "pending...",
       });
 
       // If user logged in with a driver temp email, use RPC to ensure credentials are linked
@@ -64,7 +66,6 @@ const DriverIncomePage = () => {
         : null;
 
       if (driverIdFromEmail) {
-        console.log("Calling get_driver_credentials RPC for:", driverIdFromEmail, "user:", actualUserId);
         const { data: credentialRows, error: credError } = await supabase.rpc(
           "get_driver_credentials",
           {
@@ -73,18 +74,16 @@ const DriverIncomePage = () => {
           }
         );
 
-        console.log("RPC result:", credentialRows, "error:", credError);
         const credentials = credentialRows && credentialRows.length > 0 ? credentialRows[0] : null;
 
         if (!credError && credentials?.driver_id) {
           setDriverInfo({ driverId: credentials.driver_id });
-          setDebugInfo(prev => prev ? { ...prev, linkedVia: "RPC (get_driver_credentials)" } : null);
+          setDebugInfo((prev) => (prev ? { ...prev, linkedVia: "RPC (get_driver_credentials)" } : null));
           return;
         }
       }
 
       // Fallback: lookup by user_id
-      console.log("Fallback: querying driver_credentials by user_id:", actualUserId);
       const { data } = await supabase
         .from("driver_credentials")
         .select("driver_id")
@@ -93,14 +92,14 @@ const DriverIncomePage = () => {
 
       if (data?.driver_id) {
         setDriverInfo({ driverId: data.driver_id });
-        setDebugInfo(prev => prev ? { ...prev, linkedVia: "Direct query (user_id)" } : null);
+        setDebugInfo((prev) => (prev ? { ...prev, linkedVia: "Direct query (user_id)" } : null));
       } else {
-        setDebugInfo(prev => prev ? { ...prev, linkedVia: "NOT FOUND" } : null);
+        setDebugInfo((prev) => (prev ? { ...prev, linkedVia: "NOT FOUND" } : null));
       }
     };
 
     fetchDriverInfo();
-  }, [isAdmin, session?.user?.id, session?.user?.email, user?.id, user?.email]);
+  }, [isAuthenticated, isAdmin, user?.id, user?.email]);
 
   // Fetch report heading from settings
   useEffect(() => {
@@ -128,15 +127,8 @@ const DriverIncomePage = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      // For drivers, only fetch their own records (also helps debug mismatched IDs)
-      if (!isAdmin) {
-        const driverId = driverInfo?.driverId;
-        if (!driverId) {
-          setIncomeData([]);
-          return;
-        }
-        query.eq('driver_id', driverId);
-      }
+      // Note: drivers are automatically restricted by RLS to only see their own income rows.
+      // We intentionally do NOT add a manual driver_id filter here.
 
       const { data, error } = await query;
 
@@ -221,24 +213,30 @@ const DriverIncomePage = () => {
 
         {/* Debug Panel for Drivers */}
         {!isAdmin && debugInfo && (
-          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm">
-            <h3 className="font-semibold text-amber-800 mb-2">🔍 Debug Info</h3>
-            <div className="grid grid-cols-2 gap-2 text-amber-700">
-              <span>Session User ID:</span>
+          <div className="mb-4 rounded-lg border border-border bg-card p-4 text-sm text-foreground">
+            <h2 className="font-semibold">Debug Info</h2>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <span className="text-muted-foreground">Session User ID:</span>
               <span className="font-mono text-xs">{debugInfo.sessionUserId}</span>
-              <span>Context User ID:</span>
+
+              <span className="text-muted-foreground">Context User ID:</span>
               <span className="font-mono text-xs">{debugInfo.contextUserId}</span>
-              <span>Email:</span>
+
+              <span className="text-muted-foreground">Email:</span>
               <span className="font-mono text-xs">{debugInfo.email}</span>
-              <span>Detected Driver ID:</span>
-              <span className="font-bold">{driverInfo?.driverId || "NOT DETECTED"}</span>
-              <span>Linked Via:</span>
+
+              <span className="text-muted-foreground">Detected Driver ID:</span>
+              <span className="font-semibold">{driverInfo?.driverId || "NOT DETECTED"}</span>
+
+              <span className="text-muted-foreground">Linked Via:</span>
               <span>{debugInfo.linkedVia}</span>
-              <span>Records Found:</span>
-              <span className="font-bold">{incomeData.length}</span>
+
+              <span className="text-muted-foreground">Records Found:</span>
+              <span className="font-semibold">{incomeData.length}</span>
+
               {incomeData.length > 0 && (
                 <>
-                  <span>Last Upload:</span>
+                  <span className="text-muted-foreground">Last Upload:</span>
                   <span>{new Date(incomeData[0].created_at).toLocaleString()}</span>
                 </>
               )}
