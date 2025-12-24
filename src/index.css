@@ -155,16 +155,18 @@
   }
 }
 
-/* Print styles for thermal and A4 printers */
+/* Print styles for thermal and A4 printers - Auto-adjusting */
 @media print {
+  /* Let the browser auto-detect paper size */
   @page {
-    margin: 2mm;
+    margin: 0;
     size: auto;
   }
 
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    box-sizing: border-box !important;
   }
 
   html, body {
@@ -173,104 +175,164 @@
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
-    font-size: 10pt !important;
+    /* Use viewport-relative sizing for auto-scaling */
+    font-size: clamp(6pt, 2vw, 11pt) !important;
   }
 
   .print\:hidden {
     display: none !important;
   }
 
-  /* Receipt container adjustments */
+  /* Hide all non-receipt content when printing */
+  body > *:not(.print-receipt),
+  .min-h-screen > *:not(.print-receipt):not(.max-w-6xl),
+  button,
+  nav,
+  header:not(.print-receipt *) {
+    display: none !important;
+  }
+
+  /* Receipt container - fluid width */
   .print-receipt {
     width: 100% !important;
     max-width: 100% !important;
+    min-width: 0 !important;
     margin: 0 !important;
-    padding: 2mm !important;
+    padding: 1mm !important;
     box-shadow: none !important;
     border: none !important;
-    page-break-inside: avoid;
+    background: white !important;
   }
 
   .print-receipt .card {
-    box-shadow: none !important;
-    border: 1px solid #ddd !important;
-    margin-bottom: 4mm !important;
-    page-break-inside: avoid;
-  }
-
-  /* Thermal printer optimizations (58mm/80mm) */
-  .print-receipt table {
     width: 100% !important;
-    font-size: 8pt !important;
-    border-collapse: collapse !important;
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    margin-bottom: 2mm !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
-  .print-receipt th,
-  .print-receipt td {
-    padding: 2mm 1mm !important;
-    font-size: 8pt !important;
-    word-wrap: break-word !important;
-  }
-
-  .print-receipt img {
-    max-width: 40mm !important;
-    height: auto !important;
-  }
-
-  /* Compact header for small printers */
+  /* Header with logo - auto-scale */
   .print-receipt .card-header {
     padding: 2mm !important;
+    background: #f5f5f5 !important;
+  }
+
+  .print-receipt .card-header img {
+    max-width: min(40mm, 50%) !important;
+    height: auto !important;
+    display: block;
+    margin: 0 auto;
   }
 
   .print-receipt .card-content {
     padding: 2mm !important;
   }
 
-  /* Ensure text is readable */
+  /* Report heading - responsive */
+  .print-receipt .report-heading {
+    font-size: clamp(8pt, 2.5vw, 12pt) !important;
+    padding: 1.5mm 2mm !important;
+    margin-bottom: 2mm !important;
+    background: #333 !important;
+    color: white !important;
+    text-align: center;
+    border-radius: 1mm !important;
+  }
+
+  /* Driver info section - flexible grid */
+  .print-receipt .driver-info {
+    padding: 2mm !important;
+    margin-bottom: 2mm !important;
+    background: #f9f9f9 !important;
+    border-radius: 1mm !important;
+  }
+
+  .print-receipt .driver-info .grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 1mm !important;
+  }
+
+  .print-receipt .driver-info .grid > div {
+    flex: 1 1 45% !important;
+    min-width: 0 !important;
+  }
+
+  /* Table - auto-scaling columns */
+  .print-receipt table {
+    width: 100% !important;
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+    font-size: clamp(6pt, 1.8vw, 10pt) !important;
+  }
+
+  .print-receipt thead tr {
+    background: #eee !important;
+  }
+
+  .print-receipt th,
+  .print-receipt td {
+    padding: clamp(1mm, 0.5vw, 3mm) clamp(0.5mm, 0.3vw, 2mm) !important;
+    font-size: inherit !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+  }
+
+  .print-receipt th {
+    font-weight: 600 !important;
+    text-align: center !important;
+    border-bottom: 1px solid #999 !important;
+  }
+
+  .print-receipt td {
+    border-bottom: 1px solid #ddd !important;
+  }
+
+  /* Text scaling */
   .print-receipt p,
   .print-receipt span,
   .print-receipt div {
-    font-size: 9pt !important;
+    font-size: clamp(7pt, 1.8vw, 10pt) !important;
     line-height: 1.3 !important;
   }
 
+  .print-receipt .text-xs {
+    font-size: clamp(5pt, 1.2vw, 8pt) !important;
+  }
+
+  .print-receipt .text-sm {
+    font-size: clamp(6pt, 1.5vw, 9pt) !important;
+  }
+
   .print-receipt .text-lg {
-    font-size: 10pt !important;
+    font-size: clamp(8pt, 2vw, 11pt) !important;
   }
 
   .print-receipt .text-xl,
   .print-receipt .text-2xl {
-    font-size: 11pt !important;
+    font-size: clamp(9pt, 2.2vw, 13pt) !important;
   }
 
-  /* Driver info section */
-  .print-receipt .driver-info {
-    padding: 2mm !important;
-    margin-bottom: 2mm !important;
-  }
-
-  /* Heading styles */
-  .print-receipt .report-heading {
-    font-size: 10pt !important;
-    padding: 2mm !important;
-    margin-bottom: 2mm !important;
-  }
-
-  /* Hide unnecessary decorations */
-  .print-receipt .rounded-lg,
+  /* Badges/pills - compact */
   .print-receipt .rounded-full {
-    border-radius: 2px !important;
+    border-radius: 1mm !important;
+    padding: 0.5mm 1.5mm !important;
+    font-size: clamp(6pt, 1.5vw, 9pt) !important;
   }
 
-  .print-receipt .bg-gradient-to-r {
-    background: #f5f5f5 !important;
+  /* Color adjustments for monochrome thermal printers */
+  .print-receipt .bg-gradient-to-r,
+  .print-receipt .bg-gradient-to-br {
+    background: #f0f0f0 !important;
     color: #000 !important;
   }
 
-  /* Color adjustments for better printing */
   .print-receipt .bg-amber-50,
   .print-receipt .bg-amber-100 {
-    background: #f9f9f9 !important;
+    background: #f5f5f5 !important;
   }
 
   .print-receipt .text-green-600 {
@@ -280,11 +342,37 @@
 
   .print-receipt .bg-orange-100,
   .print-receipt .bg-red-100 {
-    background: #eee !important;
+    background: #e8e8e8 !important;
   }
 
   .print-receipt .text-orange-700,
-  .print-receipt .text-red-700 {
-    color: #333 !important;
+  .print-receipt .text-red-700,
+  .print-receipt .text-primary {
+    color: #222 !important;
+  }
+
+  .print-receipt .text-gray-500,
+  .print-receipt .text-gray-600,
+  .print-receipt .text-gray-700,
+  .print-receipt .text-muted-foreground {
+    color: #444 !important;
+  }
+
+  /* Remove decorative elements */
+  .print-receipt .shadow-lg,
+  .print-receipt .shadow-md,
+  .print-receipt .shadow-sm,
+  .print-receipt .shadow {
+    box-shadow: none !important;
+  }
+
+  .print-receipt .rounded-lg {
+    border-radius: 1mm !important;
+  }
+
+  /* Ensure each card fits on one page if possible */
+  .print-receipt > .space-y-6 > * {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 }
