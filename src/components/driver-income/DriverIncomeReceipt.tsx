@@ -21,13 +21,15 @@ interface DriverIncomeReceiptProps {
   isLoading: boolean;
   driverName?: string;
   permitId?: string;
+  reportHeading?: string;
 }
 
 export const DriverIncomeReceipt = ({
   data,
   isLoading,
   driverName,
-  permitId
+  permitId,
+  reportHeading
 }: DriverIncomeReceiptProps) => {
   if (isLoading) {
     return (
@@ -92,39 +94,42 @@ export const DriverIncomeReceipt = ({
           </CardHeader>
           
           <CardContent className="p-6 space-y-4">
+            {/* Custom Report Heading */}
+            {reportHeading && (
+              <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 rounded-lg font-bold text-lg mb-4">
+                {reportHeading}
+              </div>
+            )}
+            
             {records.map((record) => (
-              <div key={record.id} className="space-y-4">
-                {/* Driver Info */}
-                <div className="space-y-2 border-b pb-4">
-                  {permitId && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 font-medium">Permit ID</span>
-                      <span className="font-semibold">{permitId}</span>
+              <div key={record.id} className="space-y-4 border-b border-gray-200 pb-6 last:border-b-0">
+                {/* Driver Info Section */}
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-gray-500 text-sm">Driver ID</span>
+                      <p className="font-bold text-lg text-primary">{record.driver_id}</p>
                     </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 font-medium">Driver ID</span>
-                    <span className="font-semibold">{record.driver_id}</span>
+                    <div>
+                      <span className="text-gray-500 text-sm">Shift</span>
+                      <p className="font-semibold text-gray-800">{record.shift || '-'}</p>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 font-medium">Name</span>
-                    <span className="font-semibold uppercase">{record.driver_name || driverName || '-'}</span>
+                  <div>
+                    <span className="text-gray-500 text-sm">Name</span>
+                    <p className="font-semibold text-gray-800 uppercase">{record.driver_name || driverName || '-'}</p>
                   </div>
                 </div>
 
-                {/* Period Title */}
-                <div className="bg-amber-100 text-amber-800 text-center py-2 rounded font-semibold">
-                  Driver Income Details ({period})
-                </div>
-
-                {/* Income Summary Table */}
+                {/* Income Details Table */}
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="border-b-2 border-amber-200">
-                        <th className="text-left py-2 px-2 text-sm font-semibold text-gray-700">Working Days</th>
-                        <th className="text-right py-2 px-2 text-sm font-semibold text-gray-700">Total Income</th>
-                        <th className="text-right py-2 px-2 text-sm font-semibold text-gray-700">Avg Daily Income</th>
+                      <tr className="bg-amber-50 border-b-2 border-amber-200">
+                        <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Working Days</th>
+                        <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Total Trips</th>
+                        <th className="text-right py-3 px-2 text-sm font-semibold text-gray-700">Total Income</th>
+                        <th className="text-right py-3 px-2 text-sm font-semibold text-gray-700">Avg Daily</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -136,23 +141,18 @@ export const DriverIncomeReceipt = ({
                             {record.working_days} days
                           </span>
                         </td>
-                        <td className="py-3 px-2 text-right font-semibold text-green-600">
+                        <td className="py-3 px-2 text-center font-medium text-gray-700">
+                          {record.total_trips ?? '-'}
+                        </td>
+                        <td className="py-3 px-2 text-right font-bold text-green-600 text-lg">
                           {record.total_income.toFixed(2)} AED
                         </td>
-                        <td className="py-3 px-2 text-right font-medium">
+                        <td className="py-3 px-2 text-right font-medium text-gray-600">
                           {record.average_daily_income?.toFixed(2) || '-'} AED
                         </td>
                       </tr>
                     </tbody>
                   </table>
-                </div>
-
-                {/* Total Summary */}
-                <div className="bg-gray-100 rounded-lg p-4 mt-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold text-gray-700">Total Income</span>
-                    <span className="text-2xl font-bold text-green-600">{record.total_income.toFixed(2)} AED</span>
-                  </div>
                 </div>
               </div>
             ))}

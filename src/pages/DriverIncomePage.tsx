@@ -131,7 +131,8 @@ const DriverIncomePage = () => {
             <h2 className="text-lg font-semibold text-foreground mb-4">Import Driver Income Data</h2>
             <DriverIncomeUploader
               userId={user.id}
-              onUploadSuccess={() => {
+              onUploadSuccess={(heading: string) => {
+                setReportHeading(heading);
                 fetchIncomeData();
                 setShowUploader(false);
               }}
@@ -156,6 +157,7 @@ const DriverIncomePage = () => {
             isLoading={isLoading}
             driverName={user?.username}
             permitId={driverInfo?.driverId}
+            reportHeading={reportHeading}
           />
         )}
       </div>
