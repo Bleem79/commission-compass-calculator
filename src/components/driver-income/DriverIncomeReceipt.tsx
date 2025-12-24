@@ -128,7 +128,7 @@ export const DriverIncomeReceipt = ({
                       <tr className="bg-amber-50 border-b-2 border-amber-200">
                         <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Working Days</th>
                         <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Total Trips</th>
-                        <th className="text-right py-3 px-2 text-sm font-semibold text-gray-700">Total Income</th>
+                        <th className="text-right py-3 px-2 text-sm font-semibold text-gray-700">Driver Income</th>
                         <th className="text-right py-3 px-2 text-sm font-semibold text-gray-700">Avg Daily</th>
                       </tr>
                     </thead>
