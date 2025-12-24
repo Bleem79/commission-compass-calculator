@@ -76,10 +76,22 @@ const DriverIncomePage = () => {
   const fetchIncomeData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      const query = supabase
         .from('driver_income')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // For drivers, only fetch their own records (also helps debug mismatched IDs)
+      if (!isAdmin) {
+        const driverId = driverInfo?.driverId;
+        if (!driverId) {
+          setIncomeData([]);
+          return;
+        }
+        query.eq('driver_id', driverId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching income data:", error);
@@ -92,7 +104,7 @@ const DriverIncomePage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isAdmin, driverInfo?.driverId]);
 
   useEffect(() => {
     if (isAuthenticated) {
