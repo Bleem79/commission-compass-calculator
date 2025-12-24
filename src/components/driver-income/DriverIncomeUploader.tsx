@@ -105,10 +105,10 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
   };
 
   const downloadTemplate = () => {
-    const csvContent = `driver_id,driver_name,working_days,total_income,average_daily_income
-112596,AHMED MOHAMMEDNUR ALKETA,5,1164.25,232.85
-112597,JOHN DOE,6,1450.50,241.75
-112598,JANE SMITH,5,980.00,196.00`;
+    const csvContent = `Driver ID,Date,Driver Name,Total Trips,WrkDays,TotalIncome,DrvrIncome,Shift
+100525,26-04-25,MUHAMMAD SIDDIQUE AMIR AHMED,10,1,184.75,119.32,1- W/O Basic
+100955,26-04-25,ABDUL ROUF POOMANGAL,15,1,592.50,413.18,1- W/O Basic
+101680,26-04-25,KHAIR MUHAMMAD SHAJI MUHAMMAD,18,1,324.75,201.94,1- W/O Basic`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -182,7 +182,7 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
           />
         </div>
         <p className="text-xs text-gray-500 mt-1">
-          Required columns: driver_id, working_days, total_income. Optional: driver_name, average_daily_income
+          Required columns: Driver ID, WrkDays, TotalIncome. Optional: Driver Name, DrvrIncome, Date, Total Trips, Shift
         </p>
       </div>
 

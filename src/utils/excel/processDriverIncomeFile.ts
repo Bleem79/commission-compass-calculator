@@ -33,16 +33,22 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
             const lowerKey = String(key).toLowerCase().trim().replace(/\s+/g, '_');
             
             // Map variations of column names
-            if (lowerKey.includes('driver') && lowerKey.includes('id')) {
+            if (lowerKey.includes('driver') && lowerKey.includes('id') || lowerKey === 'driverid') {
               normalized.driver_id = row[key];
-            } else if (lowerKey.includes('driver') && lowerKey.includes('name') || lowerKey === 'name') {
+            } else if (lowerKey.includes('driver') && lowerKey.includes('name') || lowerKey === 'name' || lowerKey === 'drivername') {
               normalized.driver_name = row[key];
-            } else if (lowerKey.includes('working') && lowerKey.includes('day') || lowerKey === 'days') {
+            } else if (lowerKey.includes('wrk') && lowerKey.includes('day') || lowerKey.includes('working') && lowerKey.includes('day') || lowerKey === 'days' || lowerKey === 'wrkdays') {
               normalized.working_days = row[key];
-            } else if (lowerKey.includes('total') && lowerKey.includes('income') || lowerKey === 'income' || lowerKey === 'total') {
+            } else if (lowerKey === 'totalincome' || (lowerKey.includes('total') && lowerKey.includes('income'))) {
               normalized.total_income = row[key];
-            } else if (lowerKey.includes('average') || lowerKey.includes('daily') || lowerKey === 'avg') {
+            } else if (lowerKey === 'drvrincome' || lowerKey === 'driverincome' || lowerKey.includes('average') || lowerKey.includes('daily') || lowerKey === 'avg') {
               normalized.average_daily_income = row[key];
+            } else if (lowerKey === 'total_trips' || lowerKey === 'totaltrips' || lowerKey.includes('trips')) {
+              normalized.total_trips = row[key];
+            } else if (lowerKey === 'shift') {
+              normalized.shift = row[key];
+            } else if (lowerKey === 'date') {
+              normalized.date = row[key];
             } else {
               normalized[lowerKey] = row[key];
             }
