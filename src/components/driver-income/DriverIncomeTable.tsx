@@ -122,7 +122,7 @@ export const DriverIncomeTable = ({
                   <TableHead className="font-semibold">Driver Name</TableHead>
                   <TableHead className="font-semibold text-center">WrkDays</TableHead>
                   <TableHead className="font-semibold text-center">Total Trips</TableHead>
-                  <TableHead className="font-semibold text-right">TotalIncome</TableHead>
+                  <TableHead className="font-semibold text-right">Driver Income</TableHead>
                   <TableHead className="font-semibold">Shift</TableHead>
                   {isAdmin && <TableHead className="font-semibold text-center">Actions</TableHead>}
                 </TableRow>

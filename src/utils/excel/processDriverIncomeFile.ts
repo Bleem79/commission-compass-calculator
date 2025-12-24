@@ -43,7 +43,7 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
               normalized.working_days = row[key];
             } else if (lowerKey === 'totaltrips' || lowerKey === 'total_trips' || lowerKey.includes('trips')) {
               normalized.total_trips = row[key];
-            } else if (lowerKey === 'totalincome' || (lowerKey.includes('total') && lowerKey.includes('income'))) {
+            } else if (lowerKey === 'totalincome' || lowerKey === 'driverincome' || lowerKey === 'driver_income' || (lowerKey.includes('total') && lowerKey.includes('income')) || (lowerKey.includes('driver') && lowerKey.includes('income'))) {
               normalized.total_income = row[key];
             } else if (lowerKey === 'shift') {
               normalized.shift = row[key];
@@ -58,7 +58,7 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
         // Check required columns
         const firstRow = normalizedData[0] || {};
         if (!('driver_id' in firstRow) || !('working_days' in firstRow) || !('total_income' in firstRow)) {
-          throw new Error("Required columns missing. Please ensure the file contains: Driver ID, WrkDays, TotalIncome");
+          throw new Error("Required columns missing. Please ensure the file contains: Driver ID, WrkDays, DriverIncome");
         }
         
         // Validate and clean data - filter out empty rows
@@ -94,7 +94,7 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
           }
           
           if (isNaN(total_income)) {
-            console.log(`Skipping row ${index + 2}: invalid TotalIncome`);
+            console.log(`Skipping row ${index + 2}: invalid DriverIncome`);
             continue;
           }
           
