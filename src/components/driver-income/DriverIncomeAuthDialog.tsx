@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { User, Key, Eye, EyeOff } from "lucide-react";
+import { User, Key, Eye, EyeOff, AlertCircle, ShieldX, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -13,31 +13,106 @@ interface DriverIncomeAuthDialogProps {
   onClose: () => void;
 }
 
+// Helper to get user-friendly error messages
+const getErrorMessage = (errorCode: string | undefined, errorMessage: string): { title: string; description: string; icon: 'credentials' | 'disabled' | 'notfound' | 'generic' } => {
+  // Check for specific Supabase auth errors
+  if (errorMessage?.includes('Invalid login credentials')) {
+    return {
+      title: "Wrong Password or Driver ID",
+      description: "The Driver ID or password you entered is incorrect. Please check your credentials and try again.",
+      icon: 'credentials'
+    };
+  }
+  
+  if (errorCode === 'invalid_credentials' || errorMessage?.includes('invalid_credentials')) {
+    return {
+      title: "Wrong Password or Driver ID",
+      description: "The Driver ID or password you entered is incorrect. Please check your credentials and try again.",
+      icon: 'credentials'
+    };
+  }
+
+  if (errorMessage?.includes('Email not confirmed')) {
+    return {
+      title: "Account Not Verified",
+      description: "Your account has not been verified. Please contact the administrator.",
+      icon: 'generic'
+    };
+  }
+
+  if (errorMessage?.includes('too many requests') || errorCode === 'over_request_rate_limit') {
+    return {
+      title: "Too Many Attempts",
+      description: "You've made too many login attempts. Please wait a few minutes before trying again.",
+      icon: 'generic'
+    };
+  }
+
+  return {
+    title: "Login Failed",
+    description: errorMessage || "An error occurred during login. Please try again.",
+    icon: 'generic'
+  };
+};
+
 export const DriverIncomeAuthDialog = ({ isOpen, onClose }: DriverIncomeAuthDialogProps) => {
   const navigate = useNavigate();
   const [driverId, setDriverId] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<{ title: string; description: string; icon: 'credentials' | 'disabled' | 'notfound' | 'generic' } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError(null);
     setLoading(true);
+
+    // Basic validation
+    const trimmedDriverId = driverId.trim();
+    if (!trimmedDriverId) {
+      setError({
+        title: "Driver ID Required",
+        description: "Please enter your Driver ID to continue.",
+        icon: 'generic'
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (!password) {
+      setError({
+        title: "Password Required",
+        description: "Please enter your password to continue.",
+        icon: 'generic'
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 4) {
+      setError({
+        title: "Invalid Password",
+        description: "Password must be at least 4 characters long.",
+        icon: 'credentials'
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
       // Authenticate using driver ID
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: `${driverId}@driver.temp`,
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: `${trimmedDriverId}@driver.temp`,
         password: password,
       });
 
-      if (error) {
-        setError("Invalid Driver ID or password");
+      if (authError) {
+        const errorInfo = getErrorMessage(authError.code, authError.message);
+        setError(errorInfo);
         toast({
-          title: "Authentication Failed",
-          description: "Invalid Driver ID or password",
+          title: errorInfo.title,
+          description: errorInfo.description,
           variant: "destructive"
         });
         setLoading(false);
@@ -62,7 +137,7 @@ export const DriverIncomeAuthDialog = ({ isOpen, onClose }: DriverIncomeAuthDial
           const { data: credByDriverId } = await supabase
             .from('driver_credentials')
             .select('status, driver_id, id')
-            .eq('driver_id', driverId)
+            .eq('driver_id', trimmedDriverId)
             .maybeSingle();
           
           if (credByDriverId) {
@@ -77,10 +152,15 @@ export const DriverIncomeAuthDialog = ({ isOpen, onClose }: DriverIncomeAuthDial
 
         if (!credentials) {
           await supabase.auth.signOut();
-          setError("Driver credentials not found");
+          const errorInfo = {
+            title: "Driver Not Found",
+            description: "Your driver account was not found in the system. Please contact the administrator.",
+            icon: 'notfound' as const
+          };
+          setError(errorInfo);
           toast({
-            title: "Access Denied",
-            description: "Driver credentials not found",
+            title: errorInfo.title,
+            description: errorInfo.description,
             variant: "destructive"
           });
           setLoading(false);
@@ -89,10 +169,15 @@ export const DriverIncomeAuthDialog = ({ isOpen, onClose }: DriverIncomeAuthDial
 
         if (credentials.status === 'disabled') {
           await supabase.auth.signOut();
-          setError("Your account has been disabled. Please contact admin.");
+          const errorInfo = {
+            title: "Account Disabled",
+            description: "Your driver account has been disabled. Please contact the administrator for assistance.",
+            icon: 'disabled' as const
+          };
+          setError(errorInfo);
           toast({
-            title: "Access Denied",
-            description: "Your account has been disabled. Please contact admin.",
+            title: errorInfo.title,
+            description: errorInfo.description,
             variant: "destructive"
           });
           setLoading(false);
@@ -100,18 +185,23 @@ export const DriverIncomeAuthDialog = ({ isOpen, onClose }: DriverIncomeAuthDial
         }
 
         toast({
-          title: "Authentication Successful",
-          description: "Redirecting to driver income page",
+          title: "Welcome!",
+          description: `Successfully logged in as Driver ${credentials.driver_id}`,
         });
         onClose();
         navigate("/driver-income");
       }
     } catch (err) {
       console.error("Auth error:", err);
-      setError("An unexpected error occurred");
+      const errorInfo = {
+        title: "Connection Error",
+        description: "Unable to connect to the server. Please check your internet connection and try again.",
+        icon: 'generic' as const
+      };
+      setError(errorInfo);
       toast({
-        title: "Error",
-        description: "An unexpected error occurred",
+        title: errorInfo.title,
+        description: errorInfo.description,
         variant: "destructive"
       });
     } finally {
@@ -122,8 +212,22 @@ export const DriverIncomeAuthDialog = ({ isOpen, onClose }: DriverIncomeAuthDial
   const handleClose = () => {
     setDriverId("");
     setPassword("");
-    setError("");
+    setError(null);
     onClose();
+  };
+
+  const getErrorIcon = () => {
+    if (!error) return null;
+    switch (error.icon) {
+      case 'credentials':
+        return <Key className="h-5 w-5 text-red-500 flex-shrink-0" />;
+      case 'disabled':
+        return <ShieldX className="h-5 w-5 text-red-500 flex-shrink-0" />;
+      case 'notfound':
+        return <UserX className="h-5 w-5 text-red-500 flex-shrink-0" />;
+      default:
+        return <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />;
+    }
   };
 
   return (
@@ -136,8 +240,14 @@ export const DriverIncomeAuthDialog = ({ isOpen, onClose }: DriverIncomeAuthDial
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-500 border-l-4 border-red-500">
-              {error}
+            <div className="rounded-md bg-red-50 p-4 border-l-4 border-red-500">
+              <div className="flex items-start gap-3">
+                {getErrorIcon()}
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-800">{error.title}</p>
+                  <p className="text-sm text-red-600 mt-1">{error.description}</p>
+                </div>
+              </div>
             </div>
           )}
           <div className="space-y-2">
