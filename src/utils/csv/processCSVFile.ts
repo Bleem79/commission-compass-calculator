@@ -1,5 +1,5 @@
 
-export const processCSVFile = async (file: File): Promise<Array<{ password: string, driverId: string }>> => {
+export const processCSVFile = async (file: File): Promise<Array<{ password: string, driverId: string, status: string }>> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -15,7 +15,7 @@ export const processCSVFile = async (file: File): Promise<Array<{ password: stri
             .replace(/\r$/, '') // Remove carriage return
         );
         
-        // Validate required columns - only driverId and password needed
+        // Validate required columns - driverId and password are required, status is optional
         const requiredColumns = ['password', 'driverid'];
         const missingColumns = requiredColumns.filter(col => 
           !headers.some(header => header === col || 
@@ -33,13 +33,14 @@ export const processCSVFile = async (file: File): Promise<Array<{ password: stri
         const driverIdIndex = headers.findIndex(h => 
           h.includes('driverid') || h.includes('driver_id') || h.includes('driver id')
         );
+        const statusIndex = headers.findIndex(h => h.includes('status'));
         
         // Process data rows
         const data = rows.slice(1)
           .filter(row => row.trim()) // Skip empty rows
           .map((row, index) => {
             const columns = row.split(',').map(col => 
-              col.trim().replace(/['"]+/g, '') // Remove quotes and trim
+              col.trim().replace(/['"]+/g, '').replace(/\r$/, '') // Remove quotes, trim, and remove carriage return
             );
             
             // Validate row data
@@ -49,6 +50,13 @@ export const processCSVFile = async (file: File): Promise<Array<{ password: stri
             
             const password = columns[passwordIndex];
             const driverId = columns[driverIdIndex];
+            // Default to 'enabled' if status column not provided or empty
+            let status = statusIndex >= 0 && columns[statusIndex] ? columns[statusIndex].toLowerCase() : 'enabled';
+            
+            // Validate status value
+            if (status !== 'enabled' && status !== 'disabled') {
+              status = 'enabled'; // Default to enabled if invalid value
+            }
             
             // Basic validation
             if (password.length < 6) {
@@ -59,7 +67,7 @@ export const processCSVFile = async (file: File): Promise<Array<{ password: stri
               throw new Error(`Empty driver ID in row ${index + 2}`);
             }
             
-            return { password, driverId };
+            return { password, driverId, status };
           });
         
         console.log("Successfully parsed CSV data:", data.length, "rows");
@@ -77,24 +85,4 @@ export const processCSVFile = async (file: File): Promise<Array<{ password: stri
     
     reader.readAsText(file);
   });
-};
-
-export const validateDriverData = (data: any) => {
-  if (!data.email || typeof data.email !== 'string' || !data.email.includes('@')) {
-    throw new Error('Invalid email format');
-  }
-  
-  if (!data.password || typeof data.password !== 'string' || data.password.length < 6) {
-    throw new Error('Password must be at least 6 characters');
-  }
-  
-  if (!data.driverId || typeof data.driverId !== 'string') {
-    throw new Error('Driver ID is required');
-  }
-  
-  return {
-    email: data.email.trim().toLowerCase(),
-    password: data.password,
-    driverId: data.driverId.trim()
-  };
 };
