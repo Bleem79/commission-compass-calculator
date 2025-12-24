@@ -53,15 +53,18 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
         throw new Error(`Driver ID ${validatedData.driverId} already exists`);
       }
       
-      // Create new driver using signUp - this should not affect the current session
-      // as long as we don't automatically login the new user
+      // Create new driver using signUp with driver ID-based email
+      // Format: {driverId}@driver.temp - this allows login with just Driver ID
+      const driverEmail = `${validatedData.driverId}@driver.temp`;
+      
       const response = await supabase.auth.signUp({
-        email: validatedData.email,
+        email: driverEmail,
         password: validatedData.password,
         options: {
           data: {
             role: 'driver',
-            driver_id: validatedData.driverId
+            driver_id: validatedData.driverId,
+            original_email: validatedData.email // Store original email in metadata
           },
           // Critical: Do not automatically sign in as the new user
           emailRedirectTo: window.location.origin
