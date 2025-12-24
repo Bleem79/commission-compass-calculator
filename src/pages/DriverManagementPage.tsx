@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download } from "lucide-react";
+import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2 } from "lucide-react";
+import { uploadDriverCredential } from "@/services/driverUploadService";
 
 interface DriverCredential {
   id: string;
@@ -27,6 +28,8 @@ const DriverManagementPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
 
   useEffect(() => {
@@ -118,6 +121,37 @@ const DriverManagementPage = () => {
     toast.success("Template downloaded");
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const result = await uploadDriverCredential(file);
+      
+      if (result.success.length > 0) {
+        toast.success(`Successfully uploaded ${result.success.length} driver(s)`);
+      }
+      
+      if (result.errors.length > 0) {
+        toast.error(`Failed to upload ${result.errors.length} driver(s)`);
+        console.error("Upload errors:", result.errors);
+      }
+
+      // Refresh the driver list
+      await fetchDrivers();
+    } catch (error: any) {
+      console.error("Error uploading file:", error);
+      toast.error("Failed to upload file: " + error.message);
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   const filteredDrivers = drivers.filter(driver =>
     driver.driver_id.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -148,7 +182,7 @@ const DriverManagementPage = () => {
             </h1>
             <p className="text-slate-600">Manage driver accounts and access</p>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex gap-2">
             <Button
               variant="outline"
               onClick={downloadTemplate}
@@ -156,6 +190,32 @@ const DriverManagementPage = () => {
             >
               <Download className="h-4 w-4 mr-2" />
               Download CSV Template
+            </Button>
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleFileUpload}
+              ref={fileInputRef}
+              className="hidden"
+              id="driver-csv-upload"
+            />
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="bg-white hover:bg-purple-50 border-purple-200 text-purple-700 hover:text-purple-800"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload CSV
+                </>
+              )}
             </Button>
           </div>
         </div>
