@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw } from "lucide-react";
+import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
 
 interface DriverCredential {
   id: string;
@@ -27,6 +27,7 @@ const DriverManagementPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -76,6 +77,30 @@ const DriverManagementPage = () => {
       toast.error("Failed to update driver status");
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const bulkUpdateStatus = async (newStatus: 'enabled' | 'disabled') => {
+    if (drivers.length === 0) return;
+    
+    setBulkUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('driver_credentials')
+        .update({ status: newStatus })
+        .neq('status', newStatus); // Only update drivers that need changing
+
+      if (error) throw error;
+
+      setDrivers(prev => prev.map(d => ({ ...d, status: newStatus })));
+      
+      const count = drivers.filter(d => d.status !== newStatus).length;
+      toast.success(`${count} driver(s) ${newStatus === 'enabled' ? 'enabled' : 'disabled'}`);
+    } catch (error: any) {
+      console.error("Error bulk updating driver status:", error);
+      toast.error("Failed to update drivers");
+    } finally {
+      setBulkUpdating(false);
     }
   };
 
@@ -155,7 +180,27 @@ const DriverManagementPage = () => {
               <CardTitle className="text-lg font-semibold text-slate-800">
                 Driver Accounts
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => bulkUpdateStatus('enabled')}
+                  disabled={bulkUpdating || drivers.length === 0 || enabledCount === drivers.length}
+                  className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800"
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Enable All
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => bulkUpdateStatus('disabled')}
+                  disabled={bulkUpdating || drivers.length === 0 || disabledCount === drivers.length}
+                  className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100 hover:text-red-800"
+                >
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Disable All
+                </Button>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
@@ -177,7 +222,14 @@ const DriverManagementPage = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {loading || bulkUpdating ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-6 w-6 animate-spin text-slate-400" />
+                <span className="ml-2 text-slate-600">
+                  {bulkUpdating ? "Updating drivers..." : "Loading drivers..."}
+                </span>
+              </div>
+            ) : filteredDrivers.length === 0 ? (
               <div className="flex items-center justify-center py-8">
                 <RefreshCw className="h-6 w-6 animate-spin text-slate-400" />
                 <span className="ml-2 text-slate-600">Loading drivers...</span>
