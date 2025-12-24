@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,30 +21,16 @@ interface DriverIncomeTableProps {
   data: DriverIncomeData[];
   isLoading: boolean;
   onDataChange: () => void;
-  selectedMonth: string;
-  selectedYear: string;
-  onMonthChange: (month: string) => void;
-  onYearChange: (year: string) => void;
   isAdmin: boolean;
+  reportHeading: string;
 }
-
-const months = [
-  "All", "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
-
-const currentYear = new Date().getFullYear();
-const years = ["All", ...Array.from({ length: 5 }, (_, i) => String(currentYear - i))];
 
 export const DriverIncomeTable = ({
   data,
   isLoading,
   onDataChange,
-  selectedMonth,
-  selectedYear,
-  onMonthChange,
-  onYearChange,
-  isAdmin
+  isAdmin,
+  reportHeading
 }: DriverIncomeTableProps) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -73,21 +58,18 @@ export const DriverIncomeTable = ({
     if (!confirm("Are you sure you want to delete all displayed records?")) return;
 
     try {
-      let query = supabase.from('driver_income').delete();
-
-      if (selectedMonth !== "All") {
-        query = query.eq('month', selectedMonth);
-      }
-      if (selectedYear !== "All") {
-        query = query.eq('year', parseInt(selectedYear, 10));
-      }
-
-      // Need to add a condition to delete
-      if (selectedMonth === "All" && selectedYear === "All") {
-        query = query.neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      // Delete all records that match current filter (5 or 6 working days)
+      const idsToDelete = filteredData.map(row => row.id);
+      
+      if (idsToDelete.length === 0) {
+        toast.error("No records to delete");
+        return;
       }
 
-      const { error } = await query;
+      const { error } = await supabase
+        .from('driver_income')
+        .delete()
+        .in('id', idsToDelete);
 
       if (error) throw error;
 
@@ -104,78 +86,50 @@ export const DriverIncomeTable = ({
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4 items-end">
-        <div className="flex-1 min-w-[150px]">
-          <Select value={selectedMonth} onValueChange={onMonthChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filter by month" />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map((month) => (
-                <SelectItem key={month} value={month}>
-                  {month}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Report heading and delete all button */}
+      {reportHeading && (
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-lg font-semibold text-primary">{reportHeading}</h2>
+          {isAdmin && filteredData.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDeleteAll}
+              className="text-destructive border-destructive/30 hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Delete All ({filteredData.length})
+            </Button>
+          )}
         </div>
-
-        <div className="flex-1 min-w-[120px]">
-          <Select value={selectedYear} onValueChange={onYearChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filter by year" />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((year) => (
-                <SelectItem key={year} value={year}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {isAdmin && filteredData.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDeleteAll}
-            className="text-red-600 border-red-200 hover:bg-red-50"
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Delete All
-          </Button>
-        )}
-      </div>
+      )}
 
       {/* Table */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : filteredData.length === 0 ? (
-        <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100 p-8 text-center">
-          <p className="text-gray-500">No drivers with 5 or 6 working days found for the selected period.</p>
+        <div className="bg-card rounded-lg border border-border p-8 text-center">
+          <p className="text-muted-foreground">No drivers with 5 or 6 working days found.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-indigo-100 overflow-hidden">
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-indigo-50">
+                <TableRow className="bg-muted/50">
                   <TableHead className="font-semibold">Driver ID</TableHead>
                   <TableHead className="font-semibold">Name</TableHead>
                   <TableHead className="font-semibold text-center">Working Days</TableHead>
                   <TableHead className="font-semibold text-right">Total Income</TableHead>
                   <TableHead className="font-semibold text-right">Avg Daily</TableHead>
-                  <TableHead className="font-semibold">Month/Year</TableHead>
                   {isAdmin && <TableHead className="font-semibold text-center">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredData.map((row) => (
-                  <TableRow key={row.id} className="hover:bg-gray-50">
+                  <TableRow key={row.id} className="hover:bg-muted/30">
                     <TableCell className="font-medium">{row.driver_id}</TableCell>
                     <TableCell>{row.driver_name || '-'}</TableCell>
                     <TableCell className="text-center">
@@ -187,7 +141,6 @@ export const DriverIncomeTable = ({
                     </TableCell>
                     <TableCell className="text-right">{row.total_income.toFixed(2)}</TableCell>
                     <TableCell className="text-right">{row.average_daily_income?.toFixed(2) || '-'}</TableCell>
-                    <TableCell>{row.month} {row.year}</TableCell>
                     {isAdmin && (
                       <TableCell className="text-center">
                         <Button
@@ -195,7 +148,7 @@ export const DriverIncomeTable = ({
                           size="sm"
                           onClick={() => handleDelete(row.id)}
                           disabled={deletingId === row.id}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                           {deletingId === row.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -210,7 +163,7 @@ export const DriverIncomeTable = ({
               </TableBody>
             </Table>
           </div>
-          <div className="px-4 py-3 bg-gray-50 border-t text-sm text-gray-600">
+          <div className="px-4 py-3 bg-muted/30 border-t border-border text-sm text-muted-foreground">
             Showing {filteredData.length} driver(s) with 5 or 6 working days
           </div>
         </div>
