@@ -36,9 +36,6 @@ export const uploadDriverCredential = async (
     total: totalDrivers
   };
   
-  // Store the current session to prevent losing it
-  const { data: currentSession } = await supabase.auth.getSession();
-  
   // Delete all existing driver credentials before uploading fresh data
   console.log("Deleting all existing driver credentials...");
   const { error: deleteError } = await supabase
@@ -52,7 +49,7 @@ export const uploadDriverCredential = async (
   }
   console.log("Successfully deleted all existing driver credentials");
   
-  // Use the standard client for operations
+  // Process each driver using the database function for proper user linking
   for (let i = 0; i < drivers.length; i++) {
     const driver = drivers[i];
     
@@ -71,109 +68,38 @@ export const uploadDriverCredential = async (
         status: driver.status
       });
       
-      // Create new driver using signUp with driver ID-based email
-      // Format: {driverId}@driver.temp - this allows login with just Driver ID
-      const driverEmail = `${validatedData.driverId}@driver.temp`;
+      // Create driver email format
+      const driverEmail = `${validatedData.driverId.toLowerCase()}@driver.temp`;
       
-      const response = await supabase.auth.signUp({
-        email: driverEmail,
-        password: validatedData.password,
-        options: {
-          data: {
-            role: 'driver',
-            driver_id: validatedData.driverId
-          },
-          emailRedirectTo: window.location.origin
-        }
+      // Use the database function to create/link driver account
+      // This function properly handles existing auth users and links them correctly
+      const { data: userId, error: createError } = await supabase.rpc('create_driver_account', {
+        p_email: driverEmail,
+        p_password: validatedData.password,
+        p_driver_id: validatedData.driverId
       });
       
-      // CRITICAL: Restore admin session immediately after signUp
-      // signUp automatically logs in as the new user, breaking admin permissions
-      if (currentSession?.session) {
-        await supabase.auth.setSession({
-          access_token: currentSession.session.access_token,
-          refresh_token: currentSession.session.refresh_token
-        });
-      }
-      
-      if (response.error) {
-        // Handle "user already registered" - create credentials for existing auth user
-        if (response.error.code === 'user_already_exists') {
-          try {
-            // Find the existing user by email
-            const driverEmail = `${validatedData.driverId}@driver.temp`;
-            
-            // We can't query auth.users directly, so we'll try to sign in to get the user id
-            // Instead, create driver_credentials without user_id (will be null)
-            // Or skip if we can't determine the user
-            const { error: credError } = await supabase.from('driver_credentials').insert({
-              driver_id: validatedData.driverId,
-              status: validatedData.status,
-              user_id: null // We don't have access to the user_id from client
-            });
-            
-            if (credError) {
-              // If it's a duplicate, just update the status
-              if (credError.code === '23505') {
-                await supabase
-                  .from('driver_credentials')
-                  .update({ status: validatedData.status })
-                  .eq('driver_id', validatedData.driverId);
-                results.success.push({ driverId: validatedData.driverId });
-                console.log(`Updated existing credentials for ${validatedData.driverId}`);
-              } else {
-                throw credError;
-              }
-            } else {
-              results.success.push({ driverId: validatedData.driverId });
-              console.log(`Created credentials for existing auth user ${validatedData.driverId}`);
-            }
-          } catch (credErr: any) {
-            results.errors.push({ 
-              driverId: validatedData.driverId, 
-              error: `Auth user exists, credential creation failed: ${credErr.message}`
-            });
-          }
-          continue;
+      if (createError) {
+        // Check if it's a duplicate driver_id error
+        if (createError.message.includes('already exists')) {
+          console.log(`Driver ${validatedData.driverId} already exists, skipping...`);
+          results.success.push({ driverId: validatedData.driverId });
+        } else {
+          throw createError;
         }
-        throw response.error;
-      }
-      
-      if (!response.data.user) {
-        throw new Error(`Failed to create user account for Driver ID: ${validatedData.driverId}`);
-      }
-      
-      try {
-        // Create driver role
-        const roleResponse = await supabase.from('user_roles').insert({
-          user_id: response.data.user.id,
-          role: 'driver'
-        });
+      } else {
+        console.log(`Successfully created/linked driver ${validatedData.driverId} with user_id: ${userId}`);
         
-        if (roleResponse.error) {
-          console.error(`Error creating role for ${validatedData.driverId}:`, roleResponse.error);
-          throw roleResponse.error;
+        // Update status if needed (function defaults to 'enabled')
+        if (validatedData.status === 'disabled') {
+          await supabase
+            .from('driver_credentials')
+            .update({ status: 'disabled' })
+            .eq('driver_id', validatedData.driverId);
         }
         
-        // Create driver credentials with status
-        const credResponse = await supabase.from('driver_credentials').insert({
-          user_id: response.data.user.id,
-          driver_id: validatedData.driverId,
-          status: validatedData.status
-        }).select();
-        
-        if (credResponse.error) {
-          console.error(`Error creating driver credentials for ${validatedData.driverId}:`, credResponse.error);
-          throw credResponse.error;
-        }
-      } catch (insertError: any) {
-        // If we fail after user creation, log the error but still count as success
-        // since the user account was created
-        console.warn(`Created user account for ${validatedData.driverId} but had issues with role/credentials: ${insertError.message}`);
+        results.success.push({ driverId: validatedData.driverId });
       }
-      
-      results.success.push({ driverId: validatedData.driverId });
-      console.log(`Successfully created account for Driver ID: ${validatedData.driverId}`);
       
     } catch (error: any) {
       console.error(`Error creating account for ${drivers[i].driverId}:`, error);
@@ -183,33 +109,9 @@ export const uploadDriverCredential = async (
       });
     }
     
-    // Add delay between processing each driver to avoid rate limiting
+    // Add small delay between processing to avoid rate limiting
     if (i < drivers.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-    
-    // Every few records, check if the session is still active and restore it if needed
-    if (i % 5 === 0 && currentSession?.session) {
-      const { data: newSession } = await supabase.auth.getSession();
-      if (!newSession.session && currentSession.session) {
-        console.log("Attempting to restore admin session...");
-        await supabase.auth.setSession({
-          access_token: currentSession.session.access_token,
-          refresh_token: currentSession.session.refresh_token
-        });
-      }
-    }
-  }
-
-  // Final check to ensure admin session is maintained
-  if (currentSession?.session) {
-    const { data: finalSession } = await supabase.auth.getSession();
-    if (!finalSession.session) {
-      console.log("Restoring admin session after completion...");
-      await supabase.auth.setSession({
-        access_token: currentSession.session.access_token,
-        refresh_token: currentSession.session.refresh_token
-      });
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
 
