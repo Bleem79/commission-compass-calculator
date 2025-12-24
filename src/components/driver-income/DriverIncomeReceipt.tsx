@@ -1,6 +1,6 @@
-
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, Printer } from "lucide-react";
 
 interface DriverIncomeData {
   id: string;
@@ -64,8 +64,18 @@ export const DriverIncomeReceipt = ({
     return acc;
   }, {} as Record<string, DriverIncomeData[]>);
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-end print:hidden">
+        <Button onClick={handlePrint} variant="outline" className="gap-2">
+          <Printer className="h-4 w-4" />
+          Print Receipt
+        </Button>
+      </div>
       {Object.entries(groupedData).map(([period, records]) => (
         <Card key={period} className="bg-white shadow-lg overflow-hidden">
           {/* Header with logo */}
