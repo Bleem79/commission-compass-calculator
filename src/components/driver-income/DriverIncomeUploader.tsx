@@ -10,7 +10,7 @@ import { processDriverIncomeFile, DriverIncomeRow } from "@/utils/excel/processD
 
 interface DriverIncomeUploaderProps {
   userId: string;
-  onUploadSuccess: () => void;
+  onUploadSuccess: (heading: string) => void;
   reportHeading: string;
   onHeadingChange: (heading: string) => void;
 }
@@ -97,6 +97,13 @@ export const DriverIncomeUploader = ({
         uploaded_by: userId,
       }));
 
+      // Delete all existing driver income data before inserting new data
+      const { error: deleteError } = await supabase.from("driver_income").delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (deleteError) {
+        console.error("Error deleting existing data:", deleteError);
+        throw deleteError;
+      }
+
       setUploadProgress({ total: insertData.length, uploaded: 0 });
 
       const chunks = chunkArray(insertData, CHUNK_SIZE);
@@ -113,14 +120,14 @@ export const DriverIncomeUploader = ({
         });
       }
 
-      toast.success(`Successfully imported ${insertData.length} driver income records`);
+      toast.success(`Successfully imported ${insertData.length} driver income records (previous data removed)`);
       setSelectedFile(null);
       setPreviewData(null);
       setUploadProgress(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-      onUploadSuccess();
+      onUploadSuccess(reportHeading);
     } catch (error: any) {
       console.error("Error uploading driver income:", error);
       toast.error(formatSupabaseError(error));
