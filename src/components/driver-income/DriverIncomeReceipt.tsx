@@ -7,7 +7,9 @@ interface DriverIncomeData {
   driver_id: string;
   driver_name: string | null;
   working_days: number;
+  total_trips: number | null;
   total_income: number;
+  shift: string | null;
   average_daily_income: number | null;
   month: string;
   year: number;
