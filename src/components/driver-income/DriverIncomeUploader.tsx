@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, FileSpreadsheet, Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
@@ -27,7 +28,21 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>(String(currentYear));
   const [previewData, setPreviewData] = useState<DriverIncomeRow[] | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ total: number; uploaded: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const CHUNK_SIZE = 250;
+
+  const chunkArray = <T,>(arr: T[], size: number) => {
+    const out: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+    return out;
+  };
+
+  const formatSupabaseError = (err: any) => {
+    const parts = [err?.message, err?.details, err?.hint].filter(Boolean);
+    return parts.join(" — ") || "Failed to upload driver income data";
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -64,12 +79,13 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
     }
 
     setIsUploading(true);
+    setUploadProgress(null);
 
     try {
       const data = await processDriverIncomeFile(selectedFile);
 
       // Insert data into database
-      const insertData = data.map(row => ({
+      const insertData = data.map((row) => ({
         driver_id: row.driver_id,
         driver_name: row.driver_name,
         working_days: row.working_days,
@@ -77,28 +93,34 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
         average_daily_income: row.average_daily_income,
         month: selectedMonth,
         year: parseInt(selectedYear, 10),
-        uploaded_by: userId
+        uploaded_by: userId,
       }));
 
-      const { error } = await supabase
-        .from('driver_income')
-        .insert(insertData);
+      setUploadProgress({ total: insertData.length, uploaded: 0 });
 
-      if (error) {
-        throw error;
+      const chunks = chunkArray(insertData, CHUNK_SIZE);
+      for (const chunk of chunks) {
+        const { error } = await supabase.from("driver_income").insert(chunk);
+        if (error) throw error;
+
+        setUploadProgress((prev) => {
+          if (!prev) return { total: insertData.length, uploaded: chunk.length };
+          return { total: prev.total, uploaded: prev.uploaded + chunk.length };
+        });
       }
 
-      toast.success(`Successfully imported ${data.length} driver income records`);
+      toast.success(`Successfully imported ${insertData.length} driver income records`);
       setSelectedFile(null);
       setPreviewData(null);
       setSelectedMonth("");
+      setUploadProgress(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
       onUploadSuccess();
     } catch (error: any) {
       console.error("Error uploading driver income:", error);
-      toast.error(error.message || "Failed to upload driver income data");
+      toast.error(formatSupabaseError(error));
     } finally {
       setIsUploading(false);
     }
@@ -214,6 +236,24 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {uploadProgress && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Uploading records…</span>
+            <span>
+              {uploadProgress.uploaded}/{uploadProgress.total}
+            </span>
+          </div>
+          <Progress
+            value={
+              uploadProgress.total > 0
+                ? Math.round((uploadProgress.uploaded / uploadProgress.total) * 100)
+                : 0
+            }
+          />
         </div>
       )}
 
