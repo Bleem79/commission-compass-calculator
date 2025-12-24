@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState, useCallback } from "react";
@@ -6,6 +7,7 @@ import { ArrowLeft, X, Upload, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DriverIncomeUploader } from "@/components/driver-income/DriverIncomeUploader";
 import { DriverIncomeTable } from "@/components/driver-income/DriverIncomeTable";
+import { DriverIncomeReceipt } from "@/components/driver-income/DriverIncomeReceipt";
 
 interface DriverIncomeData {
   id: string;
@@ -27,12 +29,31 @@ const DriverIncomePage = () => {
   const [showUploader, setShowUploader] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState("All");
   const [selectedYear, setSelectedYear] = useState("All");
+  const [driverInfo, setDriverInfo] = useState<{ driverId: string; permitId?: string } | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login", { replace: true });
     }
   }, [isAuthenticated, navigate]);
+
+  // Fetch driver info for non-admin users
+  useEffect(() => {
+    const fetchDriverInfo = async () => {
+      if (!isAdmin && user?.id) {
+        const { data } = await supabase
+          .from('driver_credentials')
+          .select('driver_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (data) {
+          setDriverInfo({ driverId: data.driver_id });
+        }
+      }
+    };
+    fetchDriverInfo();
+  }, [isAdmin, user?.id]);
 
   const fetchIncomeData = useCallback(async () => {
     setIsLoading(true);
@@ -98,7 +119,7 @@ const DriverIncomePage = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h1 className="text-lg sm:text-2xl font-bold text-indigo-800 flex items-center gap-2">
             <FileSpreadsheet className="h-6 w-6" />
-            Last Month 5 or 6days Driver Income
+            {isAdmin ? "Last Month 5 or 6days Driver Income" : "My Income Details"}
           </h1>
           
           {isAdmin && user?.id && (
@@ -127,17 +148,26 @@ const DriverIncomePage = () => {
           </div>
         )}
 
-        {/* Data Table */}
-        <DriverIncomeTable
-          data={incomeData}
-          isLoading={isLoading}
-          onDataChange={fetchIncomeData}
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
-          isAdmin={isAdmin}
-        />
+        {/* Show Receipt View for Drivers, Table View for Admin */}
+        {isAdmin ? (
+          <DriverIncomeTable
+            data={incomeData}
+            isLoading={isLoading}
+            onDataChange={fetchIncomeData}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            onMonthChange={setSelectedMonth}
+            onYearChange={setSelectedYear}
+            isAdmin={isAdmin}
+          />
+        ) : (
+          <DriverIncomeReceipt
+            data={incomeData}
+            isLoading={isLoading}
+            driverName={user?.username}
+            permitId={driverInfo?.driverId}
+          />
+        )}
       </div>
     </div>
   );

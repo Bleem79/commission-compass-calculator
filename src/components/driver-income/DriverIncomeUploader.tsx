@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Upload, FileSpreadsheet, Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { processDriverIncomeFile, DriverIncomeRow } from "@/utils/excel/processDriverIncomeFile";
@@ -104,8 +104,37 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
     }
   };
 
+  const downloadTemplate = () => {
+    const csvContent = `driver_id,driver_name,working_days,total_income,average_daily_income
+112596,AHMED MOHAMMEDNUR ALKETA,5,1164.25,232.85
+112597,JOHN DOE,6,1450.50,241.75
+112598,JANE SMITH,5,980.00,196.00`;
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "driver_income_template.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Template downloaded");
+  };
+
   return (
     <div className="space-y-4">
+      {/* Download Template Button */}
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          onClick={downloadTemplate}
+          className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Download Template
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="month">Month</Label>
@@ -153,7 +182,7 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
           />
         </div>
         <p className="text-xs text-gray-500 mt-1">
-          Required columns: Driver ID, Working Days, Total Income. Optional: Driver Name, Average Daily Income
+          Required columns: driver_id, working_days, total_income. Optional: driver_name, average_daily_income
         </p>
       </div>
 
