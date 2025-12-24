@@ -2,6 +2,7 @@
 export interface DriverData {
   password: string;
   driverId: string;
+  status?: string;
 }
 
 export interface DriverCreationResult {

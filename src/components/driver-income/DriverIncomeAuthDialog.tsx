@@ -45,6 +45,37 @@ export const DriverIncomeAuthDialog = ({ isOpen, onClose }: DriverIncomeAuthDial
       }
 
       if (data.user) {
+        // Check if driver status is enabled
+        const { data: credentials, error: credError } = await supabase
+          .from('driver_credentials')
+          .select('status')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+
+        if (credError || !credentials) {
+          await supabase.auth.signOut();
+          setError("Driver credentials not found");
+          toast({
+            title: "Access Denied",
+            description: "Driver credentials not found",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
+
+        if (credentials.status === 'disabled') {
+          await supabase.auth.signOut();
+          setError("Your account has been disabled. Please contact admin.");
+          toast({
+            title: "Access Denied",
+            description: "Your account has been disabled. Please contact admin.",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
+
         toast({
           title: "Authentication Successful",
           description: "Redirecting to driver income page",

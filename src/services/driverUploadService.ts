@@ -38,7 +38,8 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
       // Validate driver data first
       const validatedData = validateDriverData({
         password: driver.password,
-        driverId: driver.driverId
+        driverId: driver.driverId,
+        status: driver.status
       });
       
       // Check if driver with this ID already exists
@@ -89,10 +90,11 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
           throw roleResponse.error;
         }
         
-        // Create driver credentials
+        // Create driver credentials with status
         const credResponse = await supabase.from('driver_credentials').insert({
           user_id: response.data.user.id,
-          driver_id: validatedData.driverId
+          driver_id: validatedData.driverId,
+          status: validatedData.status
         }).select();
         
         if (credResponse.error) {
