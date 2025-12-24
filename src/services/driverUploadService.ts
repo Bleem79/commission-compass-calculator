@@ -39,6 +39,19 @@ export const uploadDriverCredential = async (
   // Store the current session to prevent losing it
   const { data: currentSession } = await supabase.auth.getSession();
   
+  // Delete all existing driver credentials before uploading fresh data
+  console.log("Deleting all existing driver credentials...");
+  const { error: deleteError } = await supabase
+    .from('driver_credentials')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records (workaround for deleting all)
+  
+  if (deleteError) {
+    console.error("Error deleting existing driver credentials:", deleteError);
+    throw new Error("Failed to clear existing driver credentials: " + deleteError.message);
+  }
+  console.log("Successfully deleted all existing driver credentials");
+  
   // Use the standard client for operations
   for (let i = 0; i < drivers.length; i++) {
     const driver = drivers[i];
@@ -57,36 +70,6 @@ export const uploadDriverCredential = async (
         driverId: driver.driverId,
         status: driver.status
       });
-      
-      // Check if driver with this ID already exists in driver_credentials
-      const { data: existingDriver } = await supabase
-        .from('driver_credentials')
-        .select('id, driver_id, user_id, status')
-        .eq('driver_id', validatedData.driverId)
-        .maybeSingle();
-        
-      if (existingDriver) {
-        // Update existing driver: update status (password update requires admin SDK, skip for now)
-        try {
-          const { error: updateError } = await supabase
-            .from('driver_credentials')
-            .update({ status: validatedData.status })
-            .eq('driver_id', validatedData.driverId);
-          
-          if (updateError) {
-            throw updateError;
-          }
-          
-          results.success.push({ driverId: validatedData.driverId });
-          console.log(`Updated status for Driver ID ${validatedData.driverId}`);
-        } catch (updateErr: any) {
-          results.errors.push({ 
-            driverId: validatedData.driverId, 
-            error: `Failed to update: ${updateErr.message}`
-          });
-        }
-        continue;
-      }
       
       // Create new driver using signUp with driver ID-based email
       // Format: {driverId}@driver.temp - this allows login with just Driver ID
