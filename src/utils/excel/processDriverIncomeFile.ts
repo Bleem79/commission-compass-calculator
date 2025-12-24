@@ -61,25 +61,41 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
           throw new Error("Required columns missing. Please ensure the file contains: Driver ID, WrkDays, TotalIncome");
         }
         
-        // Validate and clean data
-        const cleanedData: DriverIncomeRow[] = normalizedData.map((row: any, index) => {
+        // Validate and clean data - filter out empty rows
+        const cleanedData: DriverIncomeRow[] = [];
+        
+        for (let index = 0; index < normalizedData.length; index++) {
+          const row = normalizedData[index];
+          
+          // Skip empty rows or rows with missing required fields
           if (!row.driver_id || row.working_days === undefined || row.total_income === undefined) {
-            throw new Error(`Row ${index + 2} is missing required fields (Driver ID, WrkDays, or TotalIncome)`);
+            console.log(`Skipping row ${index + 2}: missing required fields`);
+            continue;
           }
           
           const driver_id = String(row.driver_id).trim();
+          
+          // Skip if driver_id is empty after trimming
+          if (!driver_id) {
+            console.log(`Skipping row ${index + 2}: empty driver ID`);
+            continue;
+          }
+          
           const driver_name = row.driver_name ? String(row.driver_name).trim() : null;
           const working_days = parseInt(String(row.working_days), 10);
           const total_trips = row.total_trips !== undefined ? parseInt(String(row.total_trips), 10) : null;
           const total_income = parseFloat(String(row.total_income).replace(/[^0-9.-]/g, ''));
           const shift = row.shift ? String(row.shift).trim() : null;
           
+          // Skip invalid numeric data
           if (isNaN(working_days) || working_days < 0) {
-            throw new Error(`Invalid WrkDays in row ${index + 2}`);
+            console.log(`Skipping row ${index + 2}: invalid WrkDays`);
+            continue;
           }
           
           if (isNaN(total_income)) {
-            throw new Error(`Invalid TotalIncome in row ${index + 2}`);
+            console.log(`Skipping row ${index + 2}: invalid TotalIncome`);
+            continue;
           }
           
           // Calculate average if working days > 0
@@ -88,7 +104,7 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
             average_daily_income = Math.round((total_income / working_days) * 100) / 100;
           }
           
-          return {
+          cleanedData.push({
             driver_id,
             driver_name,
             working_days,
@@ -96,8 +112,12 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
             total_income,
             shift,
             average_daily_income
-          };
-        });
+          });
+        }
+        
+        if (cleanedData.length === 0) {
+          throw new Error("No valid data rows found in the file");
+        }
         
         console.log("Parsed driver income data:", cleanedData);
         resolve(cleanedData);
