@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, FileSpreadsheet, Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,37 +11,34 @@ import { processDriverIncomeFile, DriverIncomeRow } from "@/utils/excel/processD
 interface DriverIncomeUploaderProps {
   userId: string;
   onUploadSuccess: () => void;
+  reportHeading: string;
+  onHeadingChange: (heading: string) => void;
 }
 
-const months = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
+const CHUNK_SIZE = 250;
 
-const currentYear = new Date().getFullYear();
-const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+const chunkArray = <T,>(arr: T[], size: number) => {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+};
 
-export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUploaderProps) => {
+const formatSupabaseError = (err: any) => {
+  const parts = [err?.message, err?.details, err?.hint].filter(Boolean);
+  return parts.join(" — ") || "Failed to upload driver income data";
+};
+
+export const DriverIncomeUploader = ({ 
+  userId, 
+  onUploadSuccess, 
+  reportHeading, 
+  onHeadingChange 
+}: DriverIncomeUploaderProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [selectedYear, setSelectedYear] = useState<string>(String(currentYear));
   const [previewData, setPreviewData] = useState<DriverIncomeRow[] | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ total: number; uploaded: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const CHUNK_SIZE = 250;
-
-  const chunkArray = <T,>(arr: T[], size: number) => {
-    const out: T[][] = [];
-    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-    return out;
-  };
-
-  const formatSupabaseError = (err: any) => {
-    const parts = [err?.message, err?.details, err?.hint].filter(Boolean);
-    return parts.join(" — ") || "Failed to upload driver income data";
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,7 +59,7 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
 
     try {
       const data = await processDriverIncomeFile(file);
-      setPreviewData(data.slice(0, 5)); // Show first 5 rows as preview
+      setPreviewData(data.slice(0, 5));
       toast.success(`File parsed successfully. ${data.length} records found.`);
     } catch (error: any) {
       toast.error(error.message || "Failed to parse file");
@@ -73,8 +69,13 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !selectedMonth || !selectedYear) {
-      toast.error("Please select a file, month, and year");
+    if (!selectedFile) {
+      toast.error("Please select a file");
+      return;
+    }
+
+    if (!reportHeading.trim()) {
+      toast.error("Please enter a report heading");
       return;
     }
 
@@ -84,15 +85,19 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
     try {
       const data = await processDriverIncomeFile(selectedFile);
 
-      // Insert data into database
+      // Extract month and year from heading or use current date
+      const now = new Date();
+      const monthNames = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"];
+      
       const insertData = data.map((row) => ({
         driver_id: row.driver_id,
         driver_name: row.driver_name,
         working_days: row.working_days,
         total_income: row.total_income,
         average_daily_income: row.average_daily_income,
-        month: selectedMonth,
-        year: parseInt(selectedYear, 10),
+        month: monthNames[now.getMonth()],
+        year: now.getFullYear(),
         uploaded_by: userId,
       }));
 
@@ -112,7 +117,6 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
       toast.success(`Successfully imported ${insertData.length} driver income records`);
       setSelectedFile(null);
       setPreviewData(null);
-      setSelectedMonth("");
       setUploadProgress(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -145,100 +149,65 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
 
   return (
     <div className="space-y-4">
-      {/* Download Template Button */}
-      <div className="flex justify-end">
+      {/* Top row: Heading input on left, Download Template on right */}
+      <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+        <div className="flex-1">
+          <Label htmlFor="report-heading">Report Heading</Label>
+          <Input
+            id="report-heading"
+            type="text"
+            placeholder="e.g., December 26-31, 2025 Driver Income Report"
+            value={reportHeading}
+            onChange={(e) => onHeadingChange(e.target.value)}
+            className="mt-1"
+          />
+        </div>
         <Button
           variant="outline"
           onClick={downloadTemplate}
-          className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+          className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 shrink-0"
         >
           <Download className="h-4 w-4 mr-2" />
           Download Template
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="month">Month</Label>
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select month" />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map((month) => (
-                <SelectItem key={month} value={month}>
-                  {month}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label htmlFor="year">Year</Label>
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select year" />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((year) => (
-                <SelectItem key={year} value={String(year)}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="file">Excel/CSV File</Label>
-        <div className="flex gap-2 mt-1">
+      {/* File input and Import button */}
+      <div className="flex flex-col sm:flex-row gap-4 items-end">
+        <div className="flex-1">
+          <Label htmlFor="file">Excel/CSV File</Label>
           <Input
             ref={fileInputRef}
             id="file"
             type="file"
             accept=".xlsx,.xls,.csv"
             onChange={handleFileChange}
-            className="flex-1"
+            className="mt-1"
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            Required: Driver ID, WrkDays, TotalIncome
+          </p>
         </div>
-        <p className="text-xs text-gray-500 mt-1">
-          Required columns: Driver ID, WrkDays, TotalIncome. Optional: Driver Name, DrvrIncome, Date, Total Trips, Shift
-        </p>
+        <Button
+          onClick={handleUpload}
+          disabled={!selectedFile || !reportHeading.trim() || isUploading}
+          className="shrink-0"
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Importing...
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4 mr-2" />
+              Import Driver Income Data
+            </>
+          )}
+        </Button>
       </div>
 
-      {previewData && previewData.length > 0 && (
-        <div className="mt-4 bg-gray-50 rounded-lg p-4 overflow-x-auto">
-          <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4" />
-            Preview (first 5 rows)
-          </h4>
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-2">Driver ID</th>
-                <th className="text-left p-2">Name</th>
-                <th className="text-right p-2">Days</th>
-                <th className="text-right p-2">Total Income</th>
-                <th className="text-right p-2">Avg Daily</th>
-              </tr>
-            </thead>
-            <tbody>
-              {previewData.map((row, index) => (
-                <tr key={index} className="border-b">
-                  <td className="p-2">{row.driver_id}</td>
-                  <td className="p-2">{row.driver_name || '-'}</td>
-                  <td className="text-right p-2">{row.working_days}</td>
-                  <td className="text-right p-2">{row.total_income.toFixed(2)}</td>
-                  <td className="text-right p-2">{row.average_daily_income?.toFixed(2) || '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
+      {/* Upload progress */}
       {uploadProgress && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -257,23 +226,37 @@ export const DriverIncomeUploader = ({ userId, onUploadSuccess }: DriverIncomeUp
         </div>
       )}
 
-      <Button
-        onClick={handleUpload}
-        disabled={!selectedFile || !selectedMonth || !selectedYear || isUploading}
-        className="w-full"
-      >
-        {isUploading ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Importing...
-          </>
-        ) : (
-          <>
-            <Upload className="h-4 w-4 mr-2" />
-            Import Driver Income Data
-          </>
-        )}
-      </Button>
+      {/* Preview table */}
+      {previewData && previewData.length > 0 && (
+        <div className="mt-4 bg-muted/50 rounded-lg p-4 overflow-x-auto">
+          <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+            <FileSpreadsheet className="h-4 w-4" />
+            Preview (first 5 rows)
+          </h4>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left p-2">Driver ID</th>
+                <th className="text-left p-2">Name</th>
+                <th className="text-right p-2">Days</th>
+                <th className="text-right p-2">Total Income</th>
+                <th className="text-right p-2">Avg Daily</th>
+              </tr>
+            </thead>
+            <tbody>
+              {previewData.map((row, index) => (
+                <tr key={index} className="border-b border-border">
+                  <td className="p-2">{row.driver_id}</td>
+                  <td className="p-2">{row.driver_name || '-'}</td>
+                  <td className="text-right p-2">{row.working_days}</td>
+                  <td className="text-right p-2">{row.total_income.toFixed(2)}</td>
+                  <td className="text-right p-2">{row.average_daily_income?.toFixed(2) || '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };
