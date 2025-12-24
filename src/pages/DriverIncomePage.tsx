@@ -28,7 +28,7 @@ const DriverIncomePage = () => {
   const [incomeData, setIncomeData] = useState<DriverIncomeData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showUploader, setShowUploader] = useState(false);
-  const [reportHeading, setReportHeading] = useState("December 26-31, 2025 Driver Income Report");
+  const [reportHeading, setReportHeading] = useState("");
   const [driverInfo, setDriverInfo] = useState<{ driverId: string; permitId?: string } | null>(null);
 
   useEffect(() => {
