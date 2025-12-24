@@ -58,7 +58,7 @@ export const uploadDriverCredential = async (
         status: driver.status
       });
       
-      // Check if driver with this ID already exists
+      // Check if driver with this ID already exists in driver_credentials
       const { data: existingDriver } = await supabase
         .from('driver_credentials')
         .select('driver_id')
@@ -66,7 +66,13 @@ export const uploadDriverCredential = async (
         .maybeSingle();
         
       if (existingDriver) {
-        throw new Error(`Driver ID ${validatedData.driverId} already exists`);
+        // Skip already registered drivers with a specific message
+        results.errors.push({ 
+          driverId: validatedData.driverId, 
+          error: 'Driver ID already registered - skipped'
+        });
+        console.log(`Skipping Driver ID ${validatedData.driverId} - already exists`);
+        continue;
       }
       
       // Create new driver using signUp with driver ID-based email
@@ -95,6 +101,15 @@ export const uploadDriverCredential = async (
       }
       
       if (response.error) {
+        // Handle "user already registered" - check if we can still create credentials
+        if (response.error.code === 'user_already_exists') {
+          results.errors.push({ 
+            driverId: validatedData.driverId, 
+            error: 'User already exists in auth system - skipped'
+          });
+          console.log(`Skipping ${validatedData.driverId} - user already exists in auth`);
+          continue;
+        }
         throw response.error;
       }
       
