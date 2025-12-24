@@ -60,7 +60,7 @@ export const DriverIncomeUploader = ({
     try {
       const data = await processDriverIncomeFile(file);
       setPreviewData(data.slice(0, 5));
-      toast.success(`File parsed successfully. ${data.length} records found.`);
+      toast.success(`File loaded: ${data.length} row(s). Click “Import Driver Income Data” to save.`);
     } catch (error: any) {
       toast.error(error.message || "Failed to parse file");
       setSelectedFile(null);
@@ -73,12 +73,6 @@ export const DriverIncomeUploader = ({
       toast.error("Please select a file");
       return;
     }
-
-    if (!reportHeading.trim()) {
-      toast.error("Please enter a report heading");
-      return;
-    }
-
     setIsUploading(true);
     setUploadProgress(null);
 
@@ -159,11 +153,11 @@ export const DriverIncomeUploader = ({
       {/* Top row: Heading input on left, Download Template on right */}
       <div className="flex flex-col sm:flex-row sm:items-end gap-4">
         <div className="flex-1">
-          <Label htmlFor="report-heading">Report Heading</Label>
+          <Label htmlFor="report-heading">Report Heading (optional)</Label>
           <Input
             id="report-heading"
             type="text"
-            placeholder="e.g., December 26-31, 2025 Driver Income Report"
+            placeholder="Enter report heading (optional)"
             value={reportHeading}
             onChange={(e) => onHeadingChange(e.target.value)}
             className="mt-1"
@@ -197,7 +191,7 @@ export const DriverIncomeUploader = ({
         </div>
         <Button
           onClick={handleUpload}
-          disabled={!selectedFile || !reportHeading.trim() || isUploading}
+          disabled={!selectedFile || isUploading}
           className="shrink-0"
         >
           {isUploading ? (
