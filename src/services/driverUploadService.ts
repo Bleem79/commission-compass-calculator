@@ -61,17 +61,30 @@ export const uploadDriverCredential = async (
       // Check if driver with this ID already exists in driver_credentials
       const { data: existingDriver } = await supabase
         .from('driver_credentials')
-        .select('driver_id')
+        .select('id, driver_id, user_id, status')
         .eq('driver_id', validatedData.driverId)
         .maybeSingle();
         
       if (existingDriver) {
-        // Skip already registered drivers with a specific message
-        results.errors.push({ 
-          driverId: validatedData.driverId, 
-          error: 'Driver ID already registered - skipped'
-        });
-        console.log(`Skipping Driver ID ${validatedData.driverId} - already exists`);
+        // Update existing driver: update status (password update requires admin SDK, skip for now)
+        try {
+          const { error: updateError } = await supabase
+            .from('driver_credentials')
+            .update({ status: validatedData.status })
+            .eq('driver_id', validatedData.driverId);
+          
+          if (updateError) {
+            throw updateError;
+          }
+          
+          results.success.push({ driverId: validatedData.driverId });
+          console.log(`Updated status for Driver ID ${validatedData.driverId}`);
+        } catch (updateErr: any) {
+          results.errors.push({ 
+            driverId: validatedData.driverId, 
+            error: `Failed to update: ${updateErr.message}`
+          });
+        }
         continue;
       }
       
@@ -101,13 +114,43 @@ export const uploadDriverCredential = async (
       }
       
       if (response.error) {
-        // Handle "user already registered" - check if we can still create credentials
+        // Handle "user already registered" - create credentials for existing auth user
         if (response.error.code === 'user_already_exists') {
-          results.errors.push({ 
-            driverId: validatedData.driverId, 
-            error: 'User already exists in auth system - skipped'
-          });
-          console.log(`Skipping ${validatedData.driverId} - user already exists in auth`);
+          try {
+            // Find the existing user by email
+            const driverEmail = `${validatedData.driverId}@driver.temp`;
+            
+            // We can't query auth.users directly, so we'll try to sign in to get the user id
+            // Instead, create driver_credentials without user_id (will be null)
+            // Or skip if we can't determine the user
+            const { error: credError } = await supabase.from('driver_credentials').insert({
+              driver_id: validatedData.driverId,
+              status: validatedData.status,
+              user_id: null // We don't have access to the user_id from client
+            });
+            
+            if (credError) {
+              // If it's a duplicate, just update the status
+              if (credError.code === '23505') {
+                await supabase
+                  .from('driver_credentials')
+                  .update({ status: validatedData.status })
+                  .eq('driver_id', validatedData.driverId);
+                results.success.push({ driverId: validatedData.driverId });
+                console.log(`Updated existing credentials for ${validatedData.driverId}`);
+              } else {
+                throw credError;
+              }
+            } else {
+              results.success.push({ driverId: validatedData.driverId });
+              console.log(`Created credentials for existing auth user ${validatedData.driverId}`);
+            }
+          } catch (credErr: any) {
+            results.errors.push({ 
+              driverId: validatedData.driverId, 
+              error: `Auth user exists, credential creation failed: ${credErr.message}`
+            });
+          }
           continue;
         }
         throw response.error;
