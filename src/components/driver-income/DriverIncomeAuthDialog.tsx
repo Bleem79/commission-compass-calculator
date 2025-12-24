@@ -243,34 +243,33 @@ export const DriverIncomeAuthDialog = ({ isOpen, onClose }: DriverIncomeAuthDial
       }
 
       if (data.user) {
-        // Check if driver status is enabled - check by user_id OR by driver_id
-        let credentials = null;
-        
-        // First try by user_id
-        const { data: credByUserId } = await supabase
-          .from('driver_credentials')
-          .select('status, driver_id')
-          .eq('user_id', data.user.id)
-          .maybeSingle();
-        
-        if (credByUserId) {
-          credentials = credByUserId;
-        } else {
-          // Fallback: check by driver_id (for cases where user_id was not set)
-          const { data: credByDriverId } = await supabase
-            .from('driver_credentials')
-            .select('status, driver_id, id')
-            .eq('driver_id', trimmedDriverId)
-            .maybeSingle();
-          
-          if (credByDriverId) {
-            credentials = credByDriverId;
-            // Update the credential record to link user_id for future logins
-            await supabase
-              .from('driver_credentials')
-              .update({ user_id: data.user.id })
-              .eq('id', credByDriverId.id);
-          }
+        // Use secure database function to get and link driver credentials
+        // This bypasses RLS to properly link user_id when it's null
+        const { data: credentialRows, error: credError } = await supabase
+          .rpc('get_driver_credentials', {
+            p_driver_id: trimmedDriverId,
+            p_user_id: data.user.id
+          });
+
+        const credentials = credentialRows && credentialRows.length > 0 ? credentialRows[0] : null;
+
+        if (credError) {
+          console.error("Error fetching credentials:", credError);
+          await supabase.auth.signOut();
+          recordFailedAttempt();
+          const errorInfo = {
+            title: "System Error",
+            description: "Unable to verify driver credentials. Please try again later.",
+            icon: 'generic' as const
+          };
+          setError(errorInfo);
+          toast({
+            title: errorInfo.title,
+            description: errorInfo.description,
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
         }
 
         if (!credentials) {

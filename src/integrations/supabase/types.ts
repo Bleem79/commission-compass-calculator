@@ -189,6 +189,15 @@ export type Database = {
         Returns: string
       }
       create_users_bulk: { Args: { user_data: Json }; Returns: undefined }
+      get_driver_credentials: {
+        Args: { p_driver_id: string; p_user_id: string }
+        Returns: {
+          driver_id: string
+          id: string
+          status: string
+          user_id: string
+        }[]
+      }
       has_admin_role: { Args: { user_id: string }; Returns: boolean }
       has_role:
         | {
