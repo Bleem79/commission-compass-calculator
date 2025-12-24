@@ -34,7 +34,7 @@ export const DriverIncomeReceipt = ({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -42,7 +42,9 @@ export const DriverIncomeReceipt = ({
   if (data.length === 0) {
     return (
       <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100 p-8 text-center">
-        <p className="text-gray-500">No income records found for your account.</p>
+        <p className="text-gray-500">
+          No income records found for Driver ID {permitId || "your account"}.
+        </p>
       </div>
     );
   }
