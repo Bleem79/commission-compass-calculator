@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download } from "lucide-react";
 
 interface DriverCredential {
   id: string;
@@ -104,6 +104,20 @@ const DriverManagementPage = () => {
     }
   };
 
+  const downloadTemplate = () => {
+    const csvContent = "driverId,password,status\nDRV001,password123,enabled\nDRV002,password456,disabled";
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "driver_credentials_template.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Template downloaded");
+  };
+
   const filteredDrivers = drivers.filter(driver =>
     driver.driver_id.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -133,6 +147,16 @@ const DriverManagementPage = () => {
               Driver Management
             </h1>
             <p className="text-slate-600">Manage driver accounts and access</p>
+          </div>
+          <div className="ml-auto">
+            <Button
+              variant="outline"
+              onClick={downloadTemplate}
+              className="bg-white hover:bg-green-50 border-green-200 text-green-700 hover:text-green-800"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download CSV Template
+            </Button>
           </div>
         </div>
 
