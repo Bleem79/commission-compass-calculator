@@ -86,21 +86,18 @@ export const DriverIncomeTable = ({
 
   return (
     <div className="space-y-4">
-      {/* Report heading and delete all button */}
-      {reportHeading && (
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold text-primary">{reportHeading}</h2>
-          {isAdmin && filteredData.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDeleteAll}
-              className="text-destructive border-destructive/30 hover:bg-destructive/10"
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Delete All ({filteredData.length})
-            </Button>
-          )}
+      {/* Delete all button */}
+      {isAdmin && filteredData.length > 0 && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDeleteAll}
+            className="text-destructive border-destructive/30 hover:bg-destructive/10"
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            Delete All ({filteredData.length})
+          </Button>
         </div>
       )}
 
