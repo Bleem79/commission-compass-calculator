@@ -211,39 +211,6 @@ const DriverIncomePage = () => {
           </div>
         )}
 
-        {/* Debug Panel for Drivers */}
-        {!isAdmin && debugInfo && (
-          <div className="mb-4 rounded-lg border border-border bg-card p-4 text-sm text-foreground">
-            <h2 className="font-semibold">Debug Info</h2>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <span className="text-muted-foreground">Session User ID:</span>
-              <span className="font-mono text-xs">{debugInfo.sessionUserId}</span>
-
-              <span className="text-muted-foreground">Context User ID:</span>
-              <span className="font-mono text-xs">{debugInfo.contextUserId}</span>
-
-              <span className="text-muted-foreground">Email:</span>
-              <span className="font-mono text-xs">{debugInfo.email}</span>
-
-              <span className="text-muted-foreground">Detected Driver ID:</span>
-              <span className="font-semibold">{driverInfo?.driverId || "NOT DETECTED"}</span>
-
-              <span className="text-muted-foreground">Linked Via:</span>
-              <span>{debugInfo.linkedVia}</span>
-
-              <span className="text-muted-foreground">Records Found:</span>
-              <span className="font-semibold">{incomeData.length}</span>
-
-              {incomeData.length > 0 && (
-                <>
-                  <span className="text-muted-foreground">Last Upload:</span>
-                  <span>{new Date(incomeData[0].created_at).toLocaleString()}</span>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Show Receipt View for Drivers, Table View for Admin */}
         {isAdmin ? (
           <DriverIncomeTable
