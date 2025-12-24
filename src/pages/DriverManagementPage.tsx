@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2 } from "lucide-react";
 import { uploadDriverCredential } from "@/services/driverUploadService";
+import { Progress } from "@/components/ui/progress";
 
 interface DriverCredential {
   id: string;
@@ -29,6 +30,7 @@ const DriverManagementPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; currentDriverId: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
 
@@ -126,8 +128,12 @@ const DriverManagementPage = () => {
     if (!file) return;
 
     setIsUploading(true);
+    setUploadProgress(null);
+    
     try {
-      const result = await uploadDriverCredential(file);
+      const result = await uploadDriverCredential(file, (progress) => {
+        setUploadProgress(progress);
+      });
       
       if (result.success.length > 0) {
         toast.success(`Successfully uploaded ${result.success.length} driver(s)`);
@@ -145,6 +151,7 @@ const DriverManagementPage = () => {
       toast.error("Failed to upload file: " + error.message);
     } finally {
       setIsUploading(false);
+      setUploadProgress(null);
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -219,6 +226,31 @@ const DriverManagementPage = () => {
             </Button>
           </div>
         </div>
+
+        {/* Upload Progress Indicator */}
+        {isUploading && uploadProgress && (
+          <Card className="bg-white shadow-sm border-purple-200">
+            <CardContent className="p-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600">
+                    Processing: <span className="font-medium text-purple-700">{uploadProgress.currentDriverId}</span>
+                  </span>
+                  <span className="text-slate-600">
+                    {uploadProgress.current} / {uploadProgress.total}
+                  </span>
+                </div>
+                <Progress 
+                  value={(uploadProgress.current / uploadProgress.total) * 100} 
+                  className="h-2"
+                />
+                <p className="text-xs text-slate-500 text-center">
+                  {Math.round((uploadProgress.current / uploadProgress.total) * 100)}% complete
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

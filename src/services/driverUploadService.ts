@@ -10,7 +10,16 @@ interface DriverUploadResult {
   total: number;
 }
 
-export const uploadDriverCredential = async (file: File): Promise<DriverUploadResult> => {
+interface UploadProgress {
+  current: number;
+  total: number;
+  currentDriverId: string;
+}
+
+export const uploadDriverCredential = async (
+  file: File,
+  onProgress?: (progress: UploadProgress) => void
+): Promise<DriverUploadResult> => {
   // Process CSV file to extract driver data
   const drivers = await processCSVFile(file);
   
@@ -32,9 +41,16 @@ export const uploadDriverCredential = async (file: File): Promise<DriverUploadRe
   
   // Use the standard client for operations
   for (let i = 0; i < drivers.length; i++) {
+    const driver = drivers[i];
+    
+    // Report progress
+    onProgress?.({
+      current: i + 1,
+      total: totalDrivers,
+      currentDriverId: driver.driverId || `Driver ${i + 1}`
+    });
+    
     try {
-      const driver = drivers[i];
-      
       // Validate driver data first
       const validatedData = validateDriverData({
         password: driver.password,
