@@ -9,7 +9,8 @@ import {
   Percent, 
   Wifi,
   MapPin,
-  CalendarDays
+  CalendarDays,
+  Users
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -156,6 +157,19 @@ const HomePage = () => {
             <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">Last Month 5 or 6days Driver Income</h2>
           </CardContent>
         </Card>
+
+        {/* Driver Management - Admin Only */}
+        {isAdmin && (
+          <Card 
+            className="bg-gradient-to-br from-slate-500 to-slate-700 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-28 sm:h-40"
+            onClick={() => navigate("/driver-management")}
+          >
+            <CardContent className="flex flex-col items-center justify-center h-full p-3 sm:p-6">
+              <Users size={32} className="mb-2 sm:mb-3 sm:w-12 sm:h-12" />
+              <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">Driver Management</h2>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </>
   ), [navigate, isAdmin]);
