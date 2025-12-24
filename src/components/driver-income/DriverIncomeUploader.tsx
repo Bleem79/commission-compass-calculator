@@ -107,8 +107,11 @@ export const DriverIncomeUploader = ({
 
       const chunks = chunkArray(insertData, CHUNK_SIZE);
       for (const chunk of chunks) {
-        const { error } = await supabase.from("driver_income").insert(chunk);
-        if (error) throw error;
+        const { error } = await supabase.from("driver_income").insert(chunk as any);
+        if (error) {
+          console.error("Supabase insert error:", error);
+          throw error;
+        }
 
         setUploadProgress((prev) => {
           if (!prev) return { total: insertData.length, uploaded: chunk.length };
