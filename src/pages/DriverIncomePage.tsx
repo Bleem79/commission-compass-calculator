@@ -24,12 +24,13 @@ interface DriverIncomeData {
 
 const DriverIncomePage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isAdmin, user } = useAuth();
+  const { isAuthenticated, isAdmin, user, session } = useAuth();
   const [incomeData, setIncomeData] = useState<DriverIncomeData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showUploader, setShowUploader] = useState(false);
   const [reportHeading, setReportHeading] = useState("");
   const [driverInfo, setDriverInfo] = useState<{ driverId: string; permitId?: string } | null>(null);
+  const [debugInfo, setDebugInfo] = useState<{ sessionUserId: string; contextUserId: string; email: string; linkedVia: string } | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -37,48 +38,69 @@ const DriverIncomePage = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Fetch/link driver info for non-admin users
+  // Fetch/link driver info for non-admin users - use session.user for accurate ID
   useEffect(() => {
     const fetchDriverInfo = async () => {
-      if (isAdmin || !user?.id) return;
+      if (isAdmin) return;
+
+      // Use session.user for accurate user ID (context user can be stale)
+      const sessionUser = session?.user;
+      const actualUserId = sessionUser?.id || user?.id;
+      const actualEmail = (sessionUser?.email || user?.email || "").toLowerCase();
+
+      if (!actualUserId) return;
+
+      // Debug info
+      setDebugInfo({
+        sessionUserId: sessionUser?.id || "none",
+        contextUserId: user?.id || "none",
+        email: actualEmail,
+        linkedVia: "pending..."
+      });
 
       // If user logged in with a driver temp email, use RPC to ensure credentials are linked
-      const email = (user.email || "").toLowerCase();
-      const driverIdFromEmail = email.endsWith("@driver.temp")
-        ? email.split("@")[0].trim()
+      const driverIdFromEmail = actualEmail.endsWith("@driver.temp")
+        ? actualEmail.split("@")[0].trim()
         : null;
 
       if (driverIdFromEmail) {
+        console.log("Calling get_driver_credentials RPC for:", driverIdFromEmail, "user:", actualUserId);
         const { data: credentialRows, error: credError } = await supabase.rpc(
           "get_driver_credentials",
           {
             p_driver_id: driverIdFromEmail,
-            p_user_id: user.id,
+            p_user_id: actualUserId,
           }
         );
 
+        console.log("RPC result:", credentialRows, "error:", credError);
         const credentials = credentialRows && credentialRows.length > 0 ? credentialRows[0] : null;
 
         if (!credError && credentials?.driver_id) {
           setDriverInfo({ driverId: credentials.driver_id });
+          setDebugInfo(prev => prev ? { ...prev, linkedVia: "RPC (get_driver_credentials)" } : null);
           return;
         }
       }
 
       // Fallback: lookup by user_id
+      console.log("Fallback: querying driver_credentials by user_id:", actualUserId);
       const { data } = await supabase
         .from("driver_credentials")
         .select("driver_id")
-        .eq("user_id", user.id)
+        .eq("user_id", actualUserId)
         .maybeSingle();
 
       if (data?.driver_id) {
         setDriverInfo({ driverId: data.driver_id });
+        setDebugInfo(prev => prev ? { ...prev, linkedVia: "Direct query (user_id)" } : null);
+      } else {
+        setDebugInfo(prev => prev ? { ...prev, linkedVia: "NOT FOUND" } : null);
       }
     };
 
     fetchDriverInfo();
-  }, [isAdmin, user?.id, user?.email]);
+  }, [isAdmin, session?.user?.id, session?.user?.email, user?.id, user?.email]);
 
   // Fetch report heading from settings
   useEffect(() => {
@@ -194,6 +216,33 @@ const DriverIncomePage = () => {
               reportHeading={reportHeading}
               onHeadingChange={setReportHeading}
             />
+          </div>
+        )}
+
+        {/* Debug Panel for Drivers */}
+        {!isAdmin && debugInfo && (
+          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm">
+            <h3 className="font-semibold text-amber-800 mb-2">🔍 Debug Info</h3>
+            <div className="grid grid-cols-2 gap-2 text-amber-700">
+              <span>Session User ID:</span>
+              <span className="font-mono text-xs">{debugInfo.sessionUserId}</span>
+              <span>Context User ID:</span>
+              <span className="font-mono text-xs">{debugInfo.contextUserId}</span>
+              <span>Email:</span>
+              <span className="font-mono text-xs">{debugInfo.email}</span>
+              <span>Detected Driver ID:</span>
+              <span className="font-bold">{driverInfo?.driverId || "NOT DETECTED"}</span>
+              <span>Linked Via:</span>
+              <span>{debugInfo.linkedVia}</span>
+              <span>Records Found:</span>
+              <span className="font-bold">{incomeData.length}</span>
+              {incomeData.length > 0 && (
+                <>
+                  <span>Last Upload:</span>
+                  <span>{new Date(incomeData[0].created_at).toLocaleString()}</span>
+                </>
+              )}
+            </div>
           </div>
         )}
 
