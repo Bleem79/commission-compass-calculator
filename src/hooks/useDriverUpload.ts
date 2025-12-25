@@ -64,8 +64,12 @@ export const useDriverUpload = () => {
       // Make sure to refresh session before starting
       await refreshSession();
       
-      // Start upload process
-      const results = await uploadDriverCredential(file);
+      // Start upload process (chunked; progress updates from service)
+      const results = await uploadDriverCredential(file, (p) => {
+        setTotalItems(p.total);
+        setCurrentItem(p.current);
+        setProgress(p.total > 0 ? Math.round((p.current / p.total) * 100) : 0);
+      });
       
       // Ensure session is still valid after uploads complete
       await refreshSession();
