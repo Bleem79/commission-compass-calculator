@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { processCSVFile } from "@/utils/csv/processCSVFile";
 
@@ -14,6 +13,35 @@ interface UploadProgress {
   currentDriverId: string;
 }
 
+async function formatFunctionsInvokeError(err: any): Promise<string> {
+  // supabase.functions.invoke returns error objects from @supabase/functions-js
+  // FunctionsHttpError.context is the raw Response.
+  try {
+    const context = err?.context;
+    if (err?.name === "FunctionsHttpError" && context && typeof context.text === "function") {
+      const status = context.status;
+      const contentType = String(context.headers?.get?.("Content-Type") ?? "");
+      const raw = await context.text();
+
+      if (contentType.includes("application/json")) {
+        try {
+          const parsed = JSON.parse(raw);
+          const message = parsed?.error ?? parsed?.message ?? raw;
+          return `HTTP ${status}: ${message}`;
+        } catch {
+          return `HTTP ${status}: ${raw}`;
+        }
+      }
+
+      return `HTTP ${status}: ${raw || err?.message || "Edge Function error"}`;
+    }
+  } catch {
+    // ignore parsing failures
+  }
+
+  return err?.message || "Failed to upload driver credentials";
+}
+
 export const uploadDriverCredential = async (
   file: File,
   onProgress?: (progress: UploadProgress) => void
@@ -24,20 +52,44 @@ export const uploadDriverCredential = async (
     throw new Error("No data found in the uploaded file");
   }
 
-  // We now process server-side via an Edge Function (service role) because
-  // the previous SQL function relied on auth.users_insert_raw(), which doesn't exist.
-  onProgress?.({ current: 0, total: drivers.length, currentDriverId: "Starting…" });
+  const total = drivers.length;
+  const CHUNK_SIZE = 100;
 
-  const { data, error } = await supabase.functions.invoke("driver-credentials-bulk", {
-    body: { drivers, replaceExisting: true },
-  });
+  const combined: DriverUploadResult = {
+    total,
+    success: [],
+    errors: [],
+  };
 
-  if (error) {
-    throw new Error(error.message || "Failed to upload driver credentials");
+  onProgress?.({ current: 0, total, currentDriverId: "Starting…" });
+
+  let processed = 0;
+
+  for (let i = 0; i < drivers.length; i += CHUNK_SIZE) {
+    const chunk = drivers.slice(i, i + CHUNK_SIZE);
+
+    const firstId = chunk[0]?.driverId ?? "…";
+    onProgress?.({ current: processed, total, currentDriverId: `Uploading ${firstId}…` });
+
+    const { data, error } = await supabase.functions.invoke("driver-credentials-bulk", {
+      body: { drivers: chunk, replaceExisting: i === 0 },
+    });
+
+    if (error) {
+      throw new Error(await formatFunctionsInvokeError(error));
+    }
+
+    const chunkResult = data as DriverUploadResult;
+
+    combined.success.push(...(chunkResult?.success ?? []));
+    combined.errors.push(...(chunkResult?.errors ?? []));
+
+    processed += chunk.length;
+
+    const lastId = chunk[chunk.length - 1]?.driverId ?? "…";
+    onProgress?.({ current: Math.min(processed, total), total, currentDriverId: `Done ${lastId}` });
   }
 
-  // Keep UI consistent with previous behavior.
-  onProgress?.({ current: drivers.length, total: drivers.length, currentDriverId: "Done" });
-
-  return data as DriverUploadResult;
+  onProgress?.({ current: total, total, currentDriverId: "Done" });
+  return combined;
 };

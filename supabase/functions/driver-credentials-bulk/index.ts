@@ -24,6 +24,13 @@ type DriverUploadResult = {
   total: number;
 };
 
+function json(status: number, body: unknown) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 function normalizeStatus(status: unknown): "enabled" | "disabled" {
   const s = String(status ?? "enabled").trim().toLowerCase();
   return s === "disabled" ? "disabled" : "enabled";
@@ -32,7 +39,6 @@ function normalizeStatus(status: unknown): "enabled" | "disabled" {
 async function buildEmailLookup(adminClient: ReturnType<typeof createClient>) {
   const emailToId = new Map<string, string>();
 
-  // GoTrue Admin API uses pagination; build a lookup once only if we hit duplicates.
   let page = 1;
   const perPage = 1000;
 
@@ -59,26 +65,25 @@ Deno.serve(async (req) => {
   }
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return json(405, { error: "Method not allowed" });
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+    console.error("driver-credentials-bulk: missing env vars", {
+      hasUrl: !!supabaseUrl,
+      hasAnon: !!anonKey,
+      hasService: !!serviceRoleKey,
     });
+    return json(500, { error: "Server misconfiguration" });
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !anonKey || !serviceRoleKey) {
-      console.error("Missing env vars", { hasUrl: !!supabaseUrl, hasAnon: !!anonKey, hasService: !!serviceRoleKey });
-      return new Response(JSON.stringify({ error: "Server misconfiguration" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const authHeader = req.headers.get("authorization") ?? "";
+    const hasAuthHeader = authHeader.toLowerCase().startsWith("bearer ");
 
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { authorization: authHeader } },
@@ -91,10 +96,8 @@ Deno.serve(async (req) => {
 
     const { data: userData, error: userError } = await userClient.auth.getUser();
     if (userError || !userData?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.log("driver-credentials-bulk: unauthorized", { hasAuthHeader, userError: userError?.message });
+      return json(401, { error: "Unauthorized" });
     }
 
     const callerId = userData.user.id;
@@ -108,32 +111,39 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (roleError) {
-      console.error("Role check failed", roleError);
-      return new Response(JSON.stringify({ error: "Role check failed" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error("driver-credentials-bulk: role check failed", roleError);
+      return json(500, { error: "Role check failed" });
     }
 
     if (!adminRole) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.log("driver-credentials-bulk: forbidden (not admin)", { callerId });
+      return json(403, { error: "Forbidden: admin access required" });
     }
 
-    const body = await req.json();
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return json(400, { error: "Invalid JSON body" });
+    }
+
     const drivers = (body?.drivers ?? []) as IncomingDriver[];
     const replaceExisting = Boolean(body?.replaceExisting ?? true);
 
+    const MAX_DRIVERS_PER_REQUEST = 200;
     if (!Array.isArray(drivers) || drivers.length === 0) {
-      return new Response(JSON.stringify({ error: "No drivers provided" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return json(400, { error: "No drivers provided" });
+    }
+
+    if (drivers.length > MAX_DRIVERS_PER_REQUEST) {
+      return json(413, {
+        error: `Too many drivers in one request (${drivers.length}). Please upload in smaller batches (<= ${MAX_DRIVERS_PER_REQUEST}).`,
       });
     }
 
-    console.log(`driver-credentials-bulk: received ${drivers.length} drivers (replaceExisting=${replaceExisting})`);
+    console.log(
+      `driver-credentials-bulk: caller=${callerId} received ${drivers.length} drivers (replaceExisting=${replaceExisting})`
+    );
 
     // If replacing, snapshot existing mapping before clearing.
     const existingMap = new Map<string, string>();
@@ -143,11 +153,8 @@ Deno.serve(async (req) => {
         .select("driver_id,user_id");
 
       if (existingErr) {
-        console.error("Failed to read existing driver_credentials", existingErr);
-        return new Response(JSON.stringify({ error: "Failed to read existing driver credentials" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        console.error("driver-credentials-bulk: failed to read existing driver_credentials", existingErr);
+        return json(500, { error: "Failed to read existing driver credentials" });
       }
 
       for (const row of existingCreds ?? []) {
@@ -160,11 +167,8 @@ Deno.serve(async (req) => {
         .neq("id", "00000000-0000-0000-0000-000000000000");
 
       if (deleteErr) {
-        console.error("Failed to clear existing driver_credentials", deleteErr);
-        return new Response(JSON.stringify({ error: "Failed to clear existing driver credentials" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        console.error("driver-credentials-bulk: failed to clear existing driver_credentials", deleteErr);
+        return json(500, { error: "Failed to clear existing driver credentials" });
       }
     }
 
@@ -175,6 +179,9 @@ Deno.serve(async (req) => {
     };
 
     let emailLookup: Map<string, string> | null = null;
+
+    const credentialRows: Array<{ driver_id: string; user_id: string; status: string }> = [];
+    const roleRows: Array<{ user_id: string; role: string }> = [];
 
     for (const raw of drivers) {
       const driverId = String(raw?.driverId ?? "").trim();
@@ -208,9 +215,12 @@ Deno.serve(async (req) => {
           });
 
           if (createErr) {
-            // If user already exists (e.g., credentials were deleted previously), resolve id by email once.
+            // If user already exists (e.g., previous partial run), resolve id by email once.
             if (String(createErr.message ?? "").toLowerCase().includes("already")) {
-              if (!emailLookup) emailLookup = await buildEmailLookup(adminClient);
+              if (!emailLookup) {
+                console.log("driver-credentials-bulk: building email lookup (createUser already-exists)");
+                emailLookup = await buildEmailLookup(adminClient);
+              }
               userId = emailLookup.get(email.toLowerCase()) ?? null;
               if (!userId) throw createErr;
 
@@ -224,39 +234,43 @@ Deno.serve(async (req) => {
           }
         }
 
-        if (!userId) {
-          throw new Error("Could not determine user id");
-        }
+        if (!userId) throw new Error("Could not determine user id");
 
-        const { error: credErr } = await adminClient
-          .from("driver_credentials")
-          .upsert({ driver_id: driverId, user_id: userId, status }, { onConflict: "driver_id" });
-        if (credErr) throw credErr;
-
-        const { error: roleErr } = await adminClient
-          .from("user_roles")
-          .upsert({ user_id: userId, role: "driver" }, { onConflict: "user_id,role" });
-        if (roleErr) throw roleErr;
-
+        credentialRows.push({ driver_id: driverId, user_id: userId, status });
+        roleRows.push({ user_id: userId, role: "driver" });
         result.success.push({ driverId });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        console.error(`Failed processing driver ${driverId}`, msg);
+        console.error(`driver-credentials-bulk: failed processing driver ${driverId}`, msg);
         result.errors.push({ driverId, error: msg });
       }
     }
 
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // Persist successful rows (bulk upsert for speed)
+    if (credentialRows.length > 0) {
+      const { error: credErr } = await adminClient
+        .from("driver_credentials")
+        .upsert(credentialRows, { onConflict: "driver_id" });
+      if (credErr) {
+        console.error("driver-credentials-bulk: bulk upsert driver_credentials failed", credErr);
+        return json(500, { error: `Failed to write driver credentials: ${credErr.message}` });
+      }
+    }
+
+    if (roleRows.length > 0) {
+      const { error: rErr } = await adminClient
+        .from("user_roles")
+        .upsert(roleRows, { onConflict: "user_id,role" });
+      if (rErr) {
+        console.error("driver-credentials-bulk: bulk upsert user_roles failed", rErr);
+        return json(500, { error: `Failed to write user roles: ${rErr.message}` });
+      }
+    }
+
+    return json(200, result);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.error("Unhandled error", msg);
-
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("driver-credentials-bulk: unhandled error", msg);
+    return json(500, { error: msg });
   }
 });
