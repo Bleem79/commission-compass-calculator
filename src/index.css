@@ -183,13 +183,51 @@
     display: none !important;
   }
 
-  /* Hide all non-receipt content when printing */
-  body > *:not(.print-receipt),
-  .min-h-screen > *:not(.print-receipt):not(.max-w-6xl),
-  button,
+  /* Hide non-print elements */
+  .print\:hidden,
+  button:not(.print-receipt *),
   nav,
-  header:not(.print-receipt *) {
+  [class*="gap-"]:not(.print-receipt *):not(.driver-info *) {
     display: none !important;
+  }
+
+  /* Show the receipt content */
+  .print-receipt,
+  .print-receipt * {
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  .print-receipt table,
+  .print-receipt thead,
+  .print-receipt tbody,
+  .print-receipt tr {
+    display: table !important;
+  }
+
+  .print-receipt thead {
+    display: table-header-group !important;
+  }
+
+  .print-receipt tbody {
+    display: table-row-group !important;
+  }
+
+  .print-receipt tr {
+    display: table-row !important;
+  }
+
+  .print-receipt th,
+  .print-receipt td {
+    display: table-cell !important;
+  }
+
+  .print-receipt .grid {
+    display: grid !important;
+  }
+
+  .print-receipt .flex {
+    display: flex !important;
   }
 
   /* Receipt container - fluid width */

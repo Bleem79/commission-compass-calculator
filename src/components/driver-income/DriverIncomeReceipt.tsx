@@ -131,7 +131,6 @@ export const DriverIncomeReceipt = ({
                         <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Working Days</th>
                         <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Total Trips</th>
                         <th className="text-right py-3 px-2 text-sm font-semibold text-gray-700">Driver Income</th>
-                        <th className="text-right py-3 px-2 text-sm font-semibold text-gray-700">Avg Daily</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -148,9 +147,6 @@ export const DriverIncomeReceipt = ({
                         </td>
                         <td className="py-3 px-2 text-right font-bold text-green-600 text-lg">
                           {record.total_income.toFixed(2)} AED
-                        </td>
-                        <td className="py-3 px-2 text-right font-medium text-gray-600">
-                          {record.average_daily_income?.toFixed(2) || '-'} AED
                         </td>
                       </tr>
                     </tbody>
