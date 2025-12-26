@@ -84,17 +84,21 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("authorization") ?? "";
     const hasAuthHeader = authHeader.toLowerCase().startsWith("bearer ");
-
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { authorization: authHeader } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    
+    // Extract the JWT token from the Authorization header
+    const token = hasAuthHeader ? authHeader.replace(/^bearer\s+/i, "") : null;
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const { data: userData, error: userError } = await userClient.auth.getUser();
+    // Use the admin client to get user from the JWT token
+    if (!token) {
+      console.log("driver-credentials-bulk: no token provided");
+      return json(401, { error: "Unauthorized" });
+    }
+
+    const { data: userData, error: userError } = await adminClient.auth.getUser(token);
     if (userError || !userData?.user) {
       console.log("driver-credentials-bulk: unauthorized", { hasAuthHeader, userError: userError?.message });
       return json(401, { error: "Unauthorized" });
