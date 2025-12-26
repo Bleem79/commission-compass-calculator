@@ -57,13 +57,32 @@ const DriverManagementPage = () => {
   const fetchDrivers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('driver_credentials')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Supabase has a default limit of 1000 rows per query
+      // We need to paginate to get all drivers
+      const PAGE_SIZE = 1000;
+      let allDrivers: DriverCredential[] = [];
+      let from = 0;
+      let hasMore = true;
 
-      if (error) throw error;
-      setDrivers(data || []);
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('driver_credentials')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allDrivers = [...allDrivers, ...data];
+          from += PAGE_SIZE;
+          hasMore = data.length === PAGE_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      setDrivers(allDrivers);
     } catch (error: any) {
       console.error("Error fetching drivers:", error);
       toast.error("Failed to load drivers");
