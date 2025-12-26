@@ -250,21 +250,35 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Deduplicate credential rows by driver_id (keep last occurrence)
+    const uniqueCredentials = new Map<string, { driver_id: string; user_id: string; status: string }>();
+    for (const row of credentialRows) {
+      uniqueCredentials.set(row.driver_id, row);
+    }
+    const deduplicatedCredentials = Array.from(uniqueCredentials.values());
+
     // Persist successful rows (bulk upsert for speed)
-    if (credentialRows.length > 0) {
+    if (deduplicatedCredentials.length > 0) {
       const { error: credErr } = await adminClient
         .from("driver_credentials")
-        .upsert(credentialRows, { onConflict: "driver_id" });
+        .upsert(deduplicatedCredentials, { onConflict: "driver_id" });
       if (credErr) {
         console.error("driver-credentials-bulk: bulk upsert driver_credentials failed", credErr);
         return json(500, { error: `Failed to write driver credentials: ${credErr.message}` });
       }
     }
 
-    if (roleRows.length > 0) {
+    // Deduplicate role rows by user_id
+    const uniqueRoles = new Map<string, { user_id: string; role: string }>();
+    for (const row of roleRows) {
+      uniqueRoles.set(row.user_id, row);
+    }
+    const deduplicatedRoles = Array.from(uniqueRoles.values());
+
+    if (deduplicatedRoles.length > 0) {
       const { error: rErr } = await adminClient
         .from("user_roles")
-        .upsert(roleRows, { onConflict: "user_id,role" });
+        .upsert(deduplicatedRoles, { onConflict: "user_id,role" });
       if (rErr) {
         console.error("driver-credentials-bulk: bulk upsert user_roles failed", rErr);
         return json(500, { error: `Failed to write user roles: ${rErr.message}` });
