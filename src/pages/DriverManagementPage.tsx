@@ -10,7 +10,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { uploadDriverCredential } from "@/services/driverUploadService";
 import { Progress } from "@/components/ui/progress";
 
@@ -33,6 +44,7 @@ const DriverManagementPage = () => {
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; currentDriverId: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -106,6 +118,28 @@ const DriverManagementPage = () => {
       toast.error("Failed to update drivers");
     } finally {
       setBulkUpdating(false);
+    }
+  };
+
+  const clearAllDriverCredentials = async () => {
+    if (drivers.length === 0) return;
+    
+    setIsClearing(true);
+    try {
+      const { error } = await supabase
+        .from('driver_credentials')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
+
+      if (error) throw error;
+
+      setDrivers([]);
+      toast.success("All driver credentials cleared successfully");
+    } catch (error: any) {
+      console.error("Error clearing driver credentials:", error);
+      toast.error("Failed to clear driver credentials: " + error.message);
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -297,6 +331,41 @@ const DriverManagementPage = () => {
                 Driver Accounts
               </CardTitle>
               <div className="flex flex-wrap items-center gap-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isClearing || drivers.length === 0}
+                      className="bg-red-50 border-red-300 text-red-700 hover:bg-red-100 hover:text-red-800"
+                    >
+                      {isClearing ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4 mr-1" />
+                      )}
+                      Clear All
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Clear All Driver Credentials?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete all {drivers.length} driver credential records from the database. 
+                        This action cannot be undone. The auth users will remain but their driver credentials will be removed.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={clearAllDriverCredentials}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Yes, Clear All
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 <Button
                   variant="outline"
                   size="sm"
