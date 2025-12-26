@@ -56,30 +56,29 @@ export const DriverIncomeTable = ({
     }
   };
 
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+
   const handleDeleteAll = async () => {
-    if (!confirm("Are you sure you want to delete all displayed records?")) return;
+    if (!confirm("Are you sure you want to delete ALL driver income records? This will clear all data so fresh data can be imported.")) return;
 
+    setIsDeletingAll(true);
     try {
-      // Delete all records that match current filter (5 or 6 working days)
-      const idsToDelete = filteredData.map(row => row.id);
-      
-      if (idsToDelete.length === 0) {
-        toast.error("No records to delete");
-        return;
-      }
-
+      // Delete ALL driver_income records (not just filtered ones)
+      // Using a condition that matches all records
       const { error } = await supabase
         .from('driver_income')
         .delete()
-        .in('id', idsToDelete);
+        .gte('id', '00000000-0000-0000-0000-000000000000');
 
       if (error) throw error;
 
-      toast.success("All records deleted successfully");
+      toast.success("All driver income records deleted successfully");
       onDataChange();
     } catch (error: any) {
       console.error("Error deleting records:", error);
       toast.error("Failed to delete records");
+    } finally {
+      setIsDeletingAll(false);
     }
   };
 
@@ -95,10 +94,15 @@ export const DriverIncomeTable = ({
             variant="outline"
             size="sm"
             onClick={handleDeleteAll}
+            disabled={isDeletingAll}
             className="text-destructive border-destructive/30 hover:bg-destructive/10"
           >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Delete All ({filteredData.length})
+            {isDeletingAll ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4 mr-1" />
+            )}
+            {isDeletingAll ? "Deleting..." : `Delete All (${filteredData.length})`}
           </Button>
         </div>
       )}
