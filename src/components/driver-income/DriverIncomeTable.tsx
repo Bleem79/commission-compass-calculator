@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Loader2 } from "lucide-react";
+import { Trash2, Loader2, Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -35,6 +36,7 @@ export const DriverIncomeTable = ({
   reportHeading
 }: DriverIncomeTableProps) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
@@ -63,8 +65,6 @@ export const DriverIncomeTable = ({
 
     setIsDeletingAll(true);
     try {
-      // Delete ALL driver_income records (not just filtered ones)
-      // Using a condition that matches all records
       const { error } = await supabase
         .from('driver_income')
         .delete()
@@ -83,13 +83,42 @@ export const DriverIncomeTable = ({
   };
 
   // Filter drivers with 5 or 6 working days
-  const filteredData = data.filter(row => row.working_days === 5 || row.working_days === 6);
+  const workingDaysFiltered = data.filter(row => row.working_days === 5 || row.working_days === 6);
+
+  // Apply search filter on top of working days filter
+  const filteredData = workingDaysFiltered.filter(row => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase().trim();
+    const driverId = row.driver_id.toLowerCase();
+    const driverName = (row.driver_name || '').toLowerCase();
+    return driverId.includes(query) || driverName.includes(query);
+  });
 
   return (
     <div className="space-y-4">
-      {/* Delete all button */}
-      {isAdmin && filteredData.length > 0 && (
-        <div className="flex justify-end">
+      {/* Search and Delete All controls */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        {/* Search Input */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by Driver ID or Name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-9"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Delete All button */}
+        {isAdmin && workingDaysFiltered.length > 0 && (
           <Button
             variant="outline"
             size="sm"
@@ -102,10 +131,10 @@ export const DriverIncomeTable = ({
             ) : (
               <Trash2 className="h-4 w-4 mr-1" />
             )}
-            {isDeletingAll ? "Deleting..." : `Delete All (${filteredData.length})`}
+            {isDeletingAll ? "Deleting..." : `Delete All (${workingDaysFiltered.length})`}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Table */}
       {isLoading ? (
@@ -114,7 +143,9 @@ export const DriverIncomeTable = ({
         </div>
       ) : filteredData.length === 0 ? (
         <div className="bg-card rounded-lg border border-border p-8 text-center">
-          <p className="text-muted-foreground">No drivers with 5 or 6 working days found.</p>
+          <p className="text-muted-foreground">
+            {searchQuery ? `No drivers found matching "${searchQuery}"` : "No drivers with 5 or 6 working days found."}
+          </p>
         </div>
       ) : (
         <div className="bg-card rounded-lg border border-border overflow-hidden">
@@ -169,7 +200,8 @@ export const DriverIncomeTable = ({
             </Table>
           </div>
           <div className="px-4 py-3 bg-muted/30 border-t border-border text-sm text-muted-foreground">
-            Showing {filteredData.length} driver(s) with 5 or 6 working days
+            Showing {filteredData.length} of {workingDaysFiltered.length} driver(s) with 5 or 6 working days
+            {searchQuery && ` (filtered by "${searchQuery}")`}
           </div>
         </div>
       )}
