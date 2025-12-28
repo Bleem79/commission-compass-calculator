@@ -122,22 +122,34 @@ const DriverIncomePage = () => {
   const fetchIncomeData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const query = supabase
-        .from('driver_income')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Fetch all records with pagination to bypass 1000-row limit
+      const PAGE_SIZE = 1000;
+      let allData: DriverIncomeData[] = [];
+      let page = 0;
+      let hasMore = true;
 
-      // Note: drivers are automatically restricted by RLS to only see their own income rows.
-      // We intentionally do NOT add a manual driver_id filter here.
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('driver_income')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
-      const { data, error } = await query;
+        if (error) {
+          console.error("Error fetching income data:", error);
+          return;
+        }
 
-      if (error) {
-        console.error("Error fetching income data:", error);
-        return;
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          hasMore = data.length === PAGE_SIZE;
+          page++;
+        } else {
+          hasMore = false;
+        }
       }
 
-      setIncomeData(data || []);
+      setIncomeData(allData);
     } catch (err) {
       console.error("Unexpected error fetching income data:", err);
     } finally {
