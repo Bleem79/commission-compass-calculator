@@ -82,11 +82,8 @@ export const DriverIncomeTable = ({
     }
   };
 
-  // Filter drivers with 5 or 6 working days
-  const workingDaysFiltered = data.filter(row => row.working_days === 5 || row.working_days === 6);
-
-  // Apply search filter on top of working days filter
-  const filteredData = workingDaysFiltered.filter(row => {
+  // Apply search filter
+  const filteredData = data.filter(row => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase().trim();
     const driverId = row.driver_id.toLowerCase();
@@ -118,7 +115,7 @@ export const DriverIncomeTable = ({
         </div>
 
         {/* Delete All button */}
-        {isAdmin && workingDaysFiltered.length > 0 && (
+        {isAdmin && data.length > 0 && (
           <Button
             variant="outline"
             size="sm"
@@ -131,7 +128,7 @@ export const DriverIncomeTable = ({
             ) : (
               <Trash2 className="h-4 w-4 mr-1" />
             )}
-            {isDeletingAll ? "Deleting..." : `Delete All (${workingDaysFiltered.length})`}
+            {isDeletingAll ? "Deleting..." : `Delete All (${data.length})`}
           </Button>
         )}
       </div>
@@ -144,7 +141,7 @@ export const DriverIncomeTable = ({
       ) : filteredData.length === 0 ? (
         <div className="bg-card rounded-lg border border-border p-8 text-center">
           <p className="text-muted-foreground">
-            {searchQuery ? `No drivers found matching "${searchQuery}"` : "No drivers with 5 or 6 working days found."}
+            {searchQuery ? `No drivers found matching "${searchQuery}"` : "No driver income data found."}
           </p>
         </div>
       ) : (
@@ -200,7 +197,7 @@ export const DriverIncomeTable = ({
             </Table>
           </div>
           <div className="px-4 py-3 bg-muted/30 border-t border-border text-sm text-muted-foreground">
-            Showing {filteredData.length} of {workingDaysFiltered.length} driver(s) with 5 or 6 working days
+            Showing {filteredData.length} of {data.length} driver record(s)
             {searchQuery && ` (filtered by "${searchQuery}")`}
           </div>
         </div>
