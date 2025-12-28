@@ -98,11 +98,12 @@ export const DriverIncomeUploader = ({
       }));
 
       // Delete all existing driver income data before inserting new data
-      const { error: deleteError } = await supabase.from("driver_income").delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      const { error: deleteError } = await supabase.from("driver_income").delete().gte('id', '00000000-0000-0000-0000-000000000000');
       if (deleteError) {
         console.error("Error deleting existing data:", deleteError);
         throw deleteError;
       }
+      console.log("All existing driver income data deleted successfully");
 
       setUploadProgress({ total: insertData.length, uploaded: 0 });
 
