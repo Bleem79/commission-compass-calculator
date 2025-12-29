@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2, Trash2, KeyRound } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { uploadDriverCredential } from "@/services/driverUploadService";
 import { Progress } from "@/components/ui/progress";
+import { ResetDriverPasswordDialog } from "@/components/admin/ResetDriverPasswordDialog";
 
 interface DriverCredential {
   id: string;
@@ -45,6 +46,7 @@ const DriverManagementPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [resetPasswordDriver, setResetPasswordDriver] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -473,6 +475,15 @@ const DriverManagementPage = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setResetPasswordDriver(driver.driver_id)}
+                              className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                              title="Reset Password"
+                            >
+                              <KeyRound className="h-4 w-4" />
+                            </Button>
                             <span className="text-sm text-slate-600 mr-2">
                               {driver.status === 'enabled' ? 'Enabled' : 'Disabled'}
                             </span>
@@ -502,6 +513,14 @@ const DriverManagementPage = () => {
           <p className="text-xs sm:text-sm text-gray-500">All Rights Reserved</p>
         </footer>
       </div>
+
+      {/* Reset Password Dialog */}
+      <ResetDriverPasswordDialog
+        isOpen={!!resetPasswordDriver}
+        onClose={() => setResetPasswordDriver(null)}
+        driverId={resetPasswordDriver || ""}
+        onSuccess={fetchDrivers}
+      />
     </div>
   );
 };
