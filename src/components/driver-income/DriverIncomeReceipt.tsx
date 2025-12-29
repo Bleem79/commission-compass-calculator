@@ -49,16 +49,8 @@ export const DriverIncomeReceipt = ({
     );
   }
 
-  // Filter for 5 or 6 working days
-  const filteredData = data.filter(row => row.working_days === 5 || row.working_days === 6);
-
-  if (filteredData.length === 0) {
-    return (
-      <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100 p-8 text-center">
-        <p className="text-gray-500">No records with 5 or 6 working days found.</p>
-      </div>
-    );
-  }
+  // Use all data without filtering by working days
+  const filteredData = data;
 
   // Group by month/year
   const groupedData = filteredData.reduce((acc, item) => {
