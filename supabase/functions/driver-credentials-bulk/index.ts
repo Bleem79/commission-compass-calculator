@@ -36,6 +36,7 @@ function normalizeStatus(status: unknown): "enabled" | "disabled" {
   return s === "disabled" ? "disabled" : "enabled";
 }
 
+// Build email lookup ONCE at the start for faster existing user detection
 async function buildEmailLookup(adminClient: ReturnType<typeof createClient>) {
   const emailToId = new Map<string, string>();
 
@@ -56,6 +57,28 @@ async function buildEmailLookup(adminClient: ReturnType<typeof createClient>) {
   }
 
   return emailToId;
+}
+
+// Build driver_id to user_id lookup from driver_credentials table
+async function buildDriverIdLookup(adminClient: ReturnType<typeof createClient>) {
+  const driverToUserId = new Map<string, string>();
+  
+  const { data: existingCreds, error } = await adminClient
+    .from("driver_credentials")
+    .select("driver_id,user_id");
+
+  if (error) {
+    console.error("driver-credentials-bulk: failed to read driver_credentials", error);
+    return driverToUserId;
+  }
+
+  for (const row of existingCreds ?? []) {
+    if (row?.driver_id && row?.user_id) {
+      driverToUserId.set(String(row.driver_id), String(row.user_id));
+    }
+  }
+
+  return driverToUserId;
 }
 
 Deno.serve(async (req) => {
@@ -149,22 +172,17 @@ Deno.serve(async (req) => {
       `driver-credentials-bulk: caller=${callerId} received ${drivers.length} drivers (replaceExisting=${replaceExisting})`
     );
 
-    // If replacing, snapshot existing mapping before clearing.
-    const existingMap = new Map<string, string>();
+    // Build email lookup ONCE at the start (much faster than per-driver lookup)
+    console.log("driver-credentials-bulk: building email lookup...");
+    const emailLookup = await buildEmailLookup(adminClient);
+    console.log(`driver-credentials-bulk: found ${emailLookup.size} existing users`);
+
+    // Build driver_id to user_id lookup for existing credentials
+    const existingDriverMap = await buildDriverIdLookup(adminClient);
+    console.log(`driver-credentials-bulk: found ${existingDriverMap.size} existing driver credentials`);
+
+    // If replacing (first chunk), clear existing credentials
     if (replaceExisting) {
-      const { data: existingCreds, error: existingErr } = await adminClient
-        .from("driver_credentials")
-        .select("driver_id,user_id");
-
-      if (existingErr) {
-        console.error("driver-credentials-bulk: failed to read existing driver_credentials", existingErr);
-        return json(500, { error: "Failed to read existing driver credentials" });
-      }
-
-      for (const row of existingCreds ?? []) {
-        if (row?.driver_id && row?.user_id) existingMap.set(String(row.driver_id), String(row.user_id));
-      }
-
       const { error: deleteErr } = await adminClient
         .from("driver_credentials")
         .delete()
@@ -181,8 +199,6 @@ Deno.serve(async (req) => {
       errors: [],
       total: drivers.length,
     };
-
-    let emailLookup: Map<string, string> | null = null;
 
     const credentialRows: Array<{ driver_id: string; user_id: string; status: string }> = [];
     const roleRows: Array<{ user_id: string; role: string }> = [];
@@ -205,12 +221,20 @@ Deno.serve(async (req) => {
       const email = `${driverId.toLowerCase()}@driver.temp`;
 
       try {
-        let userId: string | null = existingMap.get(driverId) ?? null;
+        // First check if user exists in email lookup (auth.users)
+        let userId: string | null = emailLookup.get(email.toLowerCase()) ?? null;
+        
+        // Also check existing driver credentials map
+        if (!userId) {
+          userId = existingDriverMap.get(driverId) ?? null;
+        }
 
         if (userId) {
+          // User exists - update password
           const { error: updErr } = await adminClient.auth.admin.updateUserById(userId, { password });
           if (updErr) throw updErr;
         } else {
+          // User doesn't exist - create new
           const { data: created, error: createErr } = await adminClient.auth.admin.createUser({
             email,
             password,
@@ -219,17 +243,19 @@ Deno.serve(async (req) => {
           });
 
           if (createErr) {
-            // If user already exists (e.g., previous partial run), resolve id by email once.
+            // If user already exists (race condition), get from lookup
             if (String(createErr.message ?? "").toLowerCase().includes("already")) {
-              if (!emailLookup) {
-                console.log("driver-credentials-bulk: building email lookup (createUser already-exists)");
-                emailLookup = await buildEmailLookup(adminClient);
+              // Try to get user by email directly
+              const { data: existingUsers } = await adminClient.auth.admin.listUsers();
+              const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+              
+              if (existingUser) {
+                userId = existingUser.id;
+                const { error: updErr } = await adminClient.auth.admin.updateUserById(userId, { password });
+                if (updErr) throw updErr;
+              } else {
+                throw createErr;
               }
-              userId = emailLookup.get(email.toLowerCase()) ?? null;
-              if (!userId) throw createErr;
-
-              const { error: updErr } = await adminClient.auth.admin.updateUserById(userId, { password });
-              if (updErr) throw updErr;
             } else {
               throw createErr;
             }
