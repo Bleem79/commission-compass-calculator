@@ -25,11 +25,18 @@ export const LoginForm = () => {
     setError("");
     setLoading(true);
 
+    const normalizedIdentifier = identifier.trim();
+    const normalizedPassword = password.trim();
+
     try {
       // Try to log in using the identifier (could be email or driver ID)
+      const email = normalizedIdentifier.includes("@")
+        ? normalizedIdentifier.toLowerCase()
+        : `${normalizedIdentifier}@driver.temp`;
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: identifier.includes('@') ? identifier : `${identifier}@driver.temp`, // Use temp email format for ID login
-        password: password,
+        email,
+        password: normalizedPassword,
       });
 
       if (error) {

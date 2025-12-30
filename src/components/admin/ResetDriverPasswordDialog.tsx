@@ -38,17 +38,20 @@ export const ResetDriverPasswordDialog = ({
     setError(null);
 
     // Validation
-    if (!newPassword) {
+    const trimmedPassword = newPassword.trim();
+    const trimmedConfirm = confirmPassword.trim();
+
+    if (!trimmedPassword) {
       setError("Please enter a new password");
       return;
     }
 
-    if (newPassword.length < 6) {
+    if (trimmedPassword.length < 6) {
       setError("Password must be at least 6 characters");
       return;
     }
 
-    if (newPassword !== confirmPassword) {
+    if (trimmedPassword !== trimmedConfirm) {
       setError("Passwords do not match");
       return;
     }
@@ -66,7 +69,7 @@ export const ResetDriverPasswordDialog = ({
       const response = await supabase.functions.invoke("reset-driver-password", {
         body: {
           driverId,
-          newPassword,
+          newPassword: trimmedPassword,
         },
       });
 
@@ -99,7 +102,12 @@ export const ResetDriverPasswordDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) handleClose();
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
