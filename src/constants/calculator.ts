@@ -7,7 +7,7 @@ export const months = [
 export const commissionData = [
   // Single Shift With Basic
   { shiftType: "Single Shift", commissionType: "With Basic", from: 0, to: 199.99, percentage: 0, fixedIncentive: null, basic: 300, hra: null, totalFixedSalary: 300 },
-  { shiftType: "Single Shift", commissionType: "With Basic", from: 200, to: 224.99, percentage: 5, fixedIncentive: null, basic: 300, hra: null, totalFixedSalary: 300 },
+  { shiftType: "Single Shift", commissionType: "With Basic", from: 200, to: 224.99, percentage: 5, fixedIncentive: null, basic: 300, hra: 500, totalFixedSalary: 800 },
   { shiftType: "Single Shift", commissionType: "With Basic", from: 225, to: 249.99, percentage: 10, fixedIncentive: 200, basic: 300, hra: 500, totalFixedSalary: 800 },
   { shiftType: "Single Shift", commissionType: "With Basic", from: 250, to: 269.99, percentage: 15, fixedIncentive: 200, basic: 300, hra: 500, totalFixedSalary: 800 },
   { shiftType: "Single Shift", commissionType: "With Basic", from: 270, to: 299.99, percentage: 20, fixedIncentive: 400, basic: 300, hra: 500, totalFixedSalary: 800 },
