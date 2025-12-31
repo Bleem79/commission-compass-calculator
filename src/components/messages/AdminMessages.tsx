@@ -78,6 +78,28 @@ export const AdminMessages = ({
     }
   });
 
+  // Real-time subscription for new messages
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-messages-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'admin_messages'
+        },
+        () => {
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
+
   useEffect(() => {
     const markMessagesAsRead = async () => {
       if (isOpen && !isAdmin) {
