@@ -21,6 +21,32 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Trash2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+// Helper function to convert URLs in text to clickable links
+const linkifyText = (text: string): React.ReactNode[] => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  
+  return parts.map((part, index) => {
+    if (urlRegex.test(part)) {
+      // Reset regex lastIndex since we're reusing it
+      urlRegex.lastIndex = 0;
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 underline break-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 interface Message {
   id: string;
   content: string;
@@ -148,7 +174,9 @@ export const AdminMessages = ({
                 key={message.id}
                 className="rounded-lg bg-secondary p-3 relative group border border-border/50"
               >
-                <p className="text-sm pr-8 whitespace-pre-wrap break-words leading-relaxed text-white">{message.content}</p>
+                <p className="text-sm pr-8 whitespace-pre-wrap break-words leading-relaxed text-white">
+                  {linkifyText(message.content)}
+                </p>
                 <p className="text-xs text-gray-300 mt-2">
                   {new Date(message.created_at).toLocaleString()}
                 </p>
