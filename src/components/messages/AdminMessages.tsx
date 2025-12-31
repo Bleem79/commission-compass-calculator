@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pin, PinOff } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Helper function to convert URLs in text to clickable links
@@ -52,6 +52,7 @@ interface Message {
   content: string;
   created_at: string;
   is_admin: boolean;
+  is_pinned: boolean | null;
 }
 
 export const AdminMessages = ({ 
@@ -150,6 +151,31 @@ export const AdminMessages = ({
     }
   });
 
+  const togglePinMutation = useMutation({
+    mutationFn: async ({ messageId, isPinned }: { messageId: string; isPinned: boolean }) => {
+      const { error } = await supabase
+        .from('admin_messages')
+        .update({ is_pinned: !isPinned })
+        .eq('id', messageId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refetch();
+      toast({
+        title: "Message updated",
+        description: "Pin status has been updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update pin status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   const deleteMessageMutation = useMutation({
     mutationFn: async (messageId: string) => {
       const { error } = await supabase
@@ -184,33 +210,65 @@ export const AdminMessages = ({
     deleteMessageMutation.mutate(messageId);
   };
 
+  const handleTogglePin = (messageId: string, isPinned: boolean) => {
+    togglePinMutation.mutate({ messageId, isPinned });
+  };
+
+  // Sort messages: pinned first, then by date
+  const sortedMessages = messages?.slice().sort((a, b) => {
+    if (a.is_pinned && !b.is_pinned) return -1;
+    if (!a.is_pinned && b.is_pinned) return 1;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
   const MessagesContent = () => (
     <div className="flex flex-col gap-4 px-4 pb-6">
       <ScrollArea className="h-[40vh] sm:h-[300px] w-full rounded-md border bg-background p-3 sm:p-4">
-        {messages?.length === 0 ? (
+        {sortedMessages?.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">No messages yet</p>
         ) : (
           <div className="flex flex-col gap-3">
-            {messages?.map((message) => (
+            {sortedMessages?.map((message) => (
               <div
                 key={message.id}
-                className="rounded-lg bg-secondary p-3 relative group border border-border/50"
+                className={`rounded-lg bg-secondary p-3 relative group border ${message.is_pinned ? 'border-primary/50 bg-primary/10' : 'border-border/50'}`}
               >
-                <p className="text-sm pr-8 whitespace-pre-wrap break-words leading-relaxed text-white">
+                {message.is_pinned && (
+                  <div className="absolute -top-2 left-3 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Pin className="h-3 w-3" />
+                    Pinned
+                  </div>
+                )}
+                <p className={`text-sm pr-16 whitespace-pre-wrap break-words leading-relaxed text-white ${message.is_pinned ? 'mt-2' : ''}`}>
                   {linkifyText(message.content)}
                 </p>
                 <p className="text-xs text-gray-300 mt-2">
                   {new Date(message.created_at).toLocaleString()}
                 </p>
                 {isAdmin && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-8 w-8"
-                    onClick={() => handleDelete(message.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive hover:text-destructive/90" />
-                  </Button>
+                  <div className="absolute right-1 top-1 flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-8 w-8"
+                      onClick={() => handleTogglePin(message.id, !!message.is_pinned)}
+                      title={message.is_pinned ? "Unpin message" : "Pin message"}
+                    >
+                      {message.is_pinned ? (
+                        <PinOff className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Pin className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-8 w-8"
+                      onClick={() => handleDelete(message.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive hover:text-destructive/90" />
+                    </Button>
+                  </div>
                 )}
               </div>
             ))}

@@ -21,6 +21,7 @@ export type Database = {
           created_by: string
           id: string
           is_admin: boolean | null
+          is_pinned: boolean | null
           read_at: string | null
         }
         Insert: {
@@ -29,6 +30,7 @@ export type Database = {
           created_by: string
           id?: string
           is_admin?: boolean | null
+          is_pinned?: boolean | null
           read_at?: string | null
         }
         Update: {
@@ -37,6 +39,7 @@ export type Database = {
           created_by?: string
           id?: string
           is_admin?: boolean | null
+          is_pinned?: boolean | null
           read_at?: string | null
         }
         Relationships: []
