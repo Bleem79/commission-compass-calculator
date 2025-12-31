@@ -283,6 +283,19 @@ Deno.serve(async (req) => {
     }
     const deduplicatedCredentials = Array.from(uniqueCredentials.values());
 
+    // Log if there were duplicates
+    const duplicateCount = credentialRows.length - deduplicatedCredentials.length;
+    if (duplicateCount > 0) {
+      console.log(`driver-credentials-bulk: removed ${duplicateCount} duplicate driver_id entries`);
+    }
+
+    // Deduplicate success array to match actual uploaded count
+    const uniqueSuccess = new Map<string, { driverId: string }>();
+    for (const s of result.success) {
+      uniqueSuccess.set(s.driverId, s);
+    }
+    result.success = Array.from(uniqueSuccess.values());
+
     // Persist successful rows (bulk upsert for speed)
     if (deduplicatedCredentials.length > 0) {
       const { error: credErr } = await adminClient
