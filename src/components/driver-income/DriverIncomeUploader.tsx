@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Upload, FileSpreadsheet, Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { processDriverIncomeFile, DriverIncomeRow } from "@/utils/excel/processDriverIncomeFile";
+import { processDriverIncomeFile, DriverIncomeRow, SkippedRow } from "@/utils/excel/processDriverIncomeFile";
 
 interface DriverIncomeUploaderProps {
   userId: string;
@@ -37,6 +37,7 @@ export const DriverIncomeUploader = ({
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<DriverIncomeRow[] | null>(null);
+  const [skippedRows, setSkippedRows] = useState<SkippedRow[] | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ total: number; uploaded: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -58,13 +59,20 @@ export const DriverIncomeUploader = ({
     setSelectedFile(file);
 
     try {
-      const data = await processDriverIncomeFile(file);
-      setPreviewData(data.slice(0, 5));
-      toast.success(`File loaded: ${data.length} row(s). Click “Import Driver Income Data” to save.`);
+      const result = await processDriverIncomeFile(file);
+      setPreviewData(result.data.slice(0, 5));
+      setSkippedRows(result.skipped.length > 0 ? result.skipped : null);
+      
+      if (result.skipped.length > 0) {
+        toast.warning(`File loaded: ${result.data.length} valid row(s), ${result.skipped.length} row(s) skipped. Check details below.`);
+      } else {
+        toast.success(`File loaded: ${result.data.length} row(s). Click "Import Driver Income Data" to save.`);
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to parse file");
       setSelectedFile(null);
       setPreviewData(null);
+      setSkippedRows(null);
     }
   };
 
@@ -77,7 +85,8 @@ export const DriverIncomeUploader = ({
     setUploadProgress(null);
 
     try {
-      const data = await processDriverIncomeFile(selectedFile);
+      const result = await processDriverIncomeFile(selectedFile);
+      const data = result.data;
 
       // Extract month and year from heading or use current date
       const now = new Date();
@@ -139,9 +148,15 @@ export const DriverIncomeUploader = ({
           .insert({ report_heading: reportHeading, updated_by: userId } as any);
       }
 
-      toast.success(`Successfully imported ${insertData.length} driver income records (previous data removed)`);
+      const skippedCount = result.skipped.length;
+      if (skippedCount > 0) {
+        toast.success(`Imported ${insertData.length} records. ${skippedCount} row(s) were skipped due to invalid data.`);
+      } else {
+        toast.success(`Successfully imported ${insertData.length} driver income records (previous data removed)`);
+      }
       setSelectedFile(null);
       setPreviewData(null);
+      setSkippedRows(null);
       setUploadProgress(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -250,6 +265,43 @@ export const DriverIncomeUploader = ({
                 : 0
             }
           />
+        </div>
+      )}
+
+      {/* Skipped rows warning */}
+      {skippedRows && skippedRows.length > 0 && (
+        <div className="mt-4 bg-destructive/10 border border-destructive/30 rounded-lg p-4 overflow-x-auto">
+          <h4 className="text-sm font-medium text-destructive mb-2">
+            ⚠️ Skipped Rows ({skippedRows.length})
+          </h4>
+          <p className="text-xs text-muted-foreground mb-2">
+            The following rows will NOT be imported due to missing or invalid data:
+          </p>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-destructive/30">
+                <th className="text-left p-2">Row #</th>
+                <th className="text-left p-2">Driver ID</th>
+                <th className="text-left p-2">Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              {skippedRows.slice(0, 20).map((row, index) => (
+                <tr key={index} className="border-b border-destructive/20">
+                  <td className="p-2">{row.row}</td>
+                  <td className="p-2">{row.driver_id || '-'}</td>
+                  <td className="p-2 text-destructive">{row.reason}</td>
+                </tr>
+              ))}
+              {skippedRows.length > 20 && (
+                <tr>
+                  <td colSpan={3} className="p-2 text-muted-foreground italic">
+                    ... and {skippedRows.length - 20} more skipped rows
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
 
