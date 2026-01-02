@@ -10,7 +10,18 @@ export interface DriverIncomeRow {
   average_daily_income: number | null;
 }
 
-export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeRow[]> => {
+export interface SkippedRow {
+  row: number;
+  driver_id: string | null;
+  reason: string;
+}
+
+export interface ProcessResult {
+  data: DriverIncomeRow[];
+  skipped: SkippedRow[];
+}
+
+export const processDriverIncomeFile = async (file: File): Promise<ProcessResult> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -63,13 +74,25 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
         
         // Validate and clean data - filter out empty rows
         const cleanedData: DriverIncomeRow[] = [];
+        const skippedRows: SkippedRow[] = [];
         
         for (let index = 0; index < normalizedData.length; index++) {
           const row = normalizedData[index];
+          const rowNum = index + 2; // Excel row number (1-indexed + header row)
+          const rawDriverId = row.driver_id !== undefined ? String(row.driver_id).trim() : null;
           
           // Skip empty rows or rows with missing required fields
           if (!row.driver_id || row.working_days === undefined || row.total_income === undefined) {
-            console.log(`Skipping row ${index + 2}: missing required fields`);
+            const missingFields = [];
+            if (!row.driver_id) missingFields.push('Driver ID');
+            if (row.working_days === undefined) missingFields.push('WrkDays');
+            if (row.total_income === undefined) missingFields.push('TotalIncome');
+            skippedRows.push({
+              row: rowNum,
+              driver_id: rawDriverId,
+              reason: `Missing required fields: ${missingFields.join(', ')}`
+            });
+            console.log(`Skipping row ${rowNum} (Driver ID: ${rawDriverId}): missing required fields - ${missingFields.join(', ')}`);
             continue;
           }
           
@@ -77,7 +100,12 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
           
           // Skip if driver_id is empty after trimming
           if (!driver_id) {
-            console.log(`Skipping row ${index + 2}: empty driver ID`);
+            skippedRows.push({
+              row: rowNum,
+              driver_id: null,
+              reason: 'Empty driver ID'
+            });
+            console.log(`Skipping row ${rowNum}: empty driver ID`);
             continue;
           }
           
@@ -89,12 +117,22 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
           
           // Skip invalid numeric data
           if (isNaN(working_days) || working_days < 0) {
-            console.log(`Skipping row ${index + 2}: invalid WrkDays`);
+            skippedRows.push({
+              row: rowNum,
+              driver_id: driver_id,
+              reason: `Invalid WrkDays value: "${row.working_days}"`
+            });
+            console.log(`Skipping row ${rowNum} (Driver ID: ${driver_id}): invalid WrkDays - "${row.working_days}"`);
             continue;
           }
           
           if (isNaN(total_income)) {
-            console.log(`Skipping row ${index + 2}: invalid DriverIncome`);
+            skippedRows.push({
+              row: rowNum,
+              driver_id: driver_id,
+              reason: `Invalid TotalIncome value: "${row.total_income}"`
+            });
+            console.log(`Skipping row ${rowNum} (Driver ID: ${driver_id}): invalid TotalIncome - "${row.total_income}"`);
             continue;
           }
           
@@ -120,7 +158,8 @@ export const processDriverIncomeFile = async (file: File): Promise<DriverIncomeR
         }
         
         console.log("Parsed driver income data:", cleanedData);
-        resolve(cleanedData);
+        console.log("Skipped rows:", skippedRows);
+        resolve({ data: cleanedData, skipped: skippedRows });
       } catch (error) {
         console.error("Error processing driver income file:", error);
         reject(error);
