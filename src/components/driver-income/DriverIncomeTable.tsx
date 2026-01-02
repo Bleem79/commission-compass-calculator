@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Loader2, Search, X } from "lucide-react";
+import { Trash2, Loader2, Search, X, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 
 interface DriverIncomeData {
   id: string;
@@ -114,23 +115,55 @@ export const DriverIncomeTable = ({
           )}
         </div>
 
-        {/* Delete All button */}
-        {isAdmin && data.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDeleteAll}
-            disabled={isDeletingAll}
-            className="text-destructive border-destructive/30 hover:bg-destructive/10"
-          >
-            {isDeletingAll ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-            ) : (
-              <Trash2 className="h-4 w-4 mr-1" />
-            )}
-            {isDeletingAll ? "Deleting..." : `Delete All (${data.length})`}
-          </Button>
-        )}
+        {/* Action buttons */}
+        <div className="flex gap-2">
+          {/* Export to Excel button */}
+          {data.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const exportData = filteredData.map(row => ({
+                  "Driver ID": row.driver_id,
+                  "Driver Name": row.driver_name || "",
+                  "Working Days": row.working_days,
+                  "Total Trips": row.total_trips ?? "",
+                  "Driver Income": row.total_income,
+                  "Shift": row.shift || "",
+                  "Month": row.month,
+                  "Year": row.year,
+                }));
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Driver Income");
+                XLSX.writeFile(workbook, `Driver_Income_${new Date().toISOString().split('T')[0]}.xlsx`);
+                toast.success(`Exported ${filteredData.length} records to Excel`);
+              }}
+              className="text-primary border-primary/30 hover:bg-primary/10"
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export Excel
+            </Button>
+          )}
+
+          {/* Delete All button */}
+          {isAdmin && data.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDeleteAll}
+              disabled={isDeletingAll}
+              className="text-destructive border-destructive/30 hover:bg-destructive/10"
+            >
+              {isDeletingAll ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-1" />
+              )}
+              {isDeletingAll ? "Deleting..." : `Delete All (${data.length})`}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
