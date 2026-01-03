@@ -50,7 +50,7 @@ export function GuestLoginButton() {
       variant="outline"
       onClick={handleGuestLogin}
       disabled={isLoading}
-      className="w-full border border-gray-200 hover:bg-gray-50 hover:text-purple-700 transition-all flex items-center justify-center"
+      className="w-full border-2 border-purple-400 bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 hover:border-purple-500 text-purple-700 font-medium transition-all flex items-center justify-center shadow-sm hover:shadow-md"
     >
       <div className="flex items-center">
         {isLoading ? "Signing in..." : "Continue as Guest"}
