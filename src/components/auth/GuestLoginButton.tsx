@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { signInAsGuest } from "@/integrations/supabase/auth-utils";
 import { toast } from "@/hooks/use-toast";
+import { UserRound } from "lucide-react";
 
 export function GuestLoginButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +52,8 @@ export function GuestLoginButton() {
       disabled={isLoading}
       className="w-full border-2 border-purple-400 bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 hover:border-purple-500 text-purple-700 font-medium transition-all flex items-center justify-center shadow-sm hover:shadow-md"
     >
-      <div className="flex items-center">
+      <div className="flex items-center gap-2">
+        <UserRound className="h-4 w-4" />
         {isLoading ? "Signing in..." : "Continue as Guest"}
       </div>
     </Button>
