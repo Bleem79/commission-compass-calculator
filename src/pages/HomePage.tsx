@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -10,14 +9,54 @@ import {
   Wifi,
   MapPin,
   CalendarDays,
-  Users
+  Users,
+  LogOut,
+  ChevronRight
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { UserProfile } from "@/components/calculator/UserProfile";
 import { AdminMessages } from "@/components/messages/AdminMessages";
 import { DriverIncomeAuthDialog } from "@/components/driver-income/DriverIncomeAuthDialog";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+
+interface FeatureCardProps {
+  icon: React.ReactNode;
+  title: string;
+  gradient: string;
+  onClick: () => void;
+  className?: string;
+}
+
+const FeatureCard = ({ icon, title, gradient, onClick, className }: FeatureCardProps) => (
+  <button
+    onClick={onClick}
+    className={cn(
+      "group relative overflow-hidden rounded-2xl p-4 sm:p-6 text-white transition-all duration-300",
+      "hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]",
+      "flex flex-col items-center justify-center gap-2 sm:gap-3",
+      "min-h-[100px] sm:min-h-[140px]",
+      "backdrop-blur-sm border border-white/20",
+      gradient,
+      className
+    )}
+  >
+    {/* Shimmer effect */}
+    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+    
+    {/* Icon container */}
+    <div className="relative z-10 p-2 sm:p-3 rounded-xl bg-white/20 backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+      {icon}
+    </div>
+    
+    {/* Title */}
+    <h3 className="relative z-10 text-xs sm:text-sm font-semibold text-center leading-tight max-w-full">
+      {title}
+    </h3>
+    
+    {/* Arrow indicator */}
+    <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-2 transition-all duration-300 w-4 h-4 sm:w-5 sm:h-5" />
+  </button>
+);
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -26,24 +65,18 @@ const HomePage = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDriverIncomeDialogOpen, setIsDriverIncomeDialogOpen] = useState(false);
 
-  // Check authentication status and redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
-      console.log("Not authenticated in HomePage, redirecting to login");
       navigate("/login", { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
   const handleLogout = useCallback(async () => {
-    if (isLoggingOut) return; // Prevent multiple clicks
+    if (isLoggingOut) return;
     
     setIsLoggingOut(true);
     try {
-      console.log("Starting logout process...");
       await logout();
-      
-      // Force a page refresh after logout to clear any stale state
-      console.log("Refreshing page after logout");
       window.location.href = "/login";
     } catch (error) {
       console.error("Error in handleLogout:", error);
@@ -53,181 +86,170 @@ const HomePage = () => {
         variant: "destructive"
       });
       setIsLoggingOut(false);
-      
-      // Even if there's an error, force refresh to login page
       window.location.href = "/login";
     }
   }, [logout, isLoggingOut]);
 
-  // Render memoized content to prevent unnecessary re-renders
-  const renderFeatureButtons = useCallback(() => (
-    <>
-      {/* Feature Buttons - First Row */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 mt-4 sm:mt-6 mb-4 sm:mb-8">
-        {/* 1. Commission Percentage Calculator */}
-        <Card 
-          className="bg-gradient-to-br from-indigo-400 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-28 sm:h-40"
-          onClick={() => navigate("/dashboard")}
-        >
-          <CardContent className="flex flex-col items-center justify-center h-full p-3 sm:p-6">
-            <Calculator size={32} className="mb-2 sm:mb-3 sm:w-12 sm:h-12" />
-            <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">Commission Calculator</h2>
-          </CardContent>
-        </Card>
-        
-        {/* 2. View Commission Table */}
-        <Card 
-          className="bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-28 sm:h-40"
-          onClick={() => navigate("/commission-table")}
-        >
-          <CardContent className="flex flex-col items-center justify-center h-full p-3 sm:p-6">
-            <ListCheck size={32} className="mb-2 sm:mb-3 sm:w-12 sm:h-12" />
-            <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">Commission Table</h2>
-          </CardContent>
-        </Card>
-        
-        {/* 3. M-fuel % */}
-        <Card 
-          className="bg-gradient-to-br from-green-400 to-green-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-28 sm:h-40 col-span-2 md:col-span-1"
-          onClick={() => navigate("/m-fuel")}
-        >
-          <CardContent className="flex flex-col items-center justify-center h-full p-3 sm:p-6">
-            <Percent size={32} className="mb-2 sm:mb-3 sm:w-12 sm:h-12" />
-            <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">M-fuel %</h2>
-          </CardContent>
-        </Card>
-      </div>
+  const features = [
+    {
+      icon: <Calculator className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Commission Calculator",
+      gradient: "bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600",
+      onClick: () => navigate("/dashboard"),
+    },
+    {
+      icon: <ListCheck className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Commission Table",
+      gradient: "bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500",
+      onClick: () => navigate("/commission-table"),
+    },
+    {
+      icon: <Percent className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "M-fuel %",
+      gradient: "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600",
+      onClick: () => navigate("/m-fuel"),
+    },
+    {
+      icon: <Wifi className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Hotspot",
+      gradient: "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500",
+      onClick: () => navigate("/hotspot"),
+    },
+    {
+      icon: <Info className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Info",
+      gradient: "bg-gradient-to-br from-pink-500 via-rose-500 to-red-500",
+      onClick: () => navigate("/info"),
+    },
+    {
+      icon: <Bell className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Notifications",
+      gradient: "bg-gradient-to-br from-fuchsia-500 via-purple-500 to-violet-600",
+      onClick: () => setIsMessagesOpen(true),
+    },
+    {
+      icon: <MapPin className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "CNG Location",
+      gradient: "bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600",
+      onClick: () => navigate("/cng-location"),
+    },
+    {
+      icon: <CalendarDays className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Driver Income",
+      gradient: "bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600",
+      onClick: () => isAdmin ? navigate("/driver-income") : setIsDriverIncomeDialogOpen(true),
+    },
+  ];
 
-      {/* Second Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
-        {/* 4. Hotspot */}
-        <Card 
-          className="bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-28 sm:h-40"
-          onClick={() => navigate("/hotspot")}
-        >
-          <CardContent className="flex flex-col items-center justify-center h-full p-3 sm:p-6">
-            <Wifi size={32} className="mb-2 sm:mb-3 sm:w-12 sm:h-12" />
-            <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">Hotspot</h2>
-          </CardContent>
-        </Card>
-        
-        {/* 5. Info */}
-        <Card 
-          className="bg-gradient-to-br from-pink-400 to-pink-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-28 sm:h-40"
-          onClick={() => navigate("/info")}
-        >
-          <CardContent className="flex flex-col items-center justify-center h-full p-3 sm:p-6">
-            <Info size={32} className="mb-2 sm:mb-3 sm:w-12 sm:h-12" />
-            <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">Info</h2>
-          </CardContent>
-        </Card>
-        
-        {/* 6. Notifications */}
-        <Card 
-          className="bg-gradient-to-br from-violet-400 to-violet-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-28 sm:h-40 relative"
-          onClick={() => setIsMessagesOpen(true)}
-        >
-          <CardContent className="flex flex-col items-center justify-center h-full p-3 sm:p-6">
-            <Bell size={32} className="mb-2 sm:mb-3 sm:w-12 sm:h-12" />
-            <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">Notifications</h2>
-          </CardContent>
-        </Card>
-
-        {/* 7. CNG Location */}
-        <Card 
-          className="bg-gradient-to-br from-teal-400 to-teal-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-28 sm:h-40"
-          onClick={() => navigate("/cng-location")}
-        >
-          <CardContent className="flex flex-col items-center justify-center h-full p-3 sm:p-6">
-            <MapPin size={32} className="mb-2 sm:mb-3 sm:w-12 sm:h-12" />
-            <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">CNG Location</h2>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Driver Income Section - Available to all users */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mt-3 sm:mt-6">
-        {/* Last Month 5 or 6days Driver Income */}
-        <Card 
-          className="bg-gradient-to-br from-rose-400 to-rose-600 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-28 sm:h-40"
-          onClick={() => isAdmin ? navigate("/driver-income") : setIsDriverIncomeDialogOpen(true)}
-        >
-          <CardContent className="flex flex-col items-center justify-center h-full p-3 sm:p-6">
-            <CalendarDays size={32} className="mb-2 sm:mb-3 sm:w-12 sm:h-12" />
-            <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">Last Month 5 or 6days Driver Income</h2>
-          </CardContent>
-        </Card>
-
-        {/* Driver Management - Admin Only */}
-        {isAdmin && (
-          <Card 
-            className="bg-gradient-to-br from-slate-500 to-slate-700 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer h-28 sm:h-40"
-            onClick={() => navigate("/driver-management")}
-          >
-            <CardContent className="flex flex-col items-center justify-center h-full p-3 sm:p-6">
-              <Users size={32} className="mb-2 sm:mb-3 sm:w-12 sm:h-12" />
-              <h2 className="text-xs sm:text-lg font-medium text-center leading-tight">Driver Management</h2>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </>
-  ), [navigate, isAdmin]);
+  if (isAdmin) {
+    features.push({
+      icon: <Users className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Driver Management",
+      gradient: "bg-gradient-to-br from-slate-600 via-gray-600 to-zinc-700",
+      onClick: () => navigate("/driver-management"),
+    });
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-4 sm:p-6 md:p-10">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="w-full flex flex-row items-center justify-between gap-2 mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-3xl font-bold text-indigo-800">
-            Driver Portal
-          </h1>
-          <div className="flex items-center gap-2 sm:gap-4">
-            {user?.role && (
-              <span className="text-xs sm:text-base text-slate-600 hidden sm:inline">
-                Role: {user.role}
-              </span>
-            )}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/30 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative z-10 min-h-screen flex flex-col p-4 sm:p-6 lg:p-8">
+        <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col">
+          
+          {/* Header */}
+          <header className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
+                <img 
+                  src="/lovable-uploads/aman-logo-footer.png" 
+                  alt="Aman Taxi" 
+                  className="h-6 sm:h-8 object-contain"
+                />
+              </div>
+              <div>
+                <h1 className="text-lg sm:text-2xl font-bold text-white">Driver Portal</h1>
+                <p className="text-xs sm:text-sm text-white/60">Welcome back</p>
+              </div>
+            </div>
+            
             <button 
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className={`flex items-center gap-1 sm:gap-2 ${isLoggingOut ? 'bg-gray-400' : 'bg-red-500 hover:bg-red-600'} text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-medium transition-colors`}
+              className={cn(
+                "flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm font-medium transition-all duration-300",
+                "bg-white/10 backdrop-blur-sm border border-white/20 text-white",
+                "hover:bg-red-500/80 hover:border-red-400",
+                isLoggingOut && "opacity-50 cursor-not-allowed"
+              )}
             >
-              {isLoggingOut ? 'Logging out...' : 'Logout'}
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
             </button>
+          </header>
+
+          {/* User Profile Card */}
+          {user && (
+            <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl">
+                  {(user.username || user.email || '?').charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-white font-semibold text-base sm:text-lg truncate">
+                    {user.username || user.email}
+                  </h2>
+                  <p className="text-white/60 text-xs sm:text-sm truncate">{user.email}</p>
+                </div>
+                {user.role && (
+                  <span className="px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-medium capitalize">
+                    {user.role}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Features Grid */}
+          <div className="flex-1">
+            <h2 className="text-white/80 text-sm font-medium mb-4 uppercase tracking-wider">Quick Actions</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {features.map((feature, index) => (
+                <FeatureCard
+                  key={index}
+                  icon={feature.icon}
+                  title={feature.title}
+                  gradient={feature.gradient}
+                  onClick={feature.onClick}
+                />
+              ))}
+            </div>
           </div>
+
+          {/* Footer */}
+          <footer className="mt-8 sm:mt-12 pt-6 border-t border-white/10">
+            <div className="flex flex-col items-center gap-3">
+              <img 
+                src="/lovable-uploads/aman-logo-footer.png" 
+                alt="Aman Taxi Sharjah" 
+                className="h-8 sm:h-10 object-contain opacity-70"
+              />
+              <p className="text-xs text-white/40">© {new Date().getFullYear()} All Rights Reserved</p>
+            </div>
+          </footer>
         </div>
-
-        {/* User Profile */}
-        {user && (
-          <UserProfile 
-            email={user.email} 
-            username={user.username} 
-            role={user.role}
-          />
-        )}
-
-        {/* Feature Buttons */}
-        {renderFeatureButtons()}
-
-        {/* Footer */}
-        <footer className="mt-8 sm:mt-12 flex flex-col items-center justify-center gap-2 py-4 border-t border-gray-200">
-          <img 
-            src="/lovable-uploads/aman-logo-footer.png" 
-            alt="Aman Taxi Sharjah" 
-            className="h-8 sm:h-10 object-contain"
-          />
-          <p className="text-xs sm:text-sm text-gray-500">All Rights Reserved</p>
-        </footer>
       </div>
 
-      {/* Messages Dialog */}
+      {/* Dialogs */}
       <AdminMessages
         isOpen={isMessagesOpen}
         onClose={() => setIsMessagesOpen(false)}
       />
-
-      {/* Driver Income Auth Dialog */}
       <DriverIncomeAuthDialog
         isOpen={isDriverIncomeDialogOpen}
         onClose={() => setIsDriverIncomeDialogOpen(false)}
