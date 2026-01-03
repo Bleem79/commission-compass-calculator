@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Loader2, Search, X, Download } from "lucide-react";
+import { Trash2, Loader2, Search, X, Download, Users, TrendingUp, Car } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -92,8 +92,57 @@ export const DriverIncomeTable = ({
     return driverId.includes(query) || driverName.includes(query);
   });
 
+  // Calculate summary statistics
+  const stats = useMemo(() => {
+    const uniqueDrivers = new Set(data.map(row => row.driver_id)).size;
+    const totalTrips = data.reduce((sum, row) => sum + (row.total_trips || 0), 0);
+    const totalIncome = data.reduce((sum, row) => sum + row.total_income, 0);
+    return { uniqueDrivers, totalTrips, totalIncome };
+  }, [data]);
+
   return (
     <div className="space-y-4">
+      {/* Summary Statistics Cards */}
+      {data.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/20 rounded-lg">
+                <Users className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Drivers</p>
+                <p className="text-2xl font-bold text-blue-500">{stats.uniqueDrivers.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-500/20 rounded-lg">
+                <Car className="h-5 w-5 text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Trips</p>
+                <p className="text-2xl font-bold text-green-500">{stats.totalTrips.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-500/20 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-purple-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Driver Income</p>
+                <p className="text-2xl font-bold text-purple-500">AED {stats.totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search and Delete All controls */}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         {/* Search Input */}
