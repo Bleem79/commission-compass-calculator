@@ -16,6 +16,7 @@ import HotspotPage from "./pages/HotspotPage";
 import CNGLocationPage from "./pages/CNGLocationPage";
 import DriverIncomePage from "./pages/DriverIncomePage";
 import DriverManagementPage from "./pages/DriverManagementPage";
+import InstallPage from "./pages/InstallPage";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 
@@ -164,6 +165,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      <Route path="/install" element={<InstallPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
