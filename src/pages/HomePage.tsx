@@ -16,6 +16,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminMessages } from "@/components/messages/AdminMessages";
 import { DriverIncomeAuthDialog } from "@/components/driver-income/DriverIncomeAuthDialog";
+import InstallBanner from "@/components/pwa/InstallBanner";
+import NotificationPrompt from "@/components/pwa/NotificationPrompt";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -254,6 +256,10 @@ const HomePage = () => {
         isOpen={isDriverIncomeDialogOpen}
         onClose={() => setIsDriverIncomeDialogOpen(false)}
       />
+
+      {/* PWA Prompts */}
+      <InstallBanner />
+      <NotificationPrompt />
     </div>
   );
 };
