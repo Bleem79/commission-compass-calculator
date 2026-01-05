@@ -221,7 +221,7 @@ export const AdminMessages = ({
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
-  const MessagesContent = () => (
+  const messagesContent = (
     <div className="flex flex-col gap-4 px-4 pb-6">
       <ScrollArea className="h-[40vh] sm:h-[300px] w-full rounded-md border bg-background p-3 sm:p-4">
         {sortedMessages?.length === 0 ? (
@@ -305,7 +305,7 @@ export const AdminMessages = ({
               {isAdmin ? "Send Messages to Users" : "Admin Messages"}
             </DrawerTitle>
           </DrawerHeader>
-          <MessagesContent />
+          {messagesContent}
         </DrawerContent>
       </Drawer>
     );
@@ -319,7 +319,7 @@ export const AdminMessages = ({
             {isAdmin ? "Send Messages to Users" : "Admin Messages"}
           </DialogTitle>
         </DialogHeader>
-        <MessagesContent />
+        {messagesContent}
       </DialogContent>
     </Dialog>
   );
