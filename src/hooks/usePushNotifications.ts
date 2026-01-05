@@ -14,13 +14,19 @@ export interface NotificationOptions {
 export const usePushNotifications = () => {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [isSupported, setIsSupported] = useState(false);
+  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
-    const supported = "Notification" in window;
+    const supported = "Notification" in window && "serviceWorker" in navigator;
     setIsSupported(supported);
     
     if (supported) {
       setPermission(Notification.permission);
+      
+      // Get existing service worker registration
+      navigator.serviceWorker.ready.then((registration) => {
+        setSwRegistration(registration);
+      }).catch(console.error);
     }
   }, []);
 
@@ -60,34 +66,47 @@ export const usePushNotifications = () => {
   }, [isSupported]);
 
   const sendNotification = useCallback(
-    (options: NotificationOptions): Notification | null => {
+    async (options: NotificationOptions): Promise<boolean> => {
       if (!isSupported || permission !== "granted") {
         console.warn("Cannot send notification: not supported or permission denied");
-        return null;
+        return false;
       }
 
       try {
-        const notification = new Notification(options.title, {
-          body: options.body,
-          icon: options.icon || "/pwa-192x192.png",
-          badge: options.badge || "/pwa-192x192.png",
-          tag: options.tag,
-          data: options.data,
-          requireInteraction: options.requireInteraction,
-        });
+        // Use Service Worker for better mobile support
+        if (swRegistration) {
+          await swRegistration.showNotification(options.title, {
+            body: options.body,
+            icon: options.icon || "/pwa-192x192.png",
+            badge: options.badge || "/pwa-192x192.png",
+            tag: options.tag,
+            data: options.data,
+            requireInteraction: options.requireInteraction || false,
+          });
+          return true;
+        } else {
+          // Fallback to regular Notification API
+          const notification = new Notification(options.title, {
+            body: options.body,
+            icon: options.icon || "/pwa-192x192.png",
+            badge: options.badge || "/pwa-192x192.png",
+            tag: options.tag,
+            data: options.data,
+            requireInteraction: options.requireInteraction,
+          });
 
-        notification.onclick = () => {
-          window.focus();
-          notification.close();
-        };
-
-        return notification;
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+          };
+          return true;
+        }
       } catch (error) {
         console.error("Error sending notification:", error);
-        return null;
+        return false;
       }
     },
-    [isSupported, permission]
+    [isSupported, permission, swRegistration]
   );
 
   const scheduleNotification = useCallback(
