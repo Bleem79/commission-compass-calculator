@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -18,8 +18,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Trash2, Pin, PinOff } from "lucide-react";
+import { Trash2, Pin, PinOff, BellRing } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 // Helper function to convert URLs in text to clickable links
 const linkifyText = (text: string): React.ReactNode[] => {
@@ -65,6 +66,8 @@ export const AdminMessages = ({
   const [newMessage, setNewMessage] = useState("");
   const { user, isAdmin } = useAuth();
   const isMobile = useIsMobile();
+  const { sendNotification, isGranted } = usePushNotifications();
+  const lastMessageIdRef = useRef<string | null>(null);
   
   const { data: messages, refetch } = useQuery({
     queryKey: ['admin-messages'],
@@ -79,10 +82,32 @@ export const AdminMessages = ({
     }
   });
 
-  // Real-time subscription for new messages
+  // Real-time subscription for new messages with notification
   useEffect(() => {
     const channel = supabase
       .channel('admin-messages-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'admin_messages'
+        },
+        (payload) => {
+          const newMsg = payload.new as Message;
+          
+          // Send push notification for new messages (not from current user)
+          if (newMsg.is_admin && newMsg.id !== lastMessageIdRef.current && isGranted && !isAdmin) {
+            sendNotification({
+              title: "📢 New Admin Message",
+              body: newMsg.content.substring(0, 100) + (newMsg.content.length > 100 ? "..." : ""),
+              tag: "admin-message-" + newMsg.id,
+            });
+          }
+          
+          refetch();
+        }
+      )
       .on(
         'postgres_changes',
         {
@@ -99,7 +124,7 @@ export const AdminMessages = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetch]);
+  }, [refetch, sendNotification, isGranted, isAdmin]);
 
   useEffect(() => {
     const markMessagesAsRead = async () => {
@@ -124,22 +149,31 @@ export const AdminMessages = ({
         throw new Error('User not authenticated');
       }
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('admin_messages')
         .insert([{ 
           content, 
           created_by: user.id,
           is_admin: true 
-        }]);
+        }])
+        .select()
+        .single();
       
       if (error) throw error;
+      
+      // Store the message ID to avoid self-notification
+      if (data) {
+        lastMessageIdRef.current = data.id;
+      }
+      
+      return data;
     },
     onSuccess: () => {
       setNewMessage("");
       refetch();
       toast({
         title: "Message sent",
-        description: "Your message has been sent successfully.",
+        description: "Your message has been sent to all users.",
       });
     },
     onError: (error) => {
@@ -150,6 +184,27 @@ export const AdminMessages = ({
       });
     }
   });
+
+  const handleTestNotification = async () => {
+    const success = await sendNotification({
+      title: "📢 Test Notification",
+      body: "This is a test notification from MyAman WebApp. Notifications are working!",
+      tag: "test-notification",
+    });
+    
+    if (success) {
+      toast({
+        title: "Test notification sent",
+        description: "Check your notification area!",
+      });
+    } else {
+      toast({
+        title: "Notification failed",
+        description: "Make sure notifications are enabled in your browser settings.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const togglePinMutation = useMutation({
     mutationFn: async ({ messageId, isPinned }: { messageId: string; isPinned: boolean }) => {
@@ -284,13 +339,23 @@ export const AdminMessages = ({
             onChange={(e) => setNewMessage(e.target.value)}
             className="min-h-[80px] text-base"
           />
-          <Button 
-            onClick={handleSend}
-            disabled={!newMessage.trim() || sendMessageMutation.isPending || !user?.id}
-            className="w-full h-11 text-base"
-          >
-            {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleSend}
+              disabled={!newMessage.trim() || sendMessageMutation.isPending || !user?.id}
+              className="flex-1 h-11 text-base"
+            >
+              {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleTestNotification}
+              className="h-11 px-4"
+              title="Send test notification"
+            >
+              <BellRing className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
     </div>
