@@ -66,7 +66,7 @@ export const AdminMessages = ({
   const [newMessage, setNewMessage] = useState("");
   const { user, isAdmin } = useAuth();
   const isMobile = useIsMobile();
-  const { sendNotification, isGranted } = usePushNotifications();
+  const { sendNotification, isGranted, playNotificationSound } = usePushNotifications();
   const lastMessageIdRef = useRef<string | null>(null);
   
   const { data: messages, refetch } = useQuery({
