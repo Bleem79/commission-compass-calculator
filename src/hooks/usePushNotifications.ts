@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 
 export interface NotificationOptions {
@@ -9,24 +9,57 @@ export interface NotificationOptions {
   tag?: string;
   data?: Record<string, unknown>;
   requireInteraction?: boolean;
+  silent?: boolean;
 }
+
+// Notification sound URL (using a reliable web audio)
+const NOTIFICATION_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
 
 export const usePushNotifications = () => {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [isSupported, setIsSupported] = useState(false);
   const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize audio element
+  useEffect(() => {
+    audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
+    audioRef.current.volume = 0.5;
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
-    const supported = "Notification" in window && "serviceWorker" in navigator;
+    const supported = "Notification" in window;
     setIsSupported(supported);
     
     if (supported) {
       setPermission(Notification.permission);
       
-      // Get existing service worker registration
-      navigator.serviceWorker.ready.then((registration) => {
-        setSwRegistration(registration);
-      }).catch(console.error);
+      // Get service worker registration if available
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.ready
+          .then((registration) => {
+            setSwRegistration(registration);
+          })
+          .catch((err) => {
+            console.warn("Service worker not ready:", err);
+          });
+      }
+    }
+  }, []);
+
+  const playNotificationSound = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch((err) => {
+        console.warn("Could not play notification sound:", err);
+      });
     }
   }, []);
 
@@ -67,46 +100,55 @@ export const usePushNotifications = () => {
 
   const sendNotification = useCallback(
     async (options: NotificationOptions): Promise<boolean> => {
-      if (!isSupported || permission !== "granted") {
-        console.warn("Cannot send notification: not supported or permission denied");
+      if (!isSupported) {
+        console.warn("Notifications not supported");
+        return false;
+      }
+
+      if (permission !== "granted") {
+        console.warn("Notification permission not granted");
         return false;
       }
 
       try {
-        // Use Service Worker for better mobile support
-        if (swRegistration) {
-          await swRegistration.showNotification(options.title, {
-            body: options.body,
-            icon: options.icon || "/pwa-192x192.png",
-            badge: options.badge || "/pwa-192x192.png",
-            tag: options.tag,
-            data: options.data,
-            requireInteraction: options.requireInteraction || false,
-          });
-          return true;
-        } else {
-          // Fallback to regular Notification API
-          const notification = new Notification(options.title, {
-            body: options.body,
-            icon: options.icon || "/pwa-192x192.png",
-            badge: options.badge || "/pwa-192x192.png",
-            tag: options.tag,
-            data: options.data,
-            requireInteraction: options.requireInteraction,
-          });
+        // Play notification sound unless silent is true
+        if (!options.silent) {
+          playNotificationSound();
+        }
 
-          notification.onclick = () => {
-            window.focus();
-            notification.close();
-          };
+        const notificationOptions = {
+          body: options.body,
+          icon: options.icon || "/pwa-192x192.png",
+          badge: options.badge || "/pwa-192x192.png",
+          tag: options.tag || "default-notification",
+          data: options.data,
+          requireInteraction: options.requireInteraction || false,
+          silent: true, // We handle sound ourselves
+        };
+
+        // Try Service Worker notification first (works better on mobile PWA)
+        if (swRegistration && swRegistration.showNotification) {
+          await swRegistration.showNotification(options.title, notificationOptions);
+          console.log("Notification sent via Service Worker");
           return true;
         }
+
+        // Fallback to regular Notification API
+        const notification = new Notification(options.title, notificationOptions);
+
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+
+        console.log("Notification sent via Notification API");
+        return true;
       } catch (error) {
         console.error("Error sending notification:", error);
         return false;
       }
     },
-    [isSupported, permission, swRegistration]
+    [isSupported, permission, swRegistration, playNotificationSound]
   );
 
   const scheduleNotification = useCallback(
@@ -128,6 +170,7 @@ export const usePushNotifications = () => {
     requestPermission,
     sendNotification,
     scheduleNotification,
+    playNotificationSound,
     isGranted: permission === "granted",
     isDenied: permission === "denied",
   };
