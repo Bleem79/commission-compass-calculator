@@ -54,14 +54,27 @@ export const usePushNotifications = () => {
     }
   }, []);
 
+  const vibrate = useCallback((pattern: number | number[] = [100, 50, 100]) => {
+    if ("vibrate" in navigator) {
+      try {
+        navigator.vibrate(pattern);
+      } catch (err) {
+        console.warn("Could not vibrate:", err);
+      }
+    }
+  }, []);
+
   const playNotificationSound = useCallback(() => {
+    // Play sound
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch((err) => {
         console.warn("Could not play notification sound:", err);
       });
     }
-  }, []);
+    // Vibrate device
+    vibrate([100, 50, 100]);
+  }, [vibrate]);
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (!isSupported) {
