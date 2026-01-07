@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Trash2, Pin, PinOff, BellRing } from "lucide-react";
+import { Trash2, Pin, PinOff, BellRing, ImagePlus, X, Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
@@ -54,6 +54,7 @@ interface Message {
   created_at: string;
   is_admin: boolean;
   is_pinned: boolean | null;
+  image_url: string | null;
 }
 
 export const AdminMessages = ({ 
@@ -64,6 +65,10 @@ export const AdminMessages = ({
   onClose: () => void;
 }) => {
   const [newMessage, setNewMessage] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, isAdmin } = useAuth();
   const isMobile = useIsMobile();
   const { sendNotification, isGranted, playNotificationSound } = usePushNotifications();
@@ -102,6 +107,7 @@ export const AdminMessages = ({
               title: "📢 New Admin Message",
               body: newMsg.content.substring(0, 100) + (newMsg.content.length > 100 ? "..." : ""),
               tag: "admin-message-" + newMsg.id,
+              ...(newMsg.image_url && { image: newMsg.image_url }),
             });
           }
           
@@ -143,8 +149,29 @@ export const AdminMessages = ({
     markMessagesAsRead();
   }, [isOpen, isAdmin]);
 
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('admin-message-images')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      throw uploadError;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('admin-message-images')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   const sendMessageMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, imageUrl }: { content: string; imageUrl: string | null }) => {
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
@@ -154,7 +181,8 @@ export const AdminMessages = ({
         .insert([{ 
           content, 
           created_by: user.id,
-          is_admin: true 
+          is_admin: true,
+          image_url: imageUrl,
         }])
         .select()
         .single();
@@ -170,6 +198,8 @@ export const AdminMessages = ({
     },
     onSuccess: () => {
       setNewMessage("");
+      setSelectedImage(null);
+      setImagePreview(null);
       refetch();
       toast({
         title: "Message sent",
@@ -256,9 +286,55 @@ export const AdminMessages = ({
     }
   });
 
-  const handleSend = () => {
-    if (!newMessage.trim()) return;
-    sendMessageMutation.mutate(newMessage);
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          title: "File too large",
+          description: "Please select an image under 5MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSend = async () => {
+    if (!newMessage.trim() && !selectedImage) return;
+    
+    setIsUploading(true);
+    try {
+      let imageUrl: string | null = null;
+      
+      if (selectedImage) {
+        imageUrl = await uploadImage(selectedImage);
+      }
+      
+      sendMessageMutation.mutate({ content: newMessage, imageUrl });
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleDelete = (messageId: string) => {
@@ -293,6 +369,20 @@ export const AdminMessages = ({
                     <Pin className="h-3 w-3" />
                     Pinned
                   </div>
+                )}
+                {message.image_url && (
+                  <a 
+                    href={message.image_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block mb-2"
+                  >
+                    <img 
+                      src={message.image_url} 
+                      alt="Message attachment" 
+                      className="max-w-full rounded-lg max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    />
+                  </a>
                 )}
                 <p className={`text-sm pr-16 whitespace-pre-wrap break-words leading-relaxed text-white ${message.is_pinned ? 'mt-2' : ''}`}>
                   {linkifyText(message.content)}
@@ -333,19 +423,66 @@ export const AdminMessages = ({
 
       {isAdmin && (
         <div className="flex flex-col gap-3">
+          {/* Image preview */}
+          {imagePreview && (
+            <div className="relative inline-block">
+              <img 
+                src={imagePreview} 
+                alt="Selected" 
+                className="max-h-32 rounded-lg object-cover"
+              />
+              <Button
+                variant="destructive"
+                size="icon"
+                className="absolute -top-2 -right-2 h-6 w-6"
+                onClick={handleRemoveImage}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          
           <Textarea
             placeholder="Type your message here..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             className="min-h-[80px] text-base"
           />
+          
+          {/* Hidden file input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageSelect}
+            accept="image/*"
+            className="hidden"
+          />
+          
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              className="h-11 px-4"
+              title="Attach image"
+              disabled={isUploading}
+            >
+              <ImagePlus className="h-4 w-4" />
+            </Button>
             <Button 
               onClick={handleSend}
-              disabled={!newMessage.trim() || sendMessageMutation.isPending || !user?.id}
+              disabled={(!newMessage.trim() && !selectedImage) || sendMessageMutation.isPending || isUploading || !user?.id}
               className="flex-1 h-11 text-base"
             >
-              {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : sendMessageMutation.isPending ? (
+                "Sending..."
+              ) : (
+                "Send Message"
+              )}
             </Button>
             <Button
               variant="outline"

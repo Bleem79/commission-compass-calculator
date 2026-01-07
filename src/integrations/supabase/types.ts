@@ -20,6 +20,7 @@ export type Database = {
           created_at: string | null
           created_by: string
           id: string
+          image_url: string | null
           is_admin: boolean | null
           is_pinned: boolean | null
           read_at: string | null
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string | null
           created_by: string
           id?: string
+          image_url?: string | null
           is_admin?: boolean | null
           is_pinned?: boolean | null
           read_at?: string | null
@@ -38,6 +40,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string
           id?: string
+          image_url?: string | null
           is_admin?: boolean | null
           is_pinned?: boolean | null
           read_at?: string | null
