@@ -7,6 +7,7 @@ export interface NotificationOptions {
   icon?: string;
   badge?: string;
   tag?: string;
+  image?: string; // Large image to display in notification
   data?: Record<string, unknown>;
   requireInteraction?: boolean;
   silent?: boolean;
@@ -137,6 +138,7 @@ export const usePushNotifications = () => {
           data: options.data,
           requireInteraction: options.requireInteraction || false,
           silent: true, // We handle sound ourselves
+          ...(options.image && { image: options.image }), // Include image if provided
         };
 
         // Try Service Worker notification first (works better on mobile PWA)
