@@ -7,7 +7,7 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
   return async (userId: string, userEmail: string) => {
     try {
       // Specific check for admin emails
-      const adminEmails = ['erico.ariata@outlook.com', 'binu@amantaxi.com'];
+      const adminEmails = ['erico.ariata@outlook.com', 'binu@amantaxi.com', 'rev.counter@amantaximena.com'];
       if (adminEmails.includes(userEmail.toLowerCase())) {
         console.log("Found admin user - setting as admin:", userEmail);
         setUser(prevUser => {
