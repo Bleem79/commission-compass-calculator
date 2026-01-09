@@ -16,6 +16,7 @@ import HotspotPage from "./pages/HotspotPage";
 import CNGLocationPage from "./pages/CNGLocationPage";
 import DriverIncomePage from "./pages/DriverIncomePage";
 import DriverManagementPage from "./pages/DriverManagementPage";
+import DriverAbsentFinePage from "./pages/DriverAbsentFinePage";
 import InstallPage from "./pages/InstallPage";
 import { useEffect } from "react";
 import Index from "./pages/Index";
@@ -160,6 +161,18 @@ const AppRoutes = () => {
             <SidebarProvider>
               <div className="min-h-screen w-full">
                 <DriverManagementPage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver-absent-fine" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <DriverAbsentFinePage />
               </div>
             </SidebarProvider>
           </ProtectedRoute>

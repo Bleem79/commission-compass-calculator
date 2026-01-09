@@ -11,7 +11,8 @@ import {
   CalendarDays,
   Users,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Ban
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminMessages } from "@/components/messages/AdminMessages";
@@ -149,6 +150,12 @@ const HomePage = () => {
       title: "Driver Management",
       gradient: "bg-gradient-to-br from-slate-600 via-gray-600 to-zinc-700",
       onClick: () => navigate("/driver-management"),
+    });
+    features.push({
+      icon: <Ban className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Drivers Absent Fine",
+      gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-700",
+      onClick: () => navigate("/driver-absent-fine"),
     });
   }
 
