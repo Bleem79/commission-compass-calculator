@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, Upload, Loader2, AlertCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Upload, Loader2, AlertCircle, Trash2, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -32,6 +34,29 @@ const DriverAbsentFinePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [fineTypeFilter, setFineTypeFilter] = useState<string>("all");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const fineTypes = useMemo(() => {
+    const types = [...new Set(fines.map(f => f.fine_type))];
+    return types.sort();
+  }, [fines]);
+
+  const filteredFines = useMemo(() => {
+    return fines.filter(fine => {
+      const matchesSearch = searchQuery === "" || 
+        fine.fine_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        fine.driver_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        fine.vehicle_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        fine.entered_by.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (fine.driver_reason?.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesFineType = fineTypeFilter === "all" || fine.fine_type === fineTypeFilter;
+      
+      return matchesSearch && matchesFineType;
+    });
+  }, [fines, searchQuery, fineTypeFilter]);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -214,6 +239,20 @@ const DriverAbsentFinePage = () => {
     }
   };
 
+  const deleteFine = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const { error } = await supabase.from("driver_absent_fines").delete().eq("id", id);
+      if (error) throw error;
+      setFines(prev => prev.filter(f => f.id !== id));
+      toast.success("Fine record deleted");
+    } catch (error: any) {
+      toast.error("Failed to delete fine", { description: error.message });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (!isAdmin) {
     return null;
   }
@@ -327,14 +366,14 @@ const DriverAbsentFinePage = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <Card className="bg-white/10 backdrop-blur-md border-white/20">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-white">{fines.length}</p>
-              <p className="text-xs text-white/60">Total Records</p>
+              <p className="text-2xl font-bold text-white">{filteredFines.length}</p>
+              <p className="text-xs text-white/60">Records {searchQuery || fineTypeFilter !== "all" ? "(filtered)" : ""}</p>
             </CardContent>
           </Card>
           <Card className="bg-white/10 backdrop-blur-md border-white/20">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-white">
-                {fines.reduce((sum, f) => sum + f.total_amount, 0).toLocaleString()}
+                {filteredFines.reduce((sum, f) => sum + f.total_amount, 0).toLocaleString()}
               </p>
               <p className="text-xs text-white/60">Total Amount</p>
             </CardContent>
@@ -342,7 +381,7 @@ const DriverAbsentFinePage = () => {
           <Card className="bg-white/10 backdrop-blur-md border-white/20">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-white">
-                {new Set(fines.map(f => f.driver_id)).size}
+                {new Set(filteredFines.map(f => f.driver_id)).size}
               </p>
               <p className="text-xs text-white/60">Unique Drivers</p>
             </CardContent>
@@ -350,12 +389,59 @@ const DriverAbsentFinePage = () => {
           <Card className="bg-white/10 backdrop-blur-md border-white/20">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-white">
-                {fines.reduce((sum, f) => sum + f.days, 0)}
+                {filteredFines.reduce((sum, f) => sum + f.days, 0)}
               </p>
               <p className="text-xs text-white/60">Total Days</p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Search and Filter */}
+        <Card className="mb-6 bg-white/10 backdrop-blur-md border-white/20">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by Fine No, Driver ID, Vehicle, Reason..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-white/60 hover:text-white"
+                    onClick={() => setSearchQuery("")}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <Select value={fineTypeFilter} onValueChange={setFineTypeFilter}>
+                <SelectTrigger className="w-full sm:w-[200px] bg-white/10 border-white/20 text-white">
+                  <SelectValue placeholder="Filter by Fine Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Fine Types</SelectItem>
+                  {fineTypes.map(type => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(searchQuery || fineTypeFilter !== "all") && (
+                <Button
+                  variant="outline"
+                  onClick={() => { setSearchQuery(""); setFineTypeFilter("all"); }}
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Table */}
         <Card className="bg-white/10 backdrop-blur-md border-white/20">
@@ -364,11 +450,11 @@ const DriverAbsentFinePage = () => {
               <div className="flex items-center justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-white" />
               </div>
-            ) : fines.length === 0 ? (
+            ) : filteredFines.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-8 text-white/60">
                 <AlertCircle className="h-12 w-12 mb-4" />
-                <p>No fine records found</p>
-                <p className="text-sm">Upload a CSV file to get started</p>
+                <p>{fines.length === 0 ? "No fine records found" : "No matching records"}</p>
+                <p className="text-sm">{fines.length === 0 ? "Upload a CSV file to get started" : "Try adjusting your search or filters"}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -385,10 +471,11 @@ const DriverAbsentFinePage = () => {
                       <TableHead className="text-white/80 text-right">Days</TableHead>
                       <TableHead className="text-white/80 text-right">Amount</TableHead>
                       <TableHead className="text-white/80">Entered By</TableHead>
+                      <TableHead className="text-white/80 text-center w-16">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {fines.slice(0, 100).map((fine) => (
+                    {filteredFines.slice(0, 100).map((fine) => (
                       <TableRow key={fine.id} className="border-white/10 hover:bg-white/5">
                         <TableCell className="text-white font-medium">{fine.fine_no}</TableCell>
                         <TableCell className="text-white">{fine.driver_id}</TableCell>
@@ -400,13 +487,45 @@ const DriverAbsentFinePage = () => {
                         <TableCell className="text-white text-right">{fine.days}</TableCell>
                         <TableCell className="text-white text-right font-medium">{fine.total_amount}</TableCell>
                         <TableCell className="text-white/80 text-sm">{fine.entered_by}</TableCell>
+                        <TableCell className="text-center">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                                disabled={deletingId === fine.id}
+                              >
+                                {deletingId === fine.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Fine Record?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete fine <strong>{fine.fine_no}</strong> for driver <strong>{fine.driver_id}</strong>. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteFine(fine.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-                {fines.length > 100 && (
+                {filteredFines.length > 100 && (
                   <p className="text-center text-white/60 text-sm py-4">
-                    Showing 100 of {fines.length} records
+                    Showing 100 of {filteredFines.length} records
                   </p>
                 )}
               </div>
