@@ -77,6 +77,57 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_absent_fines: {
+        Row: {
+          created_at: string
+          days: number
+          driver_id: string
+          driver_reason: string | null
+          end_date: string
+          entered_by: string
+          fine_no: string
+          fine_type: string
+          id: string
+          start_date: string
+          timestamp: string
+          total_amount: number
+          uploaded_by: string
+          vehicle_number: string
+        }
+        Insert: {
+          created_at?: string
+          days?: number
+          driver_id: string
+          driver_reason?: string | null
+          end_date: string
+          entered_by: string
+          fine_no: string
+          fine_type: string
+          id?: string
+          start_date: string
+          timestamp?: string
+          total_amount?: number
+          uploaded_by: string
+          vehicle_number: string
+        }
+        Update: {
+          created_at?: string
+          days?: number
+          driver_id?: string
+          driver_reason?: string | null
+          end_date?: string
+          entered_by?: string
+          fine_no?: string
+          fine_type?: string
+          id?: string
+          start_date?: string
+          timestamp?: string
+          total_amount?: number
+          uploaded_by?: string
+          vehicle_number?: string
+        }
+        Relationships: []
+      }
       driver_credentials: {
         Row: {
           created_at: string | null
