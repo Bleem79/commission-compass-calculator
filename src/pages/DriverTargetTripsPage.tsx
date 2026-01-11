@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, X, Target, TrendingUp, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, X, Target, TrendingUp, Loader2, CheckCircle, Award, User, Hash, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,12 +19,30 @@ interface TargetTrip {
   created_at: string;
 }
 
+interface TierData {
+  tier: string;
+  avgTripsPerDay: number;
+  totalTripsMonth: number;
+  incentive: number;
+}
+
 const DriverTargetTripsPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [targetTrips, setTargetTrips] = useState<TargetTrip[]>([]);
   const [loading, setLoading] = useState(true);
   const [driverId, setDriverId] = useState<string | null>(null);
+  const [driverName, setDriverName] = useState<string | null>(null);
+
+  // Tier configuration - these would ideally come from database
+  const tierData: TierData[] = [
+    { tier: "Base", avgTripsPerDay: 24.00, totalTripsMonth: 742, incentive: 250 },
+    { tier: "Base+1", avgTripsPerDay: 25.00, totalTripsMonth: 773, incentive: 350 },
+    { tier: "Base+2", avgTripsPerDay: 26.00, totalTripsMonth: 804, incentive: 450 },
+    { tier: "Base+3", avgTripsPerDay: 27.00, totalTripsMonth: 835, incentive: 550 },
+    { tier: "Base+4", avgTripsPerDay: 28.00, totalTripsMonth: 866, incentive: 650 },
+    { tier: "Base+5", avgTripsPerDay: 29.00, totalTripsMonth: 897, incentive: 850 },
+  ];
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -76,6 +93,9 @@ const DriverTargetTripsPage = () => {
         if (error) throw error;
 
         setTargetTrips(data || []);
+        if (data && data.length > 0 && data[0].driver_name) {
+          setDriverName(data[0].driver_name);
+        }
       } catch (error: any) {
         console.error("Error fetching target trips:", error);
         toast.error("Failed to load target trips");
@@ -91,51 +111,29 @@ const DriverTargetTripsPage = () => {
     navigate("/driver-portal");
   };
 
-  const getProgressPercentage = (completed: number, target: number) => {
-    if (target === 0) return 0;
-    return Math.min(Math.round((completed / target) * 100), 100);
-  };
+  // Get the latest target trip for current display
+  const latestTrip = targetTrips.length > 0 ? targetTrips[0] : null;
 
-  const getProgressColor = (percentage: number) => {
-    if (percentage >= 100) return "bg-green-500";
-    if (percentage >= 75) return "bg-emerald-500";
-    if (percentage >= 50) return "bg-yellow-500";
-    return "bg-red-500";
-  };
-
-  const getStatusBadge = (completed: number, target: number) => {
-    const percentage = getProgressPercentage(completed, target);
-    if (percentage >= 100) {
-      return (
-        <Badge className="bg-green-500 text-white">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Achieved
-        </Badge>
-      );
+  const getCurrentTier = (completedTrips: number): string => {
+    for (let i = tierData.length - 1; i >= 0; i--) {
+      if (completedTrips >= tierData[i].totalTripsMonth) {
+        return tierData[i].tier;
+      }
     }
-    if (percentage >= 75) {
-      return (
-        <Badge className="bg-emerald-500 text-white">
-          <TrendingUp className="h-3 w-3 mr-1" />
-          On Track
-        </Badge>
-      );
-    }
-    return (
-      <Badge className="bg-orange-500 text-white">
-        <AlertCircle className="h-3 w-3 mr-1" />
-        Behind
-      </Badge>
-    );
+    return "Below Base";
   };
 
-  // Calculate totals
-  const totalTarget = targetTrips.reduce((sum, t) => sum + t.target_trips, 0);
-  const totalCompleted = targetTrips.reduce((sum, t) => sum + t.completed_trips, 0);
-  const overallPercentage = getProgressPercentage(totalCompleted, totalTarget);
+  const getNextTier = (completedTrips: number): TierData | null => {
+    for (const tier of tierData) {
+      if (completedTrips < tier.totalTripsMonth) {
+        return tier;
+      }
+    }
+    return null;
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-emerald-50/50 to-teal-100/50 p-4 sm:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/30 to-teal-50/50 p-4 sm:p-6">
       <Button 
         variant="ghost" 
         size="icon" 
@@ -154,12 +152,7 @@ const DriverTargetTripsPage = () => {
         <span className="hidden sm:inline">Back to Portal</span>
       </Button>
 
-      <div className="max-w-4xl mx-auto pt-16">
-        <div className="flex items-center gap-3 mb-6">
-          <Target className="h-8 w-8 text-emerald-600" />
-          <h1 className="text-2xl font-bold text-foreground">Target Trips</h1>
-        </div>
-
+      <div className="max-w-2xl mx-auto pt-16 space-y-6">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -176,91 +169,201 @@ const DriverTargetTripsPage = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {/* Overall Progress Card */}
-            <Card className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
+          <>
+            {/* Driver Info Card */}
+            <Card className="bg-white border-0 shadow-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 p-1" />
               <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-emerald-100 text-sm">Overall Progress</p>
-                    <p className="text-3xl font-bold">{overallPercentage}%</p>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-3 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full">
+                    <User className="h-8 w-8 text-emerald-600" />
                   </div>
-                  <div className="text-right">
-                    <p className="text-emerald-100 text-sm">Completed / Target</p>
-                    <p className="text-2xl font-bold">{totalCompleted} / {totalTarget}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                      <Hash className="h-4 w-4" />
+                      <span>ID No</span>
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{driverId}</p>
                   </div>
                 </div>
-                <Progress 
-                  value={overallPercentage} 
-                  className="h-3 bg-emerald-700"
-                />
+                
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Name:</p>
+                    <p className="text-lg font-semibold text-foreground">
+                      {driverName || "Driver"}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 pt-2">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Shift:</span>
+                    </div>
+                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-lg px-4 py-1 font-bold">
+                      24H
+                    </Badge>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="bg-card border border-border">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="p-3 bg-emerald-100 rounded-full">
-                    <Target className="h-6 w-6 text-emerald-600" />
+            {/* Current Progress Card */}
+            {latestTrip && (
+              <Card className="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 text-white border-0 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <TrendingUp className="h-5 w-5" />
+                    <span className="font-medium">{latestTrip.month} {latestTrip.year} Progress</span>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Target</p>
-                    <p className="text-2xl font-bold text-foreground">{totalTarget}</p>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-emerald-100 text-sm mb-1">Completed Trips</p>
+                      <p className="text-4xl font-bold">{latestTrip.completed_trips}</p>
+                    </div>
+                    <div>
+                      <p className="text-emerald-100 text-sm mb-1">Target</p>
+                      <p className="text-4xl font-bold">{latestTrip.target_trips}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-white/20">
+                    <div className="flex items-center justify-between">
+                      <span className="text-emerald-100">Current Tier:</span>
+                      <Badge className="bg-white/20 text-white hover:bg-white/30 text-base px-3">
+                        {getCurrentTier(latestTrip.completed_trips)}
+                      </Badge>
+                    </div>
+                    {getNextTier(latestTrip.completed_trips) && (
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-emerald-100 text-sm">
+                          {getNextTier(latestTrip.completed_trips)!.totalTripsMonth - latestTrip.completed_trips} trips to {getNextTier(latestTrip.completed_trips)!.tier}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-card border border-border">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="p-3 bg-green-100 rounded-full">
-                    <CheckCircle className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Completed</p>
-                    <p className="text-2xl font-bold text-foreground">{totalCompleted}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            )}
 
-            {/* Monthly Breakdown */}
-            <Card className="bg-card border border-border">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-foreground">Monthly Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {targetTrips.map((trip) => {
-                  const percentage = getProgressPercentage(trip.completed_trips, trip.target_trips);
-                  return (
-                    <div key={trip.id} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-medium text-foreground">{trip.month} {trip.year}</span>
-                        </div>
+            {/* Target Tiers Table */}
+            <Card className="bg-white border-0 shadow-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-slate-700 via-slate-800 to-slate-900 p-4">
+                <div className="flex items-center gap-3">
+                  <Award className="h-6 w-6 text-amber-400" />
+                  <h2 className="text-lg font-bold text-white">Target & Incentive Tiers</h2>
+                </div>
+              </div>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-slate-100 border-b border-slate-200">
+                        <th className="text-left p-4 font-semibold text-slate-700">Target</th>
+                        <th className="text-center p-4 font-semibold text-slate-700">
+                          <div className="flex flex-col items-center">
+                            <span>Avg</span>
+                            <span className="text-xs font-normal text-slate-500">Trip/Day</span>
+                          </div>
+                        </th>
+                        <th className="text-center p-4 font-semibold text-slate-700">
+                          <div className="flex flex-col items-center">
+                            <span>Total Trips/</span>
+                            <span className="text-xs font-normal text-slate-500">Month</span>
+                          </div>
+                        </th>
+                        <th className="text-center p-4 font-semibold text-slate-700">Incentive</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tierData.map((tier, index) => {
+                        const isCurrentTier = latestTrip && getCurrentTier(latestTrip.completed_trips) === tier.tier;
+                        const isAchieved = latestTrip && latestTrip.completed_trips >= tier.totalTripsMonth;
+                        
+                        return (
+                          <tr 
+                            key={tier.tier}
+                            className={`
+                              border-b border-slate-100 transition-colors
+                              ${isCurrentTier ? 'bg-emerald-50' : ''}
+                              ${index % 2 === 0 && !isCurrentTier ? 'bg-white' : !isCurrentTier ? 'bg-slate-50/50' : ''}
+                              hover:bg-emerald-50/50
+                            `}
+                          >
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <span className={`font-medium ${isCurrentTier ? 'text-emerald-700' : 'text-slate-700'}`}>
+                                  {tier.tier}
+                                </span>
+                                {isAchieved && (
+                                  <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-4 text-center">
+                              <span className={`font-medium ${isCurrentTier ? 'text-emerald-700' : 'text-slate-600'}`}>
+                                {tier.avgTripsPerDay.toFixed(2)}
+                              </span>
+                            </td>
+                            <td className="p-4 text-center">
+                              <span className={`font-semibold ${isCurrentTier ? 'text-emerald-700' : 'text-slate-700'}`}>
+                                {tier.totalTripsMonth}
+                              </span>
+                            </td>
+                            <td className="p-4 text-center">
+                              <Badge 
+                                className={`
+                                  px-3 py-1 font-bold text-base
+                                  ${isCurrentTier 
+                                    ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
+                                    : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                  }
+                                `}
+                              >
+                                {tier.incentive}
+                              </Badge>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Period Info */}
+            {targetTrips.length > 1 && (
+              <Card className="bg-white border-0 shadow-lg">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-slate-700 mb-3">Previous Periods</h3>
+                  <div className="space-y-2">
+                    {targetTrips.slice(1).map((trip) => (
+                      <div 
+                        key={trip.id}
+                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                      >
+                        <span className="font-medium text-slate-700">
+                          {trip.month} {trip.year}
+                        </span>
                         <div className="flex items-center gap-3">
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-sm text-slate-500">
                             {trip.completed_trips} / {trip.target_trips} trips
                           </span>
-                          {getStatusBadge(trip.completed_trips, trip.target_trips)}
+                          <Badge className={
+                            trip.completed_trips >= trip.target_trips
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-orange-100 text-orange-700"
+                          }>
+                            {getCurrentTier(trip.completed_trips)}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="relative">
-                        <Progress 
-                          value={percentage} 
-                          className="h-2"
-                        />
-                        <div 
-                          className={`absolute top-0 left-0 h-full rounded-full transition-all ${getProgressColor(percentage)}`}
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-right text-muted-foreground">{percentage}% complete</p>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
       </div>
     </div>
