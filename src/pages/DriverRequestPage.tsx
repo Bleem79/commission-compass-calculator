@@ -24,16 +24,15 @@ interface DriverRequest {
   admin_response: string | null;
   responded_at: string | null;
   created_at: string;
+  request_no: string | null;
 }
 
 const REQUEST_TYPES = [
-  { value: "leave", label: "Leave Request" },
-  { value: "schedule", label: "Schedule Change" },
-  { value: "vehicle", label: "Vehicle Issue" },
-  { value: "payment", label: "Payment Query" },
-  { value: "document", label: "Document Request" },
-  { value: "complaint", label: "Complaint" },
-  { value: "other", label: "Other" },
+  { value: "single_to_double", label: "Single Shift to Double Shift" },
+  { value: "double_to_single", label: "Double Shift to Single Shift" },
+  { value: "vehicle_change", label: "Vehicle Change" },
+  { value: "fuel_increase", label: "Fuel Increase" },
+  { value: "partner_change", label: "Partner Change" },
 ];
 
 const DriverRequestPage = () => {
@@ -439,9 +438,16 @@ const RequestCard = ({ request, getStatusBadge, formatDate, getRequestTypeLabel 
     <CardHeader className="pb-2">
       <div className="flex items-start justify-between">
         <div>
-          <CardTitle className="text-base font-semibold text-foreground">
-            {request.subject}
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground">
+              {request.subject}
+            </CardTitle>
+            {request.request_no && (
+              <Badge variant="secondary" className="text-xs font-mono bg-blue-100 text-blue-700">
+                {request.request_no}
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-2 mt-1">
             <Badge variant="outline" className="text-xs">
               {getRequestTypeLabel(request.request_type)}
