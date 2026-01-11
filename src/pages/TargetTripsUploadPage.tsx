@@ -132,13 +132,33 @@ const TargetTripsUploadPage = () => {
       const text = await selectedFile.text();
       const data = parseCSV(text);
 
-      // Upload to storage for reference
-      const fileName = `target-trips-${Date.now()}.csv`;
-      await supabase.storage.from('driver-data').upload(fileName, selectedFile);
+      const insertData = data.map((row) => ({
+        driver_id: row.driver_id,
+        driver_name: row.driver_name,
+        target_trips: row.target_trips,
+        completed_trips: row.completed_trips,
+        month: row.month,
+        year: row.year,
+        uploaded_by: user.id,
+      }));
 
-      setUploadProgress({ total: data.length, uploaded: data.length });
-      
-      toast.success(`Successfully processed ${data.length} target trips records`);
+      setUploadProgress({ total: insertData.length, uploaded: 0 });
+
+      const chunks = chunkArray(insertData, CHUNK_SIZE);
+      for (const chunk of chunks) {
+        const { error } = await supabase.from("target_trips").insert(chunk as any);
+        if (error) {
+          console.error("Supabase insert error:", error);
+          throw error;
+        }
+
+        setUploadProgress((prev) => {
+          if (!prev) return { total: insertData.length, uploaded: chunk.length };
+          return { total: prev.total, uploaded: prev.uploaded + chunk.length };
+        });
+      }
+
+      toast.success(`Successfully imported ${insertData.length} target trips records`);
       setSelectedFile(null);
       setPreviewData(null);
       setUploadProgress(null);
