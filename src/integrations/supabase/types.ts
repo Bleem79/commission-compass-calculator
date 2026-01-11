@@ -218,6 +218,48 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_requests: {
+        Row: {
+          admin_response: string | null
+          created_at: string
+          description: string
+          driver_id: string
+          driver_name: string | null
+          id: string
+          request_type: string
+          responded_at: string | null
+          responded_by: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          admin_response?: string | null
+          created_at?: string
+          description: string
+          driver_id: string
+          driver_name?: string | null
+          id?: string
+          request_type: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          admin_response?: string | null
+          created_at?: string
+          description?: string
+          driver_id?: string
+          driver_name?: string | null
+          id?: string
+          request_type?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       target_trips: {
         Row: {
           completed_trips: number
