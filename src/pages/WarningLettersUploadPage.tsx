@@ -12,12 +12,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 
 interface WarningLetterRow {
+  date: string;
+  taxi_no: string;
   driver_id: string;
-  driver_name: string;
-  warning_type: string;
-  warning_date: string;
-  description: string;
-  issued_by: string;
+  name: string;
+  reasons: string;
+  action_taken: string;
+  document_no: string;
 }
 
 const CHUNK_SIZE = 250;
@@ -44,10 +45,12 @@ const WarningLettersUploadPage = () => {
   }, [isAdmin, navigate]);
 
   const downloadTemplate = () => {
-    const csvContent = `Driver ID,Driver Name,Warning Type,Warning Date,Description,Issued By
-100525,MUHAMMAD SIDDIQUE AMIR AHMED,Verbal Warning,2026-01-01,Late arrival to shift,Admin
-100955,ABDUL ROUF POOMANGAL,Written Warning,2026-01-05,Customer complaint,Admin
-101692,MOHAMMED JAFAR IQBAL ABDUL BASHAR,Final Warning,2026-01-10,Repeated violations,Admin`;
+    const csvContent = `Date,Taxi No,Driver ID,Name,Reasons,Action Taken,Document No.
+1/25/2025,A853,112455,ABEDNEGO OSABUTEY,Not Reporting - With out Sick Leave Paper,1-Warning Letter,AT/WL/OPR/00344
+1/27/2025,S565,112214,SPENCER ASANTE,Not reporting for payment in daily basis/ Low Income,2-Warning Letter,AT/WL/OPR/00345
+1/27/2025,A122,112112,MICHEAL MAWUKO,Low income Single Shift Driver,1-Warning Letter,AT/WL/OPR/00346
+1/27/2025,A610,113258,ISSACK ARTHUR,Low income DoubleShift Driver,1-Warning Letter,AT/WL/OPR/00347
+1/27/2025,A270,114185,UMAR ISLAM MUHAMMAD IJAZ,Not reporting for payment in daily basis/ Low Income,1-Warning Letter,AT/WL/OPR/00348`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -65,29 +68,32 @@ const WarningLettersUploadPage = () => {
     if (lines.length < 2) throw new Error("File must have at least a header row and one data row");
     
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const dateIdx = headers.findIndex(h => h === 'date');
+    const taxiNoIdx = headers.findIndex(h => h.includes('taxi'));
     const driverIdIdx = headers.findIndex(h => h.includes('driver') && h.includes('id'));
-    const driverNameIdx = headers.findIndex(h => h.includes('driver') && h.includes('name'));
-    const warningTypeIdx = headers.findIndex(h => h.includes('warning') && h.includes('type'));
-    const warningDateIdx = headers.findIndex(h => h.includes('date'));
-    const descriptionIdx = headers.findIndex(h => h.includes('description'));
-    const issuedByIdx = headers.findIndex(h => h.includes('issued'));
+    const nameIdx = headers.findIndex(h => h === 'name');
+    const reasonsIdx = headers.findIndex(h => h.includes('reason'));
+    const actionTakenIdx = headers.findIndex(h => h.includes('action'));
+    const documentNoIdx = headers.findIndex(h => h.includes('document'));
 
-    if (driverIdIdx === -1 || warningTypeIdx === -1) {
-      throw new Error("CSV must contain 'Driver ID' and 'Warning Type' columns");
+    if (driverIdIdx === -1) {
+      throw new Error("CSV must contain 'Driver ID' column");
     }
 
     const data: WarningLetterRow[] = [];
     for (let i = 1; i < lines.length; i++) {
+      // Handle CSV values that might contain commas within quotes
       const values = lines[i].split(',').map(v => v.trim());
       if (values.length < 2 || !values[driverIdIdx]) continue;
       
       data.push({
+        date: dateIdx !== -1 ? values[dateIdx] : new Date().toLocaleDateString(),
+        taxi_no: taxiNoIdx !== -1 ? values[taxiNoIdx] : '',
         driver_id: values[driverIdIdx],
-        driver_name: driverNameIdx !== -1 ? values[driverNameIdx] : '',
-        warning_type: values[warningTypeIdx] || 'Other',
-        warning_date: warningDateIdx !== -1 ? values[warningDateIdx] : new Date().toISOString().split('T')[0],
-        description: descriptionIdx !== -1 ? values[descriptionIdx] : '',
-        issued_by: issuedByIdx !== -1 ? values[issuedByIdx] : 'Admin',
+        name: nameIdx !== -1 ? values[nameIdx] : '',
+        reasons: reasonsIdx !== -1 ? values[reasonsIdx] : '',
+        action_taken: actionTakenIdx !== -1 ? values[actionTakenIdx] : '1-Warning Letter',
+        document_no: documentNoIdx !== -1 ? values[documentNoIdx] : '',
       });
     }
     
@@ -208,7 +214,7 @@ const WarningLettersUploadPage = () => {
                   className="mt-1"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Required: Driver ID, Warning Type | Optional: Driver Name, Warning Date, Description, Issued By
+                  Required: Driver ID | Optional: Date, Taxi No, Name, Reasons, Action Taken, Document No.
                 </p>
               </div>
               <Button
@@ -253,23 +259,25 @@ const WarningLettersUploadPage = () => {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border">
+                      <th className="text-left p-2">Date</th>
+                      <th className="text-left p-2">Taxi No</th>
                       <th className="text-left p-2">Driver ID</th>
                       <th className="text-left p-2">Name</th>
-                      <th className="text-left p-2">Warning Type</th>
-                      <th className="text-left p-2">Date</th>
-                      <th className="text-left p-2">Description</th>
-                      <th className="text-left p-2">Issued By</th>
+                      <th className="text-left p-2">Reasons</th>
+                      <th className="text-left p-2">Action Taken</th>
+                      <th className="text-left p-2">Document No.</th>
                     </tr>
                   </thead>
                   <tbody>
                     {previewData.map((row, index) => (
                       <tr key={index} className="border-b border-border">
+                        <td className="p-2">{row.date}</td>
+                        <td className="p-2">{row.taxi_no || '-'}</td>
                         <td className="p-2">{row.driver_id}</td>
-                        <td className="p-2">{row.driver_name || '-'}</td>
-                        <td className="p-2">{row.warning_type}</td>
-                        <td className="p-2">{row.warning_date}</td>
-                        <td className="p-2">{row.description || '-'}</td>
-                        <td className="p-2">{row.issued_by}</td>
+                        <td className="p-2">{row.name || '-'}</td>
+                        <td className="p-2 max-w-[200px] truncate">{row.reasons || '-'}</td>
+                        <td className="p-2">{row.action_taken}</td>
+                        <td className="p-2">{row.document_no || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
