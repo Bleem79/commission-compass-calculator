@@ -80,12 +80,14 @@ const TargetTripsUploadPage = () => {
   }, [isAdmin, navigate]);
 
   const downloadTemplate = () => {
-    const csvContent = `Driver ID,Driver Name,Target Trips,Completed Trips,Month,Year
-100525,MUHAMMAD SIDDIQUE AMIR AHMED,150,120,January,2026
-100955,ABDUL ROUF POOMANGAL,160,145,January,2026
-101692,MOHAMMED JAFAR IQBAL ABDUL BASHAR,140,138,January,2026
-101709,NOOR MUHAMMAD KHAN,155,150,January,2026
-102141,GUL MUHAMMAD KHAN MUNASIB KHAN,145,142,January,2026`;
+    const csvContent = `Driver ID,Shift,Final Target
+100525,1,24
+100955,1,28
+101680,1,25
+101692,1,23
+101709,1,22
+102141,1,23
+102456,1,20`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -104,14 +106,17 @@ const TargetTripsUploadPage = () => {
     
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
     const driverIdIdx = headers.findIndex(h => h.includes('driver') && h.includes('id'));
+    const shiftIdx = headers.findIndex(h => h.includes('shift'));
+    const finalTargetIdx = headers.findIndex(h => h.includes('final') && h.includes('target'));
+    // Fallback to old format columns
+    const targetTripsIdx = finalTargetIdx !== -1 ? finalTargetIdx : headers.findIndex(h => h.includes('target'));
     const driverNameIdx = headers.findIndex(h => h.includes('driver') && h.includes('name'));
-    const targetTripsIdx = headers.findIndex(h => h.includes('target'));
     const completedTripsIdx = headers.findIndex(h => h.includes('completed'));
     const monthIdx = headers.findIndex(h => h.includes('month'));
     const yearIdx = headers.findIndex(h => h.includes('year'));
 
     if (driverIdIdx === -1 || targetTripsIdx === -1) {
-      throw new Error("CSV must contain 'Driver ID' and 'Target Trips' columns");
+      throw new Error("CSV must contain 'Driver ID' and 'Final Target' (or 'Target Trips') columns");
     }
 
     const data: TargetTripsRow[] = [];
