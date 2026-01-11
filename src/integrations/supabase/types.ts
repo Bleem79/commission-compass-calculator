@@ -218,6 +218,42 @@ export type Database = {
         }
         Relationships: []
       }
+      target_trips: {
+        Row: {
+          completed_trips: number
+          created_at: string
+          driver_id: string
+          driver_name: string | null
+          id: string
+          month: string
+          target_trips: number
+          uploaded_by: string
+          year: number
+        }
+        Insert: {
+          completed_trips?: number
+          created_at?: string
+          driver_id: string
+          driver_name?: string | null
+          id?: string
+          month: string
+          target_trips?: number
+          uploaded_by: string
+          year: number
+        }
+        Update: {
+          completed_trips?: number
+          created_at?: string
+          driver_id?: string
+          driver_name?: string | null
+          id?: string
+          month?: string
+          target_trips?: number
+          uploaded_by?: string
+          year?: number
+        }
+        Relationships: []
+      }
       uploaded_files: {
         Row: {
           category: string
