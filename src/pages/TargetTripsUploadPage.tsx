@@ -35,6 +35,7 @@ const TargetTripsUploadPage = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<TargetTripsRow[] | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ total: number; uploaded: number } | null>(null);
+  const [reportHeading, setReportHeading] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -205,6 +206,21 @@ const TargetTripsUploadPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Report Heading */}
+            <div>
+              <Label htmlFor="reportHeading" className="text-muted-foreground">
+                Report Heading (optional)
+              </Label>
+              <Input
+                id="reportHeading"
+                type="text"
+                placeholder="e.g., December 26-31, 2025 Target Trips Report"
+                value={reportHeading}
+                onChange={(e) => setReportHeading(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+
             {/* Download Template */}
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
