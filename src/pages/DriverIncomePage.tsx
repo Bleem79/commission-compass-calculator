@@ -164,7 +164,7 @@ const DriverIncomePage = () => {
   }, [fetchIncomeData, isAuthenticated]);
 
   const handleClose = () => {
-    navigate("/home");
+    navigate(isAdmin ? "/home" : "/driver-portal");
   };
 
   return (

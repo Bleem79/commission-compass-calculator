@@ -315,7 +315,7 @@ export const DriverIncomeAuthDialog = ({ isOpen, onClose }: DriverIncomeAuthDial
           description: `Successfully logged in as Driver ${credentials.driver_id}`,
         });
         onClose();
-        navigate("/driver-income");
+        navigate("/driver-portal");
       }
     } catch (err) {
       console.error("Auth error:", err);
@@ -363,7 +363,7 @@ export const DriverIncomeAuthDialog = ({ isOpen, onClose }: DriverIncomeAuthDial
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center text-xl font-semibold text-gray-800">
-            Driver Income Access
+            Driver Main Portal Access
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
