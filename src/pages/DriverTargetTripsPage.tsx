@@ -23,6 +23,7 @@ interface DriverIncome {
   shift: string | null;
   working_days: number;
   total_trips: number | null;
+  driver_name: string | null;
 }
 
 interface TierData {
@@ -99,10 +100,10 @@ const DriverTargetTripsPage = () => {
           setDriverName(tripsData[0].driver_name);
         }
 
-        // Fetch driver income to get shift type and working days
+        // Fetch driver income to get shift type, working days, and driver name
         const { data: incomeData, error: incomeError } = await supabase
           .from("driver_income")
-          .select("shift, working_days, total_trips")
+          .select("shift, working_days, total_trips, driver_name")
           .eq("driver_id", driverId)
           .order("year", { ascending: false })
           .order("month", { ascending: false })
@@ -112,6 +113,11 @@ const DriverTargetTripsPage = () => {
         if (incomeError) throw incomeError;
 
         setDriverIncome(incomeData);
+        
+        // Use driver name from income data if not in target trips
+        if (incomeData?.driver_name && !tripsData?.[0]?.driver_name) {
+          setDriverName(incomeData.driver_name);
+        }
       } catch (error: any) {
         console.error("Error fetching data:", error);
         toast.error("Failed to load data");
@@ -130,8 +136,8 @@ const DriverTargetTripsPage = () => {
   // Get the latest target trip for current display
   const latestTrip = targetTrips.length > 0 ? targetTrips[0] : null;
 
-  // Determine shift type: "1" = 24H, "2" = 12H
-  const shiftType = driverIncome?.shift || "1";
+  // Determine shift type: check if shift contains "1" for 24H, "2" for 12H
+  const shiftType = driverIncome?.shift?.startsWith("1") ? "1" : driverIncome?.shift?.startsWith("2") ? "2" : "1";
   const shiftLabel = shiftType === "2" ? "12H" : "24H";
   const incentives = shiftType === "2" ? INCENTIVES_12H : INCENTIVES_24H;
 

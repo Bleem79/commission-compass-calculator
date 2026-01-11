@@ -78,8 +78,8 @@ const DriverTierTable = ({ driverId }: DriverTierTableProps) => {
     fetchData();
   }, [driverId]);
 
-  // Determine shift type: "1" = 24H, "2" = 12H
-  const shiftType = driverIncome?.shift || "1";
+  // Determine shift type: check if shift contains "1" for 24H, "2" for 12H
+  const shiftType = driverIncome?.shift?.startsWith("1") ? "1" : driverIncome?.shift?.startsWith("2") ? "2" : "1";
   const shiftLabel = shiftType === "2" ? "12H" : "24H";
   const incentives = shiftType === "2" ? INCENTIVES_12H : INCENTIVES_24H;
 
