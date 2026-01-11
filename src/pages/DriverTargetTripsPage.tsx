@@ -147,15 +147,17 @@ const DriverTargetTripsPage = () => {
   // Use default 31 days for tier calculation
   const daysInMonth = DEFAULT_DAYS_IN_MONTH;
 
-  // Calculate base average trips per day - use target_trips / 31 or default to 24
+  // Base is the driver's target_trips value (final uploaded target)
+  // This is the daily average - Base from sample: 24.00 avg/day
   const baseAvgTripsPerDay = useMemo(() => {
     if (latestTrip && latestTrip.target_trips > 0) {
-      return Math.round(latestTrip.target_trips / daysInMonth);
+      // The target_trips IS the base daily average (e.g., 24)
+      return latestTrip.target_trips;
     }
     return DEFAULT_BASE_AVG;
-  }, [latestTrip, daysInMonth]);
+  }, [latestTrip]);
 
-  // Generate tier data dynamically
+  // Generate tier data dynamically based on the driver's actual target_trips as base
   const tierData: TierData[] = useMemo(() => {
     return Array.from({ length: 6 }, (_, i) => {
       const avgTrips = baseAvgTripsPerDay + i;
