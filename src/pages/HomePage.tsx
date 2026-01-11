@@ -12,7 +12,9 @@ import {
   Users,
   LogOut,
   ChevronRight,
-  Ban
+  Ban,
+  Target,
+  Upload
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminMessages } from "@/components/messages/AdminMessages";
@@ -156,6 +158,18 @@ const HomePage = () => {
       title: "Drivers Absent Fine",
       gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-700",
       onClick: () => navigate("/driver-absent-fine"),
+    });
+    features.push({
+      icon: <Target className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Target Trips Upload",
+      gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
+      onClick: () => navigate("/target-trips-upload"),
+    });
+    features.push({
+      icon: <Upload className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Absent Fine Upload",
+      gradient: "bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-600",
+      onClick: () => navigate("/absent-fine-upload"),
     });
   }
 

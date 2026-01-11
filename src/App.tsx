@@ -22,6 +22,8 @@ import DriverTargetTripsPage from "./pages/DriverTargetTripsPage";
 import DriverAbsentFineViewPage from "./pages/DriverAbsentFineViewPage";
 import DriverRequestPage from "./pages/DriverRequestPage";
 import DriverWarningLetterPage from "./pages/DriverWarningLetterPage";
+import TargetTripsUploadPage from "./pages/TargetTripsUploadPage";
+import AbsentFineUploadPage from "./pages/AbsentFineUploadPage";
 import InstallPage from "./pages/InstallPage";
 import { useEffect } from "react";
 import Index from "./pages/Index";
@@ -238,6 +240,30 @@ const AppRoutes = () => {
             <SidebarProvider>
               <div className="min-h-screen w-full">
                 <DriverWarningLetterPage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/target-trips-upload" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <TargetTripsUploadPage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/absent-fine-upload" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <AbsentFineUploadPage />
               </div>
             </SidebarProvider>
           </ProtectedRoute>
