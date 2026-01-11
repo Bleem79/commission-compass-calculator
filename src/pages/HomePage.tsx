@@ -138,7 +138,7 @@ const HomePage = () => {
     },
     {
       icon: <CalendarDays className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: "Driver Income",
+      title: isAdmin ? "Driver Income" : "Driver Main Portal",
       gradient: "bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600",
       onClick: () => isAdmin ? navigate("/driver-income") : setIsDriverIncomeDialogOpen(true),
     },

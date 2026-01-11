@@ -17,6 +17,10 @@ import CNGLocationPage from "./pages/CNGLocationPage";
 import DriverIncomePage from "./pages/DriverIncomePage";
 import DriverManagementPage from "./pages/DriverManagementPage";
 import DriverAbsentFinePage from "./pages/DriverAbsentFinePage";
+import DriverPortalPage from "./pages/DriverPortalPage";
+import DriverTargetTripsPage from "./pages/DriverTargetTripsPage";
+import DriverAbsentFineViewPage from "./pages/DriverAbsentFineViewPage";
+import DriverRequestPage from "./pages/DriverRequestPage";
 import InstallPage from "./pages/InstallPage";
 import { useEffect } from "react";
 import Index from "./pages/Index";
@@ -173,6 +177,54 @@ const AppRoutes = () => {
             <SidebarProvider>
               <div className="min-h-screen w-full">
                 <DriverAbsentFinePage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver-portal" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <DriverPortalPage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver-target-trips" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <DriverTargetTripsPage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver-absent-fine-view" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <DriverAbsentFineViewPage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver-request" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <DriverRequestPage />
               </div>
             </SidebarProvider>
           </ProtectedRoute>
