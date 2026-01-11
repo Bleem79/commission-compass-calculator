@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   CalendarDays, 
@@ -13,7 +13,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import DriverTierTable from "@/components/driver-portal/DriverTierTable";
 
 interface PortalCardProps {
   icon: React.ReactNode;
@@ -55,12 +56,36 @@ const PortalCard = ({ icon, title, gradient, onClick }: PortalCardProps) => (
 const DriverPortalPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const [driverId, setDriverId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login", { replace: true });
     }
   }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    const fetchDriverCredentials = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data: credentials } = await supabase
+          .from("driver_credentials")
+          .select("driver_id")
+          .eq("user_id", user.id)
+          .eq("status", "enabled")
+          .maybeSingle();
+
+        if (credentials) {
+          setDriverId(credentials.driver_id);
+        }
+      } catch (error) {
+        console.error("Error fetching driver credentials:", error);
+      }
+    };
+
+    fetchDriverCredentials();
+  }, [user?.id]);
 
   const handleClose = () => {
     navigate("/home");
@@ -141,6 +166,13 @@ const DriverPortalPage = () => {
               </p>
             )}
           </div>
+
+          {/* Tier Calculation Table */}
+          {driverId && (
+            <div className="mb-6">
+              <DriverTierTable driverId={driverId} />
+            </div>
+          )}
 
           {/* Portal Cards Grid */}
           <div className="flex-1">
