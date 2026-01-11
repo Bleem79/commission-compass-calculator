@@ -199,13 +199,25 @@ const DriverTargetTripsPage = () => {
             <Loader2 className="h-10 w-10 animate-spin text-emerald-400 mb-4" />
             <span className="text-white/60">Loading target trips...</span>
           </div>
+        ) : !driverId ? (
+          <Card className="bg-white/5 backdrop-blur-lg border-white/10">
+            <CardContent className="p-10 text-center">
+              <User className="h-16 w-16 text-white/30 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-white mb-2">Driver ID not linked</h2>
+              <p className="text-white/50">
+                This login ({user?.email || "unknown"}) is not linked to an enabled driver ID.
+                Please contact admin to assign your driver credentials.
+              </p>
+            </CardContent>
+          </Card>
         ) : targetTrips.length === 0 ? (
           <Card className="bg-white/5 backdrop-blur-lg border-white/10">
             <CardContent className="p-10 text-center">
               <Target className="h-16 w-16 text-white/30 mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-white mb-2">No Target Trips</h2>
               <p className="text-white/50">
-                No target trips data available yet. Check back later!
+                No target trips found for Driver ID <span className="text-white/80 font-medium">{driverId}</span>.
+                If you recently uploaded target trips, make sure the uploaded driver ID matches exactly.
               </p>
             </CardContent>
           </Card>
@@ -223,7 +235,7 @@ const DriverTargetTripsPage = () => {
                       </div>
                       <p className="text-2xl font-bold text-white">{driverId}</p>
                     </div>
-                    
+
                     <div>
                       <p className="text-white/50 text-xs mb-1">Name:</p>
                       <p className="text-base font-medium text-white/90">
@@ -231,7 +243,7 @@ const DriverTargetTripsPage = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="text-right">
                     <div className="flex items-center gap-2 text-white/50 text-xs mb-2 justify-end">
                       <Clock className="h-3 w-3" />
@@ -258,7 +270,7 @@ const DriverTargetTripsPage = () => {
                   </div>
                 </div>
               </div>
-              
+
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
@@ -282,11 +294,11 @@ const DriverTargetTripsPage = () => {
                     </thead>
                     <tbody>
                       {tierData.map((tier, index) => (
-                        <tr 
+                        <tr
                           key={tier.tier}
                           className={`
                             border-b border-white/5 transition-colors
-                            ${index % 2 === 0 ? 'bg-white/[0.02]' : ''}
+                            ${index % 2 === 0 ? "bg-white/[0.02]" : ""}
                             hover:bg-white/[0.05]
                           `}
                         >
@@ -314,6 +326,7 @@ const DriverTargetTripsPage = () => {
           </>
         )}
       </div>
+
     </div>
   );
 };
