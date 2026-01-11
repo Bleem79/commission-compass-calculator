@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, X, Target, TrendingUp, Loader2, CheckCircle, Award, User, Hash, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,12 @@ interface TargetTrip {
   created_at: string;
 }
 
+interface DriverIncome {
+  shift: string | null;
+  working_days: number;
+  total_trips: number | null;
+}
+
 interface TierData {
   tier: string;
   avgTripsPerDay: number;
@@ -26,23 +32,18 @@ interface TierData {
   incentive: number;
 }
 
+// Incentive tiers based on shift type
+const INCENTIVES_24H = [250, 350, 450, 550, 650, 850]; // 24H shift (shift = 1)
+const INCENTIVES_12H = [150, 250, 350, 450, 550, 650]; // 12H shift (shift = 2)
+
 const DriverTargetTripsPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [targetTrips, setTargetTrips] = useState<TargetTrip[]>([]);
+  const [driverIncome, setDriverIncome] = useState<DriverIncome | null>(null);
   const [loading, setLoading] = useState(true);
   const [driverId, setDriverId] = useState<string | null>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
-
-  // Tier configuration - these would ideally come from database
-  const tierData: TierData[] = [
-    { tier: "Base", avgTripsPerDay: 24.00, totalTripsMonth: 742, incentive: 250 },
-    { tier: "Base+1", avgTripsPerDay: 25.00, totalTripsMonth: 773, incentive: 350 },
-    { tier: "Base+2", avgTripsPerDay: 26.00, totalTripsMonth: 804, incentive: 450 },
-    { tier: "Base+3", avgTripsPerDay: 27.00, totalTripsMonth: 835, incentive: 550 },
-    { tier: "Base+4", avgTripsPerDay: 28.00, totalTripsMonth: 866, incentive: 650 },
-    { tier: "Base+5", avgTripsPerDay: 29.00, totalTripsMonth: 897, incentive: 850 },
-  ];
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -76,35 +77,50 @@ const DriverTargetTripsPage = () => {
   }, [user?.id]);
 
   useEffect(() => {
-    const fetchTargetTrips = async () => {
+    const fetchData = async () => {
       if (!driverId) {
         setLoading(false);
         return;
       }
 
       try {
-        const { data, error } = await supabase
+        // Fetch target trips
+        const { data: tripsData, error: tripsError } = await supabase
           .from("target_trips")
           .select("*")
           .eq("driver_id", driverId)
           .order("year", { ascending: false })
           .order("month", { ascending: false });
 
-        if (error) throw error;
+        if (tripsError) throw tripsError;
 
-        setTargetTrips(data || []);
-        if (data && data.length > 0 && data[0].driver_name) {
-          setDriverName(data[0].driver_name);
+        setTargetTrips(tripsData || []);
+        if (tripsData && tripsData.length > 0 && tripsData[0].driver_name) {
+          setDriverName(tripsData[0].driver_name);
         }
+
+        // Fetch driver income to get shift type and working days
+        const { data: incomeData, error: incomeError } = await supabase
+          .from("driver_income")
+          .select("shift, working_days, total_trips")
+          .eq("driver_id", driverId)
+          .order("year", { ascending: false })
+          .order("month", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (incomeError) throw incomeError;
+
+        setDriverIncome(incomeData);
       } catch (error: any) {
-        console.error("Error fetching target trips:", error);
-        toast.error("Failed to load target trips");
+        console.error("Error fetching data:", error);
+        toast.error("Failed to load data");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTargetTrips();
+    fetchData();
   }, [driverId]);
 
   const handleClose = () => {
@@ -113,6 +129,36 @@ const DriverTargetTripsPage = () => {
 
   // Get the latest target trip for current display
   const latestTrip = targetTrips.length > 0 ? targetTrips[0] : null;
+
+  // Determine shift type: "1" = 24H, "2" = 12H
+  const shiftType = driverIncome?.shift || "1";
+  const shiftLabel = shiftType === "2" ? "12H" : "24H";
+  const incentives = shiftType === "2" ? INCENTIVES_12H : INCENTIVES_24H;
+
+  // Calculate days in month (default to 31)
+  const daysInMonth = driverIncome?.working_days || 31;
+
+  // Calculate base average trips per day from target trips
+  const baseAvgTripsPerDay = useMemo(() => {
+    if (latestTrip && daysInMonth > 0) {
+      // Base = target_trips / days in month, rounded
+      return Math.round(latestTrip.target_trips / daysInMonth);
+    }
+    return 24; // Default base
+  }, [latestTrip, daysInMonth]);
+
+  // Generate tier data dynamically
+  const tierData: TierData[] = useMemo(() => {
+    return Array.from({ length: 6 }, (_, i) => {
+      const avgTrips = baseAvgTripsPerDay + i;
+      return {
+        tier: i === 0 ? "Base" : `Base+${i}`,
+        avgTripsPerDay: avgTrips,
+        totalTripsMonth: avgTrips * daysInMonth,
+        incentive: incentives[i],
+      };
+    });
+  }, [baseAvgTripsPerDay, daysInMonth, incentives]);
 
   const getCurrentTier = (completedTrips: number): string => {
     for (let i = tierData.length - 1; i >= 0; i--) {
@@ -201,7 +247,7 @@ const DriverTargetTripsPage = () => {
                       <span className="text-sm text-muted-foreground">Shift:</span>
                     </div>
                     <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-lg px-4 py-1 font-bold">
-                      24H
+                      {shiftLabel}
                     </Badge>
                   </div>
                 </div>
