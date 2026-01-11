@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Download, Upload, Loader2, Target, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, Download, Upload, Loader2, Target, FileSpreadsheet, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface TargetTripsRow {
   driver_id: string;
@@ -19,6 +20,15 @@ interface TargetTripsRow {
   month: string;
   year: number;
 }
+
+interface TargetTripsConfig {
+  numberOfDays: number;
+  tiers: {
+    [key: string]: { "24H": number; "12H": number };
+  };
+}
+
+const DEFAULT_TIERS = ["Base", "Base+1", "Base+2", "Base+3", "Base+4", "Base+5"];
 
 const CHUNK_SIZE = 250;
 
@@ -37,6 +47,31 @@ const TargetTripsUploadPage = () => {
   const [uploadProgress, setUploadProgress] = useState<{ total: number; uploaded: number } | null>(null);
   const [reportHeading, setReportHeading] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showConfig, setShowConfig] = useState(false);
+  const [targetConfig, setTargetConfig] = useState<TargetTripsConfig>({
+    numberOfDays: 31,
+    tiers: {
+      "Base": { "24H": 250, "12H": 190 },
+      "Base+1": { "24H": 350, "12H": 265 },
+      "Base+2": { "24H": 450, "12H": 340 },
+      "Base+3": { "24H": 550, "12H": 415 },
+      "Base+4": { "24H": 650, "12H": 490 },
+      "Base+5": { "24H": 850, "12H": 640 },
+    },
+  });
+
+  const updateTierValue = (tier: string, shift: "24H" | "12H", value: number) => {
+    setTargetConfig((prev) => ({
+      ...prev,
+      tiers: {
+        ...prev.tiers,
+        [tier]: {
+          ...prev.tiers[tier],
+          [shift]: value,
+        },
+      },
+    }));
+  };
 
   useEffect(() => {
     if (!isAdmin) {
@@ -220,6 +255,95 @@ const TargetTripsUploadPage = () => {
                 className="mt-1"
               />
             </div>
+
+            {/* Target Trips Configuration */}
+            <Collapsible open={showConfig} onOpenChange={setShowConfig}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between bg-slate-50 hover:bg-slate-100"
+                >
+                  <span className="flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Target Trips Configuration (Optional)
+                  </span>
+                  {showConfig ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-4">
+                <div className="bg-slate-50 rounded-lg p-4 space-y-4">
+                  {/* Number of Days */}
+                  <div className="max-w-xs">
+                    <Label htmlFor="numberOfDays" className="text-sm font-medium">
+                      No. of Days
+                    </Label>
+                    <Input
+                      id="numberOfDays"
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={targetConfig.numberOfDays}
+                      onChange={(e) =>
+                        setTargetConfig((prev) => ({
+                          ...prev,
+                          numberOfDays: parseInt(e.target.value) || 0,
+                        }))
+                      }
+                      className="mt-1 bg-white"
+                    />
+                  </div>
+
+                  {/* Target Trips Table */}
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">
+                      Target Trips by Tier
+                    </Label>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
+                        <thead className="bg-slate-200">
+                          <tr>
+                            <th className="text-left p-2 border-r border-border font-medium">Tier</th>
+                            <th className="text-center p-2 border-r border-border font-medium">24H</th>
+                            <th className="text-center p-2 font-medium">12H</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white">
+                          {DEFAULT_TIERS.map((tier) => (
+                            <tr key={tier} className="border-t border-border">
+                              <td className="p-2 border-r border-border font-medium text-slate-700">
+                                {tier}
+                              </td>
+                              <td className="p-1 border-r border-border">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={targetConfig.tiers[tier]?.["24H"] || 0}
+                                  onChange={(e) =>
+                                    updateTierValue(tier, "24H", parseInt(e.target.value) || 0)
+                                  }
+                                  className="h-8 text-center"
+                                />
+                              </td>
+                              <td className="p-1">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={targetConfig.tiers[tier]?.["12H"] || 0}
+                                  onChange={(e) =>
+                                    updateTierValue(tier, "12H", parseInt(e.target.value) || 0)
+                                  }
+                                  className="h-8 text-center"
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* Download Template */}
             <div className="flex flex-col sm:flex-row gap-4">
