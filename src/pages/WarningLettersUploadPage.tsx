@@ -136,13 +136,34 @@ const WarningLettersUploadPage = () => {
       const text = await selectedFile.text();
       const data = parseCSV(text);
 
-      // Upload to storage for reference
-      const fileName = `warning-letters-${Date.now()}.csv`;
-      await supabase.storage.from('driver-data').upload(fileName, selectedFile);
+      const insertData = data.map((row) => ({
+        date: row.date,
+        taxi_no: row.taxi_no,
+        driver_id: row.driver_id,
+        name: row.name,
+        reasons: row.reasons,
+        action_taken: row.action_taken,
+        document_no: row.document_no,
+        uploaded_by: user.id,
+      }));
 
-      setUploadProgress({ total: data.length, uploaded: data.length });
+      setUploadProgress({ total: insertData.length, uploaded: 0 });
 
-      toast.success(`Successfully processed ${data.length} warning letter records`);
+      const chunks = chunkArray(insertData, CHUNK_SIZE);
+      for (const chunk of chunks) {
+        const { error } = await supabase.from("warning_letters").insert(chunk as any);
+        if (error) {
+          console.error("Supabase insert error:", error);
+          throw error;
+        }
+
+        setUploadProgress((prev) => {
+          if (!prev) return { total: insertData.length, uploaded: chunk.length };
+          return { total: prev.total, uploaded: prev.uploaded + chunk.length };
+        });
+      }
+
+      toast.success(`Successfully imported ${insertData.length} warning letter records`);
       setSelectedFile(null);
       setPreviewData(null);
       setUploadProgress(null);
