@@ -7,7 +7,8 @@ import {
   MessageSquare,
   ArrowLeft,
   X,
-  ChevronRight
+  ChevronRight,
+  FileWarning
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,12 @@ const DriverPortalPage = () => {
       title: "Request",
       gradient: "bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500",
       onClick: () => navigate("/driver-request"),
+    },
+    {
+      icon: <FileWarning className="w-8 h-8 sm:w-10 sm:h-10" />,
+      title: "Warning Letter",
+      gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-600",
+      onClick: () => navigate("/driver-warning-letter"),
     },
   ];
 
