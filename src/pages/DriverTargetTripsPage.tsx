@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, X, Target, TrendingUp, Loader2, CheckCircle, Award, User, Hash, Clock } from "lucide-react";
+import { ArrowLeft, X, Target, Loader2, Award, User, Hash, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,8 +34,12 @@ interface TierData {
 }
 
 // Incentive tiers based on shift type
-const INCENTIVES_24H = [250, 350, 450, 550, 650, 850]; // 24H shift (shift = 1)
-const INCENTIVES_12H = [150, 250, 350, 450, 550, 650]; // 12H shift (shift = 2)
+const INCENTIVES_24H = [250, 350, 450, 550, 650, 850];
+const INCENTIVES_12H = [150, 250, 350, 450, 550, 650];
+
+// Default days in month for calculation
+const DEFAULT_DAYS_IN_MONTH = 31;
+const DEFAULT_BASE_AVG = 24;
 
 const DriverTargetTripsPage = () => {
   const navigate = useNavigate();
@@ -100,7 +104,7 @@ const DriverTargetTripsPage = () => {
           setDriverName(tripsData[0].driver_name);
         }
 
-        // Fetch driver income to get shift type, working days, and driver name
+        // Fetch driver income to get shift type and driver name
         const { data: incomeData, error: incomeError } = await supabase
           .from("driver_income")
           .select("shift, working_days, total_trips, driver_name")
@@ -114,7 +118,6 @@ const DriverTargetTripsPage = () => {
 
         setDriverIncome(incomeData);
         
-        // Use driver name from income data if not in target trips
         if (incomeData?.driver_name && !tripsData?.[0]?.driver_name) {
           setDriverName(incomeData.driver_name);
         }
@@ -136,21 +139,20 @@ const DriverTargetTripsPage = () => {
   // Get the latest target trip for current display
   const latestTrip = targetTrips.length > 0 ? targetTrips[0] : null;
 
-  // Determine shift type: check if shift contains "1" for 24H, "2" for 12H
+  // Determine shift type: check if shift starts with "1" for 24H, "2" for 12H
   const shiftType = driverIncome?.shift?.startsWith("1") ? "1" : driverIncome?.shift?.startsWith("2") ? "2" : "1";
   const shiftLabel = shiftType === "2" ? "12H" : "24H";
   const incentives = shiftType === "2" ? INCENTIVES_12H : INCENTIVES_24H;
 
-  // Calculate days in month (default to 31)
-  const daysInMonth = driverIncome?.working_days || 31;
+  // Use default 31 days for tier calculation
+  const daysInMonth = DEFAULT_DAYS_IN_MONTH;
 
-  // Calculate base average trips per day from target trips
+  // Calculate base average trips per day - use target_trips / 31 or default to 24
   const baseAvgTripsPerDay = useMemo(() => {
-    if (latestTrip && daysInMonth > 0) {
-      // Base = target_trips / days in month, rounded
+    if (latestTrip && latestTrip.target_trips > 0) {
       return Math.round(latestTrip.target_trips / daysInMonth);
     }
-    return 24; // Default base
+    return DEFAULT_BASE_AVG;
   }, [latestTrip, daysInMonth]);
 
   // Generate tier data dynamically
@@ -166,93 +168,74 @@ const DriverTargetTripsPage = () => {
     });
   }, [baseAvgTripsPerDay, daysInMonth, incentives]);
 
-  const getCurrentTier = (completedTrips: number): string => {
-    for (let i = tierData.length - 1; i >= 0; i--) {
-      if (completedTrips >= tierData[i].totalTripsMonth) {
-        return tierData[i].tier;
-      }
-    }
-    return "Below Base";
-  };
-
-  const getNextTier = (completedTrips: number): TierData | null => {
-    for (const tier of tierData) {
-      if (completedTrips < tier.totalTripsMonth) {
-        return tier;
-      }
-    }
-    return null;
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/30 to-teal-50/50 p-4 sm:p-6">
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="absolute top-4 right-4 z-10"
-        onClick={handleClose}
-      >
-        <X className="h-6 w-6 text-muted-foreground hover:text-foreground" />
-      </Button>
-      
-      <Button
-        variant="outline"
-        className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-background hover:bg-accent text-primary border-border"
-        onClick={handleClose}
-      >
-        <ArrowLeft className="h-4 w-4" />
-        <span className="hidden sm:inline">Back to Portal</span>
-      </Button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <Button
+          variant="ghost"
+          className="flex items-center gap-2 text-white/70 hover:text-white hover:bg-white/10"
+          onClick={handleClose}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">Back</span>
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-white/70 hover:text-white hover:bg-white/10"
+          onClick={handleClose}
+        >
+          <X className="h-5 w-5" />
+        </Button>
+      </div>
 
-      <div className="max-w-2xl mx-auto pt-16 space-y-6">
+      <div className="max-w-lg mx-auto space-y-5">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <span className="ml-3 text-muted-foreground">Loading target trips...</span>
+          <div className="flex flex-col items-center justify-center py-16">
+            <Loader2 className="h-10 w-10 animate-spin text-emerald-400 mb-4" />
+            <span className="text-white/60">Loading target trips...</span>
           </div>
         ) : targetTrips.length === 0 ? (
-          <Card className="bg-card border border-border">
-            <CardContent className="p-8 text-center">
-              <Target className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-foreground mb-2">No Target Trips</h2>
-              <p className="text-muted-foreground">
+          <Card className="bg-white/5 backdrop-blur-lg border-white/10">
+            <CardContent className="p-10 text-center">
+              <Target className="h-16 w-16 text-white/30 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-white mb-2">No Target Trips</h2>
+              <p className="text-white/50">
                 No target trips data available yet. Check back later!
               </p>
             </CardContent>
           </Card>
         ) : (
           <>
-            {/* Driver Info Card */}
-            <Card className="bg-white border-0 shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 p-1" />
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full">
-                    <User className="h-8 w-8 text-emerald-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                      <Hash className="h-4 w-4" />
-                      <span>ID No</span>
+            {/* Driver Info Card - Compact Design */}
+            <Card className="bg-white/5 backdrop-blur-lg border-white/10 overflow-hidden">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center gap-2 text-white/50 text-xs mb-1">
+                        <Hash className="h-3 w-3" />
+                        <span>ID No</span>
+                      </div>
+                      <p className="text-2xl font-bold text-white">{driverId}</p>
                     </div>
-                    <p className="text-2xl font-bold text-foreground">{driverId}</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Name:</p>
-                    <p className="text-lg font-semibold text-foreground">
-                      {driverName || "Driver"}
-                    </p>
+                    
+                    <div>
+                      <p className="text-white/50 text-xs mb-1">Name:</p>
+                      <p className="text-base font-medium text-white/90">
+                        {driverName || "Driver"}
+                      </p>
+                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-4 pt-2">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Shift:</span>
+                  <div className="text-right">
+                    <div className="flex items-center gap-2 text-white/50 text-xs mb-2 justify-end">
+                      <Clock className="h-3 w-3" />
+                      <span>Shift:</span>
                     </div>
-                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-lg px-4 py-1 font-bold">
+                    <Badge className="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-xl px-4 py-2 font-bold border border-emerald-500/30">
                       {shiftLabel}
                     </Badge>
                   </div>
@@ -260,161 +243,72 @@ const DriverTargetTripsPage = () => {
               </CardContent>
             </Card>
 
-            {/* Current Progress Card */}
-            {latestTrip && (
-              <Card className="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 text-white border-0 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <TrendingUp className="h-5 w-5" />
-                    <span className="font-medium">{latestTrip.month} {latestTrip.year} Progress</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <p className="text-emerald-100 text-sm mb-1">Completed Trips</p>
-                      <p className="text-4xl font-bold">{latestTrip.completed_trips}</p>
-                    </div>
-                    <div>
-                      <p className="text-emerald-100 text-sm mb-1">Target</p>
-                      <p className="text-4xl font-bold">{latestTrip.target_trips}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-white/20">
-                    <div className="flex items-center justify-between">
-                      <span className="text-emerald-100">Current Tier:</span>
-                      <Badge className="bg-white/20 text-white hover:bg-white/30 text-base px-3">
-                        {getCurrentTier(latestTrip.completed_trips)}
-                      </Badge>
-                    </div>
-                    {getNextTier(latestTrip.completed_trips) && (
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-emerald-100 text-sm">
-                          {getNextTier(latestTrip.completed_trips)!.totalTripsMonth - latestTrip.completed_trips} trips to {getNextTier(latestTrip.completed_trips)!.tier}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Target Tiers Table */}
-            <Card className="bg-white border-0 shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-slate-700 via-slate-800 to-slate-900 p-4">
+            {/* Target & Incentive Tiers Table - Clean Design */}
+            <Card className="bg-white/5 backdrop-blur-lg border-white/10 overflow-hidden">
+              <div className="px-5 py-4 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                  <Award className="h-6 w-6 text-amber-400" />
-                  <h2 className="text-lg font-bold text-white">Target & Incentive Tiers</h2>
+                  <div className="p-2 bg-amber-500/20 rounded-lg">
+                    <Award className="h-5 w-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-semibold text-white">Target & Incentive Tiers</h2>
+                    <p className="text-xs text-white/50">{latestTrip?.month} {latestTrip?.year}</p>
+                  </div>
                 </div>
               </div>
+              
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-slate-100 border-b border-slate-200">
-                        <th className="text-left p-4 font-semibold text-slate-700">Target</th>
-                        <th className="text-center p-4 font-semibold text-slate-700">
-                          <div className="flex flex-col items-center">
+                      <tr className="border-b border-white/10">
+                        <th className="text-left px-5 py-3 text-sm font-medium text-white/70">Target</th>
+                        <th className="text-center px-4 py-3 text-sm font-medium text-white/70">
+                          <div className="flex flex-col items-center leading-tight">
                             <span>Avg</span>
-                            <span className="text-xs font-normal text-slate-500">Trip/Day</span>
+                            <span className="text-[10px] font-normal text-white/40">Trip/Day</span>
                           </div>
                         </th>
-                        <th className="text-center p-4 font-semibold text-slate-700">
-                          <div className="flex flex-col items-center">
+                        <th className="text-center px-4 py-3 text-sm font-medium text-white/70">
+                          <div className="flex flex-col items-center leading-tight">
                             <span>Total Trips/</span>
-                            <span className="text-xs font-normal text-slate-500">Month</span>
+                            <span className="text-[10px] font-normal text-white/40">Month</span>
                           </div>
                         </th>
-                        <th className="text-center p-4 font-semibold text-slate-700">Incentive</th>
+                        <th className="text-center px-5 py-3 text-sm font-medium text-white/70">Incentive</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {tierData.map((tier, index) => {
-                        const isCurrentTier = latestTrip && getCurrentTier(latestTrip.completed_trips) === tier.tier;
-                        const isAchieved = latestTrip && latestTrip.completed_trips >= tier.totalTripsMonth;
-                        
-                        return (
-                          <tr 
-                            key={tier.tier}
-                            className={`
-                              border-b border-slate-100 transition-colors
-                              ${isCurrentTier ? 'bg-emerald-50' : ''}
-                              ${index % 2 === 0 && !isCurrentTier ? 'bg-white' : !isCurrentTier ? 'bg-slate-50/50' : ''}
-                              hover:bg-emerald-50/50
-                            `}
-                          >
-                            <td className="p-4">
-                              <div className="flex items-center gap-2">
-                                <span className={`font-medium ${isCurrentTier ? 'text-emerald-700' : 'text-slate-700'}`}>
-                                  {tier.tier}
-                                </span>
-                                {isAchieved && (
-                                  <CheckCircle className="h-4 w-4 text-emerald-500" />
-                                )}
-                              </div>
-                            </td>
-                            <td className="p-4 text-center">
-                              <span className={`font-medium ${isCurrentTier ? 'text-emerald-700' : 'text-slate-600'}`}>
-                                {tier.avgTripsPerDay.toFixed(2)}
-                              </span>
-                            </td>
-                            <td className="p-4 text-center">
-                              <span className={`font-semibold ${isCurrentTier ? 'text-emerald-700' : 'text-slate-700'}`}>
-                                {tier.totalTripsMonth}
-                              </span>
-                            </td>
-                            <td className="p-4 text-center">
-                              <Badge 
-                                className={`
-                                  px-3 py-1 font-bold text-base
-                                  ${isCurrentTier 
-                                    ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
-                                    : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                                  }
-                                `}
-                              >
-                                {tier.incentive}
-                              </Badge>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {tierData.map((tier, index) => (
+                        <tr 
+                          key={tier.tier}
+                          className={`
+                            border-b border-white/5 transition-colors
+                            ${index % 2 === 0 ? 'bg-white/[0.02]' : ''}
+                            hover:bg-white/[0.05]
+                          `}
+                        >
+                          <td className="px-5 py-3">
+                            <span className="font-medium text-white/90">{tier.tier}</span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="text-white/70 font-medium">{tier.avgTripsPerDay.toFixed(2)}</span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="font-semibold text-white">{tier.totalTripsMonth}</span>
+                          </td>
+                          <td className="px-5 py-3 text-center">
+                            <span className="inline-flex items-center justify-center min-w-[60px] px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-400 font-bold text-sm border border-emerald-500/20">
+                              {tier.incentive}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
               </CardContent>
             </Card>
-
-            {/* Period Info */}
-            {targetTrips.length > 1 && (
-              <Card className="bg-white border-0 shadow-lg">
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-slate-700 mb-3">Previous Periods</h3>
-                  <div className="space-y-2">
-                    {targetTrips.slice(1).map((trip) => (
-                      <div 
-                        key={trip.id}
-                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
-                      >
-                        <span className="font-medium text-slate-700">
-                          {trip.month} {trip.year}
-                        </span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm text-slate-500">
-                            {trip.completed_trips} / {trip.target_trips} trips
-                          </span>
-                          <Badge className={
-                            trip.completed_trips >= trip.target_trips
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-orange-100 text-orange-700"
-                          }>
-                            {getCurrentTier(trip.completed_trips)}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </>
         )}
       </div>
