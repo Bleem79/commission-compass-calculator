@@ -226,6 +226,7 @@ export type Database = {
           driver_id: string
           driver_name: string | null
           id: string
+          request_no: string | null
           request_type: string
           responded_at: string | null
           responded_by: string | null
@@ -239,6 +240,7 @@ export type Database = {
           driver_id: string
           driver_name?: string | null
           id?: string
+          request_no?: string | null
           request_type: string
           responded_at?: string | null
           responded_by?: string | null
@@ -252,6 +254,7 @@ export type Database = {
           driver_id?: string
           driver_name?: string | null
           id?: string
+          request_no?: string | null
           request_type?: string
           responded_at?: string | null
           responded_by?: string | null
