@@ -167,9 +167,9 @@ const HomePage = () => {
     });
     features.push({
       icon: <Upload className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: "Absent Fine Upload",
+      title: "Warning Letters",
       gradient: "bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-600",
-      onClick: () => navigate("/absent-fine-upload"),
+      onClick: () => navigate("/warning-letters-upload"),
     });
   }
 
