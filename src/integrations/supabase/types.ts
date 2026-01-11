@@ -263,6 +263,45 @@ export type Database = {
         }
         Relationships: []
       }
+      warning_letters: {
+        Row: {
+          action_taken: string
+          created_at: string
+          date: string
+          document_no: string | null
+          driver_id: string
+          id: string
+          name: string | null
+          reasons: string | null
+          taxi_no: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          action_taken?: string
+          created_at?: string
+          date: string
+          document_no?: string | null
+          driver_id: string
+          id?: string
+          name?: string | null
+          reasons?: string | null
+          taxi_no?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          action_taken?: string
+          created_at?: string
+          date?: string
+          document_no?: string | null
+          driver_id?: string
+          id?: string
+          name?: string | null
+          reasons?: string | null
+          taxi_no?: string | null
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
