@@ -14,7 +14,8 @@ import {
   ChevronRight,
   Ban,
   Target,
-  Upload
+  Upload,
+  MessageSquare
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminMessages } from "@/components/messages/AdminMessages";
@@ -170,6 +171,12 @@ const HomePage = () => {
       title: "Warning Letters",
       gradient: "bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-600",
       onClick: () => navigate("/warning-letters-upload"),
+    });
+    features.push({
+      icon: <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Driver Requests",
+      gradient: "bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700",
+      onClick: () => navigate("/admin-requests"),
     });
   }
 
