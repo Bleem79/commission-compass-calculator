@@ -23,7 +23,7 @@ import DriverAbsentFineViewPage from "./pages/DriverAbsentFineViewPage";
 import DriverRequestPage from "./pages/DriverRequestPage";
 import DriverWarningLetterPage from "./pages/DriverWarningLetterPage";
 import TargetTripsUploadPage from "./pages/TargetTripsUploadPage";
-import AbsentFineUploadPage from "./pages/AbsentFineUploadPage";
+import WarningLettersUploadPage from "./pages/WarningLettersUploadPage";
 import InstallPage from "./pages/InstallPage";
 import { useEffect } from "react";
 import Index from "./pages/Index";
@@ -258,12 +258,12 @@ const AppRoutes = () => {
         } 
       />
       <Route 
-        path="/absent-fine-upload" 
+        path="/warning-letters-upload" 
         element={
           <ProtectedRoute>
             <SidebarProvider>
               <div className="min-h-screen w-full">
-                <AbsentFineUploadPage />
+                <WarningLettersUploadPage />
               </div>
             </SidebarProvider>
           </ProtectedRoute>

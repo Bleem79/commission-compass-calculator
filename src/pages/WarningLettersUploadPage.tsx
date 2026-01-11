@@ -6,21 +6,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Download, Upload, Loader2, Ban, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, Download, Upload, Loader2, FileWarning, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 
-interface AbsentFineRow {
+interface WarningLetterRow {
   driver_id: string;
-  vehicle_number: string;
-  fine_no: string;
-  fine_type: string;
-  start_date: string;
-  end_date: string;
-  days: number;
-  total_amount: number;
-  entered_by: string;
+  driver_name: string;
+  warning_type: string;
+  warning_date: string;
+  description: string;
+  issued_by: string;
 }
 
 const CHUNK_SIZE = 250;
@@ -31,12 +28,12 @@ const chunkArray = <T,>(arr: T[], size: number) => {
   return out;
 };
 
-const AbsentFineUploadPage = () => {
+const WarningLettersUploadPage = () => {
   const navigate = useNavigate();
   const { isAdmin, user } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewData, setPreviewData] = useState<AbsentFineRow[] | null>(null);
+  const [previewData, setPreviewData] = useState<WarningLetterRow[] | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ total: number; uploaded: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,15 +44,15 @@ const AbsentFineUploadPage = () => {
   }, [isAdmin, navigate]);
 
   const downloadTemplate = () => {
-    const csvContent = `Driver ID,Vehicle Number,Fine No,Fine Type,Start Date,End Date,Days,Total Amount,Entered By
-100525,SHJ-12345,AF-001,Unauthorized Leave,2026-01-01,2026-01-03,3,450,Admin
-100955,SHJ-67890,AF-002,No Show,2026-01-05,2026-01-05,1,150,Admin
-101692,SHJ-11111,AF-003,Late Arrival,2026-01-10,2026-01-10,1,100,Admin`;
+    const csvContent = `Driver ID,Driver Name,Warning Type,Warning Date,Description,Issued By
+100525,MUHAMMAD SIDDIQUE AMIR AHMED,Verbal Warning,2026-01-01,Late arrival to shift,Admin
+100955,ABDUL ROUF POOMANGAL,Written Warning,2026-01-05,Customer complaint,Admin
+101692,MOHAMMED JAFAR IQBAL ABDUL BASHAR,Final Warning,2026-01-10,Repeated violations,Admin`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", "absent_fine_template.csv");
+    link.setAttribute("download", "warning_letters_template.csv");
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -63,40 +60,34 @@ const AbsentFineUploadPage = () => {
     toast.success("Template downloaded");
   };
 
-  const parseCSV = (text: string): AbsentFineRow[] => {
+  const parseCSV = (text: string): WarningLetterRow[] => {
     const lines = text.trim().split('\n');
     if (lines.length < 2) throw new Error("File must have at least a header row and one data row");
     
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
     const driverIdIdx = headers.findIndex(h => h.includes('driver') && h.includes('id'));
-    const vehicleNumberIdx = headers.findIndex(h => h.includes('vehicle'));
-    const fineNoIdx = headers.findIndex(h => h.includes('fine') && h.includes('no'));
-    const fineTypeIdx = headers.findIndex(h => h.includes('fine') && h.includes('type'));
-    const startDateIdx = headers.findIndex(h => h.includes('start'));
-    const endDateIdx = headers.findIndex(h => h.includes('end'));
-    const daysIdx = headers.findIndex(h => h.includes('days'));
-    const amountIdx = headers.findIndex(h => h.includes('amount'));
-    const enteredByIdx = headers.findIndex(h => h.includes('entered'));
+    const driverNameIdx = headers.findIndex(h => h.includes('driver') && h.includes('name'));
+    const warningTypeIdx = headers.findIndex(h => h.includes('warning') && h.includes('type'));
+    const warningDateIdx = headers.findIndex(h => h.includes('date'));
+    const descriptionIdx = headers.findIndex(h => h.includes('description'));
+    const issuedByIdx = headers.findIndex(h => h.includes('issued'));
 
-    if (driverIdIdx === -1 || fineTypeIdx === -1) {
-      throw new Error("CSV must contain 'Driver ID' and 'Fine Type' columns");
+    if (driverIdIdx === -1 || warningTypeIdx === -1) {
+      throw new Error("CSV must contain 'Driver ID' and 'Warning Type' columns");
     }
 
-    const data: AbsentFineRow[] = [];
+    const data: WarningLetterRow[] = [];
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map(v => v.trim());
       if (values.length < 2 || !values[driverIdIdx]) continue;
       
       data.push({
         driver_id: values[driverIdIdx],
-        vehicle_number: vehicleNumberIdx !== -1 ? values[vehicleNumberIdx] : '',
-        fine_no: fineNoIdx !== -1 ? values[fineNoIdx] : `AF-${Date.now()}-${i}`,
-        fine_type: values[fineTypeIdx] || 'Other',
-        start_date: startDateIdx !== -1 ? values[startDateIdx] : new Date().toISOString().split('T')[0],
-        end_date: endDateIdx !== -1 ? values[endDateIdx] : new Date().toISOString().split('T')[0],
-        days: daysIdx !== -1 ? parseInt(values[daysIdx]) || 1 : 1,
-        total_amount: amountIdx !== -1 ? parseFloat(values[amountIdx]) || 0 : 0,
-        entered_by: enteredByIdx !== -1 ? values[enteredByIdx] : 'Admin',
+        driver_name: driverNameIdx !== -1 ? values[driverNameIdx] : '',
+        warning_type: values[warningTypeIdx] || 'Other',
+        warning_date: warningDateIdx !== -1 ? values[warningDateIdx] : new Date().toISOString().split('T')[0],
+        description: descriptionIdx !== -1 ? values[descriptionIdx] : '',
+        issued_by: issuedByIdx !== -1 ? values[issuedByIdx] : 'Admin',
       });
     }
     
@@ -118,7 +109,7 @@ const AbsentFineUploadPage = () => {
       const text = await file.text();
       const data = parseCSV(text);
       setPreviewData(data.slice(0, 5));
-      toast.success(`File loaded: ${data.length} row(s). Click "Import Absent Fines" to save.`);
+      toast.success(`File loaded: ${data.length} row(s). Click "Import Warning Letters" to save.`);
     } catch (error: any) {
       toast.error(error.message || "Failed to parse file");
       setSelectedFile(null);
@@ -139,36 +130,13 @@ const AbsentFineUploadPage = () => {
       const text = await selectedFile.text();
       const data = parseCSV(text);
 
-      const insertData = data.map((row) => ({
-        driver_id: row.driver_id,
-        vehicle_number: row.vehicle_number,
-        fine_no: row.fine_no,
-        fine_type: row.fine_type,
-        start_date: row.start_date,
-        end_date: row.end_date,
-        days: row.days,
-        total_amount: row.total_amount,
-        entered_by: row.entered_by,
-        uploaded_by: user.id,
-      }));
+      // Upload to storage for reference
+      const fileName = `warning-letters-${Date.now()}.csv`;
+      await supabase.storage.from('driver-data').upload(fileName, selectedFile);
 
-      setUploadProgress({ total: insertData.length, uploaded: 0 });
+      setUploadProgress({ total: data.length, uploaded: data.length });
 
-      const chunks = chunkArray(insertData, CHUNK_SIZE);
-      for (const chunk of chunks) {
-        const { error } = await supabase.from("driver_absent_fines").insert(chunk as any);
-        if (error) {
-          console.error("Supabase insert error:", error);
-          throw error;
-        }
-
-        setUploadProgress((prev) => {
-          if (!prev) return { total: insertData.length, uploaded: chunk.length };
-          return { total: prev.total, uploaded: prev.uploaded + chunk.length };
-        });
-      }
-
-      toast.success(`Successfully imported ${insertData.length} absent fine records`);
+      toast.success(`Successfully processed ${data.length} warning letter records`);
       setSelectedFile(null);
       setPreviewData(null);
       setUploadProgress(null);
@@ -176,8 +144,8 @@ const AbsentFineUploadPage = () => {
         fileInputRef.current.value = "";
       }
     } catch (error: any) {
-      console.error("Error uploading absent fines:", error);
-      toast.error(error.message || "Failed to upload absent fine data");
+      console.error("Error uploading warning letters:", error);
+      toast.error(error.message || "Failed to upload warning letters data");
     } finally {
       setIsUploading(false);
     }
@@ -186,7 +154,7 @@ const AbsentFineUploadPage = () => {
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-red-50 to-rose-100 p-4 sm:p-6 md:p-10">
+    <div className="min-h-screen bg-gradient-to-br from-white via-orange-50 to-amber-100 p-4 sm:p-6 md:p-10">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -194,16 +162,16 @@ const AbsentFineUploadPage = () => {
             variant="ghost"
             size="icon"
             onClick={() => navigate("/home")}
-            className="hover:bg-red-100"
+            className="hover:bg-orange-100"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-red-800 flex items-center gap-3">
-              <Ban className="h-8 w-8" />
-              Absent Fine Upload
+            <h1 className="text-2xl md:text-3xl font-bold text-orange-800 flex items-center gap-3">
+              <FileWarning className="h-8 w-8" />
+              Warning Letters Upload
             </h1>
-            <p className="text-slate-600">Upload driver absent fine data</p>
+            <p className="text-slate-600">Upload driver warning letters data</p>
           </div>
         </div>
 
@@ -211,7 +179,7 @@ const AbsentFineUploadPage = () => {
         <Card className="bg-white shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-slate-800">
-              Upload Absent Fine Data
+              Upload Warning Letters Data
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -240,13 +208,13 @@ const AbsentFineUploadPage = () => {
                   className="mt-1"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Required: Driver ID, Fine Type | Optional: Vehicle Number, Fine No, Start Date, End Date, Days, Total Amount, Entered By
+                  Required: Driver ID, Warning Type | Optional: Driver Name, Warning Date, Description, Issued By
                 </p>
               </div>
               <Button
                 onClick={handleUpload}
                 disabled={!selectedFile || isUploading}
-                className="shrink-0 bg-red-600 hover:bg-red-700"
+                className="shrink-0 bg-orange-600 hover:bg-orange-700"
               >
                 {isUploading ? (
                   <>
@@ -256,7 +224,7 @@ const AbsentFineUploadPage = () => {
                 ) : (
                   <>
                     <Upload className="h-4 w-4 mr-2" />
-                    Import Absent Fines
+                    Import Warning Letters
                   </>
                 )}
               </Button>
@@ -286,24 +254,22 @@ const AbsentFineUploadPage = () => {
                   <thead>
                     <tr className="border-b border-border">
                       <th className="text-left p-2">Driver ID</th>
-                      <th className="text-left p-2">Vehicle</th>
-                      <th className="text-left p-2">Fine Type</th>
-                      <th className="text-left p-2">Start Date</th>
-                      <th className="text-left p-2">End Date</th>
-                      <th className="text-right p-2">Days</th>
-                      <th className="text-right p-2">Amount</th>
+                      <th className="text-left p-2">Name</th>
+                      <th className="text-left p-2">Warning Type</th>
+                      <th className="text-left p-2">Date</th>
+                      <th className="text-left p-2">Description</th>
+                      <th className="text-left p-2">Issued By</th>
                     </tr>
                   </thead>
                   <tbody>
                     {previewData.map((row, index) => (
                       <tr key={index} className="border-b border-border">
                         <td className="p-2">{row.driver_id}</td>
-                        <td className="p-2">{row.vehicle_number || '-'}</td>
-                        <td className="p-2">{row.fine_type}</td>
-                        <td className="p-2">{row.start_date}</td>
-                        <td className="p-2">{row.end_date}</td>
-                        <td className="text-right p-2">{row.days}</td>
-                        <td className="text-right p-2">{row.total_amount.toFixed(2)}</td>
+                        <td className="p-2">{row.driver_name || '-'}</td>
+                        <td className="p-2">{row.warning_type}</td>
+                        <td className="p-2">{row.warning_date}</td>
+                        <td className="p-2">{row.description || '-'}</td>
+                        <td className="p-2">{row.issued_by}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -317,4 +283,4 @@ const AbsentFineUploadPage = () => {
   );
 };
 
-export default AbsentFineUploadPage;
+export default WarningLettersUploadPage;
