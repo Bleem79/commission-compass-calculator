@@ -21,6 +21,7 @@ import DriverPortalPage from "./pages/DriverPortalPage";
 import DriverTargetTripsPage from "./pages/DriverTargetTripsPage";
 import DriverAbsentFineViewPage from "./pages/DriverAbsentFineViewPage";
 import DriverRequestPage from "./pages/DriverRequestPage";
+import DriverWarningLetterPage from "./pages/DriverWarningLetterPage";
 import InstallPage from "./pages/InstallPage";
 import { useEffect } from "react";
 import Index from "./pages/Index";
@@ -225,6 +226,18 @@ const AppRoutes = () => {
             <SidebarProvider>
               <div className="min-h-screen w-full">
                 <DriverRequestPage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver-warning-letter" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <DriverWarningLetterPage />
               </div>
             </SidebarProvider>
           </ProtectedRoute>
