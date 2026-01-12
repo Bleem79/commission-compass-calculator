@@ -56,15 +56,53 @@ const DriverTargetTripsPage = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Fetch driver credentials using the same pattern as Driver Income page
   useEffect(() => {
     const fetchDriverCredentials = async () => {
-      if (!user?.id) return;
+      if (!isAuthenticated) return;
 
+      // Get the current authed user directly from Supabase to avoid stale context
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+
+      const actualUserId = authUser?.id || user?.id;
+      const actualEmail = (authUser?.email || user?.email || "").toLowerCase();
+
+      if (!actualUserId) return;
+
+      // If user logged in with a driver temp email, use RPC to ensure credentials are linked
+      const driverIdFromEmail = actualEmail.endsWith("@driver.temp")
+        ? actualEmail.split("@")[0].trim()
+        : null;
+
+      if (driverIdFromEmail) {
+        try {
+          const { data: credentialRows, error: credError } = await supabase.rpc(
+            "get_driver_credentials",
+            {
+              p_driver_id: driverIdFromEmail,
+              p_user_id: actualUserId,
+            }
+          );
+
+          const credentials = credentialRows && credentialRows.length > 0 ? credentialRows[0] : null;
+
+          if (!credError && credentials?.driver_id) {
+            setDriverId(credentials.driver_id);
+            return;
+          }
+        } catch (error) {
+          console.error("Error with RPC get_driver_credentials:", error);
+        }
+      }
+
+      // Fallback: lookup by user_id
       try {
         const { data: credentials, error } = await supabase
           .from("driver_credentials")
           .select("driver_id")
-          .eq("user_id", user.id)
+          .eq("user_id", actualUserId)
           .eq("status", "enabled")
           .maybeSingle();
 
@@ -79,7 +117,7 @@ const DriverTargetTripsPage = () => {
     };
 
     fetchDriverCredentials();
-  }, [user?.id]);
+  }, [isAuthenticated, user?.id, user?.email]);
 
   useEffect(() => {
     const fetchData = async () => {
