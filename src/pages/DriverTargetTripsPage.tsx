@@ -35,7 +35,7 @@ interface TierData {
 
 // Incentive tiers based on shift type
 const INCENTIVES_24H = [250, 350, 450, 550, 650, 850];
-const INCENTIVES_12H = [150, 250, 350, 450, 550, 650];
+const INCENTIVES_12H = [190, 265, 340, 415, 490, 640];
 
 // Default days in month for calculation
 const DEFAULT_DAYS_IN_MONTH = 31;
