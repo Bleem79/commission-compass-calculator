@@ -120,13 +120,32 @@ const TargetTripsUploadPage = () => {
   const fetchRecords = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("target_trips")
-        .select("*")
-        .order("created_at", { ascending: false });
+      
+      // Fetch all records using pagination to bypass the 1000 row limit
+      let allRecords: TargetTripsRecord[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("target_trips")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
 
-      if (error) throw error;
-      setRecords(data || []);
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allRecords = [...allRecords, ...data];
+          from += pageSize;
+          hasMore = data.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      setRecords(allRecords);
     } catch (error: any) {
       console.error("Error fetching records:", error);
       toast.error("Failed to load records");
