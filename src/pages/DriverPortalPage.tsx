@@ -8,11 +8,13 @@ import {
   ArrowLeft,
   X,
   ChevronRight,
-  FileWarning
+  FileWarning,
+  Clock
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface PortalCardProps {
   icon: React.ReactNode;
@@ -65,6 +67,13 @@ const DriverPortalPage = () => {
     navigate("/home");
   };
 
+  const showComingSoon = (feature: string) => {
+    toast.info(`${feature} - Coming Soon!`, {
+      description: "This feature is under development and will be available soon.",
+      icon: <Clock className="w-5 h-5" />,
+    });
+  };
+
   const portalItems = [
     {
       icon: <CalendarDays className="w-8 h-8 sm:w-10 sm:h-10" />,
@@ -82,19 +91,19 @@ const DriverPortalPage = () => {
       icon: <Ban className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Absent Fine",
       gradient: "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500",
-      onClick: () => navigate("/driver-absent-fine-view"),
+      onClick: () => showComingSoon("Absent Fine"),
     },
     {
       icon: <MessageSquare className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Request",
       gradient: "bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500",
-      onClick: () => navigate("/driver-request"),
+      onClick: () => showComingSoon("Request"),
     },
     {
       icon: <FileWarning className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Warning Letter",
       gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-600",
-      onClick: () => navigate("/driver-warning-letter"),
+      onClick: () => showComingSoon("Warning Letter"),
     },
   ];
 
