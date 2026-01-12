@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { 
   ArrowLeft, Download, Upload, Loader2, Target, FileSpreadsheet, 
-  ChevronDown, ChevronUp, Trash2, Search, Users, Hash, Calendar
+  ChevronDown, ChevronUp, Trash2, Search, Users, Hash, Calendar, Save
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,6 +96,60 @@ const TargetTripsUploadPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [monthFilter, setMonthFilter] = useState<string>("all");
   const [isClearing, setIsClearing] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  
+  // Store initial config to detect changes
+  const [initialConfig, setInitialConfig] = useState<TargetTripsConfig>({
+    numberOfDays: 31,
+    tiers: {
+      "Base": { "24H": 250, "12H": 190 },
+      "Base+1": { "24H": 350, "12H": 265 },
+      "Base+2": { "24H": 450, "12H": 340 },
+      "Base+3": { "24H": 550, "12H": 415 },
+      "Base+4": { "24H": 650, "12H": 490 },
+      "Base+5": { "24H": 850, "12H": 640 },
+    },
+  });
+
+  // Check if config has changed
+  const hasConfigChanges = useMemo(() => {
+    if (targetConfig.numberOfDays !== initialConfig.numberOfDays) return true;
+    for (const tier of DEFAULT_TIERS) {
+      if (targetConfig.tiers[tier]?.["24H"] !== initialConfig.tiers[tier]?.["24H"]) return true;
+      if (targetConfig.tiers[tier]?.["12H"] !== initialConfig.tiers[tier]?.["12H"]) return true;
+    }
+    return false;
+  }, [targetConfig, initialConfig]);
+
+  // Save config to localStorage
+  const handleSaveConfig = async () => {
+    setIsSavingConfig(true);
+    try {
+      // Store in localStorage for persistence
+      localStorage.setItem('targetTripsConfig', JSON.stringify(targetConfig));
+      setInitialConfig(JSON.parse(JSON.stringify(targetConfig)));
+      toast.success("Configuration saved successfully");
+    } catch (error: any) {
+      console.error("Error saving config:", error);
+      toast.error("Failed to save configuration");
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+  // Load config from localStorage on mount
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('targetTripsConfig');
+    if (savedConfig) {
+      try {
+        const parsed = JSON.parse(savedConfig);
+        setTargetConfig(parsed);
+        setInitialConfig(parsed);
+      } catch (e) {
+        console.error("Failed to parse saved config:", e);
+      }
+    }
+  }, []);
 
   const updateTierValue = (tier: string, shift: "24H" | "12H", value: number) => {
     setTargetConfig((prev) => ({
@@ -542,6 +596,27 @@ const TargetTripsUploadPage = () => {
                         </tbody>
                       </table>
                     </div>
+                  </div>
+
+                  {/* Push Updates Button */}
+                  <div className="flex justify-end pt-4 border-t border-white/10">
+                    <Button
+                      onClick={handleSaveConfig}
+                      disabled={!hasConfigChanges || isSavingConfig}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
+                    >
+                      {isSavingConfig ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Push Updates
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
               </CollapsibleContent>
