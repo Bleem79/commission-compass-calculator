@@ -33,12 +33,27 @@ interface TierData {
   incentive: number;
 }
 
-// Incentive tiers based on shift type
-const INCENTIVES_24H = [250, 350, 450, 550, 650, 850];
-const INCENTIVES_12H = [190, 265, 340, 415, 490, 640];
+interface TargetTripsConfig {
+  numberOfDays: number;
+  tiers: {
+    [key: string]: { "24H": number; "12H": number };
+  };
+}
 
-// Default days in month for calculation
-const DEFAULT_DAYS_IN_MONTH = 31;
+// Default config values (used when no saved config exists)
+const DEFAULT_CONFIG: TargetTripsConfig = {
+  numberOfDays: 31,
+  tiers: {
+    "Base": { "24H": 250, "12H": 190 },
+    "Base+1": { "24H": 350, "12H": 265 },
+    "Base+2": { "24H": 450, "12H": 340 },
+    "Base+3": { "24H": 550, "12H": 415 },
+    "Base+4": { "24H": 650, "12H": 490 },
+    "Base+5": { "24H": 850, "12H": 640 },
+  },
+};
+
+const DEFAULT_TIERS = ["Base", "Base+1", "Base+2", "Base+3", "Base+4", "Base+5"];
 const DEFAULT_BASE_AVG = 24;
 
 const DriverTargetTripsPage = () => {
@@ -49,6 +64,20 @@ const DriverTargetTripsPage = () => {
   const [loading, setLoading] = useState(true);
   const [driverId, setDriverId] = useState<string | null>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
+  const [config, setConfig] = useState<TargetTripsConfig>(DEFAULT_CONFIG);
+
+  // Load config from localStorage on mount (saved from admin Push Updates)
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('targetTripsConfig');
+    if (savedConfig) {
+      try {
+        const parsed = JSON.parse(savedConfig);
+        setConfig(parsed);
+      } catch (e) {
+        console.error("Failed to parse saved config:", e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -180,10 +209,9 @@ const DriverTargetTripsPage = () => {
   // Determine shift type: check if shift starts with "1" for 24H, "2" for 12H
   const shiftType = driverIncome?.shift?.startsWith("1") ? "1" : driverIncome?.shift?.startsWith("2") ? "2" : "1";
   const shiftLabel = shiftType === "2" ? "12H" : "24H";
-  const incentives = shiftType === "2" ? INCENTIVES_12H : INCENTIVES_24H;
 
-  // Use default 31 days for tier calculation
-  const daysInMonth = DEFAULT_DAYS_IN_MONTH;
+  // Use config from localStorage (saved via Push Updates button)
+  const daysInMonth = config.numberOfDays;
 
   // Base is the driver's target_trips value (final uploaded target)
   // This is the daily average - Base from sample: 24.00 avg/day
@@ -195,18 +223,23 @@ const DriverTargetTripsPage = () => {
     return DEFAULT_BASE_AVG;
   }, [latestTrip]);
 
-  // Generate tier data dynamically based on the driver's actual target_trips as base
+  // Generate tier data dynamically using saved config incentives
   const tierData: TierData[] = useMemo(() => {
-    return Array.from({ length: 6 }, (_, i) => {
+    return DEFAULT_TIERS.map((tierName, i) => {
       const avgTrips = baseAvgTripsPerDay + i;
+      const tierConfig = config.tiers[tierName];
+      const incentive = shiftLabel === "12H" 
+        ? tierConfig?.["12H"] || DEFAULT_CONFIG.tiers[tierName]["12H"]
+        : tierConfig?.["24H"] || DEFAULT_CONFIG.tiers[tierName]["24H"];
+      
       return {
-        tier: i === 0 ? "Base" : `Base+${i}`,
+        tier: tierName,
         avgTripsPerDay: avgTrips,
         totalTripsMonth: avgTrips * daysInMonth,
-        incentive: incentives[i],
+        incentive,
       };
     });
-  }, [baseAvgTripsPerDay, daysInMonth, incentives]);
+  }, [baseAvgTripsPerDay, daysInMonth, shiftLabel, config.tiers]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-6">
