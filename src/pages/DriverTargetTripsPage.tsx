@@ -203,11 +203,21 @@ const DriverTargetTripsPage = () => {
           <Card className="bg-white/5 backdrop-blur-lg border-white/10">
             <CardContent className="p-10 text-center">
               <User className="h-16 w-16 text-white/30 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-white mb-2">Driver ID not linked</h2>
+              <h2 className="text-xl font-semibold text-white mb-2">
+                {user?.email?.includes("guest") ? "Guest Access" : "Driver ID not linked"}
+              </h2>
               <p className="text-white/50">
-                This login ({user?.email || "unknown"}) is not linked to an enabled driver ID.
-                Please contact admin to assign your driver credentials.
+                {user?.email?.includes("guest") 
+                  ? "Guest accounts cannot access driver-specific features. Please login with your driver account to view your target trips."
+                  : `This login (${user?.email || "unknown"}) is not linked to an enabled driver ID. Please contact admin to assign your driver credentials.`
+                }
               </p>
+              <Button
+                className="mt-6 bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => navigate("/login")}
+              >
+                Login with Driver Account
+              </Button>
             </CardContent>
           </Card>
         ) : targetTrips.length === 0 ? (
