@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { 
   ArrowLeft, Download, Upload, Loader2, Target, FileSpreadsheet, 
-  ChevronDown, ChevronUp, Trash2, Search, Users, Hash, Calendar, Save
+  ChevronDown, ChevronUp, Trash2, Search, Users, Hash, Calendar, Save, FileDown
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import * as XLSX from "xlsx";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Select,
@@ -364,6 +365,53 @@ const TargetTripsUploadPage = () => {
     }
   };
 
+  const handleExportToExcel = () => {
+    if (records.length === 0) {
+      toast.error("No records to export");
+      return;
+    }
+
+    try {
+      // Prepare data for export
+      const exportData = records.map((record) => ({
+        "Driver ID": record.driver_id,
+        "Driver Name": record.driver_name || "",
+        "Target Trips": record.target_trips,
+        "Completed Trips": record.completed_trips,
+        "Month": record.month,
+        "Year": record.year,
+        "Created At": new Date(record.created_at).toLocaleString(),
+      }));
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+
+      // Set column widths
+      ws["!cols"] = [
+        { wch: 12 }, // Driver ID
+        { wch: 20 }, // Driver Name
+        { wch: 12 }, // Target Trips
+        { wch: 15 }, // Completed Trips
+        { wch: 12 }, // Month
+        { wch: 8 },  // Year
+        { wch: 20 }, // Created At
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, "Target Trips");
+
+      // Generate filename with current date
+      const date = new Date().toISOString().split("T")[0];
+      const filename = `target_trips_${date}.xlsx`;
+
+      // Save file
+      XLSX.writeFile(wb, filename);
+      toast.success(`Exported ${records.length} records to ${filename}`);
+    } catch (error: any) {
+      console.error("Error exporting to Excel:", error);
+      toast.error("Failed to export data");
+    }
+  };
   const handleDeleteRecord = async (id: string) => {
     try {
       const { error } = await supabase.from("target_trips").delete().eq("id", id);
@@ -467,6 +515,16 @@ const TargetTripsUploadPage = () => {
                   )}
                 </Button>
               )}
+
+              <Button
+                variant="outline"
+                onClick={handleExportToExcel}
+                disabled={records.length === 0}
+                className="bg-transparent border-blue-500 text-blue-400 hover:bg-blue-500/20"
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                Export XLSX
+              </Button>
 
               <div className="flex-1" />
 
