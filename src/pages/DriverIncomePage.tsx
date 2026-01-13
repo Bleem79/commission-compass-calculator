@@ -6,6 +6,7 @@ import { ArrowLeft, X, Upload, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DriverIncomeUploader } from "@/components/driver-income/DriverIncomeUploader";
 import { DriverIncomeTable } from "@/components/driver-income/DriverIncomeTable";
+import { FloatingCalculator } from "@/components/calculator/FloatingCalculator";
 import { DriverIncomeReceipt } from "@/components/driver-income/DriverIncomeReceipt";
 
 interface DriverIncomeData {
@@ -242,6 +243,9 @@ const DriverIncomePage = () => {
           />
         )}
       </div>
+
+      {/* Floating Calculator */}
+      <FloatingCalculator />
     </div>
   );
 };
