@@ -271,6 +271,7 @@ export type Database = {
           driver_name: string | null
           id: string
           month: string
+          shift: string | null
           target_trips: number
           uploaded_by: string
           year: number
@@ -282,6 +283,7 @@ export type Database = {
           driver_name?: string | null
           id?: string
           month: string
+          shift?: string | null
           target_trips?: number
           uploaded_by: string
           year: number
@@ -293,6 +295,7 @@ export type Database = {
           driver_name?: string | null
           id?: string
           month?: string
+          shift?: string | null
           target_trips?: number
           uploaded_by?: string
           year?: number
