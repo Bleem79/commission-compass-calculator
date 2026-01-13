@@ -9,6 +9,8 @@ interface UploadStats {
   total: number;
   success: number;
   failed: number;
+  newCount: number;
+  updatedCount: number;
   errors?: Array<{ driverId: string; error: string }>;
 }
 
@@ -82,19 +84,36 @@ export const useDriverUpload = () => {
         total: results.total,
         success: results.success.length,
         failed: results.errors.length,
+        newCount: results.newCount,
+        updatedCount: results.updatedCount,
         errors: results.errors
       });
 
       if (results.success.length > 0) {
-        toast.success(
-          `Successfully created ${results.success.length} driver account${results.success.length > 1 ? 's' : ''}${
-            results.errors.length > 0 ? ` (${results.errors.length} failed)` : ''
-          }`
-        );
+        // Show different messages based on new vs updated
+        if (results.newCount > 0 && results.updatedCount > 0) {
+          toast.success(
+            `Added ${results.newCount} new driver${results.newCount > 1 ? 's' : ''}, updated ${results.updatedCount} existing${
+              results.errors.length > 0 ? ` (${results.errors.length} failed)` : ''
+            }`
+          );
+        } else if (results.updatedCount > 0) {
+          toast.info(
+            `Updated ${results.updatedCount} existing driver${results.updatedCount > 1 ? 's' : ''} (already in system)${
+              results.errors.length > 0 ? ` - ${results.errors.length} failed` : ''
+            }`
+          );
+        } else {
+          toast.success(
+            `Successfully added ${results.newCount} new driver${results.newCount > 1 ? 's' : ''}${
+              results.errors.length > 0 ? ` (${results.errors.length} failed)` : ''
+            }`
+          );
+        }
       }
 
       if (results.errors.length > 0) {
-        toast.error(`Failed to create ${results.errors.length} driver account${results.errors.length > 1 ? 's' : ''}`, {
+        toast.error(`Failed to process ${results.errors.length} driver${results.errors.length > 1 ? 's' : ''}`, {
           description: "Check the detailed errors below"
         });
       }

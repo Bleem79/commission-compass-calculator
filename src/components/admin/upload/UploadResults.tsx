@@ -6,6 +6,8 @@ interface UploadResultsProps {
     total: number;
     success: number;
     failed: number;
+    newCount?: number;
+    updatedCount?: number;
     errors?: Array<{ driverId: string; error: string }>;
   };
 }
@@ -45,6 +47,21 @@ export const UploadResults = ({ stats }: UploadResultsProps) => {
             Successful: <strong>{stats.success}</strong> | 
             Failed: <strong>{stats.failed}</strong>
           </div>
+          
+          {stats.success > 0 && (stats.newCount || stats.updatedCount) && (
+            <div className="flex gap-3 text-sm">
+              {stats.newCount !== undefined && stats.newCount > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-md">
+                  <span className="font-medium">+{stats.newCount}</span> new
+                </span>
+              )}
+              {stats.updatedCount !== undefined && stats.updatedCount > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-md">
+                  <span className="font-medium">{stats.updatedCount}</span> already existed (updated)
+                </span>
+              )}
+            </div>
+          )}
           
           {stats.failed > 0 && stats.errors && (
             <div className="text-sm mt-2">

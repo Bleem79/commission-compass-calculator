@@ -19,9 +19,11 @@ type IncomingDriver = {
 };
 
 type DriverUploadResult = {
-  success: Array<{ driverId: string }>;
+  success: Array<{ driverId: string; isNew: boolean }>;
   errors: Array<{ driverId: string; error: string }>;
   total: number;
+  newCount: number;
+  updatedCount: number;
 };
 
 function json(status: number, body: unknown) {
@@ -198,6 +200,8 @@ Deno.serve(async (req) => {
       success: [],
       errors: [],
       total: drivers.length,
+      newCount: 0,
+      updatedCount: 0,
     };
 
     const credentialRows: Array<{ driver_id: string; user_id: string; status: string }> = [];
@@ -228,6 +232,9 @@ Deno.serve(async (req) => {
         if (!userId) {
           userId = existingDriverMap.get(driverId) ?? null;
         }
+
+        // Track if this is a new driver or existing one
+        const isExistingDriver = !!userId;
 
         if (userId) {
           // User exists - update password
@@ -268,7 +275,14 @@ Deno.serve(async (req) => {
 
         credentialRows.push({ driver_id: driverId, user_id: userId, status });
         roleRows.push({ user_id: userId, role: "driver" });
-        result.success.push({ driverId });
+        
+        // Track new vs updated
+        if (isExistingDriver) {
+          result.updatedCount++;
+        } else {
+          result.newCount++;
+        }
+        result.success.push({ driverId, isNew: !isExistingDriver });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         console.error(`driver-credentials-bulk: failed processing driver ${driverId}`, msg);

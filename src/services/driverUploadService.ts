@@ -2,9 +2,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { processCSVFile } from "@/utils/csv/processCSVFile";
 
 interface DriverUploadResult {
-  success: Array<{ driverId: string }>;
+  success: Array<{ driverId: string; isNew: boolean }>;
   errors: Array<{ driverId: string; error: string }>;
   total: number;
+  newCount: number;
+  updatedCount: number;
 }
 
 interface UploadProgress {
@@ -59,6 +61,8 @@ export const uploadDriverCredential = async (
     total,
     success: [],
     errors: [],
+    newCount: 0,
+    updatedCount: 0,
   };
 
   onProgress?.({ current: 0, total, currentDriverId: "Starting…" });
@@ -83,6 +87,8 @@ export const uploadDriverCredential = async (
 
     combined.success.push(...(chunkResult?.success ?? []));
     combined.errors.push(...(chunkResult?.errors ?? []));
+    combined.newCount += chunkResult?.newCount ?? 0;
+    combined.updatedCount += chunkResult?.updatedCount ?? 0;
 
     processed += chunk.length;
 
