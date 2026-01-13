@@ -40,6 +40,7 @@ interface TargetTripsRow {
   completed_trips: number;
   month: string;
   year: number;
+  shift: string;
 }
 
 interface TargetTripsRecord {
@@ -50,6 +51,7 @@ interface TargetTripsRecord {
   completed_trips: number;
   month: string;
   year: number;
+  shift: string | null;
   created_at: string;
 }
 
@@ -259,6 +261,14 @@ const TargetTripsUploadPage = () => {
       const values = lines[i].split(',').map(v => v.trim());
       if (values.length < 2 || !values[driverIdIdx]) continue;
       
+      // Parse shift: if "1" or starts with "1" -> "24H", if "2" or starts with "2" -> "12H"
+      let shiftValue = shiftIdx !== -1 ? values[shiftIdx] : '';
+      if (shiftValue === '1' || shiftValue.startsWith('1')) {
+        shiftValue = '24H';
+      } else if (shiftValue === '2' || shiftValue.startsWith('2')) {
+        shiftValue = '12H';
+      }
+      
       data.push({
         driver_id: values[driverIdIdx],
         driver_name: driverNameIdx !== -1 ? values[driverNameIdx] : '',
@@ -266,6 +276,7 @@ const TargetTripsUploadPage = () => {
         completed_trips: completedTripsIdx !== -1 ? parseInt(values[completedTripsIdx]) || 0 : 0,
         month: monthIdx !== -1 ? values[monthIdx] : new Date().toLocaleString('default', { month: 'long' }),
         year: yearIdx !== -1 ? parseInt(values[yearIdx]) || new Date().getFullYear() : new Date().getFullYear(),
+        shift: shiftValue,
       });
     }
     
@@ -315,6 +326,7 @@ const TargetTripsUploadPage = () => {
         completed_trips: row.completed_trips,
         month: row.month,
         year: row.year,
+        shift: row.shift || null,
         uploaded_by: user.id,
       }));
 
@@ -376,6 +388,7 @@ const TargetTripsUploadPage = () => {
       const exportData = records.map((record) => ({
         "Driver ID": record.driver_id,
         "Driver Name": record.driver_name || "",
+        "Shift": record.shift || "",
         "Target Trips": record.target_trips,
         "Completed Trips": record.completed_trips,
         "Month": record.month,
@@ -391,6 +404,7 @@ const TargetTripsUploadPage = () => {
       ws["!cols"] = [
         { wch: 12 }, // Driver ID
         { wch: 20 }, // Driver Name
+        { wch: 8 },  // Shift
         { wch: 12 }, // Target Trips
         { wch: 15 }, // Completed Trips
         { wch: 12 }, // Month
@@ -763,6 +777,7 @@ const TargetTripsUploadPage = () => {
                   <tr className="border-b border-white/10 bg-white/5">
                     <th className="text-left p-4 text-slate-300 font-medium">Driver ID</th>
                     <th className="text-left p-4 text-slate-300 font-medium">Name</th>
+                    <th className="text-center p-4 text-slate-300 font-medium">Shift</th>
                     <th className="text-right p-4 text-slate-300 font-medium">Target</th>
                     <th className="text-right p-4 text-slate-300 font-medium">Completed</th>
                     <th className="text-left p-4 text-slate-300 font-medium">Month</th>
@@ -775,6 +790,17 @@ const TargetTripsUploadPage = () => {
                     <tr key={record.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                       <td className="p-4 text-white font-medium">{record.driver_id}</td>
                       <td className="p-4 text-slate-300">{record.driver_name || "-"}</td>
+                      <td className="p-4 text-center">
+                        {record.shift ? (
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            record.shift === '24H' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'
+                          }`}>
+                            {record.shift}
+                          </span>
+                        ) : (
+                          <span className="text-slate-500">-</span>
+                        )}
+                      </td>
                       <td className="p-4 text-right text-white font-semibold">{record.target_trips}</td>
                       <td className="p-4 text-right text-slate-300">{record.completed_trips}</td>
                       <td className="p-4 text-slate-300">{record.month}</td>
