@@ -72,7 +72,7 @@ export const uploadDriverCredential = async (
     onProgress?.({ current: processed, total, currentDriverId: `Uploading ${firstId}…` });
 
     const { data, error } = await supabase.functions.invoke("driver-credentials-bulk", {
-      body: { drivers: chunk, replaceExisting: i === 0 },
+      body: { drivers: chunk, replaceExisting: false },
     });
 
     if (error) {
