@@ -51,18 +51,35 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch all driver credentials
+  // Fetch all driver credentials with pagination to get all records
   const { data: drivers = [], isLoading } = useQuery({
     queryKey: ["driver-credentials-sms"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("driver_credentials")
-        .select("*")
-        .eq("status", "enabled")
-        .order("driver_id", { ascending: true });
+      const allDrivers: DriverCredential[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      let hasMore = true;
 
-      if (error) throw error;
-      return data as DriverCredential[];
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("driver_credentials")
+          .select("*")
+          .eq("status", "enabled")
+          .order("driver_id", { ascending: true })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allDrivers.push(...(data as DriverCredential[]));
+          from += pageSize;
+          hasMore = data.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      return allDrivers;
     },
     enabled: isOpen,
   });
