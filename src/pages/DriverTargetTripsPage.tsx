@@ -235,7 +235,7 @@ const DriverTargetTripsPage = () => {
       return {
         tier: tierName,
         avgTripsPerDay: avgTrips,
-        totalTripsMonth: avgTrips * daysInMonth,
+        totalTripsMonth: Math.round(avgTrips * daysInMonth),
         incentive,
       };
     });

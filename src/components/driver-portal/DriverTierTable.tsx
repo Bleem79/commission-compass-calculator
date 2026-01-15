@@ -101,7 +101,7 @@ const DriverTierTable = ({ driverId }: DriverTierTableProps) => {
       return {
         tier: i === 0 ? "Base" : `Base+${i}`,
         avgTripsPerDay: avgTrips,
-        totalTripsMonth: avgTrips * daysInMonth,
+        totalTripsMonth: Math.round(avgTrips * daysInMonth),
         incentive: incentives[i],
       };
     });
