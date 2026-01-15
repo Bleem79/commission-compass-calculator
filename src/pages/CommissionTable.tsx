@@ -7,6 +7,7 @@ import { filterCommissionData } from "@/utils/commissionUtils";
 import CommissionSingleWithBasicTable from "@/components/commission/CommissionSingleWithBasicTable";
 import CommissionSingleWithoutBasicTable from "@/components/commission/CommissionSingleWithoutBasicTable";
 import CommissionDoubleShiftTable from "@/components/commission/CommissionDoubleShiftTable";
+import { FloatingCalculator } from "@/components/calculator/FloatingCalculator";
 
 const CommissionTable = () => {
   const navigate = useNavigate();
@@ -48,6 +49,7 @@ const CommissionTable = () => {
         <CommissionSingleWithoutBasicTable data={singleShiftWithoutBasic} />
         <CommissionDoubleShiftTable data={doubleShift} />
       </div>
+      <FloatingCalculator />
     </div>
   );
 };
