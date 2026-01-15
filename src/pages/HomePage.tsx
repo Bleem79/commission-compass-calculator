@@ -15,11 +15,13 @@ import {
   Ban,
   Target,
   Upload,
-  MessageSquare
+  MessageSquare,
+  MessageCircle
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminMessages } from "@/components/messages/AdminMessages";
 import { DriverIncomeAuthDialog } from "@/components/driver-income/DriverIncomeAuthDialog";
+import { DriverSmsDialog } from "@/components/messages/DriverSmsDialog";
 import InstallBanner from "@/components/pwa/InstallBanner";
 import NotificationPrompt from "@/components/pwa/NotificationPrompt";
 import { toast } from "@/hooks/use-toast";
@@ -70,6 +72,7 @@ const HomePage = () => {
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDriverIncomeDialogOpen, setIsDriverIncomeDialogOpen] = useState(false);
+  const [isSmsDialogOpen, setIsSmsDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -178,6 +181,12 @@ const HomePage = () => {
       gradient: "bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700",
       onClick: () => navigate("/admin-requests"),
     });
+    features.push({
+      icon: <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "SMS",
+      gradient: "bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-600",
+      onClick: () => setIsSmsDialogOpen(true),
+    });
   }
 
   return (
@@ -283,6 +292,10 @@ const HomePage = () => {
       <DriverIncomeAuthDialog
         isOpen={isDriverIncomeDialogOpen}
         onClose={() => setIsDriverIncomeDialogOpen(false)}
+      />
+      <DriverSmsDialog
+        isOpen={isSmsDialogOpen}
+        onClose={() => setIsSmsDialogOpen(false)}
       />
 
       {/* PWA Prompts */}
