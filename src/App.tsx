@@ -26,6 +26,7 @@ import TargetTripsUploadPage from "./pages/TargetTripsUploadPage";
 import WarningLettersUploadPage from "./pages/WarningLettersUploadPage";
 import AdminRequestsPage from "./pages/AdminRequestsPage";
 import InstallPage from "./pages/InstallPage";
+import DriverActivityLogsPage from "./pages/DriverActivityLogsPage";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 
@@ -277,6 +278,18 @@ const AppRoutes = () => {
             <SidebarProvider>
               <div className="min-h-screen w-full">
                 <AdminRequestsPage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver-activity-logs" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <DriverActivityLogsPage />
               </div>
             </SidebarProvider>
           </ProtectedRoute>

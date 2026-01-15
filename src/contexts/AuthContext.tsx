@@ -4,14 +4,24 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthContextType } from "@/types/auth";
 import { useAuthState } from "@/hooks/useAuthState";
+import { useActivityLogger } from "@/hooks/useActivityLogger";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, setUser, session, refreshSession } = useAuthState();
+  const { logActivity } = useActivityLogger();
 
   const logout = useCallback(async (): Promise<boolean> => {
     try {
+      // Log logout activity before signing out
+      if (session?.user && user?.username) {
+        const driverId = user.username.includes("@") 
+          ? user.username.split("@")[0] 
+          : user.username;
+        await logActivity(session.user.id, driverId, "logout");
+      }
+      
       // Clear admin notification flag before logging out
       sessionStorage.removeItem('adminNotificationShown');
       
@@ -74,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Return true so user is redirected to login page regardless of server errors
       return true;
     }
-  }, [session, setUser]);
+  }, [session, setUser, user, logActivity]);
 
   return (
     <AuthContext.Provider

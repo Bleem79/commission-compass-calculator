@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { User, Key, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useActivityLogger } from "@/hooks/useActivityLogger";
 
 export const LoginForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logActivity } = useActivityLogger();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -52,6 +54,13 @@ export const LoginForm = () => {
 
       if (data.user) {
         console.log("Login successful with user ID:", data.user.id);
+        
+        // Log the login activity for drivers
+        const driverId = normalizedIdentifier.includes("@") 
+          ? normalizedIdentifier.split("@")[0] 
+          : normalizedIdentifier;
+        await logActivity(data.user.id, driverId, "login");
+        
         toast({
           title: "Login Successful",
           description: "You are now logged in",

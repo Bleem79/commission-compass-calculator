@@ -128,6 +128,36 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_activity_logs: {
+        Row: {
+          activity_type: string
+          created_at: string
+          driver_id: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       driver_credentials: {
         Row: {
           created_at: string | null
