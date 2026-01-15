@@ -38,6 +38,13 @@ const Dashboard = () => {
     }
   }, [user, navigate]);
 
+  // Auto-set commission type to "With Basic" when Double Shift is selected
+  useEffect(() => {
+    if (shiftType === "Double Shift" && commissionType !== "With Basic") {
+      setCommissionType("With Basic");
+    }
+  }, [shiftType, commissionType]);
+
   useEffect(() => {
     if (totalIncome !== undefined && workingDays !== undefined && workingDays > 0 && month !== "" && shiftType !== "" && commissionType !== "") {
       // Calculate average daily income with proper precision
