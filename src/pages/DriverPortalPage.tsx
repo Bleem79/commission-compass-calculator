@@ -17,15 +17,17 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DriverPrivateMessages } from "@/components/messages/DriverPrivateMessages";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 interface PortalCardProps {
   icon: React.ReactNode;
   title: string;
   gradient: string;
   onClick: () => void;
+  badge?: number;
 }
 
-const PortalCard = ({ icon, title, gradient, onClick }: PortalCardProps) => (
+const PortalCard = ({ icon, title, gradient, onClick, badge }: PortalCardProps) => (
   <button
     onClick={onClick}
     className={cn(
@@ -37,6 +39,13 @@ const PortalCard = ({ icon, title, gradient, onClick }: PortalCardProps) => (
       gradient
     )}
   >
+    {/* Badge */}
+    {badge !== undefined && badge > 0 && (
+      <div className="absolute top-3 right-3 z-20 min-w-[24px] h-6 px-2 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+        <span className="text-xs font-bold text-white">{badge > 99 ? "99+" : badge}</span>
+      </div>
+    )}
+    
     {/* Shimmer effect */}
     <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
     
@@ -59,6 +68,7 @@ const DriverPortalPage = () => {
   const navigate = useNavigate();
   const [showMessages, setShowMessages] = useState(false);
   const { isAuthenticated, user } = useAuth();
+  const { unreadCount, markAllAsRead } = useUnreadMessages();
 
   React.useEffect(() => {
     if (!isAuthenticated) {
@@ -112,7 +122,11 @@ const DriverPortalPage = () => {
       icon: <Mail className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Private Messages",
       gradient: "bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-600",
-      onClick: () => setShowMessages(true),
+      onClick: () => {
+        markAllAsRead();
+        setShowMessages(true);
+      },
+      badge: unreadCount,
     },
   ];
 
@@ -174,6 +188,7 @@ const DriverPortalPage = () => {
                   title={item.title}
                   gradient={item.gradient}
                   onClick={item.onClick}
+                  badge={'badge' in item ? item.badge : undefined}
                 />
               ))}
             </div>
