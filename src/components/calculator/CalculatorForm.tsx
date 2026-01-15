@@ -72,7 +72,11 @@ export const CalculatorForm = ({
           <Wallet className="mr-2 h-4 w-4 inline-block" />
           Select Commission Type
         </Label>
-        <Select onValueChange={onCommissionTypeChange} value={shiftType === "Double Shift" ? "With Basic" : commissionType}>
+        <Select 
+          onValueChange={onCommissionTypeChange} 
+          value={commissionType}
+          disabled={shiftType === "Double Shift"}
+        >
           <SelectTrigger className="w-full bg-input">
             <SelectValue placeholder="Select commission type" />
           </SelectTrigger>
