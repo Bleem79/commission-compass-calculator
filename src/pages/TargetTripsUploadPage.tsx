@@ -272,7 +272,7 @@ const TargetTripsUploadPage = () => {
       data.push({
         driver_id: values[driverIdIdx],
         driver_name: driverNameIdx !== -1 ? values[driverNameIdx] : '',
-        target_trips: parseInt(values[targetTripsIdx]) || 0,
+        target_trips: parseFloat(values[targetTripsIdx]) || 0,
         completed_trips: completedTripsIdx !== -1 ? parseInt(values[completedTripsIdx]) || 0 : 0,
         month: monthIdx !== -1 ? values[monthIdx] : new Date().toLocaleString('default', { month: 'long' }),
         year: yearIdx !== -1 ? parseInt(values[yearIdx]) || new Date().getFullYear() : new Date().getFullYear(),
