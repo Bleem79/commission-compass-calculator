@@ -114,7 +114,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     onClose();
   };
 
-  const ContentComponent = () => (
+  const content = (
     <div className="flex flex-col h-full max-h-[70vh]">
       {/* Driver Selection */}
       {!selectedDriver ? (
@@ -236,7 +236,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
               Send SMS to Driver
             </DrawerTitle>
           </DrawerHeader>
-          <ContentComponent />
+          {content}
         </DrawerContent>
       </Drawer>
     );
@@ -251,7 +251,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
             Send SMS to Driver
           </DialogTitle>
         </DialogHeader>
-        <ContentComponent />
+        {content}
       </DialogContent>
     </Dialog>
   );
