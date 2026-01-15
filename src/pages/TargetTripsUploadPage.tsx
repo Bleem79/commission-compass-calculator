@@ -390,15 +390,31 @@ const TargetTripsUploadPage = () => {
   };
 
   const handleClearAll = async () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete ALL target trips records? This action cannot be undone."
+    );
+    if (!confirmed) return;
+
     setIsClearing(true);
     try {
-      const { error } = await supabase.from("target_trips").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      // Delete all records by using a condition that matches everything
+      const { error } = await supabase
+        .from("target_trips")
+        .delete()
+        .gte("created_at", "1900-01-01");
+      
       if (error) throw error;
-      toast.success("All records cleared successfully");
+      
+      toast.success("All target trips records cleared successfully");
       setRecords([]);
+      setPreviewData(null);
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error: any) {
       console.error("Error clearing records:", error);
-      toast.error("Failed to clear records");
+      toast.error(error.message || "Failed to clear records");
     } finally {
       setIsClearing(false);
     }
