@@ -178,7 +178,7 @@ const TargetTripsUploadPage = () => {
     try {
       setLoading(true);
       
-      // Fetch all records using pagination to bypass the 1000 row limit
+      // Fetch all target trips records using pagination
       let allRecords: TargetTripsRecord[] = [];
       let from = 0;
       const pageSize = 1000;
@@ -202,7 +202,34 @@ const TargetTripsUploadPage = () => {
         }
       }
       
-      setRecords(allRecords);
+      // Fetch driver names from driver_income table
+      const driverIds = [...new Set(allRecords.map(r => r.driver_id))];
+      const driverNameMap: Record<string, string> = {};
+      
+      // Fetch in batches to avoid query limits
+      for (let i = 0; i < driverIds.length; i += 100) {
+        const batch = driverIds.slice(i, i + 100);
+        const { data: incomeData } = await supabase
+          .from("driver_income")
+          .select("driver_id, driver_name")
+          .in("driver_id", batch);
+        
+        if (incomeData) {
+          incomeData.forEach(item => {
+            if (item.driver_name && !driverNameMap[item.driver_id]) {
+              driverNameMap[item.driver_id] = item.driver_name;
+            }
+          });
+        }
+      }
+      
+      // Merge driver names into records
+      const recordsWithNames = allRecords.map(record => ({
+        ...record,
+        driver_name: record.driver_name || driverNameMap[record.driver_id] || null
+      }));
+      
+      setRecords(recordsWithNames);
     } catch (error: any) {
       console.error("Error fetching records:", error);
       toast.error("Failed to load records");
