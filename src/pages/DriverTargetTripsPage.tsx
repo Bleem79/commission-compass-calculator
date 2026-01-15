@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { FloatingCalculator } from "@/components/calculator/FloatingCalculator";
 
 interface TargetTrip {
   id: string;
@@ -406,6 +407,8 @@ const DriverTargetTripsPage = () => {
         )}
       </div>
 
+      {/* Floating Calculator */}
+      <FloatingCalculator />
     </div>
   );
 };
