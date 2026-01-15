@@ -89,7 +89,7 @@ const DriverTierTable = ({ driverId }: DriverTierTableProps) => {
   // Calculate base average trips per day from target trips
   const baseAvgTripsPerDay = useMemo(() => {
     if (targetTrip && daysInMonth > 0) {
-      return Math.round(targetTrip.target_trips / daysInMonth);
+      return targetTrip.target_trips / daysInMonth;
     }
     return 24;
   }, [targetTrip, daysInMonth]);
