@@ -16,7 +16,8 @@ import {
   Target,
   Upload,
   MessageSquare,
-  MessageCircle
+  MessageCircle,
+  Activity
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminMessages } from "@/components/messages/AdminMessages";
@@ -186,6 +187,12 @@ const HomePage = () => {
       title: "SMS",
       gradient: "bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-600",
       onClick: () => setIsSmsDialogOpen(true),
+    });
+    features.push({
+      icon: <Activity className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Activity Logs",
+      gradient: "bg-gradient-to-br from-gray-600 via-slate-600 to-zinc-700",
+      onClick: () => navigate("/driver-activity-logs"),
     });
   }
 
