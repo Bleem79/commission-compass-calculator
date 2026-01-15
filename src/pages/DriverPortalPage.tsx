@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   CalendarDays, 
@@ -9,12 +9,14 @@ import {
   X,
   ChevronRight,
   FileWarning,
-  Clock
+  Clock,
+  Mail
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { DriverPrivateMessages } from "@/components/messages/DriverPrivateMessages";
 
 interface PortalCardProps {
   icon: React.ReactNode;
@@ -55,6 +57,7 @@ const PortalCard = ({ icon, title, gradient, onClick }: PortalCardProps) => (
 
 const DriverPortalPage = () => {
   const navigate = useNavigate();
+  const [showMessages, setShowMessages] = useState(false);
   const { isAuthenticated, user } = useAuth();
 
   React.useEffect(() => {
@@ -105,7 +108,18 @@ const DriverPortalPage = () => {
       gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-600",
       onClick: () => showComingSoon("Warning Letter"),
     },
+    {
+      icon: <Mail className="w-8 h-8 sm:w-10 sm:h-10" />,
+      title: "Private Messages",
+      gradient: "bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-600",
+      onClick: () => setShowMessages(true),
+    },
   ];
+
+  // Show messages view if selected
+  if (showMessages) {
+    return <DriverPrivateMessages onBack={() => setShowMessages(false)} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
