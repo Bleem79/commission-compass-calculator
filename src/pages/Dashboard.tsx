@@ -8,6 +8,7 @@ import type { NextTierInfo } from "@/types/calculator";
 import { CalculatorHeader } from "@/components/calculator/CalculatorHeader";
 import { CalculatorContainer } from "@/components/calculator/CalculatorContainer";
 import { UserProfile } from "@/components/calculator/UserProfile";
+import { FloatingCalculator } from "@/components/calculator/FloatingCalculator";
 
 // Get current month in format matching months array (e.g., "25-Dec")
 const getCurrentMonth = () => {
@@ -162,6 +163,7 @@ const Dashboard = () => {
           />
         </div>
       </div>
+      <FloatingCalculator />
     </div>
   );
 };
