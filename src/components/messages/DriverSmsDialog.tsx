@@ -95,6 +95,36 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     enabled: !!selectedDriver?.driver_id,
   });
 
+  // Real-time subscription for new messages
+  useEffect(() => {
+    if (!selectedDriver?.driver_id) return;
+
+    const channel = supabase
+      .channel(`admin-sms-${selectedDriver.driver_id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'admin_messages',
+        },
+        (payload) => {
+          const newMessage = payload.new as { content: string; is_admin: boolean };
+          const privatePrefix = `[PRIVATE TO: ${selectedDriver.driver_id}]`;
+          
+          // Only refetch if the message is for this driver
+          if (newMessage.is_admin && newMessage.content.startsWith(privatePrefix)) {
+            queryClient.invalidateQueries({ queryKey: ["driver-message-history", selectedDriver.driver_id] });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedDriver?.driver_id, queryClient]);
+
   // Scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
