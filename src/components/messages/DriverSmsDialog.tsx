@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Send, Search, X, MessageSquare, User, ArrowLeft, Inbox } from "lucide-react";
+import { Send, Search, X, MessageSquare, User, ArrowLeft, Inbox, Check, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -34,6 +34,7 @@ interface PrivateMessage {
   id: string;
   content: string;
   created_at: string;
+  read_at: string | null;
 }
 
 interface DriverSmsDialogProps {
@@ -88,6 +89,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
           id: msg.id,
           content: msg.content.replace(privatePrefix, "").trim(),
           created_at: msg.created_at || "",
+          read_at: msg.read_at,
         }));
 
       return privateMessages as PrivateMessage[];
@@ -301,9 +303,18 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
                         <p className="text-sm whitespace-pre-wrap break-words">
                           {msg.content}
                         </p>
-                        <p className="text-[10px] opacity-70 mt-1 text-right">
-                          {msg.created_at && format(new Date(msg.created_at), "MMM d, h:mm a")}
-                        </p>
+                        <div className="flex items-center justify-end gap-1 mt-1">
+                          <p className="text-[10px] opacity-70">
+                            {msg.created_at && format(new Date(msg.created_at), "MMM d, h:mm a")}
+                          </p>
+                          <span title={msg.read_at ? `Read ${format(new Date(msg.read_at), "MMM d, h:mm a")}` : "Sent"}>
+                            {msg.read_at ? (
+                              <CheckCheck className="w-3 h-3 text-blue-300" />
+                            ) : (
+                              <Check className="w-3 h-3 opacity-70" />
+                            )}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
