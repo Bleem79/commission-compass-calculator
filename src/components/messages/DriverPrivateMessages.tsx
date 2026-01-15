@@ -12,6 +12,7 @@ interface PrivateMessage {
   content: string;
   created_at: string;
   driver_id: string;
+  read_at: string | null;
 }
 
 interface DriverPrivateMessagesProps {
@@ -63,12 +64,37 @@ export const DriverPrivateMessages = ({ onBack }: DriverPrivateMessagesProps) =>
           content: msg.content.replace(privatePrefix, "").trim(),
           created_at: msg.created_at || "",
           driver_id: driverCredential.driver_id,
+          read_at: msg.read_at,
         }));
 
       return privateMessages as PrivateMessage[];
     },
     enabled: !!driverCredential?.driver_id,
   });
+
+  // Mark messages as read when viewed
+  useEffect(() => {
+    if (!messages.length) return;
+
+    const unreadMessages = messages.filter((msg) => !msg.read_at);
+    if (unreadMessages.length === 0) return;
+
+    const markAsRead = async () => {
+      const unreadIds = unreadMessages.map((msg) => msg.id);
+      
+      await supabase
+        .from("admin_messages")
+        .update({ read_at: new Date().toISOString() })
+        .in("id", unreadIds);
+      
+      // Refresh the messages
+      queryClient.invalidateQueries({ 
+        queryKey: ["driver-private-messages", driverCredential?.driver_id] 
+      });
+    };
+
+    markAsRead();
+  }, [messages, driverCredential?.driver_id, queryClient]);
 
   // Set up real-time subscription for new messages
   useEffect(() => {
