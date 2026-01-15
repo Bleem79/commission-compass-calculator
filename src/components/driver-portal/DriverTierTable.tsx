@@ -48,10 +48,9 @@ const DriverTierTable = ({ driverId }: DriverTierTableProps) => {
         // Fetch latest target trip
         const { data: tripData } = await supabase
           .from("target_trips")
-          .select("target_trips, completed_trips, month, year")
+          .select("target_trips, completed_trips, month, year, created_at")
           .eq("driver_id", driverId)
-          .order("year", { ascending: false })
-          .order("month", { ascending: false })
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
@@ -60,10 +59,9 @@ const DriverTierTable = ({ driverId }: DriverTierTableProps) => {
         // Fetch driver income for shift type
         const { data: incomeData } = await supabase
           .from("driver_income")
-          .select("shift, working_days, driver_name")
+          .select("shift, working_days, driver_name, created_at")
           .eq("driver_id", driverId)
-          .order("year", { ascending: false })
-          .order("month", { ascending: false })
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 

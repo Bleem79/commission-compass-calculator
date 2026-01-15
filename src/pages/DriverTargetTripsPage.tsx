@@ -161,8 +161,7 @@ const DriverTargetTripsPage = () => {
           .from("target_trips")
           .select("*")
           .eq("driver_id", driverId)
-          .order("year", { ascending: false })
-          .order("month", { ascending: false });
+          .order("created_at", { ascending: false });
 
         if (tripsError) throw tripsError;
 
@@ -176,8 +175,7 @@ const DriverTargetTripsPage = () => {
           .from("driver_income")
           .select("shift, working_days, total_trips, driver_name")
           .eq("driver_id", driverId)
-          .order("year", { ascending: false })
-          .order("month", { ascending: false })
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
