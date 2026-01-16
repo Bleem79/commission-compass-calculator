@@ -15,10 +15,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(async (): Promise<boolean> => {
     try {
       // Log logout activity before signing out
-      if (session?.user && user?.username) {
-        const driverId = user.username.includes("@") 
-          ? user.username.split("@")[0] 
-          : user.username;
+      if (session?.user && user) {
+        // Use stored driverId if available, otherwise extract from email/username
+        const driverId = user.driverId || (user.email?.includes("@driver.temp") 
+          ? user.email.split("@")[0] 
+          : (user.role === 'guest' ? 'Guest' : user.username));
         await logActivity(session.user.id, driverId, "logout");
       }
       

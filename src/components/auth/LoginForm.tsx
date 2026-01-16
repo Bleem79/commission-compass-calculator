@@ -55,10 +55,22 @@ export const LoginForm = () => {
       if (data.user) {
         console.log("Login successful with user ID:", data.user.id);
         
-        // Log the login activity for drivers
-        const driverId = normalizedIdentifier.includes("@") 
+        // Get driver ID from credentials table or extract from login identifier
+        let driverId = normalizedIdentifier.includes("@") 
           ? normalizedIdentifier.split("@")[0] 
           : normalizedIdentifier;
+          
+        // Try to get the actual driver_id from driver_credentials
+        const { data: credData } = await supabase
+          .from('driver_credentials')
+          .select('driver_id')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+          
+        if (credData?.driver_id) {
+          driverId = credData.driver_id;
+        }
+        
         await logActivity(data.user.id, driverId, "login");
         
         toast({
