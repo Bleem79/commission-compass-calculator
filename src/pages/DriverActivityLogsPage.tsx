@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Search, RefreshCw, LogIn, LogOut, Calendar } from "lucide-react";
+import { ArrowLeft, Search, RefreshCw, LogIn, LogOut, Calendar, Radio } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 
@@ -29,6 +29,7 @@ const DriverActivityLogsPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [isLive, setIsLive] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -41,6 +42,44 @@ const DriverActivityLogsPage = () => {
     }
     fetchLogs();
   }, [isAuthenticated, isAdmin, navigate]);
+
+  // Real-time subscription for new activity logs
+  useEffect(() => {
+    if (!isAdmin || !isLive) return;
+
+    console.log("Setting up real-time subscription for activity logs");
+    
+    const channel = supabase
+      .channel('activity-logs-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'driver_activity_logs'
+        },
+        (payload) => {
+          console.log("New activity log received:", payload);
+          const newLog = payload.new as ActivityLog;
+          
+          // Add to the beginning of the logs array
+          setLogs((prevLogs) => [newLog, ...prevLogs]);
+          
+          toast({
+            title: `New ${newLog.activity_type}`,
+            description: `Driver ${newLog.driver_id} ${newLog.activity_type === 'login' ? 'logged in' : 'logged out'}`,
+          });
+        }
+      )
+      .subscribe((status) => {
+        console.log("Realtime subscription status:", status);
+      });
+
+    return () => {
+      console.log("Cleaning up real-time subscription");
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin, isLive]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -144,6 +183,14 @@ const DriverActivityLogsPage = () => {
               <Button onClick={fetchLogs} variant="outline" className="gap-2">
                 <RefreshCw className="h-4 w-4" />
                 Refresh
+              </Button>
+              <Button 
+                onClick={() => setIsLive(!isLive)} 
+                variant={isLive ? "default" : "outline"} 
+                className={`gap-2 ${isLive ? "bg-green-600 hover:bg-green-700" : ""}`}
+              >
+                <Radio className={`h-4 w-4 ${isLive ? "animate-pulse" : ""}`} />
+                {isLive ? "Live" : "Paused"}
               </Button>
             </div>
           </CardContent>
