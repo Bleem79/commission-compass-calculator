@@ -75,12 +75,13 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
             console.log("User identified as driver with ID:", driverData.driver_id);
             setUser(prevUser => {
               // Only update if role is different or user is null
-              if (!prevUser || prevUser.role !== 'driver') {
+              if (!prevUser || prevUser.role !== 'driver' || prevUser.driverId !== driverData.driver_id) {
                 return {
                   id: userId,
                   username: userEmail,
                   email: userEmail,
-                  role: 'driver'
+                  role: 'driver',
+                  driverId: driverData.driver_id
                 };
               }
               return prevUser;

@@ -4,10 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { signInAsGuest } from "@/integrations/supabase/auth-utils";
 import { toast } from "@/hooks/use-toast";
 import { UserRound } from "lucide-react";
+import { useActivityLogger } from "@/hooks/useActivityLogger";
 
 export function GuestLoginButton() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { logActivity } = useActivityLogger();
 
   const handleGuestLogin = async () => {
     setIsLoading(true);
@@ -25,6 +27,9 @@ export function GuestLoginButton() {
         });
         return;
       }
+      
+      // Log guest login activity
+      await logActivity(result.user.id, "Guest", "login");
       
       toast({
         title: "Guest Login Successful",
