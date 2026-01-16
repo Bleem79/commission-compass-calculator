@@ -5,30 +5,40 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import HomePage from "./pages/HomePage";
-import NotFound from "./pages/NotFound";
-import CommissionTable from "./pages/CommissionTable";
-import InfoPage from "./pages/InfoPage";
-import MFuelPage from "./pages/MFuelPage";
-import HotspotPage from "./pages/HotspotPage";
-import CNGLocationPage from "./pages/CNGLocationPage";
-import DriverIncomePage from "./pages/DriverIncomePage";
-import DriverManagementPage from "./pages/DriverManagementPage";
-import DriverAbsentFinePage from "./pages/DriverAbsentFinePage";
-import DriverPortalPage from "./pages/DriverPortalPage";
-import DriverTargetTripsPage from "./pages/DriverTargetTripsPage";
-import DriverAbsentFineViewPage from "./pages/DriverAbsentFineViewPage";
-import DriverRequestPage from "./pages/DriverRequestPage";
-import DriverWarningLetterPage from "./pages/DriverWarningLetterPage";
-import TargetTripsUploadPage from "./pages/TargetTripsUploadPage";
-import WarningLettersUploadPage from "./pages/WarningLettersUploadPage";
-import AdminRequestsPage from "./pages/AdminRequestsPage";
-import InstallPage from "./pages/InstallPage";
-import DriverActivityLogsPage from "./pages/DriverActivityLogsPage";
-import { useEffect } from "react";
-import Index from "./pages/Index";
+import { lazy, Suspense, useEffect } from "react";
+import { Loader2 } from "lucide-react";
+
+// Lazy load all page components for code splitting
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const HomePage = lazy(() => import("./pages/HomePage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const CommissionTable = lazy(() => import("./pages/CommissionTable"));
+const InfoPage = lazy(() => import("./pages/InfoPage"));
+const MFuelPage = lazy(() => import("./pages/MFuelPage"));
+const HotspotPage = lazy(() => import("./pages/HotspotPage"));
+const CNGLocationPage = lazy(() => import("./pages/CNGLocationPage"));
+const DriverIncomePage = lazy(() => import("./pages/DriverIncomePage"));
+const DriverManagementPage = lazy(() => import("./pages/DriverManagementPage"));
+const DriverAbsentFinePage = lazy(() => import("./pages/DriverAbsentFinePage"));
+const DriverPortalPage = lazy(() => import("./pages/DriverPortalPage"));
+const DriverTargetTripsPage = lazy(() => import("./pages/DriverTargetTripsPage"));
+const DriverAbsentFineViewPage = lazy(() => import("./pages/DriverAbsentFineViewPage"));
+const DriverRequestPage = lazy(() => import("./pages/DriverRequestPage"));
+const DriverWarningLetterPage = lazy(() => import("./pages/DriverWarningLetterPage"));
+const TargetTripsUploadPage = lazy(() => import("./pages/TargetTripsUploadPage"));
+const WarningLettersUploadPage = lazy(() => import("./pages/WarningLettersUploadPage"));
+const AdminRequestsPage = lazy(() => import("./pages/AdminRequestsPage"));
+const InstallPage = lazy(() => import("./pages/InstallPage"));
+const DriverActivityLogsPage = lazy(() => import("./pages/DriverActivityLogsPage"));
+const Index = lazy(() => import("./pages/Index"));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-screen w-full flex items-center justify-center bg-background">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 // Create a new QueryClient instance inside the component
 // to ensure it's created in the proper React context
@@ -50,7 +60,9 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <AppRoutes />
+              <Suspense fallback={<PageLoader />}>
+                <AppRoutes />
+              </Suspense>
             </BrowserRouter>
           </div>
         </TooltipProvider>
