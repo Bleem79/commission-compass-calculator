@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Search, RefreshCw, LogIn, LogOut, Calendar, Radio } from "lucide-react";
+import { ArrowLeft, Search, RefreshCw, LogIn, LogOut, Calendar, Radio, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
+import ActivityStatistics from "@/components/activity/ActivityStatistics";
 
 interface ActivityLog {
   id: string;
@@ -30,6 +30,7 @@ const DriverActivityLogsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [isLive, setIsLive] = useState(true);
+  const [showStats, setShowStats] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -192,9 +193,19 @@ const DriverActivityLogsPage = () => {
                 <Radio className={`h-4 w-4 ${isLive ? "animate-pulse" : ""}`} />
                 {isLive ? "Live" : "Paused"}
               </Button>
+              <Button 
+                onClick={() => setShowStats(!showStats)} 
+                variant={showStats ? "default" : "outline"} 
+                className="gap-2"
+              >
+                <BarChart3 className="h-4 w-4" />
+                {showStats ? "Hide Stats" : "Show Stats"}
+              </Button>
             </div>
           </CardContent>
         </Card>
+
+        {showStats && <ActivityStatistics logs={logs} />}
 
         <Card>
           <CardHeader className="pb-3">
