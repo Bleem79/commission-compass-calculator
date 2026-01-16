@@ -88,6 +88,7 @@ const DriverActivityLogsPage = () => {
       let query = supabase
         .from("driver_activity_logs")
         .select("*")
+        .neq("driver_id", "Guest")
         .order("created_at", { ascending: false })
         .limit(500);
 
