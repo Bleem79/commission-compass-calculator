@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, X, MessageSquare, Send, Loader2, Clock, CheckCircle, XCircle, Plus } from "lucide-react";
+import { ArrowLeft, X, MessageSquare, Send, Loader2, Clock, CheckCircle, XCircle, Plus, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format, startOfDay, addDays } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface DriverRequest {
   id: string;
@@ -28,12 +30,14 @@ interface DriverRequest {
 }
 
 const REQUEST_TYPES = [
-  { value: "single_to_double", label: "Single Shift to Double Shift" },
-  { value: "double_to_single", label: "Double Shift to Single Shift" },
-  { value: "vehicle_change", label: "Vehicle Change" },
-  { value: "fuel_increase", label: "Fuel Increase" },
-  { value: "partner_change", label: "Partner Change" },
+  { value: "single_to_double", label: "Single to Double" },
+  { value: "double_to_single", label: "Double to Single" },
+  { value: "cng_to_hybrid", label: "CNG to Hybrid" },
+  { value: "day_off", label: "Day Off" },
+  { value: "other", label: "Other" },
 ];
+
+const MAX_DAY_OFF_PER_DAY = 40;
 
 const DriverRequestPage = () => {
   const navigate = useNavigate();
@@ -47,8 +51,7 @@ const DriverRequestPage = () => {
 
   // Form state
   const [requestType, setRequestType] = useState("");
-  const [subject, setSubject] = useState("");
-  const [description, setDescription] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -133,12 +136,45 @@ const DriverRequestPage = () => {
       return;
     }
 
-    if (!requestType || !subject.trim() || !description.trim()) {
-      toast.error("Please fill in all fields");
+    if (!requestType) {
+      toast.error("Please select a request type");
       return;
     }
 
+    // For day off requests, validate date
+    if (requestType === "day_off") {
+      if (!selectedDate) {
+        toast.error("Please select a date for your day off");
+        return;
+      }
+
+      // Check if max day off requests reached for the selected date
+      const dateStr = format(selectedDate, "yyyy-MM-dd");
+      const { count, error: countError } = await supabase
+        .from("driver_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("request_type", "day_off")
+        .eq("status", "approved")
+        .gte("created_at", `${dateStr}T00:00:00`)
+        .lte("created_at", `${dateStr}T23:59:59`);
+
+      if (countError) {
+        console.error("Error checking day off count:", countError);
+      } else if (count && count >= MAX_DAY_OFF_PER_DAY) {
+        toast.error(`Maximum ${MAX_DAY_OFF_PER_DAY} day off requests allowed per day. Please select another date.`);
+        return;
+      }
+    }
+
     setSubmitting(true);
+
+    const requestLabel = REQUEST_TYPES.find(t => t.value === requestType)?.label || requestType;
+    const subject = requestType === "day_off" && selectedDate 
+      ? `Day Off Request - ${format(selectedDate, "dd MMM yyyy")}`
+      : requestLabel;
+    const description = requestType === "day_off" && selectedDate
+      ? `Requesting day off on ${format(selectedDate, "EEEE, dd MMMM yyyy")}`
+      : `Request for ${requestLabel}`;
 
     try {
       const { data, error } = await supabase
@@ -147,8 +183,8 @@ const DriverRequestPage = () => {
           driver_id: driverId,
           driver_name: driverName,
           request_type: requestType,
-          subject: subject.trim(),
-          description: description.trim(),
+          subject: subject,
+          description: description,
         })
         .select()
         .single();
@@ -157,8 +193,7 @@ const DriverRequestPage = () => {
 
       setRequests([data, ...requests]);
       setRequestType("");
-      setSubject("");
-      setDescription("");
+      setSelectedDate(undefined);
       setShowForm(false);
       toast.success("Request submitted successfully");
     } catch (error: any) {
@@ -168,6 +203,9 @@ const DriverRequestPage = () => {
       setSubmitting(false);
     }
   };
+
+  // Get tomorrow's date as the minimum selectable date
+  const tomorrow = addDays(startOfDay(new Date()), 1);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -278,11 +316,16 @@ const DriverRequestPage = () => {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <Label htmlFor="request-type">Request Type</Label>
-                      <Select value={requestType} onValueChange={setRequestType}>
+                      <Select value={requestType} onValueChange={(value) => {
+                        setRequestType(value);
+                        if (value !== "day_off") {
+                          setSelectedDate(undefined);
+                        }
+                      }}>
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select request type" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-background border border-border z-50">
                           {REQUEST_TYPES.map((type) => (
                             <SelectItem key={type.value} value={type.value}>
                               {type.label}
@@ -292,45 +335,56 @@ const DriverRequestPage = () => {
                       </Select>
                     </div>
 
-                    <div>
-                      <Label htmlFor="subject">Subject</Label>
-                      <Input
-                        id="subject"
-                        value={subject}
-                        onChange={(e) => setSubject(e.target.value)}
-                        placeholder="Brief subject of your request"
-                        className="mt-1"
-                        maxLength={100}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Provide detailed information about your request..."
-                        className="mt-1 min-h-[120px]"
-                        maxLength={1000}
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {description.length}/1000 characters
-                      </p>
-                    </div>
+                    {/* Date Picker for Day Off */}
+                    {requestType === "day_off" && (
+                      <div>
+                        <Label>Select Day Off Date</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full mt-1 justify-start text-left font-normal",
+                                !selectedDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 bg-background border border-border z-50" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={selectedDate}
+                              onSelect={setSelectedDate}
+                              disabled={(date) => date < tomorrow}
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Only future dates are available. Maximum {MAX_DAY_OFF_PER_DAY} approved day off requests per day.
+                        </p>
+                      </div>
+                    )}
 
                     <div className="flex gap-3">
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => setShowForm(false)}
+                        onClick={() => {
+                          setShowForm(false);
+                          setRequestType("");
+                          setSelectedDate(undefined);
+                        }}
                         className="flex-1"
                       >
                         Cancel
                       </Button>
                       <Button
                         type="submit"
-                        disabled={submitting || !requestType || !subject.trim() || !description.trim()}
+                        disabled={submitting || !requestType || (requestType === "day_off" && !selectedDate)}
                         className="flex-1 bg-blue-600 hover:bg-blue-700"
                       >
                         {submitting ? (
