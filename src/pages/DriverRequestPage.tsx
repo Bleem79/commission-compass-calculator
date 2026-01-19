@@ -138,40 +138,39 @@ const DriverRequestPage = () => {
 
       setLoadingSlots(true);
       try {
-        const dateStr = format(selectedDate, "yyyy-MM-dd");
+        const dateStr = format(selectedDate, "dd MMM yyyy");
+        const subjectPattern = `Day Off Request - ${dateStr}`;
         
-        // Check total approved day off requests for this date
-        const { count, error } = await supabase
+        // Check total approved day off requests for this specific day off date (from subject)
+        const { data: approvedRequests, error } = await supabase
           .from("driver_requests")
-          .select("*", { count: "exact", head: true })
+          .select("id, subject")
           .eq("request_type", "day_off")
           .eq("status", "approved")
-          .gte("created_at", `${dateStr}T00:00:00`)
-          .lte("created_at", `${dateStr}T23:59:59`);
+          .ilike("subject", `%${dateStr}%`);
 
         if (error) {
           console.error("Error fetching day off count:", error);
           setAvailableSlots(null);
         } else {
-          setAvailableSlots(MAX_DAY_OFF_PER_DAY - (count || 0));
+          const count = approvedRequests?.length || 0;
+          setAvailableSlots(MAX_DAY_OFF_PER_DAY - count);
         }
 
-        // Check if current driver already has a request for this date
+        // Check if current driver already has a request for this specific day off date
         if (driverId) {
-          const { data: existingRequest, error: existingError } = await supabase
+          const { data: existingRequests, error: existingError } = await supabase
             .from("driver_requests")
-            .select("id")
+            .select("id, subject")
             .eq("driver_id", driverId)
             .eq("request_type", "day_off")
-            .gte("created_at", `${dateStr}T00:00:00`)
-            .lte("created_at", `${dateStr}T23:59:59`)
-            .maybeSingle();
+            .ilike("subject", `%${dateStr}%`);
 
           if (existingError) {
             console.error("Error checking existing request:", existingError);
             setHasExistingRequest(false);
           } else {
-            setHasExistingRequest(!!existingRequest);
+            setHasExistingRequest((existingRequests?.length || 0) > 0);
           }
         }
       } catch (error) {
@@ -203,29 +202,38 @@ const DriverRequestPage = () => {
       return;
     }
 
-    // For day off requests, validate date
+    // For day off requests, validate date and check availability
+    let shouldAutoApprove = false;
     if (requestType === "day_off") {
       if (!selectedDate) {
         toast.error("Please select a date for your day off");
         return;
       }
 
-      // Check if max day off requests reached for the selected date
-      const dateStr = format(selectedDate, "yyyy-MM-dd");
-      const { count, error: countError } = await supabase
+      const dateStr = format(selectedDate, "dd MMM yyyy");
+      
+      // Check total approved day off requests for this specific day off date
+      const { data: approvedRequests, error: countError } = await supabase
         .from("driver_requests")
-        .select("*", { count: "exact", head: true })
+        .select("id")
         .eq("request_type", "day_off")
         .eq("status", "approved")
-        .gte("created_at", `${dateStr}T00:00:00`)
-        .lte("created_at", `${dateStr}T23:59:59`);
+        .ilike("subject", `%${dateStr}%`);
 
       if (countError) {
         console.error("Error checking day off count:", countError);
-      } else if (count && count >= MAX_DAY_OFF_PER_DAY) {
+        toast.error("Failed to check availability. Please try again.");
+        return;
+      }
+      
+      const currentCount = approvedRequests?.length || 0;
+      if (currentCount >= MAX_DAY_OFF_PER_DAY) {
         toast.error(`Maximum ${MAX_DAY_OFF_PER_DAY} day off requests allowed per day. Please select another date.`);
         return;
       }
+      
+      // Auto-approve if under the limit
+      shouldAutoApprove = true;
     }
 
     setSubmitting(true);
@@ -239,15 +247,24 @@ const DriverRequestPage = () => {
       : `Request for ${requestLabel}`;
 
     try {
+      const insertData: any = {
+        driver_id: driverId,
+        driver_name: driverName,
+        request_type: requestType,
+        subject: subject,
+        description: description,
+      };
+
+      // Auto-approve day off requests if under limit
+      if (shouldAutoApprove) {
+        insertData.status = "approved";
+        insertData.admin_response = "Auto-approved: Day off slot available";
+        insertData.responded_at = new Date().toISOString();
+      }
+
       const { data, error } = await supabase
         .from("driver_requests")
-        .insert({
-          driver_id: driverId,
-          driver_name: driverName,
-          request_type: requestType,
-          subject: subject,
-          description: description,
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -257,7 +274,12 @@ const DriverRequestPage = () => {
       setRequestType("");
       setSelectedDate(undefined);
       setShowForm(false);
-      toast.success("Request submitted successfully");
+      
+      if (shouldAutoApprove) {
+        toast.success("Day off request auto-approved! ✅");
+      } else {
+        toast.success("Request submitted successfully");
+      }
     } catch (error: any) {
       console.error("Error submitting request:", error);
       toast.error("Failed to submit request");
