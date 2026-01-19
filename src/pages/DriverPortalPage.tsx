@@ -110,7 +110,7 @@ const DriverPortalPage = () => {
       icon: <MessageSquare className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Request",
       gradient: "bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500",
-      onClick: () => showComingSoon("Request"),
+      onClick: () => navigate("/driver-request"),
     },
     {
       icon: <FileWarning className="w-8 h-8 sm:w-10 sm:h-10" />,
