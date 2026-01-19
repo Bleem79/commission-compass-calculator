@@ -54,6 +54,7 @@ const DriverRequestPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [availableSlots, setAvailableSlots] = useState<number | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [hasExistingRequest, setHasExistingRequest] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -126,17 +127,20 @@ const DriverRequestPage = () => {
     fetchRequests();
   }, [driverId]);
 
-  // Fetch available day off slots when date changes
+  // Fetch available day off slots and check for existing request when date changes
   useEffect(() => {
     const fetchAvailableSlots = async () => {
       if (!selectedDate || requestType !== "day_off") {
         setAvailableSlots(null);
+        setHasExistingRequest(false);
         return;
       }
 
       setLoadingSlots(true);
       try {
         const dateStr = format(selectedDate, "yyyy-MM-dd");
+        
+        // Check total approved day off requests for this date
         const { count, error } = await supabase
           .from("driver_requests")
           .select("*", { count: "exact", head: true })
@@ -151,16 +155,36 @@ const DriverRequestPage = () => {
         } else {
           setAvailableSlots(MAX_DAY_OFF_PER_DAY - (count || 0));
         }
+
+        // Check if current driver already has a request for this date
+        if (driverId) {
+          const { data: existingRequest, error: existingError } = await supabase
+            .from("driver_requests")
+            .select("id")
+            .eq("driver_id", driverId)
+            .eq("request_type", "day_off")
+            .gte("created_at", `${dateStr}T00:00:00`)
+            .lte("created_at", `${dateStr}T23:59:59`)
+            .maybeSingle();
+
+          if (existingError) {
+            console.error("Error checking existing request:", existingError);
+            setHasExistingRequest(false);
+          } else {
+            setHasExistingRequest(!!existingRequest);
+          }
+        }
       } catch (error) {
         console.error("Error fetching available slots:", error);
         setAvailableSlots(null);
+        setHasExistingRequest(false);
       } finally {
         setLoadingSlots(false);
       }
     };
 
     fetchAvailableSlots();
-  }, [selectedDate, requestType]);
+  }, [selectedDate, requestType, driverId]);
 
   const handleClose = () => {
     navigate("/driver-portal");
@@ -406,6 +430,7 @@ const DriverRequestPage = () => {
                           <div className={cn(
                             "mt-2 p-3 rounded-lg border",
                             loadingSlots ? "bg-muted/50 border-border" :
+                            hasExistingRequest ? "bg-red-50 border-red-200" :
                             availableSlots !== null && availableSlots > 20 ? "bg-green-50 border-green-200" :
                             availableSlots !== null && availableSlots > 10 ? "bg-yellow-50 border-yellow-200" :
                             availableSlots !== null && availableSlots > 0 ? "bg-orange-50 border-orange-200" :
@@ -415,6 +440,13 @@ const DriverRequestPage = () => {
                               <div className="flex items-center gap-2">
                                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                                 <span className="text-sm text-muted-foreground">Checking availability...</span>
+                              </div>
+                            ) : hasExistingRequest ? (
+                              <div className="flex items-center gap-2">
+                                <XCircle className="h-4 w-4 text-red-500" />
+                                <span className="text-sm font-medium text-red-700">
+                                  You already have a day off request for this date
+                                </span>
                               </div>
                             ) : availableSlots !== null ? (
                               <div className="flex items-center justify-between">
@@ -437,7 +469,7 @@ const DriverRequestPage = () => {
                           </div>
                         )}
                         <p className="text-xs text-muted-foreground mt-1">
-                          Only future dates are available. Maximum {MAX_DAY_OFF_PER_DAY} approved day off requests per day.
+                          Only future dates are available. Only 1 day off request per driver per day.
                         </p>
                       </div>
                     )}
@@ -457,7 +489,7 @@ const DriverRequestPage = () => {
                       </Button>
                       <Button
                         type="submit"
-                        disabled={submitting || !requestType || (requestType === "day_off" && (!selectedDate || availableSlots === 0))}
+                        disabled={submitting || !requestType || (requestType === "day_off" && (!selectedDate || availableSlots === 0 || hasExistingRequest))}
                         className="flex-1 bg-blue-600 hover:bg-blue-700"
                       >
                         {submitting ? (
