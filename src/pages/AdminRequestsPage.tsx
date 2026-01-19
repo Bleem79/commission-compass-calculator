@@ -319,6 +319,22 @@ const AdminRequestsPage = () => {
     }
   };
 
+  // Extract day off date from subject (format: "Day Off Request - DD MMM YYYY")
+  const extractDayOffDate = (subject: string): string | null => {
+    const match = subject.match(/Day Off Request - (\d{1,2} \w+ \d{4})/);
+    if (match) {
+      try {
+        const parsedDate = new Date(match[1]);
+        if (!isNaN(parsedDate.getTime())) {
+          return format(parsedDate, "yyyy-MM-dd");
+        }
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  };
+
   // Calculate day off counts per day for the calendar
   const dayOffCountsByDate = useMemo(() => {
     const counts: Record<string, { total: number; approved: number; pending: number }> = {};
@@ -326,7 +342,10 @@ const AdminRequestsPage = () => {
     requests
       .filter((r) => r.request_type === "day_off")
       .forEach((r) => {
-        const dateStr = format(new Date(r.created_at), "yyyy-MM-dd");
+        // Extract the actual day off date from subject, not created_at
+        const dateStr = extractDayOffDate(r.subject);
+        if (!dateStr) return;
+        
         if (!counts[dateStr]) {
           counts[dateStr] = { total: 0, approved: 0, pending: 0 };
         }
