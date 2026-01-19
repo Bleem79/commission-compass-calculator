@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, X, MessageSquare, Send, Loader2, Clock, CheckCircle, XCircle, Plus, CalendarIcon } from "lucide-react";
+import { ArrowLeft, X, MessageSquare, Send, Loader2, Clock, CheckCircle, XCircle, Plus, CalendarIcon, Calendar as CalendarIconSolid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -592,49 +592,74 @@ interface RequestCardProps {
   getRequestTypeLabel: (value: string) => string;
 }
 
-const RequestCard = ({ request, getStatusBadge, formatDate, getRequestTypeLabel }: RequestCardProps) => (
-  <Card className="bg-card border border-border hover:shadow-md transition-shadow">
-    <CardHeader className="pb-2">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-semibold text-foreground">
-              {request.subject}
-            </CardTitle>
-            {request.request_no && (
-              <Badge variant="secondary" className="text-xs font-mono bg-blue-100 text-blue-700">
-                {request.request_no}
+const RequestCard = ({ request, getStatusBadge, formatDate, getRequestTypeLabel }: RequestCardProps) => {
+  // Extract day off date from subject if it's a day off request
+  const getDayOffDate = () => {
+    if (request.request_type !== "day_off") return null;
+    // Subject format: "Day Off Request - 20 Jan 2026"
+    const match = request.subject.match(/Day Off Request - (.+)/);
+    return match ? match[1] : null;
+  };
+
+  const dayOffDate = getDayOffDate();
+
+  return (
+    <Card className="bg-card border border-border hover:shadow-md transition-shadow">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base font-semibold text-foreground">
+                {request.request_type === "day_off" ? "Day Off Request" : request.subject}
+              </CardTitle>
+              {request.request_no && (
+                <Badge variant="secondary" className="text-xs font-mono bg-blue-100 text-blue-700">
+                  {request.request_no}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant="outline" className="text-xs">
+                {getRequestTypeLabel(request.request_type)}
               </Badge>
+              <span className="text-xs text-muted-foreground">
+                Submitted: {formatDate(request.created_at)}
+              </span>
+            </div>
+          </div>
+          {getStatusBadge(request.status)}
+        </div>
+      </CardHeader>
+      <CardContent className="pt-2">
+        {/* Day Off Date Display */}
+        {request.request_type === "day_off" && dayOffDate && (
+          <div className="flex items-center gap-2 mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+            <CalendarIconSolid className="h-5 w-5 text-purple-600" />
+            <div>
+              <p className="text-xs text-purple-600 font-medium">Requested Day Off</p>
+              <p className="text-sm font-semibold text-purple-800">{dayOffDate}</p>
+            </div>
+          </div>
+        )}
+
+        {request.request_type !== "day_off" && (
+          <p className="text-sm text-muted-foreground mb-3">{request.description}</p>
+        )}
+        
+        {request.admin_response && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+            <p className="text-xs font-medium text-blue-700 mb-1">Admin Response:</p>
+            <p className="text-sm text-blue-900">{request.admin_response}</p>
+            {request.responded_at && (
+              <p className="text-xs text-blue-600 mt-2">
+                Responded on {formatDate(request.responded_at)}
+              </p>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            <Badge variant="outline" className="text-xs">
-              {getRequestTypeLabel(request.request_type)}
-            </Badge>
-            <span className="text-xs text-muted-foreground">
-              {formatDate(request.created_at)}
-            </span>
-          </div>
-        </div>
-        {getStatusBadge(request.status)}
-      </div>
-    </CardHeader>
-    <CardContent className="pt-2">
-      <p className="text-sm text-muted-foreground mb-3">{request.description}</p>
-      
-      {request.admin_response && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
-          <p className="text-xs font-medium text-blue-700 mb-1">Admin Response:</p>
-          <p className="text-sm text-blue-900">{request.admin_response}</p>
-          {request.responded_at && (
-            <p className="text-xs text-blue-600 mt-2">
-              Responded on {formatDate(request.responded_at)}
-            </p>
-          )}
-        </div>
-      )}
-    </CardContent>
-  </Card>
-);
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 export default DriverRequestPage;
