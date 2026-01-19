@@ -32,11 +32,14 @@ interface DriverRequest {
 }
 
 const DEFAULT_REQUEST_TYPES = [
-  { value: "single_to_double", label: "Single Shift to Double Shift" },
-  { value: "double_to_single", label: "Double Shift to Single Shift" },
+  { value: "single_to_double", label: "Single to Double" },
+  { value: "double_to_single", label: "Double to Single" },
   { value: "vehicle_change", label: "Vehicle Change" },
   { value: "fuel_increase", label: "Fuel Increase" },
   { value: "partner_change", label: "Partner Change" },
+  { value: "leave_request", label: "Leave Request" },
+  { value: "salary_inquiry", label: "Salary Inquiry" },
+  { value: "other", label: "Other" },
 ];
 
 const STATUS_OPTIONS = [
