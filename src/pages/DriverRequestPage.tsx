@@ -394,7 +394,7 @@ const DriverRequestPage = () => {
             <MessageSquare className="h-8 w-8 text-blue-600" />
             <h1 className="text-2xl font-bold text-foreground">Requests</h1>
           </div>
-          {!showForm && (
+          {!showForm && driverId && (
             <Button 
               onClick={() => setShowForm(true)}
               className="bg-blue-600 hover:bg-blue-700"
@@ -410,6 +410,18 @@ const DriverRequestPage = () => {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             <span className="ml-3 text-muted-foreground">Loading requests...</span>
           </div>
+        ) : !driverId ? (
+          <Card className="bg-amber-50 border border-amber-200">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 text-amber-700">
+                <XCircle className="h-6 w-6" />
+                <div>
+                  <h3 className="font-semibold">Driver Account Not Found</h3>
+                  <p className="text-sm mt-1">Your account is not linked to a driver profile. Please contact an administrator to set up your driver credentials.</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-4">
             {/* New Request Form */}
