@@ -52,6 +52,8 @@ const DriverRequestPage = () => {
   // Form state
   const [requestType, setRequestType] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [availableSlots, setAvailableSlots] = useState<number | null>(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -123,6 +125,42 @@ const DriverRequestPage = () => {
 
     fetchRequests();
   }, [driverId]);
+
+  // Fetch available day off slots when date changes
+  useEffect(() => {
+    const fetchAvailableSlots = async () => {
+      if (!selectedDate || requestType !== "day_off") {
+        setAvailableSlots(null);
+        return;
+      }
+
+      setLoadingSlots(true);
+      try {
+        const dateStr = format(selectedDate, "yyyy-MM-dd");
+        const { count, error } = await supabase
+          .from("driver_requests")
+          .select("*", { count: "exact", head: true })
+          .eq("request_type", "day_off")
+          .eq("status", "approved")
+          .gte("created_at", `${dateStr}T00:00:00`)
+          .lte("created_at", `${dateStr}T23:59:59`);
+
+        if (error) {
+          console.error("Error fetching day off count:", error);
+          setAvailableSlots(null);
+        } else {
+          setAvailableSlots(MAX_DAY_OFF_PER_DAY - (count || 0));
+        }
+      } catch (error) {
+        console.error("Error fetching available slots:", error);
+        setAvailableSlots(null);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+
+    fetchAvailableSlots();
+  }, [selectedDate, requestType]);
 
   const handleClose = () => {
     navigate("/driver-portal");
@@ -363,6 +401,41 @@ const DriverRequestPage = () => {
                             />
                           </PopoverContent>
                         </Popover>
+                        {/* Availability Counter */}
+                        {selectedDate && (
+                          <div className={cn(
+                            "mt-2 p-3 rounded-lg border",
+                            loadingSlots ? "bg-muted/50 border-border" :
+                            availableSlots !== null && availableSlots > 20 ? "bg-green-50 border-green-200" :
+                            availableSlots !== null && availableSlots > 10 ? "bg-yellow-50 border-yellow-200" :
+                            availableSlots !== null && availableSlots > 0 ? "bg-orange-50 border-orange-200" :
+                            "bg-red-50 border-red-200"
+                          )}>
+                            {loadingSlots ? (
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                <span className="text-sm text-muted-foreground">Checking availability...</span>
+                              </div>
+                            ) : availableSlots !== null ? (
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">
+                                  {format(selectedDate, "dd MMM yyyy")}
+                                </span>
+                                <Badge className={cn(
+                                  availableSlots > 20 ? "bg-green-500" :
+                                  availableSlots > 10 ? "bg-yellow-500" :
+                                  availableSlots > 0 ? "bg-orange-500" :
+                                  "bg-red-500",
+                                  "text-white"
+                                )}>
+                                  {availableSlots > 0 
+                                    ? `${availableSlots} slots available` 
+                                    : "No slots available"}
+                                </Badge>
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
                         <p className="text-xs text-muted-foreground mt-1">
                           Only future dates are available. Maximum {MAX_DAY_OFF_PER_DAY} approved day off requests per day.
                         </p>
@@ -384,7 +457,7 @@ const DriverRequestPage = () => {
                       </Button>
                       <Button
                         type="submit"
-                        disabled={submitting || !requestType || (requestType === "day_off" && !selectedDate)}
+                        disabled={submitting || !requestType || (requestType === "day_off" && (!selectedDate || availableSlots === 0))}
                         className="flex-1 bg-blue-600 hover:bg-blue-700"
                       >
                         {submitting ? (
