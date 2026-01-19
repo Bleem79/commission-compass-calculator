@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, X, MessageSquare, Loader2, Clock, CheckCircle, XCircle, 
-  Search, Filter, Send, ChevronDown, RefreshCw, AlertCircle
+  Search, Filter, Send, ChevronDown, RefreshCw, AlertCircle, Settings, Plus, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +31,7 @@ interface DriverRequest {
   created_at: string;
 }
 
-const REQUEST_TYPES = [
+const DEFAULT_REQUEST_TYPES = [
   { value: "single_to_double", label: "Single Shift to Double Shift" },
   { value: "double_to_single", label: "Double Shift to Single Shift" },
   { value: "vehicle_change", label: "Vehicle Change" },
@@ -64,6 +64,15 @@ const AdminRequestsPage = () => {
   const [responseText, setResponseText] = useState("");
   const [newStatus, setNewStatus] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Request types management
+  const [requestTypes, setRequestTypes] = useState(() => {
+    const saved = localStorage.getItem("driver_request_types");
+    return saved ? JSON.parse(saved) : DEFAULT_REQUEST_TYPES;
+  });
+  const [showTypesDialog, setShowTypesDialog] = useState(false);
+  const [newTypeValue, setNewTypeValue] = useState("");
+  const [newTypeLabel, setNewTypeLabel] = useState("");
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -246,7 +255,35 @@ const AdminRequestsPage = () => {
   };
 
   const getRequestTypeLabel = (value: string) => {
-    return REQUEST_TYPES.find((t) => t.value === value)?.label || value;
+    return requestTypes.find((t: { value: string; label: string }) => t.value === value)?.label || value;
+  };
+
+  const handleAddRequestType = () => {
+    if (!newTypeValue.trim() || !newTypeLabel.trim()) {
+      toast.error("Please enter both value and label");
+      return;
+    }
+
+    const valueFormatted = newTypeValue.toLowerCase().replace(/\s+/g, "_");
+    
+    if (requestTypes.some((t: { value: string }) => t.value === valueFormatted)) {
+      toast.error("This request type already exists");
+      return;
+    }
+
+    const updatedTypes = [...requestTypes, { value: valueFormatted, label: newTypeLabel.trim() }];
+    setRequestTypes(updatedTypes);
+    localStorage.setItem("driver_request_types", JSON.stringify(updatedTypes));
+    setNewTypeValue("");
+    setNewTypeLabel("");
+    toast.success("Request type added successfully");
+  };
+
+  const handleDeleteRequestType = (value: string) => {
+    const updatedTypes = requestTypes.filter((t: { value: string }) => t.value !== value);
+    setRequestTypes(updatedTypes);
+    localStorage.setItem("driver_request_types", JSON.stringify(updatedTypes));
+    toast.success("Request type deleted");
   };
 
   const stats = {
@@ -360,13 +397,17 @@ const AdminRequestsPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  {REQUEST_TYPES.map((type) => (
+                  {requestTypes.map((type: { value: string; label: string }) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <Button variant="outline" onClick={() => setShowTypesDialog(true)}>
+                <Settings className="h-4 w-4 mr-2" />
+                Manage Types
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -541,6 +582,77 @@ const AdminRequestsPage = () => {
                   Save Response
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Request Types Dialog */}
+      <Dialog open={showTypesDialog} onOpenChange={setShowTypesDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-blue-600" />
+              Manage Request Types
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Add new type form */}
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <Label className="text-sm font-medium">Add New Request Type</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Input
+                    placeholder="Value (e.g. leave_request)"
+                    value={newTypeValue}
+                    onChange={(e) => setNewTypeValue(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Input
+                    placeholder="Label (e.g. Leave Request)"
+                    value={newTypeLabel}
+                    onChange={(e) => setNewTypeLabel(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+              <Button onClick={handleAddRequestType} size="sm" className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Request Type
+              </Button>
+            </div>
+
+            {/* Existing types list */}
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              <Label className="text-sm font-medium">Existing Types ({requestTypes.length})</Label>
+              {requestTypes.map((type: { value: string; label: string }) => (
+                <div
+                  key={type.value}
+                  className="flex items-center justify-between p-3 bg-card border rounded-lg"
+                >
+                  <div>
+                    <div className="font-medium text-sm">{type.label}</div>
+                    <div className="text-xs text-muted-foreground font-mono">{type.value}</div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeleteRequestType(type.value)}
+                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTypesDialog(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
