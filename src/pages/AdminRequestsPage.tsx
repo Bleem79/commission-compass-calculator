@@ -83,6 +83,7 @@ const AdminRequestsPage = () => {
   // Calendar state
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -164,8 +165,17 @@ const AdminRequestsPage = () => {
       filtered = filtered.filter((r) => r.request_type === typeFilter);
     }
 
+    // Filter by selected calendar date (day off date from subject)
+    if (selectedCalendarDate) {
+      filtered = filtered.filter((r) => {
+        if (r.request_type !== "day_off") return false;
+        const dayOffDate = extractDayOffDate(r.subject);
+        return dayOffDate === selectedCalendarDate;
+      });
+    }
+
     setFilteredRequests(filtered);
-  }, [requests, searchQuery, statusFilter, typeFilter]);
+  }, [requests, searchQuery, statusFilter, typeFilter, selectedCalendarDate]);
 
   const handleClose = () => {
     navigate("/home");
@@ -468,16 +478,25 @@ const AdminRequestsPage = () => {
                   const dateStr = format(day, "yyyy-MM-dd");
                   const counts = dayOffCountsByDate[dateStr];
                   const hasRequests = counts && counts.total > 0;
+                  const isSelected = selectedCalendarDate === dateStr;
                   
                   return (
                     <div
                       key={dateStr}
+                      onClick={() => {
+                        if (hasRequests) {
+                          setSelectedCalendarDate(isSelected ? null : dateStr);
+                        }
+                      }}
                       className={`h-16 sm:h-20 p-1 rounded-lg border transition-colors ${
+                        hasRequests ? "cursor-pointer hover:border-blue-400" : ""
+                      } ${
+                        isSelected ? "border-blue-600 bg-blue-100 ring-2 ring-blue-400" :
                         isToday(day) ? "border-blue-500 bg-blue-50" : 
                         hasRequests ? "border-border bg-muted/30" : "border-border/50"
                       }`}
                     >
-                      <div className={`text-xs font-medium ${isToday(day) ? "text-blue-600" : "text-foreground"}`}>
+                      <div className={`text-xs font-medium ${isSelected ? "text-blue-700" : isToday(day) ? "text-blue-600" : "text-foreground"}`}>
                         {format(day, "d")}
                       </div>
                       {hasRequests && (
@@ -498,16 +517,29 @@ const AdminRequestsPage = () => {
                   );
                 })}
               </div>
-              {/* Legend */}
-              <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span>Approved</span>
+              {/* Legend and selected date indicator */}
+              <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span>Approved</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                    <span>Pending</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                  <span>Pending</span>
-                </div>
+                {selectedCalendarDate && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setSelectedCalendarDate(null)}
+                    className="text-xs"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Clear filter: {format(new Date(selectedCalendarDate), "dd MMM yyyy")}
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
