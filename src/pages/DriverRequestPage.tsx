@@ -255,11 +255,25 @@ const DriverRequestPage = () => {
         description: description,
       };
 
+      // Calculate remaining slots for notification
+      let remainingSlots = 0;
+      
       // Auto-approve day off requests if under limit
       if (shouldAutoApprove) {
         insertData.status = "approved";
         insertData.admin_response = "Auto-approved: Day off slot available";
         insertData.responded_at = new Date().toISOString();
+        
+        // Calculate remaining slots (current approved count was checked earlier)
+        const dateStr = format(selectedDate!, "dd MMM yyyy");
+        const { data: approvedRequests } = await supabase
+          .from("driver_requests")
+          .select("id")
+          .eq("request_type", "day_off")
+          .eq("status", "approved")
+          .ilike("subject", `%${dateStr}%`);
+        
+        remainingSlots = MAX_DAY_OFF_PER_DAY - (approvedRequests?.length || 0) - 1; // -1 for current request
       }
 
       const { data, error } = await supabase
@@ -275,8 +289,19 @@ const DriverRequestPage = () => {
       setSelectedDate(undefined);
       setShowForm(false);
       
-      if (shouldAutoApprove) {
-        toast.success("Day off request auto-approved! ✅");
+      if (shouldAutoApprove && selectedDate) {
+        toast.success(`Day off request auto-approved! ✅ (${remainingSlots} slots remaining)`);
+        
+        // Send push notification (fire and forget)
+        supabase.functions.invoke("send-day-off-notification", {
+          body: {
+            driverId: driverId,
+            dayOffDate: format(selectedDate, "dd MMM yyyy"),
+            remainingSlots: remainingSlots
+          }
+        }).catch(err => {
+          console.log("Push notification failed (non-critical):", err);
+        });
       } else {
         toast.success("Request submitted successfully");
       }
