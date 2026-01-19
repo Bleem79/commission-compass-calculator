@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, X, MessageSquare, Loader2, Clock, CheckCircle, XCircle, 
-  Search, Filter, Send, ChevronDown, RefreshCw, AlertCircle, Settings, Plus, Trash2
+  Search, Filter, Send, ChevronDown, RefreshCw, AlertCircle, Settings, Plus, Trash2, CalendarDays, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,9 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths } from "date-fns";
 
 interface DriverRequest {
   id: string;
@@ -35,6 +37,7 @@ const DEFAULT_REQUEST_TYPES = [
   { value: "single_to_double", label: "Single to Double" },
   { value: "double_to_single", label: "Double to Single" },
   { value: "cng_to_hybrid", label: "CNG to Hybrid" },
+  { value: "day_off", label: "Day Off" },
   { value: "other", label: "Other" },
 ];
 
@@ -72,6 +75,14 @@ const AdminRequestsPage = () => {
   const [showTypesDialog, setShowTypesDialog] = useState(false);
   const [newTypeValue, setNewTypeValue] = useState("");
   const [newTypeLabel, setNewTypeLabel] = useState("");
+
+  // Delete confirmation
+  const [deleteConfirmRequest, setDeleteConfirmRequest] = useState<DriverRequest | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Calendar state
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [showCalendar, setShowCalendar] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -285,11 +296,69 @@ const AdminRequestsPage = () => {
     toast.success("Request type deleted");
   };
 
+  const handleDeleteRequest = async () => {
+    if (!deleteConfirmRequest) return;
+    
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("driver_requests")
+        .delete()
+        .eq("id", deleteConfirmRequest.id);
+
+      if (error) throw error;
+
+      setRequests((prev) => prev.filter((r) => r.id !== deleteConfirmRequest.id));
+      setDeleteConfirmRequest(null);
+      toast.success("Request deleted successfully");
+    } catch (error: any) {
+      console.error("Error deleting request:", error);
+      toast.error("Failed to delete request");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Calculate day off counts per day for the calendar
+  const dayOffCountsByDate = useMemo(() => {
+    const counts: Record<string, { total: number; approved: number; pending: number }> = {};
+    
+    requests
+      .filter((r) => r.request_type === "day_off")
+      .forEach((r) => {
+        const dateStr = format(new Date(r.created_at), "yyyy-MM-dd");
+        if (!counts[dateStr]) {
+          counts[dateStr] = { total: 0, approved: 0, pending: 0 };
+        }
+        counts[dateStr].total++;
+        if (r.status === "approved") {
+          counts[dateStr].approved++;
+        } else if (r.status === "pending") {
+          counts[dateStr].pending++;
+        }
+      });
+    
+    return counts;
+  }, [requests]);
+
+  // Get days in current calendar month
+  const calendarDays = useMemo(() => {
+    const start = startOfMonth(calendarMonth);
+    const end = endOfMonth(calendarMonth);
+    return eachDayOfInterval({ start, end });
+  }, [calendarMonth]);
+
+  // Get the starting day of week offset (0 = Sunday)
+  const startingDayOffset = useMemo(() => {
+    return startOfMonth(calendarMonth).getDay();
+  }, [calendarMonth]);
+
   const stats = {
     total: requests.length,
     pending: requests.filter((r) => r.status === "pending").length,
     inProgress: requests.filter((r) => r.status === "in_progress").length,
     resolved: requests.filter((r) => r.status === "approved" || r.status === "rejected").length,
+    dayOff: requests.filter((r) => r.request_type === "day_off").length,
   };
 
   if (!isAdmin) {
@@ -326,14 +395,107 @@ const AdminRequestsPage = () => {
             <MessageSquare className="h-8 w-8 text-blue-600" />
             <h1 className="text-2xl font-bold text-foreground">Driver Requests Management</h1>
           </div>
-          <Button onClick={handleRefresh} variant="outline" disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setShowCalendar(!showCalendar)} variant={showCalendar ? "default" : "outline"}>
+              <CalendarDays className="h-4 w-4 mr-2" />
+              Day Off Calendar
+            </Button>
+            <Button onClick={handleRefresh} variant="outline" disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
+        {/* Day Off Calendar */}
+        {showCalendar && (
+          <Card className="mb-6 bg-card border-border">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <CalendarDays className="h-5 w-5 text-blue-600" />
+                  Day Off Requests Calendar
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium min-w-[120px] text-center">
+                    {format(calendarMonth, "MMMM yyyy")}
+                  </span>
+                  <Button variant="outline" size="icon" onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {/* Day headers */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                  <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              {/* Calendar grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {/* Empty cells for offset */}
+                {Array.from({ length: startingDayOffset }).map((_, i) => (
+                  <div key={`empty-${i}`} className="h-16 sm:h-20" />
+                ))}
+                {/* Day cells */}
+                {calendarDays.map((day) => {
+                  const dateStr = format(day, "yyyy-MM-dd");
+                  const counts = dayOffCountsByDate[dateStr];
+                  const hasRequests = counts && counts.total > 0;
+                  
+                  return (
+                    <div
+                      key={dateStr}
+                      className={`h-16 sm:h-20 p-1 rounded-lg border transition-colors ${
+                        isToday(day) ? "border-blue-500 bg-blue-50" : 
+                        hasRequests ? "border-border bg-muted/30" : "border-border/50"
+                      }`}
+                    >
+                      <div className={`text-xs font-medium ${isToday(day) ? "text-blue-600" : "text-foreground"}`}>
+                        {format(day, "d")}
+                      </div>
+                      {hasRequests && (
+                        <div className="mt-1 space-y-0.5">
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                            <span className="text-xs text-green-700">{counts.approved}</span>
+                          </div>
+                          {counts.pending > 0 && (
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                              <span className="text-xs text-yellow-700">{counts.pending}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Legend */}
+              <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <span>Approved</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                  <span>Pending</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <Card className="bg-card border-border">
             <CardContent className="p-4">
               <div className="text-sm text-muted-foreground">Total Requests</div>
@@ -356,6 +518,12 @@ const AdminRequestsPage = () => {
             <CardContent className="p-4">
               <div className="text-sm text-green-700">Resolved</div>
               <div className="text-2xl font-bold text-green-800">{stats.resolved}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-purple-50 border-purple-200">
+            <CardContent className="p-4">
+              <div className="text-sm text-purple-700">Day Off</div>
+              <div className="text-2xl font-bold text-purple-800">{stats.dayOff}</div>
             </CardContent>
           </Card>
         </div>
@@ -462,7 +630,22 @@ const AdminRequestsPage = () => {
                         </span>
                       </div>
                     </div>
-                    {getStatusBadge(request.status)}
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(request.status)}
+                      {request.request_type === "day_off" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteConfirmRequest(request);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-2">
@@ -656,6 +839,44 @@ const AdminRequestsPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmRequest} onOpenChange={() => setDeleteConfirmRequest(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Day Off Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this day off request from{" "}
+              <strong>{deleteConfirmRequest?.driver_name || deleteConfirmRequest?.driver_id}</strong>?
+              {deleteConfirmRequest?.request_no && (
+                <span className="block mt-1 font-mono text-xs">{deleteConfirmRequest.request_no}</span>
+              )}
+              <br />
+              <span className="text-destructive">This action cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteRequest}
+              disabled={deleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
