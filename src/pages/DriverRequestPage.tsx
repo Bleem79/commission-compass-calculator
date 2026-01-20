@@ -64,29 +64,66 @@ const DriverRequestPage = () => {
 
   useEffect(() => {
     const fetchDriverCredentials = async () => {
-      if (!user?.id) return;
+      if (!isAuthenticated) return;
 
       try {
-        const { data: credentials, error } = await supabase
-          .from("driver_credentials")
-          .select("driver_id")
-          .eq("user_id", user.id)
-          .eq("status", "enabled")
-          .maybeSingle();
+        // Always use the real authenticated Supabase user (avoids stale context)
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
 
-        if (error) throw error;
+        const actualUserId = authUser?.id || user?.id;
+        const actualEmail = (authUser?.email || user?.email || "").toLowerCase();
 
-        if (credentials) {
-          setDriverId(credentials.driver_id);
-          
+        if (!actualUserId) return;
+
+        // If the driver_credentials row is not linked yet, use RPC to link + fetch
+        const driverIdFromEmail = actualEmail.endsWith("@driver.temp")
+          ? actualEmail.split("@")[0].trim()
+          : null;
+
+        let resolvedDriverId: string | null = null;
+
+        if (driverIdFromEmail) {
+          const { data: rows, error: rpcError } = await supabase.rpc(
+            "get_driver_credentials",
+            {
+              p_driver_id: driverIdFromEmail,
+              p_user_id: actualUserId,
+            }
+          );
+
+          if (!rpcError && rows && rows.length > 0) {
+            const row = rows[0];
+            if (row?.status === "enabled" && row?.driver_id) {
+              resolvedDriverId = row.driver_id;
+            }
+          }
+        }
+
+        if (!resolvedDriverId) {
+          const { data: credentials, error } = await supabase
+            .from("driver_credentials")
+            .select("driver_id")
+            .eq("user_id", actualUserId)
+            .eq("status", "enabled")
+            .maybeSingle();
+
+          if (error) throw error;
+          resolvedDriverId = credentials?.driver_id ?? null;
+        }
+
+        if (resolvedDriverId) {
+          setDriverId(resolvedDriverId);
+
           // Try to get driver name from income data
           const { data: incomeData } = await supabase
             .from("driver_income")
             .select("driver_name")
-            .eq("driver_id", credentials.driver_id)
+            .eq("driver_id", resolvedDriverId)
             .limit(1)
             .maybeSingle();
-          
+
           if (incomeData?.driver_name) {
             setDriverName(incomeData.driver_name);
           }
@@ -97,7 +134,7 @@ const DriverRequestPage = () => {
     };
 
     fetchDriverCredentials();
-  }, [user?.id]);
+  }, [isAuthenticated, user?.id, user?.email]);
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -139,7 +176,6 @@ const DriverRequestPage = () => {
       setLoadingSlots(true);
       try {
         const dateStr = format(selectedDate, "dd MMM yyyy");
-        const subjectPattern = `Day Off Request - ${dateStr}`;
         
         // Check total approved day off requests for this specific day off date (from subject)
         const { data: approvedRequests, error } = await supabase
