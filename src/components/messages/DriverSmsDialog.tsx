@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Send, Search, X, MessageSquare, User, ArrowLeft, Inbox, Check, CheckCheck } from "lucide-react";
+import { Send, Search, X, MessageSquare, User, ArrowLeft, Inbox, Check, CheckCheck, Users, CheckSquare, Square } from "lucide-react";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +38,8 @@ interface PrivateMessage {
   read_at: string | null;
 }
 
+type ViewMode = "list" | "single" | "bulk";
+
 interface DriverSmsDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -47,8 +50,10 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDriver, setSelectedDriver] = useState<DriverCredential | null>(null);
+  const [selectedDriverIds, setSelectedDriverIds] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch all driver credentials with pagination to get all records
@@ -156,6 +161,36 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     driver.driver_id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Check if all filtered drivers are selected
+  const allFilteredSelected = filteredDrivers.length > 0 && 
+    filteredDrivers.every(driver => selectedDriverIds.has(driver.driver_id));
+
+  // Toggle select all
+  const handleSelectAll = () => {
+    if (allFilteredSelected) {
+      // Deselect all filtered drivers
+      const newSet = new Set(selectedDriverIds);
+      filteredDrivers.forEach(driver => newSet.delete(driver.driver_id));
+      setSelectedDriverIds(newSet);
+    } else {
+      // Select all filtered drivers
+      const newSet = new Set(selectedDriverIds);
+      filteredDrivers.forEach(driver => newSet.add(driver.driver_id));
+      setSelectedDriverIds(newSet);
+    }
+  };
+
+  // Toggle individual driver selection
+  const handleToggleDriver = (driverId: string) => {
+    const newSet = new Set(selectedDriverIds);
+    if (newSet.has(driverId)) {
+      newSet.delete(driverId);
+    } else {
+      newSet.add(driverId);
+    }
+    setSelectedDriverIds(newSet);
+  };
+
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async ({ driverId, content }: { driverId: string; content: string }) => {
@@ -172,20 +207,9 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
 
       if (error) throw error;
     },
-    onSuccess: () => {
-      toast.success("Message sent successfully!", {
-        description: `Private message sent to Driver ${selectedDriver?.driver_id}`,
-      });
-      setMessage("");
-      queryClient.invalidateQueries({ queryKey: ["admin-messages"] });
-      queryClient.invalidateQueries({ queryKey: ["driver-message-history", selectedDriver?.driver_id] });
-    },
-    onError: (error) => {
-      console.error("Error sending message:", error);
-      toast.error("Failed to send message");
-    },
   });
 
+  // Send to single driver
   const handleSendMessage = async () => {
     if (!selectedDriver || !message.trim()) {
       toast.error("Please select a driver and enter a message");
@@ -193,24 +217,99 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     }
 
     setIsSending(true);
-    await sendMessageMutation.mutateAsync({
-      driverId: selectedDriver.driver_id,
-      content: message.trim(),
-    });
-    setIsSending(false);
+    try {
+      await sendMessageMutation.mutateAsync({
+        driverId: selectedDriver.driver_id,
+        content: message.trim(),
+      });
+      toast.success("Message sent successfully!", {
+        description: `Private message sent to Driver ${selectedDriver.driver_id}`,
+      });
+      setMessage("");
+      queryClient.invalidateQueries({ queryKey: ["admin-messages"] });
+      queryClient.invalidateQueries({ queryKey: ["driver-message-history", selectedDriver?.driver_id] });
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast.error("Failed to send message");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Send to multiple drivers (bulk)
+  const handleSendBulkMessage = async () => {
+    if (selectedDriverIds.size === 0 || !message.trim()) {
+      toast.error("Please select at least one driver and enter a message");
+      return;
+    }
+
+    setIsSending(true);
+    const driverIdsArray = Array.from(selectedDriverIds);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Send messages in batches to avoid overwhelming the database
+      const batchSize = 50;
+      for (let i = 0; i < driverIdsArray.length; i += batchSize) {
+        const batch = driverIdsArray.slice(i, i + batchSize);
+        const insertData = batch.map(driverId => ({
+          content: `[PRIVATE TO: ${driverId}] ${message.trim()}`,
+          created_by: user.id,
+          is_admin: true,
+          is_pinned: false,
+        }));
+
+        const { error } = await supabase.from("admin_messages").insert(insertData);
+        
+        if (error) {
+          console.error("Error sending batch:", error);
+          failCount += batch.length;
+        } else {
+          successCount += batch.length;
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Message sent to ${successCount} driver${successCount > 1 ? 's' : ''}!`, {
+          description: failCount > 0 ? `Failed to send to ${failCount} driver(s)` : undefined,
+        });
+        setMessage("");
+        setSelectedDriverIds(new Set());
+        setViewMode("list");
+        queryClient.invalidateQueries({ queryKey: ["admin-messages"] });
+      } else {
+        toast.error("Failed to send messages");
+      }
+    } catch (error) {
+      console.error("Error sending bulk messages:", error);
+      toast.error("Failed to send messages");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleClose = () => {
     setSearchQuery("");
     setSelectedDriver(null);
+    setSelectedDriverIds(new Set());
     setMessage("");
+    setViewMode("list");
     onClose();
+  };
+
+  const handleBackToList = () => {
+    setSelectedDriver(null);
+    setViewMode("list");
   };
 
   const content = (
     <div className="flex flex-col h-full max-h-[70vh]">
-      {/* Driver Selection */}
-      {!selectedDriver ? (
+      {/* Driver Selection List */}
+      {viewMode === "list" && (
         <div className="flex flex-col gap-4">
           {/* Search Input */}
           <div className="relative">
@@ -223,8 +322,35 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
             />
           </div>
 
+          {/* Selection Actions */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSelectAll}
+              className="flex items-center gap-2"
+            >
+              {allFilteredSelected ? (
+                <CheckSquare className="w-4 h-4" />
+              ) : (
+                <Square className="w-4 h-4" />
+              )}
+              {allFilteredSelected ? "Deselect All" : "Select All"}
+            </Button>
+            {selectedDriverIds.size > 0 && (
+              <Button
+                size="sm"
+                onClick={() => setViewMode("bulk")}
+                className="flex items-center gap-2"
+              >
+                <Users className="w-4 h-4" />
+                Send to {selectedDriverIds.size} Driver{selectedDriverIds.size > 1 ? 's' : ''}
+              </Button>
+            )}
+          </div>
+
           {/* Driver List */}
-          <ScrollArea className="h-[300px] border rounded-lg">
+          <ScrollArea className="h-[280px] border rounded-lg">
             {isLoading ? (
               <div className="flex items-center justify-center h-full p-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -237,42 +363,62 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
             ) : (
               <div className="p-2 space-y-1">
                 {filteredDrivers.map((driver) => (
-                  <button
+                  <div
                     key={driver.id}
-                    onClick={() => setSelectedDriver(driver)}
                     className={cn(
                       "w-full flex items-center gap-3 p-3 rounded-lg transition-all",
                       "hover:bg-primary/10 hover:border-primary/30",
-                      "border border-transparent"
+                      "border",
+                      selectedDriverIds.has(driver.driver_id) 
+                        ? "border-primary/50 bg-primary/5" 
+                        : "border-transparent"
                     )}
                   >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
-                      {driver.driver_id.slice(0, 2)}
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-medium text-foreground">
-                        Driver ID: {driver.driver_id}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Status: {driver.status}
-                      </p>
-                    </div>
-                    <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                  </button>
+                    {/* Checkbox */}
+                    <Checkbox
+                      checked={selectedDriverIds.has(driver.driver_id)}
+                      onCheckedChange={() => handleToggleDriver(driver.driver_id)}
+                      className="data-[state=checked]:bg-primary"
+                    />
+                    
+                    {/* Driver Info - Clickable to open individual chat */}
+                    <button
+                      onClick={() => {
+                        setSelectedDriver(driver);
+                        setViewMode("single");
+                      }}
+                      className="flex-1 flex items-center gap-3"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+                        {driver.driver_id.slice(0, 2)}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-medium text-foreground">
+                          Driver ID: {driver.driver_id}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Status: {driver.status}
+                        </p>
+                      </div>
+                      <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
           </ScrollArea>
         </div>
-      ) : (
-        /* Message Composition with History */
+      )}
+
+      {/* Single Driver Chat View */}
+      {viewMode === "single" && selectedDriver && (
         <div className="flex flex-col gap-3 h-full">
           {/* Selected Driver Header */}
           <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/20 rounded-lg">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setSelectedDriver(null)}
+              onClick={handleBackToList}
               className="h-8 w-8"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -289,7 +435,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setSelectedDriver(null)}
+              onClick={handleBackToList}
               className="h-8 w-8"
             >
               <X className="w-4 h-4" />
@@ -364,6 +510,87 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
               <>
                 <Send className="w-4 h-4" />
                 Send Private Message
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Bulk Message View */}
+      {viewMode === "bulk" && (
+        <div className="flex flex-col gap-3 h-full">
+          {/* Header */}
+          <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleBackToList}
+              className="h-8 w-8"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-semibold text-sm">
+              <Users className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-foreground">
+                Bulk Message
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Sending to {selectedDriverIds.size} driver{selectedDriverIds.size > 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+
+          {/* Selected Drivers Preview */}
+          <div className="border rounded-lg p-3 bg-muted/30">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Selected Drivers:</p>
+            <div className="flex flex-wrap gap-1 max-h-[80px] overflow-y-auto">
+              {Array.from(selectedDriverIds).slice(0, 20).map((driverId) => (
+                <span
+                  key={driverId}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full"
+                >
+                  {driverId}
+                  <button
+                    onClick={() => handleToggleDriver(driverId)}
+                    className="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+              {selectedDriverIds.size > 20 && (
+                <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-full">
+                  +{selectedDriverIds.size - 20} more
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Message Input */}
+          <Textarea
+            placeholder="Type your message for all selected drivers..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className="min-h-[100px] resize-none flex-1"
+          />
+
+          {/* Send Button */}
+          <Button
+            onClick={handleSendBulkMessage}
+            disabled={!message.trim() || isSending || selectedDriverIds.size === 0}
+            className="w-full gap-2"
+          >
+            {isSending ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Sending to {selectedDriverIds.size} drivers...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                Send to {selectedDriverIds.size} Driver{selectedDriverIds.size > 1 ? 's' : ''}
               </>
             )}
           </Button>
