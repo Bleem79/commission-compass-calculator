@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   CalendarDays, 
@@ -10,7 +10,8 @@ import {
   ChevronRight,
   FileWarning,
   Clock,
-  Mail
+  Mail,
+  Loader2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,12 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DriverPrivateMessages } from "@/components/messages/DriverPrivateMessages";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { supabase } from "@/integrations/supabase/client";
+
+interface PortalSetting {
+  feature_key: string;
+  is_enabled: boolean;
+}
 
 interface PortalCardProps {
   icon: React.ReactNode;
@@ -69,8 +76,35 @@ const DriverPortalPage = () => {
   const [showMessages, setShowMessages] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const { unreadCount, markAllAsRead } = useUnreadMessages();
+  const [portalSettings, setPortalSettings] = useState<Record<string, boolean>>({});
+  const [loadingSettings, setLoadingSettings] = useState(true);
 
-  React.useEffect(() => {
+  // Fetch portal settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("driver_portal_settings")
+          .select("feature_key, is_enabled");
+
+        if (error) throw error;
+        
+        const settingsMap: Record<string, boolean> = {};
+        data?.forEach((s: PortalSetting) => {
+          settingsMap[s.feature_key] = s.is_enabled;
+        });
+        setPortalSettings(settingsMap);
+      } catch (error) {
+        console.error("Error fetching portal settings:", error);
+      } finally {
+        setLoadingSettings(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login", { replace: true });
     }
@@ -87,38 +121,44 @@ const DriverPortalPage = () => {
     });
   };
 
-  const portalItems = [
+  const allPortalItems = [
     {
+      key: "driver_income",
       icon: <CalendarDays className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Driver Income",
       gradient: "bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600",
       onClick: () => navigate("/driver-income"),
     },
     {
+      key: "target_trips",
       icon: <Target className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Target Trips",
       gradient: "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600",
       onClick: () => navigate("/driver-target-trips"),
     },
     {
+      key: "absent_fine",
       icon: <Ban className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Absent Fine",
       gradient: "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500",
       onClick: () => showComingSoon("Absent Fine"),
     },
     {
+      key: "request",
       icon: <MessageSquare className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Request",
       gradient: "bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500",
       onClick: () => navigate("/driver-request"),
     },
     {
+      key: "warning_letter",
       icon: <FileWarning className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Warning Letter",
       gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-600",
       onClick: () => showComingSoon("Warning Letter"),
     },
     {
+      key: "private_messages",
       icon: <Mail className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Private Messages",
       gradient: "bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-600",
@@ -129,6 +169,11 @@ const DriverPortalPage = () => {
       badge: unreadCount,
     },
   ];
+
+  // Filter items based on settings (if settings loaded, filter; otherwise show all)
+  const portalItems = loadingSettings 
+    ? allPortalItems 
+    : allPortalItems.filter(item => portalSettings[item.key] !== false);
 
   // Show messages view if selected
   if (showMessages) {
