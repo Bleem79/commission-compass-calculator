@@ -283,12 +283,16 @@ const DriverRequestPage = () => {
       : `Request for ${requestLabel}`;
 
     try {
+      // Generate unique request_no: REQ-{driverId}-{timestamp}
+      const requestNo = `REQ-${driverId}-${Date.now()}`;
+      
       const insertData: any = {
         driver_id: driverId,
         driver_name: driverName,
         request_type: requestType,
         subject: subject,
         description: description,
+        request_no: requestNo,
       };
 
       // Calculate remaining slots for notification
