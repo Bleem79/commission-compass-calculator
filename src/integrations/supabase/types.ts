@@ -248,6 +248,33 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_portal_settings: {
+        Row: {
+          feature_key: string
+          feature_name: string
+          id: string
+          is_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          feature_key: string
+          feature_name: string
+          id?: string
+          is_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          feature_key?: string
+          feature_name?: string
+          id?: string
+          is_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       driver_requests: {
         Row: {
           admin_response: string | null
