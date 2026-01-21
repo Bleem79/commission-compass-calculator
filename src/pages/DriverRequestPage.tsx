@@ -176,6 +176,7 @@ const DriverRequestPage = () => {
       setLoadingSlots(true);
       try {
         const dateStr = format(selectedDate, "dd MMM yyyy");
+        console.log("Checking slots for date:", dateStr);
         
         // Check total approved day off requests for this specific day off date (from subject)
         const { data: approvedRequests, error } = await supabase
@@ -185,12 +186,15 @@ const DriverRequestPage = () => {
           .eq("status", "approved")
           .ilike("subject", `%${dateStr}%`);
 
+        console.log("Approved requests found:", approvedRequests?.length, approvedRequests);
+
         if (error) {
           console.error("Error fetching day off count:", error);
           setAvailableSlots(null);
         } else {
           const count = approvedRequests?.length || 0;
           setAvailableSlots(MAX_DAY_OFF_PER_DAY - count);
+          console.log("Available slots set to:", MAX_DAY_OFF_PER_DAY - count);
         }
 
         // Check if current driver already has a request for this specific day off date
