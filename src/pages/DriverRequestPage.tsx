@@ -176,25 +176,17 @@ const DriverRequestPage = () => {
       setLoadingSlots(true);
       try {
         const dateStr = format(selectedDate, "dd MMM yyyy");
-        console.log("Checking slots for date:", dateStr);
         
-        // Check total approved day off requests for this specific day off date (from subject)
-        const { data: approvedRequests, error } = await supabase
-          .from("driver_requests")
-          .select("id, subject")
-          .eq("request_type", "day_off")
-          .eq("status", "approved")
-          .ilike("subject", `%${dateStr}%`);
-
-        console.log("Approved requests found:", approvedRequests?.length, approvedRequests);
+        // Use RPC function to count approved requests (bypasses RLS)
+        const { data: count, error } = await supabase
+          .rpc("count_approved_day_off_requests", { p_date_str: dateStr });
 
         if (error) {
           console.error("Error fetching day off count:", error);
           setAvailableSlots(null);
         } else {
-          const count = approvedRequests?.length || 0;
-          setAvailableSlots(MAX_DAY_OFF_PER_DAY - count);
-          console.log("Available slots set to:", MAX_DAY_OFF_PER_DAY - count);
+          const approvedCount = count || 0;
+          setAvailableSlots(MAX_DAY_OFF_PER_DAY - approvedCount);
         }
 
         // Check if current driver already has a request for this specific day off date
@@ -253,12 +245,9 @@ const DriverRequestPage = () => {
       const dateStr = format(selectedDate, "dd MMM yyyy");
       
       // Check total approved day off requests for this specific day off date
-      const { data: approvedRequests, error: countError } = await supabase
-        .from("driver_requests")
-        .select("id")
-        .eq("request_type", "day_off")
-        .eq("status", "approved")
-        .ilike("subject", `%${dateStr}%`);
+      // Use RPC function to count approved requests (bypasses RLS)
+      const { data: currentCount, error: countError } = await supabase
+        .rpc("count_approved_day_off_requests", { p_date_str: dateStr });
 
       if (countError) {
         console.error("Error checking day off count:", countError);
@@ -266,8 +255,7 @@ const DriverRequestPage = () => {
         return;
       }
       
-      const currentCount = approvedRequests?.length || 0;
-      if (currentCount >= MAX_DAY_OFF_PER_DAY) {
+      if ((currentCount || 0) >= MAX_DAY_OFF_PER_DAY) {
         toast.error(`Maximum ${MAX_DAY_OFF_PER_DAY} day off requests allowed per day. Please select another date.`);
         return;
       }
@@ -308,16 +296,12 @@ const DriverRequestPage = () => {
         insertData.admin_response = "Auto-approved: Day off slot available";
         insertData.responded_at = new Date().toISOString();
         
-        // Calculate remaining slots (current approved count was checked earlier)
+        // Calculate remaining slots using RPC (bypasses RLS)
         const dateStr = format(selectedDate!, "dd MMM yyyy");
-        const { data: approvedRequests } = await supabase
-          .from("driver_requests")
-          .select("id")
-          .eq("request_type", "day_off")
-          .eq("status", "approved")
-          .ilike("subject", `%${dateStr}%`);
+        const { data: approvedCount } = await supabase
+          .rpc("count_approved_day_off_requests", { p_date_str: dateStr });
         
-        remainingSlots = MAX_DAY_OFF_PER_DAY - (approvedRequests?.length || 0) - 1; // -1 for current request
+        remainingSlots = MAX_DAY_OFF_PER_DAY - (approvedCount || 0) - 1; // -1 for current request
       }
 
       const { data, error } = await supabase
