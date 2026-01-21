@@ -454,6 +454,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      count_approved_day_off_requests: {
+        Args: { p_date_str: string }
+        Returns: number
+      }
       create_driver_account: {
         Args: { p_driver_id: string; p_email: string; p_password: string }
         Returns: string
