@@ -17,12 +17,14 @@ import {
   Upload,
   MessageSquare,
   MessageCircle,
-  Activity
+  Activity,
+  Settings2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminMessages } from "@/components/messages/AdminMessages";
 import { DriverIncomeAuthDialog } from "@/components/driver-income/DriverIncomeAuthDialog";
 import { DriverSmsDialog } from "@/components/messages/DriverSmsDialog";
+import { DriverPortalSettingsDialog } from "@/components/admin/DriverPortalSettingsDialog";
 import InstallBanner from "@/components/pwa/InstallBanner";
 import NotificationPrompt from "@/components/pwa/NotificationPrompt";
 import { toast } from "@/hooks/use-toast";
@@ -74,7 +76,7 @@ const HomePage = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDriverIncomeDialogOpen, setIsDriverIncomeDialogOpen] = useState(false);
   const [isSmsDialogOpen, setIsSmsDialogOpen] = useState(false);
-
+  const [isPortalSettingsOpen, setIsPortalSettingsOpen] = useState(false);
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login", { replace: true });
@@ -194,6 +196,12 @@ const HomePage = () => {
       gradient: "bg-gradient-to-br from-gray-600 via-slate-600 to-zinc-700",
       onClick: () => navigate("/driver-activity-logs"),
     });
+    features.push({
+      icon: <Settings2 className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Portal Settings",
+      gradient: "bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-700",
+      onClick: () => setIsPortalSettingsOpen(true),
+    });
   }
 
   return (
@@ -303,6 +311,10 @@ const HomePage = () => {
       <DriverSmsDialog
         isOpen={isSmsDialogOpen}
         onClose={() => setIsSmsDialogOpen(false)}
+      />
+      <DriverPortalSettingsDialog
+        open={isPortalSettingsOpen}
+        onOpenChange={setIsPortalSettingsOpen}
       />
 
       {/* PWA Prompts */}
