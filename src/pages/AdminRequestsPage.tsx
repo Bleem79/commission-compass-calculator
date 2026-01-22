@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, X, MessageSquare, Loader2, Clock, CheckCircle, XCircle, 
-  Search, Filter, Send, ChevronDown, RefreshCw, AlertCircle, Settings, Plus, Trash2, CalendarDays, ChevronLeft, ChevronRight
+  Search, Filter, Send, ChevronDown, RefreshCw, AlertCircle, Settings, Plus, Trash2, CalendarDays, ChevronLeft, ChevronRight, FileSpreadsheet
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -382,6 +383,34 @@ const AdminRequestsPage = () => {
     return startOfMonth(calendarMonth).getDay();
   }, [calendarMonth]);
 
+  const handleExportToExcel = () => {
+    const exportData = requests.map((r) => ({
+      "Request No": r.request_no || "-",
+      "Driver ID": r.driver_id,
+      "Driver Name": r.driver_name || "-",
+      "Request Type": getRequestTypeLabel(r.request_type),
+      "Subject": r.subject,
+      "Description": r.description,
+      "Status": STATUS_OPTIONS.find(s => s.value === r.status)?.label || r.status,
+      "Admin Response": r.admin_response || "-",
+      "Created At": formatDate(r.created_at),
+      "Responded At": r.responded_at ? formatDate(r.responded_at) : "-",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Driver Requests");
+    
+    // Auto-size columns
+    const colWidths = Object.keys(exportData[0] || {}).map(key => ({
+      wch: Math.max(key.length, 15)
+    }));
+    worksheet['!cols'] = colWidths;
+    
+    XLSX.writeFile(workbook, `Driver_Requests_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+    toast.success("Exported to Excel successfully");
+  };
+
   const stats = {
     total: requests.length,
     pending: requests.filter((r) => r.status === "pending").length,
@@ -425,6 +454,10 @@ const AdminRequestsPage = () => {
             <h1 className="text-2xl font-bold text-foreground">Driver Requests Management</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Button onClick={handleExportToExcel} variant="outline">
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Export Excel
+            </Button>
             <Button onClick={() => setShowCalendar(!showCalendar)} variant={showCalendar ? "default" : "outline"}>
               <CalendarDays className="h-4 w-4 mr-2" />
               Day Off Calendar
