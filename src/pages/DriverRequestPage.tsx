@@ -12,8 +12,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format, startOfDay, addDays } from "date-fns";
+import { format, startOfDay, addDays, setDate, addMonths, isBefore, isAfter, startOfMonth, subMonths } from "date-fns";
 import { cn } from "@/lib/utils";
+
+const MAX_DAY_OFF_PER_CYCLE = 2; // Maximum day off requests per billing cycle (26th to 25th)
 
 interface DriverRequest {
   id: string;
@@ -55,6 +57,8 @@ const DriverRequestPage = () => {
   const [availableSlots, setAvailableSlots] = useState<number | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [hasExistingRequest, setHasExistingRequest] = useState(false);
+  const [cycleRequestCount, setCycleRequestCount] = useState<number>(0);
+  const [cycleRange, setCycleRange] = useState<{ start: Date; end: Date } | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -164,6 +168,84 @@ const DriverRequestPage = () => {
     fetchRequests();
   }, [driverId]);
 
+  // Helper function to get billing cycle range (26th to 25th)
+  const getBillingCycleRange = (date: Date) => {
+    const day = date.getDate();
+    let cycleStart: Date;
+    let cycleEnd: Date;
+    
+    if (day >= 26) {
+      // Current month 26th to next month 25th
+      cycleStart = setDate(date, 26);
+      cycleEnd = setDate(addMonths(date, 1), 25);
+    } else {
+      // Previous month 26th to current month 25th
+      cycleStart = setDate(subMonths(date, 1), 26);
+      cycleEnd = setDate(date, 25);
+    }
+    
+    return { start: startOfDay(cycleStart), end: startOfDay(cycleEnd) };
+  };
+
+  // Fetch driver's day off request count for the current billing cycle
+  useEffect(() => {
+    const fetchCycleRequestCount = async () => {
+      if (!driverId || requestType !== "day_off") {
+        setCycleRequestCount(0);
+        setCycleRange(null);
+        return;
+      }
+
+      try {
+        // Get billing cycle based on today's date
+        const today = new Date();
+        const cycle = getBillingCycleRange(today);
+        setCycleRange(cycle);
+
+        // Fetch all day off requests for this driver
+        const { data: dayOffRequests, error } = await supabase
+          .from("driver_requests")
+          .select("id, subject, status")
+          .eq("driver_id", driverId)
+          .eq("request_type", "day_off")
+          .in("status", ["pending", "approved", "in_progress"]);
+
+        if (error) {
+          console.error("Error fetching cycle requests:", error);
+          setCycleRequestCount(0);
+          return;
+        }
+
+        // Count requests where the day off date falls within the billing cycle
+        let count = 0;
+        const cycleStartStr = format(cycle.start, "dd MMM yyyy");
+        const cycleEndStr = format(cycle.end, "dd MMM yyyy");
+        
+        dayOffRequests?.forEach(req => {
+          // Extract date from subject like "Day Off Request - 28 Jan 2026"
+          const match = req.subject.match(/- (\d{1,2} \w{3} \d{4})$/);
+          if (match) {
+            const requestedDate = new Date(match[1]);
+            if (!isNaN(requestedDate.getTime())) {
+              const reqDay = startOfDay(requestedDate);
+              if ((isAfter(reqDay, cycle.start) || reqDay.getTime() === cycle.start.getTime()) && 
+                  (isBefore(reqDay, cycle.end) || reqDay.getTime() === cycle.end.getTime())) {
+                count++;
+              }
+            }
+          }
+        });
+        
+        setCycleRequestCount(count);
+      } catch (error) {
+        console.error("Error checking cycle request count:", error);
+        setCycleRequestCount(0);
+      }
+    };
+
+    fetchCycleRequestCount();
+  }, [driverId, requestType, requests]);
+
   // Fetch available day off slots and check for existing request when date changes
   useEffect(() => {
     const fetchAvailableSlots = async () => {
@@ -239,6 +321,14 @@ const DriverRequestPage = () => {
     if (requestType === "day_off") {
       if (!selectedDate) {
         toast.error("Please select a date for your day off");
+        return;
+      }
+
+      // Check billing cycle limit (max 2 day off requests per cycle)
+      if (cycleRequestCount >= MAX_DAY_OFF_PER_CYCLE) {
+        const cycleStartStr = cycleRange ? format(cycleRange.start, "dd MMM") : "";
+        const cycleEndStr = cycleRange ? format(cycleRange.end, "dd MMM yyyy") : "";
+        toast.error(`You can only request ${MAX_DAY_OFF_PER_CYCLE} day offs per billing cycle (${cycleStartStr} - ${cycleEndStr}). You have already used all your day off requests.`);
         return;
       }
 
@@ -558,6 +648,37 @@ const DriverRequestPage = () => {
                         <p className="text-xs text-muted-foreground mt-1">
                           Only future dates are available. Only 1 day off request per driver per day.
                         </p>
+                        {/* Billing Cycle Limit Info */}
+                        <div className={cn(
+                          "mt-3 p-3 rounded-lg border",
+                          cycleRequestCount >= MAX_DAY_OFF_PER_CYCLE 
+                            ? "bg-red-50 border-red-200" 
+                            : "bg-blue-50 border-blue-200"
+                        )}>
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm">
+                              <span className="font-medium">Billing Cycle Limit:</span>
+                              {cycleRange && (
+                                <span className="text-muted-foreground ml-1">
+                                  ({format(cycleRange.start, "dd MMM")} - {format(cycleRange.end, "dd MMM yyyy")})
+                                </span>
+                              )}
+                            </div>
+                            <Badge className={cn(
+                              cycleRequestCount >= MAX_DAY_OFF_PER_CYCLE 
+                                ? "bg-red-500" 
+                                : "bg-blue-500",
+                              "text-white"
+                            )}>
+                              {cycleRequestCount}/{MAX_DAY_OFF_PER_CYCLE} used
+                            </Badge>
+                          </div>
+                          {cycleRequestCount >= MAX_DAY_OFF_PER_CYCLE && (
+                            <p className="text-xs text-red-600 mt-1">
+                              You have reached the maximum day off requests for this billing cycle.
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -576,7 +697,7 @@ const DriverRequestPage = () => {
                       </Button>
                       <Button
                         type="submit"
-                        disabled={submitting || !requestType || (requestType === "day_off" && (!selectedDate || availableSlots === 0 || hasExistingRequest))}
+                        disabled={submitting || !requestType || (requestType === "day_off" && (!selectedDate || availableSlots === 0 || hasExistingRequest || cycleRequestCount >= MAX_DAY_OFF_PER_CYCLE))}
                         className="flex-1 bg-blue-600 hover:bg-blue-700"
                       >
                         {submitting ? (
