@@ -11,7 +11,8 @@ import {
   FileWarning,
   Clock,
   Mail,
-  Loader2
+  Loader2,
+  Droplets
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -167,6 +168,13 @@ const DriverPortalPage = () => {
         setShowMessages(true);
       },
       badge: unreadCount,
+    },
+    {
+      key: "oil_change_booking",
+      icon: <Droplets className="w-8 h-8 sm:w-10 sm:h-10" />,
+      title: "Oil Change Booking",
+      gradient: "bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600",
+      onClick: () => window.open("https://oilchangeapp.lovable.app", "_blank"),
     },
   ];
 
