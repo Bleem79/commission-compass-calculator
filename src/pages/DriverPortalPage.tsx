@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DriverPrivateMessages } from "@/components/messages/DriverPrivateMessages";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useDriverCredentials } from "@/hooks/useDriverCredentials";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PortalSetting {
@@ -77,6 +78,7 @@ const DriverPortalPage = () => {
   const [showMessages, setShowMessages] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const { unreadCount, markAllAsRead } = useUnreadMessages();
+  const { driverInfo } = useDriverCredentials();
   const [portalSettings, setPortalSettings] = useState<Record<string, boolean>>({});
   const [loadingSettings, setLoadingSettings] = useState(true);
 
@@ -174,7 +176,13 @@ const DriverPortalPage = () => {
       icon: <Droplets className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Oil Change Booking",
       gradient: "bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600",
-      onClick: () => window.open("https://oilchangeapp.lovable.app", "_blank"),
+      onClick: () => {
+        const baseUrl = "https://oilchangeapp.lovable.app";
+        const url = driverInfo?.driverId 
+          ? `${baseUrl}?driver_id=${encodeURIComponent(driverInfo.driverId)}`
+          : baseUrl;
+        window.open(url, "_blank");
+      },
     },
   ];
 
