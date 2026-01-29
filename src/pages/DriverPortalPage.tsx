@@ -78,7 +78,7 @@ const DriverPortalPage = () => {
   const [showMessages, setShowMessages] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const { unreadCount, markAllAsRead } = useUnreadMessages();
-  const { driverInfo } = useDriverCredentials();
+  const { driverInfo, loading: driverLoading } = useDriverCredentials();
   const [portalSettings, setPortalSettings] = useState<Record<string, boolean>>({});
   const [loadingSettings, setLoadingSettings] = useState(true);
 
@@ -177,10 +177,19 @@ const DriverPortalPage = () => {
       title: "Oil Change Booking",
       gradient: "bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600",
       onClick: () => {
+        if (driverLoading) {
+          toast.info("Loading driver info, please wait...");
+          return;
+        }
+        
+        if (!driverInfo?.driverId) {
+          toast.error("Driver ID not found. Please try logging in again.");
+          return;
+        }
+        
         const baseUrl = "https://oilchangeapp.lovable.app";
-        const url = driverInfo?.driverId 
-          ? `${baseUrl}?driver_id=${encodeURIComponent(driverInfo.driverId)}`
-          : baseUrl;
+        const url = `${baseUrl}?driver_id=${encodeURIComponent(driverInfo.driverId)}`;
+        toast.success(`Opening Oil Change Booking for Driver ${driverInfo.driverId}`);
         window.open(url, "_blank");
       },
     },
