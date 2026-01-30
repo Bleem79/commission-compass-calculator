@@ -190,7 +190,7 @@ const DriverPortalPage = () => {
         const baseUrl = "https://oilchangeapp.lovable.app";
         const url = `${baseUrl}?driver_id=${encodeURIComponent(driverInfo.driverId)}`;
         toast.success(`Opening Oil Change Booking for Driver ${driverInfo.driverId}`);
-        window.open(url, "_blank");
+        window.location.href = url;
       },
     },
   ];
