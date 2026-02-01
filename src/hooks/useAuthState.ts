@@ -5,6 +5,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/types/auth";
 import { useCheckUserRole } from "./useCheckUserRole";
 
+// Helper to clear auth error params from URL (from external redirects)
+const clearAuthErrorParams = () => {
+  if (typeof window === 'undefined') return;
+  
+  const url = new URL(window.location.href);
+  const errorParams = ['error', 'error_code', 'error_description'];
+  let hasErrorParams = false;
+  
+  errorParams.forEach(param => {
+    if (url.searchParams.has(param)) {
+      hasErrorParams = true;
+      url.searchParams.delete(param);
+    }
+  });
+  
+  if (hasErrorParams) {
+    console.log("Clearing auth error params from URL");
+    window.history.replaceState({}, '', url.pathname + url.search);
+  }
+};
+
 export const useAuthState = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -35,6 +56,9 @@ export const useAuthState = () => {
   useEffect(() => {
     // Prevent multiple initializations
     if (initialCheckComplete.current) return;
+    
+    // Clear any auth error params from URL (from external app redirects)
+    clearAuthErrorParams();
     
     // Set up auth state change listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
