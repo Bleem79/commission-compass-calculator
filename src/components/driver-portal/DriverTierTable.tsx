@@ -24,6 +24,15 @@ interface TierData {
   incentive: number;
 }
 
+// Custom rounding: <0.50 → round up to .50, >=0.50 → round up to next whole number
+const customRound = (value: number): number => {
+  const whole = Math.floor(value);
+  const decimal = value - whole;
+  if (decimal === 0) return value;
+  if (decimal < 0.50) return whole + 0.50;
+  return whole + 1;
+};
+
 // Incentive tiers based on shift type
 const INCENTIVES_24H = [250, 350, 450, 550, 650, 850];
 const INCENTIVES_12H = [190, 265, 340, 415, 490, 640];
@@ -95,7 +104,8 @@ const DriverTierTable = ({ driverId }: DriverTierTableProps) => {
   // Generate tier data dynamically
   const tierData: TierData[] = useMemo(() => {
     return Array.from({ length: 6 }, (_, i) => {
-      const avgTrips = baseAvgTripsPerDay + i;
+      const rawAvgTrips = baseAvgTripsPerDay + i;
+      const avgTrips = customRound(rawAvgTrips);
       return {
         tier: i === 0 ? "Base" : `Base+${i}`,
         avgTripsPerDay: avgTrips,
