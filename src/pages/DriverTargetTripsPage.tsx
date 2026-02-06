@@ -57,6 +57,15 @@ const DEFAULT_CONFIG: TargetTripsConfig = {
 const DEFAULT_TIERS = ["Base", "Base+1", "Base+2", "Base+3", "Base+4", "Base+5"];
 const DEFAULT_BASE_AVG = 24;
 
+// Custom rounding: <0.50 → round up to .50, >=0.50 → round up to next whole number
+const customRound = (value: number): number => {
+  const whole = Math.floor(value);
+  const decimal = value - whole;
+  if (decimal === 0) return value;
+  if (decimal < 0.50) return whole + 0.50;
+  return whole + 1;
+};
+
 const DriverTargetTripsPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
@@ -225,7 +234,7 @@ const DriverTargetTripsPage = () => {
   // Generate tier data dynamically using saved config incentives
   const tierData: TierData[] = useMemo(() => {
     return DEFAULT_TIERS.map((tierName, i) => {
-      const avgTrips = baseAvgTripsPerDay + i;
+      const avgTrips = customRound(baseAvgTripsPerDay + i);
       const tierConfig = config.tiers[tierName];
       const incentive = shiftLabel === "12H" 
         ? tierConfig?.["12H"] || DEFAULT_CONFIG.tiers[tierName]["12H"]
