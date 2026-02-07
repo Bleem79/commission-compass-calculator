@@ -83,7 +83,11 @@ export const AdminMessages = ({
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Message[];
+      // Filter out private messages - they should only appear in the driver's private messages view
+      const filtered = (data as Message[]).filter(
+        (msg) => !msg.content.startsWith('[PRIVATE TO:')
+      );
+      return filtered;
     }
   });
 
