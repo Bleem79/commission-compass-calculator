@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ListCheck, 
@@ -25,6 +25,7 @@ import { AdminMessages } from "@/components/messages/AdminMessages";
 import { DriverIncomeAuthDialog } from "@/components/driver-income/DriverIncomeAuthDialog";
 import { DriverSmsDialog } from "@/components/messages/DriverSmsDialog";
 import { DriverPortalSettingsDialog } from "@/components/admin/DriverPortalSettingsDialog";
+import { useDriverCredentials } from "@/hooks/useDriverCredentials";
 import InstallBanner from "@/components/pwa/InstallBanner";
 import NotificationPrompt from "@/components/pwa/NotificationPrompt";
 import { toast } from "@/hooks/use-toast";
@@ -77,6 +78,9 @@ const HomePage = () => {
   const [isDriverIncomeDialogOpen, setIsDriverIncomeDialogOpen] = useState(false);
   const [isSmsDialogOpen, setIsSmsDialogOpen] = useState(false);
   const [isPortalSettingsOpen, setIsPortalSettingsOpen] = useState(false);
+  const { driverInfo } = useDriverCredentials();
+  const isDriver = !!driverInfo?.driverId;
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login", { replace: true });
@@ -149,7 +153,15 @@ const HomePage = () => {
       icon: <CalendarDays className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: isAdmin ? "Driver Income" : "Driver Main Portal",
       gradient: "bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600",
-      onClick: () => isAdmin ? navigate("/driver-income") : setIsDriverIncomeDialogOpen(true),
+      onClick: () => {
+        if (isAdmin) {
+          navigate("/driver-income");
+        } else if (isDriver) {
+          navigate("/driver-portal");
+        } else {
+          setIsDriverIncomeDialogOpen(true);
+        }
+      },
     },
   ];
 
