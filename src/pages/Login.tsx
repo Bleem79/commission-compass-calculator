@@ -32,14 +32,8 @@ const Login = () => {
           </div>
           <LoginForm />
         </CardContent>
-        <CardFooter className="flex flex-col">
-          <div className="my-2 w-full flex items-center gap-3 px-2">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-            <span className="text-xs text-gray-400">OR</span>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-          </div>
-          <GuestLoginButton />
-        </CardFooter>
+        <CardFooter />
+
       </Card>
     </div>
   );
