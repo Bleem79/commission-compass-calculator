@@ -200,7 +200,7 @@ export const AdminMessages = ({
       
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setNewMessage("");
       setSelectedImage(null);
       setImagePreview(null);
@@ -209,6 +209,17 @@ export const AdminMessages = ({
         title: "Message sent",
         description: "Your message has been sent to all users.",
       });
+
+      // Send push notification to all drivers (non-blocking)
+      supabase.functions
+        .invoke("send-message-notification", {
+          body: {
+            type: "broadcast",
+            messageContent: data?.content || "",
+            imageUrl: data?.image_url || null,
+          },
+        })
+        .catch((err) => console.log("Push notification failed (non-critical):", err));
     },
     onError: (error) => {
       toast({

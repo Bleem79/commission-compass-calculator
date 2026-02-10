@@ -228,6 +228,17 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
       setMessage("");
       queryClient.invalidateQueries({ queryKey: ["admin-messages"] });
       queryClient.invalidateQueries({ queryKey: ["driver-message-history", selectedDriver?.driver_id] });
+
+      // Send push notification to this driver (non-blocking)
+      supabase.functions
+        .invoke("send-message-notification", {
+          body: {
+            type: "private",
+            driverIds: [selectedDriver.driver_id],
+            messageContent: message.trim(),
+          },
+        })
+        .catch((err) => console.log("Push notification failed (non-critical):", err));
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
@@ -277,6 +288,18 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
         toast.success(`Message sent to ${successCount} driver${successCount > 1 ? 's' : ''}!`, {
           description: failCount > 0 ? `Failed to send to ${failCount} driver(s)` : undefined,
         });
+
+        // Send push notifications to all selected drivers (non-blocking)
+        supabase.functions
+          .invoke("send-message-notification", {
+            body: {
+              type: "private",
+              driverIds: driverIdsArray,
+              messageContent: message.trim(),
+            },
+          })
+          .catch((err) => console.log("Push notification failed (non-critical):", err));
+
         setMessage("");
         setSelectedDriverIds(new Set());
         setViewMode("list");
