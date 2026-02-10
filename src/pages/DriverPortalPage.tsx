@@ -22,6 +22,7 @@ import { DriverPrivateMessages } from "@/components/messages/DriverPrivateMessag
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
 import { supabase } from "@/integrations/supabase/client";
+import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 
 interface PortalSetting {
   feature_key: string;
@@ -81,6 +82,9 @@ const DriverPortalPage = () => {
   const { driverInfo, loading: driverLoading } = useDriverCredentials();
   const [portalSettings, setPortalSettings] = useState<Record<string, boolean>>({});
   const [loadingSettings, setLoadingSettings] = useState(true);
+
+  // Register push subscription when driver credentials are available
+  usePushSubscriptionRegistration(user?.id, driverInfo?.driverId);
 
   // Fetch portal settings
   useEffect(() => {
