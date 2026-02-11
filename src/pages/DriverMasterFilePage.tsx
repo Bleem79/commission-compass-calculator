@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Download, Upload, Loader2, Users, FileSpreadsheet, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Upload, Loader2, Users, FileSpreadsheet, Trash2, Plus } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +37,10 @@ const DriverMasterFilePage = () => {
   const [uploadProgress, setUploadProgress] = useState<{ total: number; uploaded: number } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [singleDriverId, setSingleDriverId] = useState("");
+  const [singleDriverName, setSingleDriverName] = useState("");
+  const [singleController, setSingleController] = useState("");
+  const [isAddingSingle, setIsAddingSingle] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) navigate("/home");
@@ -159,6 +163,33 @@ const DriverMasterFilePage = () => {
     }
   };
 
+  const handleAddSingleDriver = async () => {
+    if (!singleDriverId.trim() || !singleDriverName.trim()) {
+      toast.error("Driver ID and Driver Name are required");
+      return;
+    }
+    if (!user) return;
+
+    setIsAddingSingle(true);
+    try {
+      const { error } = await supabase.from("driver_master_file").insert({
+        driver_id: singleDriverId.trim(),
+        driver_name: singleDriverName.trim(),
+        controller: singleController.trim() || null,
+        uploaded_by: user.id,
+      } as any);
+      if (error) throw error;
+      toast.success(`Driver ${singleDriverId.trim()} added successfully`);
+      setSingleDriverId("");
+      setSingleDriverName("");
+      setSingleController("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add driver");
+    } finally {
+      setIsAddingSingle(false);
+    }
+  };
+
   if (!isAdmin) return null;
 
   return (
@@ -263,6 +294,60 @@ const DriverMasterFilePage = () => {
                 </table>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Add Single Driver
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <Label htmlFor="single-driver-id">Driver ID *</Label>
+                <Input
+                  id="single-driver-id"
+                  placeholder="e.g. 100525"
+                  value={singleDriverId}
+                  onChange={(e) => setSingleDriverId(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="single-driver-name">Driver Name *</Label>
+                <Input
+                  id="single-driver-name"
+                  placeholder="e.g. John Doe"
+                  value={singleDriverName}
+                  onChange={(e) => setSingleDriverName(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="single-controller">Controller</Label>
+                <Input
+                  id="single-controller"
+                  placeholder="e.g. Abdul Kadir"
+                  value={singleController}
+                  onChange={(e) => setSingleController(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <Button
+              onClick={handleAddSingleDriver}
+              disabled={isAddingSingle || !singleDriverId.trim() || !singleDriverName.trim()}
+              className="mt-4 bg-primary hover:bg-primary/90"
+            >
+              {isAddingSingle ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Adding...</>
+              ) : (
+                <><Plus className="h-4 w-4 mr-2" />Add Driver</>
+              )}
+            </Button>
           </CardContent>
         </Card>
 
