@@ -28,10 +28,17 @@ export const usePushSubscriptionRegistration = (
           return;
         }
 
-        const registration = await navigator.serviceWorker.ready as any;
+        // Register push-specific service worker for handling push events
+        let registration: ServiceWorkerRegistration;
+        try {
+          registration = await navigator.serviceWorker.register("/sw-push.js", { scope: "/" });
+          await navigator.serviceWorker.ready;
+        } catch {
+          registration = await navigator.serviceWorker.ready;
+        }
 
-        // Get existing subscription or create new one
-        let subscription = await registration.pushManager.getSubscription();
+        const reg = registration as any;
+        let subscription = await reg.pushManager.getSubscription();
 
         if (!subscription) {
           // We need the VAPID public key to subscribe
@@ -39,7 +46,7 @@ export const usePushSubscriptionRegistration = (
           const vapidPublicKey = "BPyGoLh-AHAHEbn2VB2acpyzMnWq3RemqJsoCljNwu-Cq6_Ug59ERnD4xvfOtx1w4bmHCe4E9_Qq2UcgnJOhpsE";
           
           const convertedKey = urlBase64ToUint8Array(vapidPublicKey) as any;
-          subscription = await registration.pushManager.subscribe({
+          subscription = await reg.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: convertedKey,
           });
