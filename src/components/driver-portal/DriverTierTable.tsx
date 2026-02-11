@@ -90,16 +90,22 @@ const DriverTierTable = ({ driverId }: DriverTierTableProps) => {
   const shiftLabel = shiftType === "2" ? "12H" : "24H";
   const incentives = shiftType === "2" ? INCENTIVES_12H : INCENTIVES_24H;
 
-  // Calculate days in month (default to 31)
-  const daysInMonth = driverIncome?.working_days || 31;
+  // Calculate days in month from target trip's month/year
+  const daysInMonth = useMemo(() => {
+    if (targetTrip?.month && targetTrip?.year) {
+      const monthIndex = new Date(`${targetTrip.month} 1, ${targetTrip.year}`).getMonth();
+      return new Date(targetTrip.year, monthIndex + 1, 0).getDate();
+    }
+    return 31;
+  }, [targetTrip]);
 
-  // Calculate base average trips per day from target trips
+  // target_trips IS already the avg trips per day
   const baseAvgTripsPerDay = useMemo(() => {
-    if (targetTrip && daysInMonth > 0) {
-      return targetTrip.target_trips / daysInMonth;
+    if (targetTrip) {
+      return targetTrip.target_trips;
     }
     return 24;
-  }, [targetTrip, daysInMonth]);
+  }, [targetTrip]);
 
   // Generate tier data dynamically
   const tierData: TierData[] = useMemo(() => {
