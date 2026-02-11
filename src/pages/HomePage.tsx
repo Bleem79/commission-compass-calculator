@@ -76,7 +76,7 @@ const FeatureCard = ({ icon, title, gradient, onClick, className }: FeatureCardP
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { user, logout, isAuthenticated, isAdmin, canAccessAdminPages } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin, isAdvanced, canAccessAdminPages } = useAuth();
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDriverIncomeDialogOpen, setIsDriverIncomeDialogOpen] = useState(false);
@@ -175,7 +175,7 @@ const HomePage = () => {
       gradient: "bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600",
       onClick: () => navigate("/cng-location"),
     },
-    {
+    ...(isAdvanced ? [] : [{
       icon: <CalendarDays className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: isAdmin ? "Driver Income" : "Driver Main Portal",
       gradient: "bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600",
@@ -188,7 +188,7 @@ const HomePage = () => {
           setIsDriverIncomeDialogOpen(true);
         }
       },
-    },
+    }]),
   ];
 
   if (canAccessAdminPages) {
