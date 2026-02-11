@@ -248,6 +248,33 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_master_file: {
+        Row: {
+          controller: string | null
+          created_at: string
+          driver_id: string
+          driver_name: string
+          id: string
+          uploaded_by: string
+        }
+        Insert: {
+          controller?: string | null
+          created_at?: string
+          driver_id: string
+          driver_name: string
+          id?: string
+          uploaded_by: string
+        }
+        Update: {
+          controller?: string | null
+          created_at?: string
+          driver_id?: string
+          driver_name?: string
+          id?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       driver_portal_settings: {
         Row: {
           feature_key: string
