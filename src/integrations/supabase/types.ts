@@ -526,6 +526,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_my_username: { Args: never; Returns: string }
       has_admin_role: { Args: { user_id: string }; Returns: boolean }
       has_role:
         | {
