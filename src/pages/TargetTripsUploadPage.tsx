@@ -32,6 +32,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import DriverTierTable from "@/components/driver-portal/DriverTierTable";
 
 interface TargetTripsRow {
   driver_id: string;
@@ -100,6 +107,7 @@ const TargetTripsUploadPage = () => {
   const [monthFilter, setMonthFilter] = useState<string>("all");
   const [isClearing, setIsClearing] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   
   // Store initial config to detect changes
   const [initialConfig, setInitialConfig] = useState<TargetTripsConfig>({
@@ -832,7 +840,7 @@ const TargetTripsUploadPage = () => {
                 </thead>
                 <tbody>
                   {filteredRecords.slice(0, 50).map((record) => (
-                    <tr key={record.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <tr key={record.id} className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer" onClick={() => setSelectedDriverId(record.driver_id)}>
                       <td className="p-4 text-white font-medium">{record.driver_id}</td>
                       <td className="p-4 text-slate-300">{record.driver_name || "-"}</td>
                       <td className="p-4 text-center">
@@ -874,6 +882,17 @@ const TargetTripsUploadPage = () => {
             </div>
           )}
         </Card>
+        {/* Driver Tier Dialog */}
+        <Dialog open={!!selectedDriverId} onOpenChange={(open) => !open && setSelectedDriverId(null)}>
+          <DialogContent className="bg-slate-900 border-white/10 text-white max-w-lg p-0 overflow-hidden">
+            <DialogHeader className="p-4 pb-0">
+              <DialogTitle className="text-white">Target & Incentive Tiers</DialogTitle>
+            </DialogHeader>
+            <div className="p-4 pt-2">
+              <DriverTierTable driverId={selectedDriverId} />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
