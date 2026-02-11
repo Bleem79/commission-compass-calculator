@@ -35,7 +35,7 @@ export const useAdminCheck = (redirectOnFail = true): UseAdminCheckResult => {
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id)
-          .eq("role", "admin")
+          .in("role", ["admin", "advanced", "user"])
           .maybeSingle();
 
         if (error) throw error;

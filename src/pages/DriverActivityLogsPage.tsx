@@ -24,7 +24,7 @@ interface ActivityLog {
 
 const DriverActivityLogsPage = () => {
   const navigate = useNavigate();
-  const { isAdmin, isAuthenticated } = useAuth();
+  const { isAdmin, isAuthenticated, canAccessAdminPages } = useAuth();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,16 +37,16 @@ const DriverActivityLogsPage = () => {
       navigate("/login");
       return;
     }
-    if (!isAdmin) {
+    if (!canAccessAdminPages) {
       navigate("/home");
       return;
     }
     fetchLogs();
-  }, [isAuthenticated, isAdmin, navigate]);
+  }, [isAuthenticated, canAccessAdminPages, navigate]);
 
   // Real-time subscription for new activity logs
   useEffect(() => {
-    if (!isAdmin || !isLive) return;
+    if (!canAccessAdminPages || !isLive) return;
 
     console.log("Setting up real-time subscription for activity logs");
     
