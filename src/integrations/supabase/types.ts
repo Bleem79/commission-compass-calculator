@@ -550,7 +550,7 @@ export type Database = {
       is_guest_account: { Args: { email: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "user" | "driver"
+      app_role: "admin" | "user" | "driver" | "advanced"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -678,7 +678,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "driver"],
+      app_role: ["admin", "user", "driver", "advanced"],
     },
   },
 } as const

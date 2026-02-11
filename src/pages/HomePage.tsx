@@ -19,7 +19,8 @@ import {
   MessageCircle,
   Activity,
   Settings2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ShieldCheck
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminMessages } from "@/components/messages/AdminMessages";
@@ -73,7 +74,7 @@ const FeatureCard = ({ icon, title, gradient, onClick, className }: FeatureCardP
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { user, logout, isAuthenticated, isAdmin } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin, canAccessAdminPages } = useAuth();
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDriverIncomeDialogOpen, setIsDriverIncomeDialogOpen] = useState(false);
@@ -166,7 +167,7 @@ const HomePage = () => {
     },
   ];
 
-  if (isAdmin) {
+  if (canAccessAdminPages) {
     features.push({
       icon: <Users className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Driver Management",
@@ -221,6 +222,14 @@ const HomePage = () => {
       gradient: "bg-gradient-to-br from-blue-600 via-sky-600 to-cyan-700",
       onClick: () => navigate("/driver-master-file"),
     });
+    if (isAdmin) {
+      features.push({
+        icon: <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8" />,
+        title: "Revenue Controller Portal",
+        gradient: "bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600",
+        onClick: () => navigate("/revenue-controller-portal"),
+      });
+    }
   }
 
   return (

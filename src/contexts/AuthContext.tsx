@@ -87,6 +87,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [session, setUser, user, logActivity]);
 
+  const isAdmin = user?.role === "admin";
+  const isAdvanced = user?.role === "advanced";
+  const canAccessAdminPages = isAdmin || isAdvanced || user?.role === "user";
+
   return (
     <AuthContext.Provider
       value={{
@@ -94,7 +98,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser,
         logout,
         isAuthenticated: !!session,
-        isAdmin: user?.role === "admin",
+        isAdmin,
+        isAdvanced,
+        canAccessAdminPages,
         session,
         refreshSession
       }}

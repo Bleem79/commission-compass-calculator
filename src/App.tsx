@@ -32,6 +32,7 @@ const AdminRequestsPage = lazy(() => import("./pages/AdminRequestsPage"));
 const InstallPage = lazy(() => import("./pages/InstallPage"));
 const DriverActivityLogsPage = lazy(() => import("./pages/DriverActivityLogsPage"));
 const DriverMasterFilePage = lazy(() => import("./pages/DriverMasterFilePage"));
+const RevenueControllerPortalPage = lazy(() => import("./pages/RevenueControllerPortalPage"));
 const Index = lazy(() => import("./pages/Index"));
 
 // Loading fallback component
@@ -315,6 +316,18 @@ const AppRoutes = () => {
             <SidebarProvider>
               <div className="min-h-screen w-full">
                 <DriverMasterFilePage />
+              </div>
+            </SidebarProvider>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/revenue-controller-portal" 
+        element={
+          <ProtectedRoute>
+            <SidebarProvider>
+              <div className="min-h-screen w-full">
+                <RevenueControllerPortalPage />
               </div>
             </SidebarProvider>
           </ProtectedRoute>
