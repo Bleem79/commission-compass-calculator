@@ -229,30 +229,34 @@ const DriverManagementPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-4 sm:p-6 md:p-10">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/home")}
-            className="hover:bg-indigo-100"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-indigo-800">
-              Driver Management
-            </h1>
-            <p className="text-slate-600">Manage driver accounts and access</p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/home")}
+              className="hover:bg-indigo-100"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-indigo-800">
+                Driver Management
+              </h1>
+              <p className="text-sm text-slate-600">Manage driver accounts and access</p>
+            </div>
           </div>
           {isAdmin && (
-            <div className="ml-auto flex gap-2">
+            <div className="flex flex-wrap gap-2 sm:ml-auto">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={downloadTemplate}
-                className="bg-white hover:bg-green-50 border-green-200 text-green-700 hover:text-green-800"
+                className="bg-white hover:bg-green-50 border-green-200 text-green-700 hover:text-green-800 text-xs sm:text-sm"
               >
-                <Download className="h-4 w-4 mr-2" />
-                Download CSV Template
+                <Download className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Download CSV Template</span>
+                <span className="sm:hidden">Template</span>
               </Button>
               <input
                 type="file"
@@ -264,19 +268,21 @@ const DriverManagementPage = () => {
               />
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="bg-white hover:bg-purple-50 border-purple-200 text-purple-700 hover:text-purple-800"
+                className="bg-white hover:bg-purple-50 border-purple-200 text-purple-700 hover:text-purple-800 text-xs sm:text-sm"
               >
                 {isUploading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Uploading...
+                    <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
+                    <span className="hidden sm:inline">Uploading...</span>
                   </>
                 ) : (
                   <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload CSV
+                    <Upload className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Upload CSV</span>
+                    <span className="sm:hidden">Upload</span>
                   </>
                 )}
               </Button>
@@ -310,7 +316,7 @@ const DriverManagementPage = () => {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <Card className="bg-white shadow-sm">
             <CardContent className="flex items-center gap-4 p-4">
               <div className="p-3 bg-blue-100 rounded-full">

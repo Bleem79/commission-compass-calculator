@@ -445,23 +445,22 @@ const AdminRequestsPage = () => {
       </Button>
 
       <div className="max-w-6xl mx-auto pt-16">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <MessageSquare className="h-8 w-8 text-blue-600" />
-            <h1 className="text-2xl font-bold text-foreground">Driver Requests Management</h1>
+            <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+            <h1 className="text-lg sm:text-2xl font-bold text-foreground">Driver Requests Management</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={handleExportToExcel} variant="outline">
-              <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Export Excel
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={handleExportToExcel} variant="outline" size="sm" className="text-xs sm:text-sm">
+              <FileSpreadsheet className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Export Excel</span>
             </Button>
-            <Button onClick={() => setShowCalendar(!showCalendar)} variant={showCalendar ? "default" : "outline"}>
-              <CalendarDays className="h-4 w-4 mr-2" />
-              Day Off Calendar
+            <Button onClick={() => setShowCalendar(!showCalendar)} variant={showCalendar ? "default" : "outline"} size="sm" className="text-xs sm:text-sm">
+              <CalendarDays className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Day Off Calendar</span>
             </Button>
-            <Button onClick={handleRefresh} variant="outline" disabled={loading}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-              Refresh
+            <Button onClick={handleRefresh} variant="outline" size="sm" disabled={loading}>
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
           </div>
         </div>

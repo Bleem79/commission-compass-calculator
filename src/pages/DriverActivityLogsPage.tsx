@@ -143,18 +143,18 @@ const DriverActivityLogsPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="container mx-auto p-4 md:p-6 max-w-7xl">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-3 sm:gap-4 mb-6">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/dashboard")}
-            className="rounded-full"
+            onClick={() => navigate("/home")}
+            className="rounded-full shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Driver Activity Logs</h1>
-            <p className="text-sm text-muted-foreground">Track driver login and logout activities</p>
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Driver Activity Logs</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Track driver login and logout activities</p>
           </div>
         </div>
 
@@ -163,45 +163,51 @@ const DriverActivityLogsPage = () => {
             <CardTitle className="text-lg">Filters</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by Driver ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by Driver ID..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="date"
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className="pl-9 w-full sm:w-48"
+                  />
+                </div>
               </div>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="date"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className="pl-9 w-full sm:w-48"
-                />
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={fetchLogs} variant="outline" size="sm" className="gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh
+                </Button>
+                <Button 
+                  onClick={() => setIsLive(!isLive)} 
+                  variant={isLive ? "default" : "outline"} 
+                  size="sm"
+                  className={`gap-2 ${isLive ? "bg-green-600 hover:bg-green-700" : ""}`}
+                >
+                  <Radio className={`h-4 w-4 ${isLive ? "animate-pulse" : ""}`} />
+                  {isLive ? "Live" : "Paused"}
+                </Button>
+                <Button 
+                  onClick={() => setShowStats(!showStats)} 
+                  variant={showStats ? "default" : "outline"} 
+                  size="sm"
+                  className="gap-2"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  {showStats ? "Hide Stats" : "Show Stats"}
+                </Button>
               </div>
-              <Button onClick={fetchLogs} variant="outline" className="gap-2">
-                <RefreshCw className="h-4 w-4" />
-                Refresh
-              </Button>
-              <Button 
-                onClick={() => setIsLive(!isLive)} 
-                variant={isLive ? "default" : "outline"} 
-                className={`gap-2 ${isLive ? "bg-green-600 hover:bg-green-700" : ""}`}
-              >
-                <Radio className={`h-4 w-4 ${isLive ? "animate-pulse" : ""}`} />
-                {isLive ? "Live" : "Paused"}
-              </Button>
-              <Button 
-                onClick={() => setShowStats(!showStats)} 
-                variant={showStats ? "default" : "outline"} 
-                className="gap-2"
-              >
-                <BarChart3 className="h-4 w-4" />
-                {showStats ? "Hide Stats" : "Show Stats"}
-              </Button>
             </div>
           </CardContent>
         </Card>
