@@ -90,14 +90,17 @@ const DriverTierTable = ({ driverId }: DriverTierTableProps) => {
   const shiftLabel = shiftType === "2" ? "12H" : "24H";
   const incentives = shiftType === "2" ? INCENTIVES_12H : INCENTIVES_24H;
 
-  // Calculate days in month from target trip's month/year
+  // Get days from the Target Trips Configuration saved by admin
   const daysInMonth = useMemo(() => {
-    if (targetTrip?.month && targetTrip?.year) {
-      const monthIndex = new Date(`${targetTrip.month} 1, ${targetTrip.year}`).getMonth();
-      return new Date(targetTrip.year, monthIndex + 1, 0).getDate();
-    }
+    try {
+      const savedConfig = localStorage.getItem('targetTripsConfig');
+      if (savedConfig) {
+        const parsed = JSON.parse(savedConfig);
+        if (parsed.numberOfDays && parsed.numberOfDays > 0) return parsed.numberOfDays;
+      }
+    } catch (e) {}
     return 31;
-  }, [targetTrip]);
+  }, []);
 
   // target_trips IS already the avg trips per day
   const baseAvgTripsPerDay = useMemo(() => {
