@@ -228,13 +228,13 @@ const HomePage = () => {
   ];
 
   if (canAccessAdminPages) {
+    features.push({
+      icon: <Users className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Driver Management",
+      gradient: "bg-gradient-to-br from-slate-600 via-gray-600 to-zinc-700",
+      onClick: () => navigate("/driver-management"),
+    });
     if (isAdmin) {
-      features.push({
-        icon: <Users className="w-6 h-6 sm:w-8 sm:h-8" />,
-        title: "Driver Management",
-        gradient: "bg-gradient-to-br from-slate-600 via-gray-600 to-zinc-700",
-        onClick: () => navigate("/driver-management"),
-      });
       features.push({
         icon: <Ban className="w-6 h-6 sm:w-8 sm:h-8" />,
         title: "Drivers Absent Fine",
