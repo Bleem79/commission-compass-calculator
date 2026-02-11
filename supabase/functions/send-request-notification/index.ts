@@ -83,11 +83,26 @@ Deno.serve(async (req) => {
     const controllerUserIds = matchingUsers.map((u) => u.id);
     console.log(`Found ${controllerUserIds.length} controller user(s)`);
 
-    // 3. Find push subscriptions for these controller users
+    // 3. Also find all admin users to notify them too
+    const adminUsers = allUsers.filter((u) => {
+      // We need to check user_roles table for admin role
+      return false; // Will fetch from DB instead
+    });
+
+    const { data: adminRoles, error: adminRolesError } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin");
+
+    const adminUserIds = (adminRoles || []).map((r) => r.user_id);
+    const allTargetUserIds = [...new Set([...controllerUserIds, ...adminUserIds])];
+    console.log(`Notifying ${allTargetUserIds.length} user(s) (${controllerUserIds.length} controller + ${adminUserIds.length} admin)`);
+
+    // 4. Find push subscriptions for target users
     const { data: subscriptions, error: subError } = await supabase
       .from("push_subscriptions")
       .select("*")
-      .in("user_id", controllerUserIds);
+      .in("user_id", allTargetUserIds);
 
     if (subError) {
       console.error("Error fetching subscriptions:", subError);
@@ -95,9 +110,9 @@ Deno.serve(async (req) => {
     }
 
     if (!subscriptions || subscriptions.length === 0) {
-      console.log("No push subscriptions for controller user(s)");
+      console.log("No push subscriptions for target user(s)");
       return new Response(
-        JSON.stringify({ success: true, message: "No subscriptions for controller" }),
+        JSON.stringify({ success: true, message: "No subscriptions found" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -113,10 +128,14 @@ Deno.serve(async (req) => {
 
     const displayName = driverName || driverId;
     const notificationPayload = JSON.stringify({
-      title: "📋 New Driver Request",
+      title: "🔔 New Driver Request",
       body: `Driver ${displayName} submitted: ${subject || requestType}`,
       icon: "/pwa-192x192.png",
       badge: "/pwa-192x192.png",
+      vibrate: [200, 100, 200, 100, 200],
+      sound: "/notification.mp3",
+      requireInteraction: true,
+      tag: `driver-request-${driverId}-${Date.now()}`,
       data: {
         url: "/admin-requests",
         type: "driver_request_submitted",
