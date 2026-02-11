@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +45,18 @@ export const DriverRequestForm = ({
   const tomorrow = getMinDayOffDate();
   const remainingCycleRequests = MAX_DAY_OFF_PER_CYCLE - cycleRequestCount;
 
+  const availableTypes = useMemo(() => {
+    const saved = localStorage.getItem("driver_request_types");
+    if (saved) {
+      try {
+        return JSON.parse(saved) as { value: string; label: string }[];
+      } catch {
+        return REQUEST_TYPES;
+      }
+    }
+    return REQUEST_TYPES;
+  }, []);
+
   return (
     <Card className="mb-6 bg-card border-border shadow-lg">
       <CardHeader className="pb-4">
@@ -59,7 +71,7 @@ export const DriverRequestForm = ({
                 <SelectValue placeholder="Select request type" />
               </SelectTrigger>
               <SelectContent>
-                {REQUEST_TYPES.map((type) => (
+                {availableTypes.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
                     {type.label}
                   </SelectItem>
