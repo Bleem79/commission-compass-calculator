@@ -3,7 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Users, Loader2 } from "lucide-react";
+import { Search, Users, Loader2, Pencil, Check, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface DriverRecord {
   id: string;
@@ -17,6 +19,8 @@ const DriverMasterList = () => {
   const [records, setRecords] = useState<DriverRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
 
   const fetchRecords = async () => {
     setLoading(true);
@@ -64,6 +68,34 @@ const DriverMasterList = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  const handleEditStart = (record: DriverRecord) => {
+    setEditingId(record.id);
+    setEditValue(record.controller || "");
+  };
+
+  const handleEditSave = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("driver_master_file")
+        .update({ controller: editValue.trim() || null } as any)
+        .eq("id", id);
+      if (error) throw error;
+      setRecords((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, controller: editValue.trim() || null } : r))
+      );
+      toast.success("Controller updated");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update controller");
+    } finally {
+      setEditingId(null);
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditValue("");
+  };
+
   const filtered = records.filter((r) => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -110,6 +142,7 @@ const DriverMasterList = () => {
                   <TableHead className="sticky top-0 bg-muted">Driver ID</TableHead>
                   <TableHead className="sticky top-0 bg-muted">Driver Name</TableHead>
                   <TableHead className="sticky top-0 bg-muted">Controller</TableHead>
+                  <TableHead className="sticky top-0 bg-muted w-[80px]">Edit</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -118,7 +151,38 @@ const DriverMasterList = () => {
                     <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                     <TableCell className="font-medium">{r.driver_id}</TableCell>
                     <TableCell>{r.driver_name || "-"}</TableCell>
-                    <TableCell>{r.controller || "-"}</TableCell>
+                    <TableCell>
+                      {editingId === r.id ? (
+                        <Input
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="h-8 text-sm"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleEditSave(r.id);
+                            if (e.key === "Escape") handleEditCancel();
+                          }}
+                        />
+                      ) : (
+                        r.controller || "-"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editingId === r.id ? (
+                        <div className="flex gap-1">
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEditSave(r.id)}>
+                            <Check className="h-4 w-4 text-green-600" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleEditCancel}>
+                            <X className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEditStart(r)}>
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
