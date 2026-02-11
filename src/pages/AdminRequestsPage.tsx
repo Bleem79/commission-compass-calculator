@@ -716,7 +716,7 @@ const AdminRequestsPage = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {getStatusBadge(request.status)}
-                      {request.request_type === "day_off" && (
+                      {isAdmin && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -930,7 +930,7 @@ const AdminRequestsPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Day Off Request</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this day off request from{" "}
+              Are you sure you want to delete this request from{" "}
               <strong>{deleteConfirmRequest?.driver_name || deleteConfirmRequest?.driver_id}</strong>?
               {deleteConfirmRequest?.request_no && (
                 <span className="block mt-1 font-mono text-xs">{deleteConfirmRequest.request_no}</span>
