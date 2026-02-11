@@ -82,6 +82,7 @@ const DriverPortalPage = () => {
   const { driverInfo, loading: driverLoading } = useDriverCredentials();
   const [portalSettings, setPortalSettings] = useState<Record<string, boolean>>({});
   const [loadingSettings, setLoadingSettings] = useState(true);
+  const [controllerName, setControllerName] = useState<string | null>(null);
 
   // Register push subscription when driver credentials are available
   usePushSubscriptionRegistration(user?.id, driverInfo?.driverId);
@@ -110,6 +111,24 @@ const DriverPortalPage = () => {
 
     fetchSettings();
   }, []);
+
+  // Fetch controller name from driver_master_file
+  useEffect(() => {
+    const fetchController = async () => {
+      if (!driverInfo?.driverId) return;
+      try {
+        const { data } = await supabase
+          .from("driver_master_file")
+          .select("controller")
+          .eq("driver_id", driverInfo.driverId)
+          .maybeSingle();
+        setControllerName(data?.controller || null);
+      } catch (err) {
+        console.error("Error fetching controller:", err);
+      }
+    };
+    fetchController();
+  }, [driverInfo?.driverId]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -249,6 +268,11 @@ const DriverPortalPage = () => {
             {user && (
               <p className="text-white/60 text-sm">
                 Welcome, {user.username || user.email}
+              </p>
+            )}
+            {controllerName && (
+              <p className="text-white/50 text-xs mt-1">
+                Revenue Controller In Charge: <span className="text-white/80 font-medium">{controllerName}</span>
               </p>
             )}
           </div>
