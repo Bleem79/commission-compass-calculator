@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Download, Upload, Loader2, Users, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, Download, Upload, Loader2, Users, FileSpreadsheet, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
@@ -33,6 +34,7 @@ const DriverMasterFilePage = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<MasterFileRow[] | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ total: number; uploaded: number } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -142,6 +144,20 @@ const DriverMasterFilePage = () => {
     }
   };
 
+  const handleDeleteAll = async () => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from("driver_master_file").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (error) throw error;
+      toast.success("All driver master file records deleted successfully");
+    } catch (error: any) {
+      console.error("Error deleting records:", error);
+      toast.error(error.message || "Failed to delete records");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (!isAdmin) return null;
 
   return (
@@ -165,10 +181,35 @@ const DriverMasterFilePage = () => {
             <CardTitle className="text-lg font-semibold text-slate-800">Upload Driver Master File</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button variant="outline" onClick={downloadTemplate} className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100">
-              <Download className="h-4 w-4 mr-2" />
-              Download Template
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button variant="outline" onClick={downloadTemplate} className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100">
+                <Download className="h-4 w-4 mr-2" />
+                Download Template
+              </Button>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" disabled={isDeleting} className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {isDeleting ? "Deleting..." : "Delete All Records"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete All Driver Master File Records?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete all uploaded driver master file data. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteAll} className="bg-red-600 hover:bg-red-700">
+                      Delete All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-4 items-end">
               <div className="flex-1">
