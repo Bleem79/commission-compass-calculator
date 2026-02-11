@@ -216,7 +216,7 @@ const HomePage = () => {
       title: isAdmin ? "Driver Income" : "Driver Main Portal",
       gradient: "bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600",
       onClick: () => {
-        if (isAdmin) {
+        if (isAdmin || canAccessAdminPages) {
           navigate("/driver-income");
         } else if (isDriver) {
           navigate("/driver-portal");

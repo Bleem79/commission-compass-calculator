@@ -25,7 +25,7 @@ interface DriverIncomeData {
 
 const DriverIncomePage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isAdmin, user, session } = useAuth();
+  const { isAuthenticated, isAdmin, user, session, canAccessAdminPages } = useAuth();
   const [incomeData, setIncomeData] = useState<DriverIncomeData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showUploader, setShowUploader] = useState(false);
@@ -42,7 +42,7 @@ const DriverIncomePage = () => {
   // Fetch/link driver info for non-admin users - always use the real authenticated Supabase user
   useEffect(() => {
     const fetchDriverInfo = async () => {
-      if (!isAuthenticated || isAdmin) return;
+       if (!isAuthenticated || isAdmin || canAccessAdminPages) return;
 
       // Get the current authed user directly from Supabase to avoid stale context
       const {
@@ -165,7 +165,7 @@ const DriverIncomePage = () => {
   }, [fetchIncomeData, isAuthenticated]);
 
   const handleClose = () => {
-    navigate(isAdmin ? "/home" : "/driver-portal");
+    navigate(isAdmin || canAccessAdminPages ? "/home" : "/driver-portal");
   };
 
   return (
@@ -192,7 +192,7 @@ const DriverIncomePage = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h1 className="text-lg sm:text-2xl font-bold text-primary flex items-center gap-2">
             <FileSpreadsheet className="h-6 w-6" />
-            {isAdmin ? "Driver Income Management" : "My Income Details"}
+            {isAdmin || canAccessAdminPages ? "Driver Income Management" : "My Income Details"}
           </h1>
           
           {isAdmin && user?.id && (
@@ -224,8 +224,8 @@ const DriverIncomePage = () => {
           </div>
         )}
 
-        {/* Show Receipt View for Drivers, Table View for Admin */}
-        {isAdmin ? (
+        {/* Show Receipt View for Drivers, Table View for Admin/Advanced Users */}
+        {isAdmin || canAccessAdminPages ? (
           <DriverIncomeTable
             data={incomeData}
             isLoading={isLoading}
