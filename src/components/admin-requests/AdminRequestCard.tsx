@@ -11,12 +11,14 @@ interface AdminRequestCardProps {
   request: DriverRequest;
   onRespond: (request: DriverRequest) => void;
   onDelete: (request: DriverRequest) => void;
+  isAdmin?: boolean;
 }
 
 export const AdminRequestCard = ({
   request,
   onRespond,
   onDelete,
+  isAdmin = false,
 }: AdminRequestCardProps) => {
   const dayOffDate = request.request_type === "day_off" ? extractDayOffDate(request.subject) : null;
 
@@ -38,17 +40,19 @@ export const AdminRequestCard = ({
               <p className="text-xs text-muted-foreground">{request.request_no}</p>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-red-500 hover:text-red-600 hover:bg-red-50"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(request);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(request);
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         <div className="flex items-center gap-2 mb-2">

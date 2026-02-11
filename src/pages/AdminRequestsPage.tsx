@@ -56,6 +56,7 @@ const AdminRequestsPage = () => {
   const [filteredRequests, setFilteredRequests] = useState<DriverRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isActualAdmin, setIsActualAdmin] = useState(false);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -106,6 +107,7 @@ const AdminRequestsPage = () => {
 
         if (error) throw error;
         setIsAdmin(!!data);
+        setIsActualAdmin(data?.role === 'admin');
         
         if (!data) {
           toast.error("Access denied. Admin privileges required.");
@@ -716,7 +718,7 @@ const AdminRequestsPage = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {getStatusBadge(request.status)}
-                      {isAdmin && (
+                      {isActualAdmin && (
                         <Button
                           variant="ghost"
                           size="icon"
