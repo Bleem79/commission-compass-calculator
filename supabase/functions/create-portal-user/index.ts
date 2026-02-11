@@ -6,78 +6,132 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+async function verifyAdmin(req: Request) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) throw new Error("Missing authorization");
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+  const callerClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: { user: caller } } = await callerClient.auth.getUser();
+  if (!caller) throw new Error("Unauthorized");
+
+  const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+  const { data: roleData } = await adminClient
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", caller.id)
+    .eq("role", "admin")
+    .maybeSingle();
+
+  if (!roleData) throw new Error("Admin access required");
+
+  return adminClient;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing authorization" }), {
-        status: 401,
+    const adminClient = await verifyAdmin(req);
+    const body = await req.json();
+    const { action = "create" } = body;
+
+    // LIST USERS - fetch portal users with email/username from auth
+    if (action === "list") {
+      const { data: roles, error } = await adminClient
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["user", "advanced"]);
+
+      if (error) throw new Error(error.message);
+
+      // Fetch auth user details for each
+      const users = [];
+      for (const r of roles || []) {
+        const { data: { user } } = await adminClient.auth.admin.getUserById(r.user_id);
+        users.push({
+          id: r.user_id,
+          email: user?.email || "",
+          username: user?.user_metadata?.username || "",
+          role: r.role,
+          created_at: user?.created_at || "",
+          banned: !!user?.banned_until && new Date(user.banned_until) > new Date(),
+        });
+      }
+
+      return new Response(JSON.stringify({ users }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    // CHANGE ROLE
+    if (action === "change_role") {
+      const { user_id, new_role } = body;
+      if (!user_id || !new_role) throw new Error("user_id and new_role required");
+      if (!["user", "advanced"].includes(new_role)) throw new Error("Invalid role");
 
-    // Verify the caller is an admin
-    const callerClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user: caller } } = await callerClient.auth.getUser();
-    if (!caller) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
+      const { error } = await adminClient
+        .from("user_roles")
+        .update({ role: new_role })
+        .eq("user_id", user_id);
+
+      if (error) throw new Error(error.message);
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check admin role
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: roleData } = await adminClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", caller.id)
-      .eq("role", "admin")
-      .maybeSingle();
+    // TOGGLE BAN (enable/disable)
+    if (action === "toggle_status") {
+      const { user_id, disable } = body;
+      if (!user_id) throw new Error("user_id required");
 
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: "Admin access required" }), {
-        status: 403,
+      if (disable) {
+        // Ban the user (set banned_until far future)
+        const { error } = await adminClient.auth.admin.updateUserById(user_id, {
+          ban_duration: "876000h", // ~100 years
+        });
+        if (error) throw new Error(error.message);
+      } else {
+        // Unban
+        const { error } = await adminClient.auth.admin.updateUserById(user_id, {
+          ban_duration: "none",
+        });
+        if (error) throw new Error(error.message);
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { email, password, username, role } = await req.json();
+    // CREATE USER (default action)
+    const { email, password, username, role } = body;
 
-    // Validate inputs
     if (!email || !password || !username || !role) {
-      return new Response(
-        JSON.stringify({ error: "All fields are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new Error("All fields are required");
     }
 
     const validRoles = ["user", "advanced"];
     if (!validRoles.includes(role)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid role. Must be 'user' or 'advanced'" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new Error("Invalid role. Must be 'user' or 'advanced'");
     }
 
     if (password.length < 6) {
-      return new Response(
-        JSON.stringify({ error: "Password must be at least 6 characters" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new Error("Password must be at least 6 characters");
     }
 
-    // Create the user via admin API
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email: email.toLowerCase().trim(),
       password,
@@ -85,23 +139,14 @@ Deno.serve(async (req) => {
       user_metadata: { username },
     });
 
-    if (createError) {
-      return new Response(
-        JSON.stringify({ error: createError.message }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    if (createError) throw new Error(createError.message);
 
-    // Assign the role
     const { error: roleError } = await adminClient
       .from("user_roles")
       .insert({ user_id: newUser.user.id, role });
 
     if (roleError) {
-      return new Response(
-        JSON.stringify({ error: "User created but role assignment failed: " + roleError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new Error("User created but role assignment failed: " + roleError.message);
     }
 
     return new Response(
@@ -112,9 +157,11 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    const status = err.message === "Unauthorized" || err.message === "Missing authorization" ? 401
+      : err.message === "Admin access required" ? 403 : 400;
     return new Response(
       JSON.stringify({ error: err.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

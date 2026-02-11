@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, UserPlus, Users, Shield, Eye, Trash2 } from "lucide-react";
+import { ArrowLeft, UserPlus, Users, Shield, Eye, Loader2, ToggleLeft, ToggleRight, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 
 interface PortalUser {
   id: string;
@@ -18,6 +19,7 @@ interface PortalUser {
   username: string;
   role: string;
   created_at: string;
+  banned: boolean;
 }
 
 const RevenueControllerPortalPage = () => {
@@ -30,6 +32,7 @@ const RevenueControllerPortalPage = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [users, setUsers] = useState<PortalUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -39,31 +42,24 @@ const RevenueControllerPortalPage = () => {
     fetchUsers();
   }, [isAdmin, navigate]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("user_id, role")
-        .in("role", ["user", "advanced"]);
+      const response = await supabase.functions.invoke("create-portal-user", {
+        body: { action: "list" },
+      });
 
-      if (error) throw error;
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
 
-      // We can't query auth.users directly, so we'll display what we have
-      const portalUsers: PortalUser[] = (data || []).map((r) => ({
-        id: r.user_id,
-        email: "",
-        username: "",
-        role: r.role,
-        created_at: "",
-      }));
-      setUsers(portalUsers);
-    } catch (err) {
+      setUsers(response.data.users || []);
+    } catch (err: any) {
       console.error("Error fetching users:", err);
+      toast({ title: "Error", description: "Failed to load users", variant: "destructive" });
     } finally {
       setLoadingUsers(false);
     }
-  };
+  }, []);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,19 +76,12 @@ const RevenueControllerPortalPage = () => {
 
     setIsCreating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
       const response = await supabase.functions.invoke("create-portal-user", {
-        body: { email: email.trim(), password, username: username.trim(), role },
+        body: { action: "create", email: email.trim(), password, username: username.trim(), role },
       });
 
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      if (response.data?.error) {
-        throw new Error(response.data.error);
-      }
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
 
       toast({ title: "Success", description: `User "${username}" created with ${role} role` });
       setUsername("");
@@ -107,6 +96,51 @@ const RevenueControllerPortalPage = () => {
     }
   };
 
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    setUpdatingUserId(userId);
+    try {
+      const response = await supabase.functions.invoke("create-portal-user", {
+        body: { action: "change_role", user_id: userId, new_role: newRole },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+      );
+      toast({ title: "Success", description: `Role updated to ${newRole}` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to update role", variant: "destructive" });
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
+
+  const handleToggleStatus = async (userId: string, currentlyBanned: boolean) => {
+    setUpdatingUserId(userId);
+    try {
+      const response = await supabase.functions.invoke("create-portal-user", {
+        body: { action: "toggle_status", user_id: userId, disable: !currentlyBanned },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, banned: !currentlyBanned } : u))
+      );
+      toast({
+        title: "Success",
+        description: currentlyBanned ? "User enabled" : "User disabled",
+      });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to toggle status", variant: "destructive" });
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
+
   const getRoleBadge = (role: string) => {
     if (role === "advanced") {
       return <Badge className="bg-amber-500/20 text-amber-700 border-amber-300"><Shield className="w-3 h-3 mr-1" /> Advanced</Badge>;
@@ -118,7 +152,7 @@ const RevenueControllerPortalPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/home")} className="text-white hover:bg-white/10">
@@ -198,33 +232,94 @@ const RevenueControllerPortalPage = () => {
         {/* Users List */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Portal Users ({users.length})
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Portal Users ({users.length})
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={fetchUsers} disabled={loadingUsers}>
+                <RefreshCw className={`w-4 h-4 mr-1 ${loadingUsers ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loadingUsers ? (
-              <p className="text-muted-foreground text-sm">Loading users...</p>
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-muted-foreground text-sm">Loading users...</span>
+              </div>
             ) : users.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No portal users created yet.</p>
+              <p className="text-muted-foreground text-sm text-center py-8">No portal users created yet.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User ID</TableHead>
-                    <TableHead>Role</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-mono text-xs">{u.id.slice(0, 8)}...</TableCell>
-                      <TableCell>{getRoleBadge(u.role)}</TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Username</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((u) => (
+                      <TableRow key={u.id} className={u.banned ? "opacity-50" : ""}>
+                        <TableCell className="font-medium">
+                          {u.username || <span className="text-muted-foreground italic">No username</span>}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {u.email || <span className="text-muted-foreground italic">—</span>}
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={u.role}
+                            onValueChange={(newRole) => handleRoleChange(u.id, newRole)}
+                            disabled={updatingUserId === u.id}
+                          >
+                            <SelectTrigger className="w-[140px] h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="advanced">
+                                <div className="flex items-center gap-1">
+                                  <Shield className="w-3 h-3" /> Advanced
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="user">
+                                <div className="flex items-center gap-1">
+                                  <Eye className="w-3 h-3" /> User
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={u.banned
+                            ? "bg-red-500/20 text-red-700 border-red-300"
+                            : "bg-green-500/20 text-green-700 border-green-300"
+                          }>
+                            {u.banned ? "Disabled" : "Active"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Switch
+                              checked={!u.banned}
+                              onCheckedChange={() => handleToggleStatus(u.id, u.banned)}
+                              disabled={updatingUserId === u.id}
+                            />
+                            {updatingUserId === u.id && (
+                              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
