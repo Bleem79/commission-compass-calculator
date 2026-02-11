@@ -36,7 +36,7 @@ interface DriverCredential {
 
 const DriverManagementPage = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, canAccessAdminPages } = useAuth();
   const [drivers, setDrivers] = useState<DriverCredential[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,12 +49,12 @@ const DriverManagementPage = () => {
   const [resetPasswordDriver, setResetPasswordDriver] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAdmin) {
+    if (!canAccessAdminPages) {
       navigate("/home");
       return;
     }
     fetchDrivers();
-  }, [isAdmin, navigate]);
+  }, [canAccessAdminPages, navigate]);
 
   const fetchDrivers = async () => {
     setLoading(true);
@@ -221,7 +221,7 @@ const DriverManagementPage = () => {
   const enabledCount = drivers.filter(d => d.status === 'enabled').length;
   const disabledCount = drivers.filter(d => d.status === 'disabled').length;
 
-  if (!isAdmin) {
+  if (!canAccessAdminPages) {
     return null;
   }
 
@@ -244,42 +244,44 @@ const DriverManagementPage = () => {
             </h1>
             <p className="text-slate-600">Manage driver accounts and access</p>
           </div>
-          <div className="ml-auto flex gap-2">
-            <Button
-              variant="outline"
-              onClick={downloadTemplate}
-              className="bg-white hover:bg-green-50 border-green-200 text-green-700 hover:text-green-800"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Download CSV Template
-            </Button>
-            <input
-              type="file"
-              accept=".csv"
-              onChange={handleFileUpload}
-              ref={fileInputRef}
-              className="hidden"
-              id="driver-csv-upload"
-            />
-            <Button
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="bg-white hover:bg-purple-50 border-purple-200 text-purple-700 hover:text-purple-800"
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload CSV
-                </>
-              )}
-            </Button>
-          </div>
+          {isAdmin && (
+            <div className="ml-auto flex gap-2">
+              <Button
+                variant="outline"
+                onClick={downloadTemplate}
+                className="bg-white hover:bg-green-50 border-green-200 text-green-700 hover:text-green-800"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download CSV Template
+              </Button>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileUpload}
+                ref={fileInputRef}
+                className="hidden"
+                id="driver-csv-upload"
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="bg-white hover:bg-purple-50 border-purple-200 text-purple-700 hover:text-purple-800"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload CSV
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Upload Progress Indicator */}
@@ -352,61 +354,65 @@ const DriverManagementPage = () => {
                 Driver Accounts
               </CardTitle>
               <div className="flex flex-wrap items-center gap-2">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
+                {isAdmin && (
+                  <>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isClearing || drivers.length === 0}
+                          className="bg-red-50 border-red-300 text-red-700 hover:bg-red-100 hover:text-red-800"
+                        >
+                          {isClearing ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4 mr-1" />
+                          )}
+                          Clear All
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Clear All Driver Credentials?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete all {drivers.length} driver credential records from the database. 
+                            This action cannot be undone. The auth users will remain but their driver credentials will be removed.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={clearAllDriverCredentials}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Yes, Clear All
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={isClearing || drivers.length === 0}
-                      className="bg-red-50 border-red-300 text-red-700 hover:bg-red-100 hover:text-red-800"
+                      onClick={() => bulkUpdateStatus('enabled')}
+                      disabled={bulkUpdating || drivers.length === 0 || enabledCount === drivers.length}
+                      className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800"
                     >
-                      {isClearing ? (
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4 mr-1" />
-                      )}
-                      Clear All
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Enable All
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Clear All Driver Credentials?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will permanently delete all {drivers.length} driver credential records from the database. 
-                        This action cannot be undone. The auth users will remain but their driver credentials will be removed.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={clearAllDriverCredentials}
-                        className="bg-red-600 hover:bg-red-700"
-                      >
-                        Yes, Clear All
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => bulkUpdateStatus('enabled')}
-                  disabled={bulkUpdating || drivers.length === 0 || enabledCount === drivers.length}
-                  className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800"
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-1" />
-                  Enable All
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => bulkUpdateStatus('disabled')}
-                  disabled={bulkUpdating || drivers.length === 0 || disabledCount === drivers.length}
-                  className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100 hover:text-red-800"
-                >
-                  <XCircle className="h-4 w-4 mr-1" />
-                  Disable All
-                </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => bulkUpdateStatus('disabled')}
+                      disabled={bulkUpdating || drivers.length === 0 || disabledCount === drivers.length}
+                      className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100 hover:text-red-800"
+                    >
+                      <XCircle className="h-4 w-4 mr-1" />
+                      Disable All
+                    </Button>
+                  </>
+                )}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
