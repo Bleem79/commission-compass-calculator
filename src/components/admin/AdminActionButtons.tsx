@@ -5,7 +5,7 @@ import { ExcelUploader } from "./ExcelUploader";
 import { DriverCredentialsUploader } from "./DriverCredentialsUploader";
 import { DriverPortalSettingsDialog } from "./DriverPortalSettingsDialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { Settings2 } from "lucide-react";
+import { Settings2, Users } from "lucide-react";
 
 export const AdminActionButtons = () => {
   const navigate = useNavigate();
@@ -40,6 +40,15 @@ export const AdminActionButtons = () => {
         <ExcelUploader />
         
         <DriverCredentialsUploader />
+
+        <Button
+          variant="outline"
+          onClick={() => navigate('/driver-master-file')}
+          className="w-full bg-white hover:bg-gray-50 border-blue-200 text-blue-700 hover:text-blue-800 transition-colors flex items-center justify-center gap-2"
+        >
+          <Users className="h-4 w-4" />
+          Driver Master File
+        </Button>
       </div>
 
       <DriverPortalSettingsDialog 

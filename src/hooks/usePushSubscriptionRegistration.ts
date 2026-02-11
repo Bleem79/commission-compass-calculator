@@ -28,7 +28,7 @@ export const usePushSubscriptionRegistration = (
           return;
         }
 
-        const registration = await navigator.serviceWorker.ready;
+        const registration = await navigator.serviceWorker.ready as any;
 
         // Get existing subscription or create new one
         let subscription = await registration.pushManager.getSubscription();
