@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths } from "date-fns";
+import { useRequestTypes } from "@/hooks/useRequestTypes";
 
 interface DriverRequest {
   id: string;
@@ -69,11 +70,8 @@ const AdminRequestsPage = () => {
   const [newStatus, setNewStatus] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Request types management
-  const [requestTypes, setRequestTypes] = useState(() => {
-    const saved = localStorage.getItem("driver_request_types");
-    return saved ? JSON.parse(saved) : DEFAULT_REQUEST_TYPES;
-  });
+  // Request types management (from Supabase)
+  const { requestTypes, addType: addRequestType, deleteType: deleteRequestType } = useRequestTypes();
   const [showTypesDialog, setShowTypesDialog] = useState(false);
   const [newTypeValue, setNewTypeValue] = useState("");
   const [newTypeLabel, setNewTypeLabel] = useState("");
@@ -281,32 +279,29 @@ const AdminRequestsPage = () => {
     return requestTypes.find((t: { value: string; label: string }) => t.value === value)?.label || value;
   };
 
-  const handleAddRequestType = () => {
+  const handleAddRequestType = async () => {
     if (!newTypeValue.trim() || !newTypeLabel.trim()) {
       toast.error("Please enter both value and label");
       return;
     }
 
-    const valueFormatted = newTypeValue.toLowerCase().replace(/\s+/g, "_");
-    
-    if (requestTypes.some((t: { value: string }) => t.value === valueFormatted)) {
-      toast.error("This request type already exists");
-      return;
+    try {
+      await addRequestType(newTypeValue.trim(), newTypeLabel.trim());
+      setNewTypeValue("");
+      setNewTypeLabel("");
+      toast.success("Request type added successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add request type");
     }
-
-    const updatedTypes = [...requestTypes, { value: valueFormatted, label: newTypeLabel.trim() }];
-    setRequestTypes(updatedTypes);
-    localStorage.setItem("driver_request_types", JSON.stringify(updatedTypes));
-    setNewTypeValue("");
-    setNewTypeLabel("");
-    toast.success("Request type added successfully");
   };
 
-  const handleDeleteRequestType = (value: string) => {
-    const updatedTypes = requestTypes.filter((t: { value: string }) => t.value !== value);
-    setRequestTypes(updatedTypes);
-    localStorage.setItem("driver_request_types", JSON.stringify(updatedTypes));
-    toast.success("Request type deleted");
+  const handleDeleteRequestType = async (value: string) => {
+    try {
+      await deleteRequestType(value);
+      toast.success("Request type deleted");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete request type");
+    }
   };
 
   const handleDeleteRequest = async () => {

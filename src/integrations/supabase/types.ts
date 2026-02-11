@@ -302,6 +302,33 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_request_types: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          sort_order: number
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          sort_order?: number
+          value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          sort_order?: number
+          value?: string
+        }
+        Relationships: []
+      }
       driver_requests: {
         Row: {
           admin_response: string | null
