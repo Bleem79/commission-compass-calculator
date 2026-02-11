@@ -18,7 +18,8 @@ import {
   MessageSquare,
   MessageCircle,
   Activity,
-  Settings2
+  Settings2,
+  FileSpreadsheet
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminMessages } from "@/components/messages/AdminMessages";
@@ -213,6 +214,12 @@ const HomePage = () => {
       title: "Portal Settings",
       gradient: "bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-700",
       onClick: () => setIsPortalSettingsOpen(true),
+    });
+    features.push({
+      icon: <FileSpreadsheet className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Driver Master File",
+      gradient: "bg-gradient-to-br from-blue-600 via-sky-600 to-cyan-700",
+      onClick: () => navigate("/driver-master-file"),
     });
   }
 
