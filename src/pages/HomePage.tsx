@@ -168,30 +168,32 @@ const HomePage = () => {
   ];
 
   if (canAccessAdminPages) {
-    features.push({
-      icon: <Users className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: "Driver Management",
-      gradient: "bg-gradient-to-br from-slate-600 via-gray-600 to-zinc-700",
-      onClick: () => navigate("/driver-management"),
-    });
-    features.push({
-      icon: <Ban className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: "Drivers Absent Fine",
-      gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-700",
-      onClick: () => navigate("/driver-absent-fine"),
-    });
-    features.push({
-      icon: <Target className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: "Target Trips Upload",
-      gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
-      onClick: () => navigate("/target-trips-upload"),
-    });
-    features.push({
-      icon: <Upload className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: "Warning Letters",
-      gradient: "bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-600",
-      onClick: () => navigate("/warning-letters-upload"),
-    });
+    if (isAdmin) {
+      features.push({
+        icon: <Users className="w-6 h-6 sm:w-8 sm:h-8" />,
+        title: "Driver Management",
+        gradient: "bg-gradient-to-br from-slate-600 via-gray-600 to-zinc-700",
+        onClick: () => navigate("/driver-management"),
+      });
+      features.push({
+        icon: <Ban className="w-6 h-6 sm:w-8 sm:h-8" />,
+        title: "Drivers Absent Fine",
+        gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-700",
+        onClick: () => navigate("/driver-absent-fine"),
+      });
+      features.push({
+        icon: <Target className="w-6 h-6 sm:w-8 sm:h-8" />,
+        title: "Target Trips Upload",
+        gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
+        onClick: () => navigate("/target-trips-upload"),
+      });
+      features.push({
+        icon: <Upload className="w-6 h-6 sm:w-8 sm:h-8" />,
+        title: "Warning Letters",
+        gradient: "bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-600",
+        onClick: () => navigate("/warning-letters-upload"),
+      });
+    }
     features.push({
       icon: <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Driver Requests",
@@ -210,19 +212,19 @@ const HomePage = () => {
       gradient: "bg-gradient-to-br from-gray-600 via-slate-600 to-zinc-700",
       onClick: () => navigate("/driver-activity-logs"),
     });
-    features.push({
-      icon: <Settings2 className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: "Portal Settings",
-      gradient: "bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-700",
-      onClick: () => setIsPortalSettingsOpen(true),
-    });
-    features.push({
-      icon: <FileSpreadsheet className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: "Driver Master File",
-      gradient: "bg-gradient-to-br from-blue-600 via-sky-600 to-cyan-700",
-      onClick: () => navigate("/driver-master-file"),
-    });
     if (isAdmin) {
+      features.push({
+        icon: <Settings2 className="w-6 h-6 sm:w-8 sm:h-8" />,
+        title: "Portal Settings",
+        gradient: "bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-700",
+        onClick: () => setIsPortalSettingsOpen(true),
+      });
+      features.push({
+        icon: <FileSpreadsheet className="w-6 h-6 sm:w-8 sm:h-8" />,
+        title: "Driver Master File",
+        gradient: "bg-gradient-to-br from-blue-600 via-sky-600 to-cyan-700",
+        onClick: () => navigate("/driver-master-file"),
+      });
       features.push({
         icon: <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8" />,
         title: "Revenue Controller Portal",
