@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import DriverMasterList from "@/components/driver-master/DriverMasterList";
 import * as XLSX from "xlsx";
 
 interface MasterFileRow {
@@ -264,6 +265,8 @@ const DriverMasterFilePage = () => {
             )}
           </CardContent>
         </Card>
+
+        <DriverMasterList />
       </div>
     </div>
   );

@@ -1,0 +1,133 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Search, Users, Loader2 } from "lucide-react";
+
+interface DriverRecord {
+  id: string;
+  driver_id: string;
+  driver_name: string;
+  controller: string | null;
+  created_at: string;
+}
+
+const DriverMasterList = () => {
+  const [records, setRecords] = useState<DriverRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const fetchRecords = async () => {
+    setLoading(true);
+    try {
+      let allData: DriverRecord[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("driver_master_file")
+          .select("*")
+          .order("driver_id", { ascending: true })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          hasMore = data.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      setRecords(allData);
+    } catch (err) {
+      console.error("Error fetching driver master file:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecords();
+
+    const channel = supabase
+      .channel("driver_master_file_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "driver_master_file" }, () => {
+        fetchRecords();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const filtered = records.filter((r) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      r.driver_id.toLowerCase().includes(q) ||
+      r.driver_name.toLowerCase().includes(q) ||
+      (r.controller || "").toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <Card className="bg-white shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Uploaded Drivers ({filtered.length})
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by Driver ID, Name, or Controller..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">
+            {records.length === 0 ? "No records uploaded yet." : "No matching records found."}
+          </p>
+        ) : (
+          <div className="max-h-[400px] overflow-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="sticky top-0 bg-muted">#</TableHead>
+                  <TableHead className="sticky top-0 bg-muted">Driver ID</TableHead>
+                  <TableHead className="sticky top-0 bg-muted">Driver Name</TableHead>
+                  <TableHead className="sticky top-0 bg-muted">Controller</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((r, i) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                    <TableCell className="font-medium">{r.driver_id}</TableCell>
+                    <TableCell>{r.driver_name || "-"}</TableCell>
+                    <TableCell>{r.controller || "-"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default DriverMasterList;
