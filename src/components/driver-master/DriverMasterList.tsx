@@ -106,6 +106,14 @@ const DriverMasterList = () => {
     );
   });
 
+  const controllerSummary = records.reduce<Record<string, number>>((acc, r) => {
+    const key = r.controller || "Unassigned";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const sortedControllers = Object.entries(controllerSummary).sort((a, b) => b[1] - a[1]);
+
   return (
     <Card className="bg-white shadow-sm">
       <CardHeader>
@@ -115,6 +123,23 @@ const DriverMasterList = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {!loading && records.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {sortedControllers.map(([name, count]) => (
+              <div
+                key={name}
+                className="flex items-center justify-between rounded-lg border bg-muted/50 px-3 py-2 text-sm cursor-pointer hover:bg-muted transition-colors"
+                onClick={() => setSearch(name === "Unassigned" ? "" : name)}
+              >
+                <span className="font-medium truncate">{name}</span>
+                <span className="ml-2 shrink-0 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs font-semibold">
+                  {count}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
