@@ -8,7 +8,7 @@ export interface RequestType {
 }
 
 export const useRequestTypes = () => {
-  const [requestTypes, setRequestTypes] = useState<RequestType[]>(REQUEST_TYPES);
+  const [requestTypes, setRequestTypes] = useState<RequestType[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchTypes = async () => {
@@ -20,9 +20,7 @@ export const useRequestTypes = () => {
         .order("sort_order", { ascending: true });
 
       if (error) throw error;
-      if (data && data.length > 0) {
-        setRequestTypes(data);
-      }
+      setRequestTypes(data || []);
     } catch (e) {
       console.error("Error fetching request types:", e);
     } finally {
