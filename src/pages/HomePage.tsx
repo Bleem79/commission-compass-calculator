@@ -28,6 +28,7 @@ import { DriverIncomeAuthDialog } from "@/components/driver-income/DriverIncomeA
 import { DriverSmsDialog } from "@/components/messages/DriverSmsDialog";
 import { DriverPortalSettingsDialog } from "@/components/admin/DriverPortalSettingsDialog";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
+import { supabase } from "@/integrations/supabase/client";
 import InstallBanner from "@/components/pwa/InstallBanner";
 import NotificationPrompt from "@/components/pwa/NotificationPrompt";
 import { toast } from "@/hooks/use-toast";
@@ -81,11 +82,30 @@ const HomePage = () => {
   const [isDriverIncomeDialogOpen, setIsDriverIncomeDialogOpen] = useState(false);
   const [isSmsDialogOpen, setIsSmsDialogOpen] = useState(false);
   const [isPortalSettingsOpen, setIsPortalSettingsOpen] = useState(false);
+  const [controllerName, setControllerName] = useState<string | null>(null);
   const { driverInfo } = useDriverCredentials();
   const isDriver = !!driverInfo?.driverId;
 
   // Register push subscriptions for controllers (non-driver staff) so they receive request notifications
   usePushSubscriptionRegistration(user?.id, driverInfo?.driverId || null);
+
+  // Fetch controller name for driver users
+  useEffect(() => {
+    const fetchController = async () => {
+      if (!driverInfo?.driverId) return;
+      try {
+        const { data } = await supabase
+          .from("driver_master_file")
+          .select("controller")
+          .eq("driver_id", driverInfo.driverId)
+          .maybeSingle();
+        setControllerName(data?.controller || null);
+      } catch (err) {
+        console.error("Error fetching controller:", err);
+      }
+    };
+    fetchController();
+  }, [driverInfo?.driverId]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -293,6 +313,11 @@ const HomePage = () => {
                     {user.username || user.email}
                   </h2>
                   <p className="text-white/60 text-xs sm:text-sm truncate">{user.email}</p>
+                  {controllerName && (
+                    <p className="text-white/50 text-xs mt-1">
+                      Revenue Controller: <span className="text-white/80 font-medium">{controllerName}</span>
+                    </p>
+                  )}
                 </div>
                 {user.role && (
                   <span className="px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-medium capitalize">
