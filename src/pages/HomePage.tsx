@@ -32,6 +32,7 @@ import InstallBanner from "@/components/pwa/InstallBanner";
 import NotificationPrompt from "@/components/pwa/NotificationPrompt";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -82,6 +83,9 @@ const HomePage = () => {
   const [isPortalSettingsOpen, setIsPortalSettingsOpen] = useState(false);
   const { driverInfo } = useDriverCredentials();
   const isDriver = !!driverInfo?.driverId;
+
+  // Register push subscriptions for controllers (non-driver staff) so they receive request notifications
+  usePushSubscriptionRegistration(user?.id, driverInfo?.driverId || null);
 
   useEffect(() => {
     if (!isAuthenticated) {
