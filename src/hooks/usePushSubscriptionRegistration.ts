@@ -12,7 +12,7 @@ export const usePushSubscriptionRegistration = (
   const registeredRef = useRef(false);
 
   useEffect(() => {
-    if (!userId || !driverId || registeredRef.current) return;
+    if (!userId || registeredRef.current) return;
 
     const register = async () => {
       try {
@@ -56,7 +56,7 @@ export const usePushSubscriptionRegistration = (
           .upsert(
             {
               user_id: userId,
-              driver_id: driverId,
+              driver_id: driverId || null,
               endpoint,
               p256dh,
               auth,

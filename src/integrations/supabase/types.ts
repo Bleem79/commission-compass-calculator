@@ -351,7 +351,7 @@ export type Database = {
         Row: {
           auth: string
           created_at: string
-          driver_id: string
+          driver_id: string | null
           endpoint: string
           id: string
           p256dh: string
@@ -361,7 +361,7 @@ export type Database = {
         Insert: {
           auth: string
           created_at?: string
-          driver_id: string
+          driver_id?: string | null
           endpoint: string
           id?: string
           p256dh: string
@@ -371,7 +371,7 @@ export type Database = {
         Update: {
           auth?: string
           created_at?: string
-          driver_id?: string
+          driver_id?: string | null
           endpoint?: string
           id?: string
           p256dh?: string

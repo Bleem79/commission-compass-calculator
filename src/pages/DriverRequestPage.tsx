@@ -156,6 +156,18 @@ const DriverRequestPage = () => {
       } else {
         toast.success("Request submitted successfully");
       }
+
+      // Notify the assigned controller via push notification
+      supabase.functions
+        .invoke("send-request-notification", {
+          body: {
+            driverId: driverInfo.driverId,
+            driverName: driverInfo.driverName,
+            requestType,
+            subject,
+          },
+        })
+        .catch((err) => console.log("Controller notification failed (non-critical):", err));
     } catch (error) {
       console.error("Error submitting request:", error);
       toast.error("Failed to submit request");
