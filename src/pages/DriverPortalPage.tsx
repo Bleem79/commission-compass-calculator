@@ -7,13 +7,15 @@ import {
   MessageSquare,
   ArrowLeft,
   X,
+  ChevronRight,
   FileWarning,
   Clock,
   Mail,
-  Droplets,
-  ChevronRight
+  Loader2,
+  Droplets
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DriverPrivateMessages } from "@/components/messages/DriverPrivateMessages";
@@ -27,6 +29,51 @@ interface PortalSetting {
   is_enabled: boolean;
 }
 
+interface PortalCardProps {
+  icon: React.ReactNode;
+  title: string;
+  gradient: string;
+  onClick: () => void;
+  badge?: number;
+}
+
+const PortalCard = ({ icon, title, gradient, onClick, badge }: PortalCardProps) => (
+  <button
+    onClick={onClick}
+    className={cn(
+      "group relative overflow-hidden rounded-2xl p-6 sm:p-8 text-white transition-all duration-300",
+      "hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]",
+      "flex flex-col items-center justify-center gap-4",
+      "min-h-[160px] sm:min-h-[180px]",
+      "backdrop-blur-sm border border-white/20",
+      gradient
+    )}
+  >
+    {/* Badge */}
+    {badge !== undefined && badge > 0 && (
+      <div className="absolute top-3 right-3 z-20 min-w-[24px] h-6 px-2 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+        <span className="text-xs font-bold text-white">{badge > 99 ? "99+" : badge}</span>
+      </div>
+    )}
+    
+    {/* Shimmer effect */}
+    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+    
+    {/* Icon container */}
+    <div className="relative z-10 p-4 rounded-2xl bg-white/20 backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+      {icon}
+    </div>
+    
+    {/* Title */}
+    <h3 className="relative z-10 text-sm sm:text-base font-semibold text-center leading-tight">
+      {title}
+    </h3>
+    
+    {/* Arrow indicator */}
+    <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-2 transition-all duration-300 w-5 h-5" />
+  </button>
+);
+
 const DriverPortalPage = () => {
   const navigate = useNavigate();
   const [showMessages, setShowMessages] = useState(false);
@@ -36,15 +83,19 @@ const DriverPortalPage = () => {
   const [portalSettings, setPortalSettings] = useState<Record<string, boolean>>({});
   const [loadingSettings, setLoadingSettings] = useState(true);
 
+  // Register push subscription when driver credentials are available
   usePushSubscriptionRegistration(user?.id, driverInfo?.driverId);
 
+  // Fetch portal settings
   useEffect(() => {
     const fetchSettings = async () => {
       try {
         const { data, error } = await supabase
           .from("driver_portal_settings")
           .select("feature_key, is_enabled");
+
         if (error) throw error;
+        
         const settingsMap: Record<string, boolean> = {};
         data?.forEach((s: PortalSetting) => {
           settingsMap[s.feature_key] = s.is_enabled;
@@ -56,6 +107,7 @@ const DriverPortalPage = () => {
         setLoadingSettings(false);
       }
     };
+
     fetchSettings();
   }, []);
 
@@ -65,11 +117,13 @@ const DriverPortalPage = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleClose = () => navigate("/home");
+  const handleClose = () => {
+    navigate("/home");
+  };
 
   const showComingSoon = (feature: string) => {
     toast.info(`${feature} - Coming Soon!`, {
-      description: "This feature is under development.",
+      description: "This feature is under development and will be available soon.",
       icon: <Clock className="w-5 h-5" />,
     });
   };
@@ -77,48 +131,66 @@ const DriverPortalPage = () => {
   const allPortalItems = [
     {
       key: "driver_income",
-      icon: <CalendarDays className="w-7 h-7" />,
+      icon: <CalendarDays className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Driver Income",
+      gradient: "bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600",
       onClick: () => navigate("/driver-income"),
     },
     {
       key: "target_trips",
-      icon: <Target className="w-7 h-7" />,
+      icon: <Target className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Target Trips",
+      gradient: "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600",
       onClick: () => navigate("/driver-target-trips"),
     },
     {
       key: "absent_fine",
-      icon: <Ban className="w-7 h-7" />,
+      icon: <Ban className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Absent Fine",
+      gradient: "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500",
       onClick: () => showComingSoon("Absent Fine"),
     },
     {
       key: "request",
-      icon: <MessageSquare className="w-7 h-7" />,
+      icon: <MessageSquare className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Request",
+      gradient: "bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500",
       onClick: () => navigate("/driver-request"),
     },
     {
       key: "warning_letter",
-      icon: <FileWarning className="w-7 h-7" />,
+      icon: <FileWarning className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Warning Letter",
+      gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-600",
       onClick: () => showComingSoon("Warning Letter"),
     },
     {
       key: "private_messages",
-      icon: <Mail className="w-7 h-7" />,
+      icon: <Mail className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Private Messages",
-      onClick: () => { markAllAsRead(); setShowMessages(true); },
+      gradient: "bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-600",
+      onClick: () => {
+        markAllAsRead();
+        setShowMessages(true);
+      },
       badge: unreadCount,
     },
     {
       key: "oil_change_booking",
-      icon: <Droplets className="w-7 h-7" />,
+      icon: <Droplets className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Oil Change Booking",
+      gradient: "bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600",
       onClick: () => {
-        if (driverLoading) { toast.info("Loading driver info, please wait..."); return; }
-        if (!driverInfo?.driverId) { toast.error("Driver ID not found."); return; }
+        if (driverLoading) {
+          toast.info("Loading driver info, please wait...");
+          return;
+        }
+        
+        if (!driverInfo?.driverId) {
+          toast.error("Driver ID not found. Please try logging in again.");
+          return;
+        }
+        
         const baseUrl = "https://oilchangeapp.lovable.app";
         const returnUrl = encodeURIComponent(window.location.origin + "/driver-portal");
         const url = `${baseUrl}?driver_id=${encodeURIComponent(driverInfo.driverId)}&redirect_url=${returnUrl}`;
@@ -128,106 +200,88 @@ const DriverPortalPage = () => {
     },
   ];
 
-  const portalItems = loadingSettings
-    ? allPortalItems
+  // Filter items based on settings (if settings loaded, filter; otherwise show all)
+  const portalItems = loadingSettings 
+    ? allPortalItems 
     : allPortalItems.filter(item => portalSettings[item.key] !== false);
 
+  // Show messages view if selected
   if (showMessages) {
     return <DriverPrivateMessages onBack={() => setShowMessages(false)} />;
   }
 
   return (
-    <div className="min-h-screen bg-amber-400 relative flex flex-col">
-      {/* Header bar */}
-      <header className="bg-amber-500 px-4 py-4 flex items-center justify-between shadow-md">
-        <button
-          onClick={handleClose}
-          className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <h1 className="text-lg font-bold text-white tracking-wide">Driver Portal</h1>
-        <button
-          onClick={handleClose}
-          className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/30 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
+      </div>
 
-      {/* Welcome section */}
-      <div className="px-5 pt-6 pb-4">
-        <div className="bg-white rounded-2xl p-5 shadow-lg">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
-              <span className="text-2xl">🚕</span>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Welcome back,</p>
-              <h2 className="text-xl font-bold text-gray-900">
-                {user?.username || driverInfo?.driverId || "Driver"}
-              </h2>
-              {driverInfo?.driverId && (
-                <p className="text-xs text-amber-600 font-semibold mt-0.5">
-                  ID: {driverInfo.driverId}
-                </p>
-              )}
+      <div className="relative z-10 min-h-screen flex flex-col p-4 sm:p-6 lg:p-8">
+        <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
+          
+          {/* Header */}
+          <header className="flex items-center justify-between gap-4 mb-8">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
+              onClick={handleClose}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Back to Home</span>
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-white/70 hover:text-white hover:bg-white/10"
+              onClick={handleClose}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          </header>
+
+          {/* Title */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Driver Main Portal</h1>
+            {user && (
+              <p className="text-white/60 text-sm">
+                Welcome, {user.username || user.email}
+              </p>
+            )}
+          </div>
+
+          {/* Portal Cards Grid */}
+          <div className="flex-1">
+            <div className="grid grid-cols-2 gap-4 sm:gap-6">
+              {portalItems.map((item, index) => (
+                <PortalCard
+                  key={index}
+                  icon={item.icon}
+                  title={item.title}
+                  gradient={item.gradient}
+                  onClick={item.onClick}
+                  badge={'badge' in item ? item.badge : undefined}
+                />
+              ))}
             </div>
           </div>
+
+          {/* Footer */}
+          <footer className="mt-8 pt-6 border-t border-white/10">
+            <div className="flex flex-col items-center gap-3">
+              <img 
+                src="/lovable-uploads/aman-logo-footer.png" 
+                alt="Aman Taxi Sharjah" 
+                className="h-8 sm:h-10 object-contain opacity-70"
+              />
+              <p className="text-xs text-white/40">© {new Date().getFullYear()} All Rights Reserved</p>
+            </div>
+          </footer>
         </div>
       </div>
-
-      {/* Portal Grid */}
-      <div className="flex-1 px-5 pb-6">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          {portalItems.map((item, index) => (
-            <button
-              key={index}
-              onClick={item.onClick}
-              className={cn(
-                "group relative bg-white rounded-2xl p-5 shadow-md",
-                "hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]",
-                "transition-all duration-200 flex flex-col items-center gap-3",
-                "min-h-[130px] sm:min-h-[150px]"
-              )}
-            >
-              {/* Badge */}
-              {'badge' in item && item.badge !== undefined && item.badge > 0 && (
-                <div className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
-                  <span className="text-[10px] font-bold text-white">
-                    {item.badge > 99 ? "99+" : item.badge}
-                  </span>
-                </div>
-              )}
-
-              {/* Icon */}
-              <div className="w-14 h-14 rounded-2xl bg-amber-400 text-white flex items-center justify-center group-hover:bg-amber-500 transition-colors shadow-sm">
-                {item.icon}
-              </div>
-
-              {/* Title */}
-              <span className="text-sm font-semibold text-gray-800 text-center leading-tight">
-                {item.title}
-              </span>
-
-              {/* Arrow */}
-              <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="bg-amber-500 py-4 px-5">
-        <div className="flex flex-col items-center gap-2">
-          <img
-            src="/lovable-uploads/aman-logo-footer.png"
-            alt="Aman Taxi Sharjah"
-            className="h-8 object-contain brightness-0 invert opacity-80"
-          />
-          <p className="text-[10px] text-white/70">© {new Date().getFullYear()} All Rights Reserved</p>
-        </div>
-      </footer>
     </div>
   );
 };
