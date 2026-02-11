@@ -35,15 +35,17 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 
+
 interface FeatureCardProps {
   icon: React.ReactNode;
   title: string;
   gradient: string;
   onClick: () => void;
   className?: string;
+  badge?: number;
 }
 
-const FeatureCard = ({ icon, title, gradient, onClick, className }: FeatureCardProps) => (
+const FeatureCard = ({ icon, title, gradient, onClick, className, badge }: FeatureCardProps) => (
   <button
     onClick={onClick}
     className={cn(
@@ -56,6 +58,12 @@ const FeatureCard = ({ icon, title, gradient, onClick, className }: FeatureCardP
       className
     )}
   >
+    {/* Badge */}
+    {badge !== undefined && badge > 0 && (
+      <span className="absolute top-2 right-2 z-20 min-w-[22px] h-[22px] px-1.5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold shadow-lg animate-pulse">
+        {badge}
+      </span>
+    )}
     {/* Shimmer effect */}
     <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
     
@@ -83,6 +91,7 @@ const HomePage = () => {
   const [isSmsDialogOpen, setIsSmsDialogOpen] = useState(false);
   const [isPortalSettingsOpen, setIsPortalSettingsOpen] = useState(false);
   const [controllerName, setControllerName] = useState<string | null>(null);
+  const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const { driverInfo } = useDriverCredentials();
   const isDriver = !!driverInfo?.driverId;
 
@@ -106,6 +115,33 @@ const HomePage = () => {
     };
     fetchController();
   }, [driverInfo?.driverId]);
+
+  // Fetch pending driver request count for admin/advanced users
+  useEffect(() => {
+    if (!canAccessAdminPages) return;
+    const fetchPendingCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from("driver_requests")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "pending");
+        if (!error) setPendingRequestCount(count || 0);
+      } catch (err) {
+        console.error("Error fetching pending requests:", err);
+      }
+    };
+    fetchPendingCount();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel("driver_requests_count")
+      .on("postgres_changes", { event: "*", schema: "public", table: "driver_requests" }, () => {
+        fetchPendingCount();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [canAccessAdminPages]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -132,7 +168,7 @@ const HomePage = () => {
     }
   }, [logout, isLoggingOut]);
 
-  const features = [
+  const features: Array<{ icon: React.ReactNode; title: string; gradient: string; onClick: () => void; badge?: number }> = [
     {
       icon: <Calculator className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Commission Calculator",
@@ -223,6 +259,7 @@ const HomePage = () => {
       title: "Driver Requests",
       gradient: "bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700",
       onClick: () => navigate("/admin-requests"),
+      badge: pendingRequestCount,
     });
     features.push({
       icon: <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8" />,
@@ -339,6 +376,7 @@ const HomePage = () => {
                   title={feature.title}
                   gradient={feature.gradient}
                   onClick={feature.onClick}
+                  badge={feature.badge}
                 />
               ))}
             </div>
