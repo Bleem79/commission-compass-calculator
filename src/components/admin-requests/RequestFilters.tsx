@@ -2,7 +2,7 @@ import React from "react";
 import { Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { REQUEST_TYPES } from "@/constants/requestTypes";
+import { useRequestTypes } from "@/hooks/useRequestTypes";
 import { STATUS_OPTIONS } from "@/components/shared/StatusBadge";
 
 interface RequestFiltersProps {
@@ -22,9 +22,7 @@ export const RequestFilters = ({
   onStatusChange,
   onTypeChange,
 }: RequestFiltersProps) => {
-  // Get saved request types or use defaults
-  const savedTypes = localStorage.getItem("driver_request_types");
-  const requestTypes = savedTypes ? JSON.parse(savedTypes) : REQUEST_TYPES;
+  const { requestTypes } = useRequestTypes();
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 mb-6">

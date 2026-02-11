@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +8,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { REQUEST_TYPES, MAX_DAY_OFF_PER_CYCLE } from "@/constants/requestTypes";
+import { MAX_DAY_OFF_PER_CYCLE } from "@/constants/requestTypes";
 import { getMinDayOffDate } from "@/hooks/useDayOffValidation";
+import { useRequestTypes } from "@/hooks/useRequestTypes";
 
 interface DriverRequestFormProps {
   requestType: string;
@@ -45,17 +46,7 @@ export const DriverRequestForm = ({
   const tomorrow = getMinDayOffDate();
   const remainingCycleRequests = MAX_DAY_OFF_PER_CYCLE - cycleRequestCount;
 
-  const availableTypes = useMemo(() => {
-    const saved = localStorage.getItem("driver_request_types");
-    if (saved) {
-      try {
-        return JSON.parse(saved) as { value: string; label: string }[];
-      } catch {
-        return REQUEST_TYPES;
-      }
-    }
-    return REQUEST_TYPES;
-  }, []);
+  const { requestTypes: availableTypes } = useRequestTypes();
 
   return (
     <Card className="mb-6 bg-card border-border shadow-lg">

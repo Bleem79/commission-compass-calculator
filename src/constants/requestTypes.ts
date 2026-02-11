@@ -25,7 +25,5 @@ export interface DriverRequest {
 }
 
 export const getRequestTypeLabel = (value: string): string => {
-  const saved = localStorage.getItem("driver_request_types");
-  const types = saved ? JSON.parse(saved) : REQUEST_TYPES;
-  return types.find((t: { value: string; label: string }) => t.value === value)?.label || value;
+  return REQUEST_TYPES.find((t) => t.value === value)?.label || value;
 };
