@@ -1,5 +1,5 @@
 
-export type UserRole = "guest" | "admin" | "user" | "driver";
+export type UserRole = "guest" | "admin" | "user" | "driver" | "advanced";
 
 export interface User {
   id?: string;
@@ -12,9 +12,11 @@ export interface User {
 export interface AuthContextType {
   user: User | null;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
-  logout: () => Promise<boolean>; // Explicitly define Promise<boolean> return type
+  logout: () => Promise<boolean>;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isAdvanced: boolean;
+  canAccessAdminPages: boolean;
   session: Session | null;
   refreshSession: () => Promise<void>;
 }
