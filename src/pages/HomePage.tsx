@@ -234,18 +234,18 @@ const HomePage = () => {
       gradient: "bg-gradient-to-br from-slate-600 via-gray-600 to-zinc-700",
       onClick: () => navigate("/driver-management"),
     });
+    features.push({
+      icon: <Target className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Target Trips",
+      gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
+      onClick: () => navigate("/target-trips-upload"),
+    });
     if (isAdmin) {
       features.push({
         icon: <Ban className="w-6 h-6 sm:w-8 sm:h-8" />,
         title: "Drivers Absent Fine",
         gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-700",
         onClick: () => navigate("/driver-absent-fine"),
-      });
-      features.push({
-        icon: <Target className="w-6 h-6 sm:w-8 sm:h-8" />,
-        title: "Target Trips Upload",
-        gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
-        onClick: () => navigate("/target-trips-upload"),
       });
       features.push({
         icon: <Upload className="w-6 h-6 sm:w-8 sm:h-8" />,

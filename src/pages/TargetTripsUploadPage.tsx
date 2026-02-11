@@ -73,7 +73,7 @@ const chunkArray = <T,>(arr: T[], size: number) => {
 
 const TargetTripsUploadPage = () => {
   const navigate = useNavigate();
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, canAccessAdminPages, user } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<TargetTripsRow[] | null>(null);
@@ -168,10 +168,10 @@ const TargetTripsUploadPage = () => {
   };
 
   useEffect(() => {
-    if (!isAdmin) {
+    if (!canAccessAdminPages) {
       navigate("/home");
     }
-  }, [isAdmin, navigate]);
+  }, [canAccessAdminPages, navigate]);
 
   // Fetch records
   const fetchRecords = async () => {
@@ -239,10 +239,10 @@ const TargetTripsUploadPage = () => {
   };
 
   useEffect(() => {
-    if (isAdmin) {
+    if (canAccessAdminPages) {
       fetchRecords();
     }
-  }, [isAdmin]);
+  }, [canAccessAdminPages]);
 
   const downloadTemplate = () => {
     const csvContent = `Driver ID,Shift,Final Target
@@ -499,7 +499,7 @@ const TargetTripsUploadPage = () => {
   const uniqueDrivers = new Set(records.map((r) => r.driver_id)).size;
   const uniqueMonths = [...new Set(records.map((r) => r.month))];
 
-  if (!isAdmin) return null;
+  if (!canAccessAdminPages) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-teal-950 p-4 sm:p-6 md:p-10">
@@ -523,221 +523,223 @@ const TargetTripsUploadPage = () => {
           </div>
         </div>
 
-        {/* Upload Section */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardContent className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-white">Upload Target Trips</h2>
-            
-            {/* Buttons Row */}
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={downloadTemplate}
-                className="bg-transparent border-emerald-500 text-emerald-400 hover:bg-emerald-500/20"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download Template
-              </Button>
+        {/* Upload Section - Admin only */}
+        {isAdmin && (
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+            <CardContent className="p-6 space-y-4">
+              <h2 className="text-lg font-semibold text-white">Upload Target Trips</h2>
               
-              <div className="relative">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileChange}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                />
+              {/* Buttons Row */}
+              <div className="flex flex-wrap items-center gap-3">
                 <Button
                   variant="outline"
+                  onClick={downloadTemplate}
                   className="bg-transparent border-emerald-500 text-emerald-400 hover:bg-emerald-500/20"
                 >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload CSV
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Template
                 </Button>
+                
+                <div className="relative">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  <Button
+                    variant="outline"
+                    className="bg-transparent border-emerald-500 text-emerald-400 hover:bg-emerald-500/20"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload CSV
+                  </Button>
+                </div>
+
+                {selectedFile && (
+                  <Button
+                    onClick={handleUpload}
+                    disabled={isUploading}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Importing...
+                      </>
+                    ) : (
+                      "Import Now"
+                    )}
+                  </Button>
+                )}
+
+                <Button
+                  variant="outline"
+                  onClick={handleExportToExcel}
+                  disabled={records.length === 0}
+                  className="bg-transparent border-blue-500 text-blue-400 hover:bg-blue-500/20"
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Export XLSX
+                </Button>
+
+                <div className="flex-1" />
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      disabled={records.length === 0 || isClearing}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Clear All
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Clear All Records?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete all {totalRecords} target trips records. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleClearAll} className="bg-red-600 hover:bg-red-700">
+                        Delete All
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
 
-              {selectedFile && (
-                <Button
-                  onClick={handleUpload}
-                  disabled={isUploading}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Importing...
-                    </>
-                  ) : (
-                    "Import Now"
-                  )}
-                </Button>
+              <p className="text-sm text-slate-400">
+                CSV columns: Driver ID, Shift, Final Target
+              </p>
+
+              {/* Upload Progress */}
+              {uploadProgress && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Uploading records…</span>
+                    <span>{uploadProgress.uploaded}/{uploadProgress.total}</span>
+                  </div>
+                  <Progress
+                    value={uploadProgress.total > 0 ? Math.round((uploadProgress.uploaded / uploadProgress.total) * 100) : 0}
+                    className="bg-white/10"
+                  />
+                </div>
               )}
 
-              <Button
-                variant="outline"
-                onClick={handleExportToExcel}
-                disabled={records.length === 0}
-                className="bg-transparent border-blue-500 text-blue-400 hover:bg-blue-500/20"
-              >
-                <FileDown className="h-4 w-4 mr-2" />
-                Export XLSX
-              </Button>
-
-              <div className="flex-1" />
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
+              {/* Configuration Collapsible */}
+              <Collapsible open={showConfig} onOpenChange={setShowConfig}>
+                <CollapsibleTrigger asChild>
                   <Button
-                    variant="destructive"
-                    disabled={records.length === 0 || isClearing}
-                    className="bg-red-600 hover:bg-red-700"
+                    variant="ghost"
+                    className="w-full justify-between text-slate-300 hover:bg-white/5 hover:text-white"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear All
+                    <span className="flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Target Trips Configuration (Optional)
+                    </span>
+                    {showConfig ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Clear All Records?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete all {totalRecords} target trips records. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleClearAll} className="bg-red-600 hover:bg-red-700">
-                      Delete All
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-4">
+                  <div className="bg-white/5 rounded-lg p-4 space-y-4">
+                    <div className="max-w-xs">
+                      <Label htmlFor="numberOfDays" className="text-sm font-medium text-slate-300">
+                        No. of Days
+                      </Label>
+                      <Input
+                        id="numberOfDays"
+                        type="number"
+                        min={1}
+                        max={31}
+                        value={targetConfig.numberOfDays}
+                        onChange={(e) =>
+                          setTargetConfig((prev) => ({
+                            ...prev,
+                            numberOfDays: parseInt(e.target.value) || 0,
+                          }))
+                        }
+                        className="mt-1 bg-white/10 border-white/20 text-white"
+                      />
+                    </div>
 
-            <p className="text-sm text-slate-400">
-              CSV columns: Driver ID, Shift, Final Target
-            </p>
-
-            {/* Upload Progress */}
-            {uploadProgress && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span>Uploading records…</span>
-                  <span>{uploadProgress.uploaded}/{uploadProgress.total}</span>
-                </div>
-                <Progress
-                  value={uploadProgress.total > 0 ? Math.round((uploadProgress.uploaded / uploadProgress.total) * 100) : 0}
-                  className="bg-white/10"
-                />
-              </div>
-            )}
-
-            {/* Configuration Collapsible */}
-            <Collapsible open={showConfig} onOpenChange={setShowConfig}>
-              <CollapsibleTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-between text-slate-300 hover:bg-white/5 hover:text-white"
-                >
-                  <span className="flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Target Trips Configuration (Optional)
-                  </span>
-                  {showConfig ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4">
-                <div className="bg-white/5 rounded-lg p-4 space-y-4">
-                  <div className="max-w-xs">
-                    <Label htmlFor="numberOfDays" className="text-sm font-medium text-slate-300">
-                      No. of Days
-                    </Label>
-                    <Input
-                      id="numberOfDays"
-                      type="number"
-                      min={1}
-                      max={31}
-                      value={targetConfig.numberOfDays}
-                      onChange={(e) =>
-                        setTargetConfig((prev) => ({
-                          ...prev,
-                          numberOfDays: parseInt(e.target.value) || 0,
-                        }))
-                      }
-                      className="mt-1 bg-white/10 border-white/20 text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium text-slate-300 mb-2 block">
-                      Target Trips by Tier
-                    </Label>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm rounded-lg overflow-hidden">
-                        <thead className="bg-white/10">
-                          <tr>
-                            <th className="text-left p-2 text-slate-300 font-medium">Tier</th>
-                            <th className="text-center p-2 text-slate-300 font-medium">24H</th>
-                            <th className="text-center p-2 text-slate-300 font-medium">12H</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {DEFAULT_TIERS.map((tier) => (
-                            <tr key={tier} className="border-t border-white/10">
-                              <td className="p-2 text-slate-300 font-medium">{tier}</td>
-                              <td className="p-1">
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  value={targetConfig.tiers[tier]?.["24H"] || 0}
-                                  onChange={(e) =>
-                                    updateTierValue(tier, "24H", parseInt(e.target.value) || 0)
-                                  }
-                                  className="h-8 text-center bg-white/10 border-white/20 text-white"
-                                />
-                              </td>
-                              <td className="p-1">
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  value={targetConfig.tiers[tier]?.["12H"] || 0}
-                                  onChange={(e) =>
-                                    updateTierValue(tier, "12H", parseInt(e.target.value) || 0)
-                                  }
-                                  className="h-8 text-center bg-white/10 border-white/20 text-white"
-                                />
-                              </td>
+                    <div>
+                      <Label className="text-sm font-medium text-slate-300 mb-2 block">
+                        Target Trips by Tier
+                      </Label>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm rounded-lg overflow-hidden">
+                          <thead className="bg-white/10">
+                            <tr>
+                              <th className="text-left p-2 text-slate-300 font-medium">Tier</th>
+                              <th className="text-center p-2 text-slate-300 font-medium">24H</th>
+                              <th className="text-center p-2 text-slate-300 font-medium">12H</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {DEFAULT_TIERS.map((tier) => (
+                              <tr key={tier} className="border-t border-white/10">
+                                <td className="p-2 text-slate-300 font-medium">{tier}</td>
+                                <td className="p-1">
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    value={targetConfig.tiers[tier]?.["24H"] || 0}
+                                    onChange={(e) =>
+                                      updateTierValue(tier, "24H", parseInt(e.target.value) || 0)
+                                    }
+                                    className="h-8 text-center bg-white/10 border-white/20 text-white"
+                                  />
+                                </td>
+                                <td className="p-1">
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    value={targetConfig.tiers[tier]?.["12H"] || 0}
+                                    onChange={(e) =>
+                                      updateTierValue(tier, "12H", parseInt(e.target.value) || 0)
+                                    }
+                                    className="h-8 text-center bg-white/10 border-white/20 text-white"
+                                  />
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Push Updates Button */}
+                    <div className="flex justify-end pt-4 border-t border-white/10">
+                      <Button
+                        onClick={handleSaveConfig}
+                        disabled={!hasConfigChanges || isSavingConfig}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
+                      >
+                        {isSavingConfig ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4 mr-2" />
+                            Push Updates
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
-
-                  {/* Push Updates Button */}
-                  <div className="flex justify-end pt-4 border-t border-white/10">
-                    <Button
-                      onClick={handleSaveConfig}
-                      disabled={!hasConfigChanges || isSavingConfig}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
-                    >
-                      {isSavingConfig ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-2" />
-                          Push Updates
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </CardContent>
-        </Card>
+                </CollapsibleContent>
+              </Collapsible>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -825,7 +827,7 @@ const TargetTripsUploadPage = () => {
                     <th className="text-right p-4 text-slate-300 font-medium">Completed</th>
                     <th className="text-left p-4 text-slate-300 font-medium">Month</th>
                     <th className="text-right p-4 text-slate-300 font-medium">Year</th>
-                    <th className="text-center p-4 text-slate-300 font-medium">Action</th>
+                    {isAdmin && <th className="text-center p-4 text-slate-300 font-medium">Action</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -848,16 +850,18 @@ const TargetTripsUploadPage = () => {
                       <td className="p-4 text-right text-slate-300">{record.completed_trips}</td>
                       <td className="p-4 text-slate-300">{record.month}</td>
                       <td className="p-4 text-right text-slate-300">{record.year}</td>
-                      <td className="p-4 text-center">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteRecord(record.id)}
-                          className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </td>
+                      {isAdmin && (
+                        <td className="p-4 text-center">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteRecord(record.id)}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
