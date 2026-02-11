@@ -211,9 +211,9 @@ const HomePage = () => {
       gradient: "bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600",
       onClick: () => navigate("/cng-location"),
     },
-    ...(isAdvanced ? [] : [{
+    {
       icon: <CalendarDays className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: isAdmin ? "Driver Income" : "Driver Main Portal",
+      title: (isAdmin || canAccessAdminPages) ? "Driver Income" : "Driver Main Portal",
       gradient: "bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600",
       onClick: () => {
         if (isAdmin || canAccessAdminPages) {
@@ -224,7 +224,7 @@ const HomePage = () => {
           setIsDriverIncomeDialogOpen(true);
         }
       },
-    }]),
+    },
   ];
 
   if (canAccessAdminPages) {
