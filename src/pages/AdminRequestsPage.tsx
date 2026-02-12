@@ -788,6 +788,12 @@ const AdminRequestsPage = () => {
                     <span className="text-muted-foreground">Driver Name:</span>
                     <span className="ml-2 font-medium">{selectedRequest.driver_name || "N/A"}</span>
                   </div>
+                  {controllerMap[selectedRequest.driver_id] && (
+                    <div>
+                      <span className="text-muted-foreground">Revenue Controller:</span>
+                      <span className="ml-2 font-medium">{controllerMap[selectedRequest.driver_id]}</span>
+                    </div>
+                  )}
                   <div>
                     <span className="text-muted-foreground">Type:</span>
                     <span className="ml-2 font-medium">{getRequestTypeLabel(selectedRequest.request_type)}</span>

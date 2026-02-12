@@ -12,6 +12,7 @@ interface AdminRequestCardProps {
   onRespond: (request: DriverRequest) => void;
   onDelete: (request: DriverRequest) => void;
   isAdmin?: boolean;
+  controllerName?: string;
 }
 
 export const AdminRequestCard = ({
@@ -19,6 +20,7 @@ export const AdminRequestCard = ({
   onRespond,
   onDelete,
   isAdmin = false,
+  controllerName,
 }: AdminRequestCardProps) => {
   const dayOffDate = request.request_type === "day_off" ? extractDayOffDate(request.subject) : null;
 
@@ -28,18 +30,25 @@ export const AdminRequestCard = ({
       onClick={() => onRespond(request)}
     >
       <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-semibold text-foreground">
-                {request.driver_name || request.driver_id}
-              </span>
-              <StatusBadge status={request.status} />
-            </div>
-            {request.request_no && (
-              <p className="text-xs text-muted-foreground">{request.request_no}</p>
-            )}
-          </div>
+         <div className="flex items-start justify-between gap-2 mb-2">
+           <div className="flex-1">
+             <div className="flex items-center gap-2 mb-1">
+               <span className="font-semibold text-foreground">
+                 {request.driver_name || request.driver_id}
+               </span>
+               <StatusBadge status={request.status} />
+             </div>
+             <div className="space-y-1">
+               {request.request_no && (
+                 <p className="text-xs text-muted-foreground">{request.request_no}</p>
+               )}
+               {controllerName && (
+                 <p className="text-xs text-muted-foreground">
+                   <span className="font-medium">RC:</span> {controllerName}
+                 </p>
+               )}
+             </div>
+           </div>
           {isAdmin && (
             <Button
               variant="ghost"
