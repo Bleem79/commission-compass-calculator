@@ -711,50 +711,50 @@ const AdminRequestsPage = () => {
                 onClick={() => openResponseDialog(request)}
               >
                 <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="text-base font-semibold text-foreground">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+                        <CardTitle className="text-sm sm:text-base font-semibold text-foreground break-words">
                           {request.subject}
                         </CardTitle>
                         {request.request_no && (
-                          <Badge variant="secondary" className="text-xs font-mono bg-blue-100 text-blue-700">
+                          <Badge variant="secondary" className="text-xs font-mono bg-blue-100 text-blue-700 shrink-0">
                             {request.request_no}
                           </Badge>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {getRequestTypeLabel(request.request_type)}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          Driver: {request.driver_name || request.driver_id}
-                        </span>
-                        {controllerMap[request.driver_id] && (
-                          <span className="text-xs text-muted-foreground">
-                            • RC: {controllerMap[request.driver_id]}
-                          </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {getStatusBadge(request.status)}
+                        {isActualAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirmRequest(request);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         )}
-                        <span className="text-xs text-muted-foreground">
-                          • {formatDate(request.created_at)}
-                        </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(request.status)}
-                      {isActualAdmin && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteConfirmRequest(request);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <Badge variant="outline" className="text-xs">
+                        {getRequestTypeLabel(request.request_type)}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        Driver: {request.driver_name || request.driver_id}
+                      </span>
+                      {controllerMap[request.driver_id] && (
+                        <span className="text-xs text-muted-foreground">
+                          • RC: {controllerMap[request.driver_id]}
+                        </span>
                       )}
+                      <span className="text-xs text-muted-foreground">
+                        • {formatDate(request.created_at)}
+                      </span>
                     </div>
                   </div>
                 </CardHeader>
