@@ -55,6 +55,7 @@ const AdminRequestsPage = () => {
   const { isAuthenticated, user } = useAuth();
   const [requests, setRequests] = useState<DriverRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<DriverRequest[]>([]);
+  const [controllerMap, setControllerMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isActualAdmin, setIsActualAdmin] = useState(false);
@@ -125,14 +126,26 @@ const AdminRequestsPage = () => {
       if (!isAdmin) return;
 
       try {
-        const { data, error } = await supabase
-          .from("driver_requests")
-          .select("*")
-          .order("created_at", { ascending: false });
+        const [reqResult, masterResult] = await Promise.all([
+          supabase
+            .from("driver_requests")
+            .select("*")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("driver_master_file")
+            .select("driver_id, controller"),
+        ]);
 
-        if (error) throw error;
-        setRequests(data || []);
-        setFilteredRequests(data || []);
+        if (reqResult.error) throw reqResult.error;
+        setRequests(reqResult.data || []);
+        setFilteredRequests(reqResult.data || []);
+
+        // Build controller lookup map
+        const cMap: Record<string, string> = {};
+        (masterResult.data || []).forEach((d) => {
+          if (d.controller) cMap[d.driver_id] = d.controller;
+        });
+        setControllerMap(cMap);
       } catch (error: any) {
         console.error("Error fetching requests:", error);
         toast.error("Failed to load requests");
@@ -705,6 +718,11 @@ const AdminRequestsPage = () => {
                         <span className="text-xs text-muted-foreground">
                           Driver: {request.driver_name || request.driver_id}
                         </span>
+                        {controllerMap[request.driver_id] && (
+                          <span className="text-xs text-muted-foreground">
+                            • RC: {controllerMap[request.driver_id]}
+                          </span>
+                        )}
                         <span className="text-xs text-muted-foreground">
                           • {formatDate(request.created_at)}
                         </span>
