@@ -126,15 +126,27 @@ const AdminRequestsPage = () => {
       if (!isAdmin) return;
 
       try {
-        const [reqResult, masterResult] = await Promise.all([
-          supabase
-            .from("driver_requests")
-            .select("*")
-            .order("created_at", { ascending: false }),
-          supabase
+        // Fetch requests
+        const reqResult = await supabase
+          .from("driver_requests")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        // Fetch ALL driver_master_file rows (may exceed 1000 default limit)
+        let allMasterData: { driver_id: string; controller: string | null }[] = [];
+        let from = 0;
+        const pageSize = 1000;
+        while (true) {
+          const { data: page, error: pageErr } = await supabase
             .from("driver_master_file")
-            .select("driver_id, controller"),
-        ]);
+            .select("driver_id, controller")
+            .range(from, from + pageSize - 1);
+          if (pageErr) break;
+          if (!page || page.length === 0) break;
+          allMasterData = allMasterData.concat(page);
+          if (page.length < pageSize) break;
+          from += pageSize;
+        }
 
         if (reqResult.error) throw reqResult.error;
         setRequests(reqResult.data || []);
@@ -142,7 +154,7 @@ const AdminRequestsPage = () => {
 
         // Build controller lookup map
         const cMap: Record<string, string> = {};
-        (masterResult.data || []).forEach((d) => {
+        allMasterData.forEach((d) => {
           if (d.controller) cMap[d.driver_id] = d.controller;
         });
         setControllerMap(cMap);
