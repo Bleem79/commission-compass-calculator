@@ -788,12 +788,6 @@ const AdminRequestsPage = () => {
                     <span className="text-muted-foreground">Driver Name:</span>
                     <span className="ml-2 font-medium">{selectedRequest.driver_name || "N/A"}</span>
                   </div>
-                  {controllerMap[selectedRequest.driver_id] && (
-                    <div>
-                      <span className="text-muted-foreground">Revenue Controller:</span>
-                      <span className="ml-2 font-medium">{controllerMap[selectedRequest.driver_id]}</span>
-                    </div>
-                  )}
                   <div>
                     <span className="text-muted-foreground">Type:</span>
                     <span className="ml-2 font-medium">{getRequestTypeLabel(selectedRequest.request_type)}</span>
@@ -803,6 +797,12 @@ const AdminRequestsPage = () => {
                     <span className="ml-2 font-medium">{formatDate(selectedRequest.created_at)}</span>
                   </div>
                 </div>
+                {controllerMap[selectedRequest.driver_id] && (
+                  <div className="border-t pt-3 mt-3">
+                    <span className="text-muted-foreground">Revenue Controller In Charge:</span>
+                    <span className="ml-2 font-medium text-primary">{controllerMap[selectedRequest.driver_id]}</span>
+                  </div>
+                )}
                 <div>
                   <div className="text-muted-foreground text-sm mb-1">Subject:</div>
                   <div className="font-medium">{selectedRequest.subject}</div>
