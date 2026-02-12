@@ -797,12 +797,10 @@ const AdminRequestsPage = () => {
                     <span className="ml-2 font-medium">{formatDate(selectedRequest.created_at)}</span>
                   </div>
                 </div>
-                {controllerMap[selectedRequest.driver_id] && (
-                  <div className="border-t pt-3 mt-3">
-                    <span className="text-muted-foreground">Revenue Controller In Charge:</span>
-                    <span className="ml-2 font-medium text-primary">{controllerMap[selectedRequest.driver_id]}</span>
-                  </div>
-                )}
+                <div className="border-t pt-3 mt-3">
+                  <span className="text-muted-foreground">Revenue Controller In Charge:</span>
+                  <span className="ml-2 font-medium text-primary">{controllerMap[selectedRequest.driver_id] || "N/A"}</span>
+                </div>
                 <div>
                   <div className="text-muted-foreground text-sm mb-1">Subject:</div>
                   <div className="font-medium">{selectedRequest.subject}</div>
