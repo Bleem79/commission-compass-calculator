@@ -117,12 +117,9 @@ const HomePage = () => {
         if (name) {
           try {
             const { data: funcData } = await supabase.functions.invoke("create-portal-user", {
-              body: { action: "list" },
+              body: { action: "get_avatar", username: name },
             });
-            const match = funcData?.users?.find((u: any) => 
-              u.username?.toLowerCase() === name.toLowerCase()
-            );
-            if (match?.avatar_url) setControllerAvatarUrl(match.avatar_url);
+            if (funcData?.avatar_url) setControllerAvatarUrl(funcData.avatar_url);
           } catch {}
         }
       } catch (err) {

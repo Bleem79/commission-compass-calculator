@@ -39,9 +39,46 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const adminClient = await verifyAdmin(req);
     const body = await req.json();
     const { action = "create" } = body;
+
+    // GET AVATAR BY USERNAME - does NOT require admin access
+    if (action === "get_avatar") {
+      const { username } = body;
+      if (!username) {
+        return new Response(JSON.stringify({ error: "username required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { data: roles } = await serviceClient
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["user", "advanced"]);
+
+      for (const r of roles || []) {
+        const { data: { user } } = await serviceClient.auth.admin.getUserById(r.user_id);
+        if (user?.user_metadata?.username?.toLowerCase() === username.toLowerCase()) {
+          return new Response(JSON.stringify({ avatar_url: user.user_metadata?.avatar_url || "" }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+
+      return new Response(JSON.stringify({ avatar_url: "" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const adminClient = await verifyAdmin(req);
+
 
     // LIST USERS - fetch portal users with email/username from auth
     if (action === "list") {
