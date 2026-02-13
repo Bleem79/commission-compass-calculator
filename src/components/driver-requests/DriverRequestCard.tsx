@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatDateDisplay, extractDayOffDate } from "@/utils/dateUtils";
 import { getRequestTypeLabel, DriverRequest } from "@/constants/requestTypes";
+import { getRequestTypeColors } from "@/utils/requestTypeColors";
 import { format } from "date-fns";
 
 interface DriverRequestCardProps {
@@ -16,10 +17,15 @@ export const DriverRequestCard = ({ request }: DriverRequestCardProps) => {
     <Card className="bg-card border-border hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <div>
-            <p className="font-semibold text-foreground">
-              {getRequestTypeLabel(request.request_type)}
-            </p>
+          <div className="flex-1">
+            {(() => {
+              const colors = getRequestTypeColors(request.request_type);
+              return (
+                <p className={`font-semibold px-3 py-1 rounded-md ${colors.bg} ${colors.text} inline-block mb-2`}>
+                  {getRequestTypeLabel(request.request_type)}
+                </p>
+              );
+            })()}
             {request.request_no && (
               <p className="text-xs text-muted-foreground">{request.request_no}</p>
             )}
