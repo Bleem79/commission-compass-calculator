@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,15 +8,17 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, UserPlus, Users, Shield, Eye, Loader2, ToggleLeft, ToggleRight, RefreshCw } from "lucide-react";
+import { ArrowLeft, UserPlus, Users, Shield, Eye, Loader2, RefreshCw, Camera } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface PortalUser {
   id: string;
   email: string;
   username: string;
+  avatar_url: string;
   role: string;
   created_at: string;
   banned: boolean;
@@ -33,7 +35,9 @@ const RevenueControllerPortalPage = () => {
   const [users, setUsers] = useState<PortalUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
-
+  const [uploadingAvatarId, setUploadingAvatarId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarTargetUserId, setAvatarTargetUserId] = useState<string | null>(null);
   useEffect(() => {
     if (!isAdmin) {
       navigate("/home", { replace: true });
@@ -138,6 +142,53 @@ const RevenueControllerPortalPage = () => {
       toast({ title: "Error", description: err.message || "Failed to toggle status", variant: "destructive" });
     } finally {
       setUpdatingUserId(null);
+    }
+  };
+
+  const handleAvatarClick = (userId: string) => {
+    setAvatarTargetUserId(userId);
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !avatarTargetUserId) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Error", description: "Please select an image file", variant: "destructive" });
+      return;
+    }
+
+    setUploadingAvatarId(avatarTargetUserId);
+    try {
+      const filePath = `${avatarTargetUserId}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("user-avatars")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("user-avatars")
+        .getPublicUrl(filePath);
+
+      const response = await supabase.functions.invoke("create-portal-user", {
+        body: { action: "update_avatar", user_id: avatarTargetUserId, avatar_url: publicUrl },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === avatarTargetUserId ? { ...u, avatar_url: publicUrl } : u))
+      );
+      toast({ title: "Success", description: "Photo updated" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to upload photo", variant: "destructive" });
+    } finally {
+      setUploadingAvatarId(null);
+      setAvatarTargetUserId(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -253,6 +304,13 @@ const RevenueControllerPortalPage = () => {
               <p className="text-muted-foreground text-sm text-center py-8">No portal users created yet.</p>
             ) : (
               <div className="overflow-x-auto">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                />
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -267,7 +325,24 @@ const RevenueControllerPortalPage = () => {
                     {users.map((u) => (
                       <TableRow key={u.id} className={u.banned ? "opacity-50" : ""}>
                         <TableCell className="font-medium">
-                          {u.username || <span className="text-muted-foreground italic">No username</span>}
+                          <div className="flex items-center gap-2">
+                            <div className="relative group cursor-pointer" onClick={() => handleAvatarClick(u.id)}>
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={u.avatar_url} alt={u.username} />
+                                <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                  {(u.username || "?").charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                {uploadingAvatarId === u.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin text-white" />
+                                ) : (
+                                  <Camera className="w-3 h-3 text-white" />
+                                )}
+                              </div>
+                            </div>
+                            {u.username || <span className="text-muted-foreground italic">No username</span>}
+                          </div>
                         </TableCell>
                         <TableCell className="text-sm">
                           {u.email || <span className="text-muted-foreground italic">—</span>}

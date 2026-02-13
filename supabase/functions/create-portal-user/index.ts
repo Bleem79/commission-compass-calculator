@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
           id: r.user_id,
           email: user?.email || "",
           username: user?.user_metadata?.username || "",
+          avatar_url: user?.user_metadata?.avatar_url || "",
           role: r.role,
           created_at: user?.created_at || "",
           banned: !!user?.banned_until && new Date(user.banned_until) > new Date(),
@@ -109,6 +110,23 @@ Deno.serve(async (req) => {
         });
         if (error) throw new Error(error.message);
       }
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // UPDATE AVATAR URL
+    if (action === "update_avatar") {
+      const { user_id, avatar_url } = body;
+      if (!user_id) throw new Error("user_id required");
+
+      const { data: { user: existingUser } } = await adminClient.auth.admin.getUserById(user_id);
+      const { error } = await adminClient.auth.admin.updateUserById(user_id, {
+        user_metadata: { ...existingUser?.user_metadata, avatar_url: avatar_url || "" },
+      });
+      if (error) throw new Error(error.message);
 
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
