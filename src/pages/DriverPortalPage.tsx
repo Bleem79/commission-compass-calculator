@@ -17,6 +17,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { DriverPrivateMessages } from "@/components/messages/DriverPrivateMessages";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
@@ -83,6 +85,7 @@ const DriverPortalPage = () => {
   const [portalSettings, setPortalSettings] = useState<Record<string, boolean>>({});
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [controllerName, setControllerName] = useState<string | null>(null);
+  const [controllerAvatarUrl, setControllerAvatarUrl] = useState<string | null>(null);
 
   // Register push subscription when driver credentials are available
   usePushSubscriptionRegistration(user?.id, driverInfo?.driverId);
@@ -122,7 +125,19 @@ const DriverPortalPage = () => {
           .select("controller")
           .eq("driver_id", driverInfo.driverId)
           .maybeSingle();
-        setControllerName(data?.controller || null);
+        const name = data?.controller || null;
+        setControllerName(name);
+        if (name) {
+          try {
+            const { data: funcData } = await supabase.functions.invoke("create-portal-user", {
+              body: { action: "list" },
+            });
+            const match = funcData?.users?.find((u: any) => 
+              u.username?.toLowerCase() === name.toLowerCase()
+            );
+            if (match?.avatar_url) setControllerAvatarUrl(match.avatar_url);
+          } catch {}
+        }
       } catch (err) {
         console.error("Error fetching controller:", err);
       }
@@ -272,7 +287,28 @@ const DriverPortalPage = () => {
             )}
             {controllerName && (
               <p className="text-white/50 text-xs mt-1">
-                Revenue Controller In Charge: <span className="text-white/80 font-medium">{controllerName}</span>
+                Revenue Controller In Charge:{" "}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="text-white/80 font-medium underline decoration-dotted underline-offset-2 hover:text-white transition-colors">
+                      {controllerName}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-4" side="top">
+                    <div className="flex flex-col items-center gap-2">
+                      <Avatar className="h-20 w-20">
+                        {controllerAvatarUrl ? (
+                          <AvatarImage src={controllerAvatarUrl} alt={controllerName} />
+                        ) : null}
+                        <AvatarFallback className="text-2xl bg-primary/20 text-primary">
+                          {controllerName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium">{controllerName}</span>
+                      <span className="text-xs text-muted-foreground">Revenue Controller</span>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </p>
             )}
           </div>
