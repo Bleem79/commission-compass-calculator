@@ -34,7 +34,7 @@ import NotificationPrompt from "@/components/pwa/NotificationPrompt";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 
@@ -358,38 +358,30 @@ const HomePage = () => {
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl">
                   {(user.username || user.email || '?').charAt(0).toUpperCase()}
                 </div>
-                <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
                   <h2 className="text-white font-semibold text-base sm:text-lg truncate">
                     {user.username || user.email}
                   </h2>
                   <p className="text-white/60 text-xs sm:text-sm truncate">{user.email}</p>
                   {controllerName && (
                     <p className="text-white/50 text-xs mt-1">
-                      Revenue Controller:{" "}
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button className="text-white/80 font-medium underline decoration-dotted underline-offset-2 hover:text-white transition-colors">
-                            {controllerName}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-4" side="top">
-                          <div className="flex flex-col items-center gap-2">
-                            <Avatar className="h-20 w-20">
-                              {controllerAvatarUrl ? (
-                                <AvatarImage src={controllerAvatarUrl} alt={controllerName} />
-                              ) : null}
-                              <AvatarFallback className="text-2xl bg-primary/20 text-primary">
-                                {controllerName.charAt(0).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm font-medium">{controllerName}</span>
-                            <span className="text-xs text-muted-foreground">Revenue Controller</span>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                      Revenue Controller: <span className="text-white/80 font-medium">{controllerName}</span>
                     </p>
                   )}
                 </div>
+                {controllerName && (
+                  <div className="flex flex-col items-center gap-1 shrink-0">
+                    <Avatar className="h-12 w-12 sm:h-14 sm:w-14 border-2 border-white/20">
+                      {controllerAvatarUrl ? (
+                        <AvatarImage src={controllerAvatarUrl} alt={controllerName} />
+                      ) : null}
+                      <AvatarFallback className="text-lg bg-primary/20 text-primary">
+                        {controllerName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-[10px] text-white/50">RC</span>
+                  </div>
+                )}
                 {user.role && (
                   <span className="px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-medium capitalize">
                     {user.role}
