@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatDateDisplay, extractDayOffDate } from "@/utils/dateUtils";
 import { getRequestTypeLabel, DriverRequest } from "@/constants/requestTypes";
+import { getRequestTypeColors } from "@/utils/requestTypeColors";
 import { format } from "date-fns";
 
 interface AdminRequestCardProps {
@@ -64,10 +65,15 @@ export const AdminRequestCard = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-sm font-medium text-primary">
-            {getRequestTypeLabel(request.request_type)}
-          </span>
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          {(() => {
+            const colors = getRequestTypeColors(request.request_type);
+            return (
+              <span className={`text-sm font-medium px-3 py-1 rounded-md ${colors.bg} ${colors.text}`}>
+                {getRequestTypeLabel(request.request_type)}
+              </span>
+            );
+          })()}
           {dayOffDate && (
             <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
               📅 {format(new Date(dayOffDate), "dd MMM yyyy")}
