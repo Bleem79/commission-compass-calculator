@@ -655,8 +655,16 @@ const AdminRequestsPage = () => {
                     placeholder="Search by driver ID, name, subject, or request no..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 pr-8"
                   />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -706,6 +714,25 @@ const AdminRequestsPage = () => {
                 Manage Types
               </Button>
             </div>
+            {(searchQuery || statusFilter !== "all" || typeFilter !== "all" || controllerFilter !== "all") && (
+              <div className="flex items-center justify-end mt-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setStatusFilter("all");
+                    setTypeFilter("all");
+                    setControllerFilter("all");
+                    setSelectedCalendarDate(null);
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Clear All Filters
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
