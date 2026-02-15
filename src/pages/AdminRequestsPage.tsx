@@ -64,6 +64,7 @@ const AdminRequestsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [controllerFilter, setControllerFilter] = useState("all");
   
   // Response dialog
   const [selectedRequest, setSelectedRequest] = useState<DriverRequest | null>(null);
@@ -169,6 +170,12 @@ const AdminRequestsPage = () => {
     fetchRequests();
   }, [isAdmin]);
 
+  // Build unique list of controllers from the map
+  const controllerList = useMemo(() => {
+    const names = new Set<string>(Object.values(controllerMap));
+    return Array.from(names).sort();
+  }, [controllerMap]);
+
   useEffect(() => {
     let filtered = [...requests];
 
@@ -191,6 +198,10 @@ const AdminRequestsPage = () => {
       filtered = filtered.filter((r) => r.request_type === typeFilter);
     }
 
+    if (controllerFilter !== "all") {
+      filtered = filtered.filter((r) => controllerMap[r.driver_id]?.toLowerCase() === controllerFilter.toLowerCase());
+    }
+
     // Filter by selected calendar date (day off date from subject)
     if (selectedCalendarDate) {
       filtered = filtered.filter((r) => {
@@ -201,7 +212,7 @@ const AdminRequestsPage = () => {
     }
 
     setFilteredRequests(filtered);
-  }, [requests, searchQuery, statusFilter, typeFilter, selectedCalendarDate]);
+  }, [requests, searchQuery, statusFilter, typeFilter, controllerFilter, selectedCalendarDate, controllerMap]);
 
   const handleClose = () => {
     navigate("/home");
@@ -672,6 +683,20 @@ const AdminRequestsPage = () => {
                   {requestTypes.map((type: { value: string; label: string }) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={controllerFilter} onValueChange={setControllerFilter}>
+                <SelectTrigger className="w-full md:w-[200px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Controller" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Controllers</SelectItem>
+                  {controllerList.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
                     </SelectItem>
                   ))}
                 </SelectContent>
