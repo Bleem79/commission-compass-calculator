@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, UserPlus, Users, Shield, Eye, Loader2, RefreshCw, Camera } from "lucide-react";
+import { ArrowLeft, UserPlus, Users, Shield, Eye, Loader2, RefreshCw, Camera, Bell, BellOff, BellRing } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 
 interface PortalUser {
   id: string;
@@ -26,7 +28,7 @@ interface PortalUser {
 
 const RevenueControllerPortalPage = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,12 +40,18 @@ const RevenueControllerPortalPage = () => {
   const [uploadingAvatarId, setUploadingAvatarId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarTargetUserId, setAvatarTargetUserId] = useState<string | null>(null);
+  const [subscribedUserIds, setSubscribedUserIds] = useState<Set<string>>(new Set());
+
+  const { isSupported, isGranted, isDenied, requestPermission } = usePushNotifications();
+  usePushSubscriptionRegistration(user?.id, null);
+
   useEffect(() => {
     if (!isAdmin) {
       navigate("/home", { replace: true });
       return;
     }
     fetchUsers();
+    fetchSubscriptions();
   }, [isAdmin, navigate]);
 
   const fetchUsers = useCallback(async () => {
@@ -64,6 +72,26 @@ const RevenueControllerPortalPage = () => {
       setLoadingUsers(false);
     }
   }, []);
+
+  const fetchSubscriptions = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("push_subscriptions")
+        .select("user_id");
+      if (!error && data) {
+        setSubscribedUserIds(new Set(data.map((s) => s.user_id)));
+      }
+    } catch (err) {
+      console.error("Error fetching subscriptions:", err);
+    }
+  }, []);
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestPermission();
+    if (granted) {
+      setTimeout(() => fetchSubscriptions(), 2000);
+    }
+  };
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,6 +242,63 @@ const RevenueControllerPortalPage = () => {
             <p className="text-sm text-white/60">Manage system users and their access levels</p>
           </div>
         </div>
+
+        {/* Push Notifications Card */}
+        <Card className="bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center shrink-0">
+                  {isGranted ? (
+                    <BellRing className="w-5 h-5 text-orange-600" />
+                  ) : (
+                    <BellOff className="w-5 h-5 text-orange-400" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-orange-800">Push Notifications</h3>
+                  <p className="text-sm text-orange-700">
+                    {isGranted
+                      ? "You're receiving push notifications for new driver requests"
+                      : isDenied
+                      ? "Notifications are blocked. Enable them in your browser settings"
+                      : "Enable push notifications to get alerts for new driver requests"}
+                  </p>
+                </div>
+              </div>
+              {!isGranted && !isDenied && isSupported && (
+                <Button
+                  onClick={handleEnableNotifications}
+                  className="bg-orange-600 hover:bg-orange-700 text-white shrink-0"
+                  size="sm"
+                >
+                  <Bell className="w-4 h-4 mr-1.5" />
+                  Enable
+                </Button>
+              )}
+              {isGranted && (
+                <Badge className="bg-green-500/20 text-green-700 border-green-300 shrink-0">
+                  <Bell className="w-3 h-3 mr-1" /> Active
+                </Badge>
+              )}
+              {isDenied && (
+                <Badge className="bg-red-500/20 text-red-700 border-red-300 shrink-0">
+                  <BellOff className="w-3 h-3 mr-1" /> Blocked
+                </Badge>
+              )}
+            </div>
+
+            {/* Subscribed users summary */}
+            {subscribedUserIds.size > 0 && (
+              <div className="mt-3 pt-3 border-t border-orange-200">
+                <p className="text-xs text-orange-600">
+                  <Bell className="w-3 h-3 inline mr-1" />
+                  {subscribedUserIds.size} device{subscribedUserIds.size !== 1 ? "s" : ""} registered for notifications
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Role Info Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
