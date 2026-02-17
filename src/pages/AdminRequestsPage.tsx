@@ -71,6 +71,8 @@ const AdminRequestsPage = () => {
   const [responseText, setResponseText] = useState("");
   const [newStatus, setNewStatus] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [editSubject, setEditSubject] = useState("");
+  const [editDescription, setEditDescription] = useState("");
 
   // Request types management (from Supabase)
   const { requestTypes, addType: addRequestType, deleteType: deleteRequestType } = useRequestTypes();
@@ -241,6 +243,8 @@ const AdminRequestsPage = () => {
     setSelectedRequest(request);
     setResponseText(request.admin_response || "");
     setNewStatus(request.status);
+    setEditSubject(request.subject);
+    setEditDescription(request.description);
   };
 
   const handleSubmitResponse = async () => {
@@ -252,6 +256,8 @@ const AdminRequestsPage = () => {
         status: newStatus,
         responded_by: user.id,
         responded_at: new Date().toISOString(),
+        subject: editSubject.trim(),
+        description: editDescription.trim(),
       };
 
       if (responseText.trim()) {
@@ -866,12 +872,22 @@ const AdminRequestsPage = () => {
                   <span className="ml-2 font-medium text-primary">{controllerMap[selectedRequest.driver_id] || "N/A"}</span>
                 </div>
                 <div>
-                  <div className="text-muted-foreground text-sm mb-1">Subject:</div>
-                  <div className="font-medium">{selectedRequest.subject}</div>
+                  <Label htmlFor="edit-subject" className="text-muted-foreground text-sm">Subject:</Label>
+                  <Input
+                    id="edit-subject"
+                    value={editSubject}
+                    onChange={(e) => setEditSubject(e.target.value)}
+                    className="mt-1"
+                  />
                 </div>
                 <div>
-                  <div className="text-muted-foreground text-sm mb-1">Description:</div>
-                  <div className="text-sm bg-background rounded p-3">{selectedRequest.description}</div>
+                  <Label htmlFor="edit-description" className="text-muted-foreground text-sm">Description:</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className="mt-1 min-h-[80px]"
+                  />
                 </div>
               </div>
 
