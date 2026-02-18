@@ -30,7 +30,7 @@ const chunkArray = <T,>(arr: T[], size: number) => {
 
 const DriverMasterFilePage = () => {
   const navigate = useNavigate();
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, canAccessAdminPages } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<MasterFileRow[] | null>(null);
@@ -42,9 +42,11 @@ const DriverMasterFilePage = () => {
   const [singleController, setSingleController] = useState("");
   const [isAddingSingle, setIsAddingSingle] = useState(false);
 
+  const isStaff = canAccessAdminPages && !isAdmin;
+
   useEffect(() => {
-    if (!isAdmin) navigate("/home");
-  }, [isAdmin, navigate]);
+    if (!isAdmin && !canAccessAdminPages) navigate("/home");
+  }, [isAdmin, canAccessAdminPages, navigate]);
 
   const downloadTemplate = () => {
     const wb = XLSX.utils.book_new();
@@ -190,7 +192,7 @@ const DriverMasterFilePage = () => {
     }
   };
 
-  if (!isAdmin) return null;
+  if (!isAdmin && !canAccessAdminPages) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-indigo-100 p-4 sm:p-6 md:p-10">
@@ -208,94 +210,152 @@ const DriverMasterFilePage = () => {
           </div>
         </div>
 
-        <Card className="bg-white shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-slate-800">Upload Driver Master File</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button variant="outline" onClick={downloadTemplate} className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100">
-                <Download className="h-4 w-4 mr-2" />
-                Download Template
-              </Button>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" disabled={isDeleting} className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {isDeleting ? "Deleting..." : "Delete All Records"}
+        {isAdmin && (
+          <>
+            <Card className="bg-white shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-slate-800">Upload Driver Master File</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button variant="outline" onClick={downloadTemplate} className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Template
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete All Driver Master File Records?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete all uploaded driver master file data. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteAll} className="bg-red-600 hover:bg-red-700">
-                      Delete All
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 items-end">
-              <div className="flex-1">
-                <Label htmlFor="master-file">Excel / CSV File</Label>
-                <Input ref={fileInputRef} id="master-file" type="file" accept=".xlsx,.xls,.csv" onChange={handleFileChange} className="mt-1" />
-                <p className="text-xs text-muted-foreground mt-1">Required: Driver ID, Driver Name | Optional: Controller</p>
-              </div>
-              <Button onClick={handleUpload} disabled={!selectedFile || isUploading} className="shrink-0 bg-blue-600 hover:bg-blue-700">
-                {isUploading ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Importing...</>
-                ) : (
-                  <><Upload className="h-4 w-4 mr-2" />Import Driver Master File</>
-                )}
-              </Button>
-            </div>
-
-            {uploadProgress && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Uploading records…</span>
-                  <span>{uploadProgress.uploaded}/{uploadProgress.total}</span>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" disabled={isDeleting} className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {isDeleting ? "Deleting..." : "Delete All Records"}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete All Driver Master File Records?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete all uploaded driver master file data. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteAll} className="bg-red-600 hover:bg-red-700">
+                          Delete All
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
-                <Progress value={uploadProgress.total > 0 ? Math.round((uploadProgress.uploaded / uploadProgress.total) * 100) : 0} />
-              </div>
-            )}
 
-            {previewData && previewData.length > 0 && (
-              <div className="mt-4 bg-muted/50 rounded-lg p-4 overflow-x-auto">
-                <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                  <FileSpreadsheet className="h-4 w-4" />
-                  Preview (first 5 rows)
-                </h4>
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left p-2">Driver ID</th>
-                      <th className="text-left p-2">Driver Name</th>
-                      <th className="text-left p-2">Controller</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {previewData.map((row, i) => (
-                      <tr key={i} className="border-b border-border">
-                        <td className="p-2">{row.driver_id}</td>
-                        <td className="p-2">{row.driver_name || "-"}</td>
-                        <td className="p-2">{row.controller || "-"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                <div className="flex flex-col sm:flex-row gap-4 items-end">
+                  <div className="flex-1">
+                    <Label htmlFor="master-file">Excel / CSV File</Label>
+                    <Input ref={fileInputRef} id="master-file" type="file" accept=".xlsx,.xls,.csv" onChange={handleFileChange} className="mt-1" />
+                    <p className="text-xs text-muted-foreground mt-1">Required: Driver ID, Driver Name | Optional: Controller</p>
+                  </div>
+                  <Button onClick={handleUpload} disabled={!selectedFile || isUploading} className="shrink-0 bg-blue-600 hover:bg-blue-700">
+                    {isUploading ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Importing...</>
+                    ) : (
+                      <><Upload className="h-4 w-4 mr-2" />Import Driver Master File</>
+                    )}
+                  </Button>
+                </div>
+
+                {uploadProgress && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Uploading records…</span>
+                      <span>{uploadProgress.uploaded}/{uploadProgress.total}</span>
+                    </div>
+                    <Progress value={uploadProgress.total > 0 ? Math.round((uploadProgress.uploaded / uploadProgress.total) * 100) : 0} />
+                  </div>
+                )}
+
+                {previewData && previewData.length > 0 && (
+                  <div className="mt-4 bg-muted/50 rounded-lg p-4 overflow-x-auto">
+                    <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                      <FileSpreadsheet className="h-4 w-4" />
+                      Preview (first 5 rows)
+                    </h4>
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left p-2">Driver ID</th>
+                          <th className="text-left p-2">Driver Name</th>
+                          <th className="text-left p-2">Controller</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {previewData.map((row, i) => (
+                          <tr key={i} className="border-b border-border">
+                            <td className="p-2">{row.driver_id}</td>
+                            <td className="p-2">{row.driver_name || "-"}</td>
+                            <td className="p-2">{row.controller || "-"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  Add Single Driver
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <Label htmlFor="single-driver-id">Driver ID *</Label>
+                    <Input
+                      id="single-driver-id"
+                      placeholder="e.g. 100525"
+                      value={singleDriverId}
+                      onChange={(e) => setSingleDriverId(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="single-driver-name">Driver Name *</Label>
+                    <Input
+                      id="single-driver-name"
+                      placeholder="e.g. John Doe"
+                      value={singleDriverName}
+                      onChange={(e) => setSingleDriverName(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="single-controller">Controller</Label>
+                    <Input
+                      id="single-controller"
+                      placeholder="e.g. Abdul Kadir"
+                      value={singleController}
+                      onChange={(e) => setSingleController(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={handleAddSingleDriver}
+                  disabled={isAddingSingle || !singleDriverId.trim() || !singleDriverName.trim()}
+                  className="mt-4 bg-primary hover:bg-primary/90"
+                >
+                  {isAddingSingle ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Adding...</>
+                  ) : (
+                    <><Plus className="h-4 w-4 mr-2" />Add Driver</>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          </>
+        )}
 
         <Card className="bg-white shadow-sm">
           <CardHeader>
@@ -351,7 +411,7 @@ const DriverMasterFilePage = () => {
           </CardContent>
         </Card>
 
-        <DriverMasterList />
+        <DriverMasterList readOnly={isStaff} />
       </div>
     </div>
   );
