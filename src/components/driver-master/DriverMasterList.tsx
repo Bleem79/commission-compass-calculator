@@ -15,7 +15,11 @@ interface DriverRecord {
   created_at: string;
 }
 
-const DriverMasterList = () => {
+interface DriverMasterListProps {
+  readOnly?: boolean;
+}
+
+const DriverMasterList = ({ readOnly = false }: DriverMasterListProps) => {
   const [records, setRecords] = useState<DriverRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -166,8 +170,8 @@ const DriverMasterList = () => {
                   <TableHead className="sticky top-0 bg-muted">#</TableHead>
                   <TableHead className="sticky top-0 bg-muted">Driver ID</TableHead>
                   <TableHead className="sticky top-0 bg-muted">Driver Name</TableHead>
-                  <TableHead className="sticky top-0 bg-muted">Controller</TableHead>
-                  <TableHead className="sticky top-0 bg-muted w-[80px]">Edit</TableHead>
+                   <TableHead className="sticky top-0 bg-muted">Controller</TableHead>
+                   {!readOnly && <TableHead className="sticky top-0 bg-muted w-[80px]">Edit</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -192,22 +196,24 @@ const DriverMasterList = () => {
                         r.controller || "-"
                       )}
                     </TableCell>
-                    <TableCell>
-                      {editingId === r.id ? (
-                        <div className="flex gap-1">
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEditSave(r.id)}>
-                            <Check className="h-4 w-4 text-green-600" />
+                    {!readOnly && (
+                      <TableCell>
+                        {editingId === r.id ? (
+                          <div className="flex gap-1">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEditSave(r.id)}>
+                              <Check className="h-4 w-4 text-green-600" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleEditCancel}>
+                              <X className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEditStart(r)}>
+                            <Pencil className="h-4 w-4 text-muted-foreground" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleEditCancel}>
-                            <X className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEditStart(r)}>
-                          <Pencil className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      )}
-                    </TableCell>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
