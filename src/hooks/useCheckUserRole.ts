@@ -5,6 +5,13 @@ import { User } from "@/types/auth";
 
 export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<User | null>>) => {
   return async (userId: string, userEmail: string) => {
+    // Fetch the username from user metadata
+    let metadataUsername: string | null = null;
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      metadataUsername = authUser?.user_metadata?.username || null;
+    } catch {}
+    const displayUsername = metadataUsername || userEmail;
     try {
       // Specific check for admin emails
       const adminEmails = ['erico.ariata@outlook.com', 'binu@amantaxi.com', 'rev.counter@amantaximena.com'];
@@ -13,10 +20,10 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
         setUser(prevUser => {
           // Only update if role is different or user is null
           if (!prevUser || prevUser.role !== 'admin') {
-            return {
-              id: userId,
-              username: userEmail,
-              email: userEmail,
+                return {
+                  id: userId,
+                  username: displayUsername,
+                  email: userEmail,
               role: 'admin'
             };
           }
@@ -41,10 +48,10 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
         setUser(prevUser => {
           // Only update if role is different or user is null
           if (!prevUser || prevUser.role !== 'guest') {
-            return {
-              id: userId,
-              username: "Guest User",
-              email: userEmail,
+                return {
+                  id: userId,
+                  username: displayUsername,
+                  email: userEmail,
               role: 'guest'
             };
           }
@@ -76,10 +83,10 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
             setUser(prevUser => {
               // Only update if role is different or user is null
               if (!prevUser || prevUser.role !== 'driver' || prevUser.driverId !== driverData.driver_id) {
-                return {
-                  id: userId,
-                  username: userEmail,
-                  email: userEmail,
+                    return {
+                      id: userId,
+                      username: displayUsername,
+                      email: userEmail,
                   role: 'driver',
                   driverId: driverData.driver_id
                 };
@@ -94,10 +101,10 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
           setUser(prevUser => {
             // Only update if role is different or user is null
             if (!prevUser || prevUser.role !== 'guest') {
-              return {
-                id: userId,
-                username: userEmail,
-                email: userEmail,
+                  return {
+                    id: userId,
+                    username: displayUsername,
+                    email: userEmail,
                 role: 'guest'
               };
             }
@@ -112,10 +119,10 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
           setUser(prevUser => {
             // Only update if role is different or user is null
             if (!prevUser || prevUser.role !== userRole) {
-              return {
-                id: userId,
-                username: userEmail,
-                email: userEmail,
+                  return {
+                    id: userId,
+                    username: displayUsername,
+                    email: userEmail,
                 role: userRole
               };
             }
@@ -137,10 +144,10 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
         setUser(prevUser => {
           // Only update if role is different or user is null
           if (!prevUser || prevUser.role !== 'guest') {
-            return {
-              id: userId,
-              username: userEmail,
-              email: userEmail,
+                return {
+                  id: userId,
+                  username: displayUsername,
+                  email: userEmail,
               role: 'guest'
             };
           }
@@ -152,10 +159,10 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
       setUser(prevUser => {
         // Only update if role is different or user is null
         if (!prevUser || prevUser.role !== 'guest') {
-          return {
-            id: userId,
-            username: userEmail,
-            email: userEmail,
+                return {
+                  id: userId,
+                  username: displayUsername,
+                  email: userEmail,
             role: 'guest'
           };
         }
