@@ -17,9 +17,10 @@ interface DriverRecord {
 
 interface DriverMasterListProps {
   readOnly?: boolean;
+  controllerFilter?: string | null;
 }
 
-const DriverMasterList = ({ readOnly = false }: DriverMasterListProps) => {
+const DriverMasterList = ({ readOnly = false, controllerFilter }: DriverMasterListProps) => {
   const [records, setRecords] = useState<DriverRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -35,10 +36,16 @@ const DriverMasterList = ({ readOnly = false }: DriverMasterListProps) => {
       let hasMore = true;
 
       while (hasMore) {
-        const { data, error } = await supabase
+        let query = supabase
           .from("driver_master_file")
           .select("*")
-          .order("driver_id", { ascending: true })
+          .order("driver_id", { ascending: true });
+
+        if (controllerFilter) {
+          query = query.ilike("controller", controllerFilter);
+        }
+
+        const { data, error } = await query
           .range(page * pageSize, (page + 1) * pageSize - 1);
 
         if (error) throw error;
