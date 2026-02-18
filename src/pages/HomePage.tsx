@@ -286,18 +286,18 @@ const HomePage = () => {
       gradient: "bg-gradient-to-br from-gray-600 via-slate-600 to-zinc-700",
       onClick: () => navigate("/driver-activity-logs"),
     });
+    features.push({
+      icon: <FileSpreadsheet className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Driver Master File",
+      gradient: "bg-gradient-to-br from-blue-600 via-sky-600 to-cyan-700",
+      onClick: () => navigate("/driver-master-file"),
+    });
     if (isAdmin) {
       features.push({
         icon: <Settings2 className="w-6 h-6 sm:w-8 sm:h-8" />,
         title: "Portal Settings",
         gradient: "bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-700",
         onClick: () => setIsPortalSettingsOpen(true),
-      });
-      features.push({
-        icon: <FileSpreadsheet className="w-6 h-6 sm:w-8 sm:h-8" />,
-        title: "Driver Master File",
-        gradient: "bg-gradient-to-br from-blue-600 via-sky-600 to-cyan-700",
-        onClick: () => navigate("/driver-master-file"),
       });
       features.push({
         icon: <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8" />,
