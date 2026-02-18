@@ -411,7 +411,7 @@ const DriverMasterFilePage = () => {
           </CardContent>
         </Card>
 
-        <DriverMasterList readOnly={isStaff} />
+        <DriverMasterList readOnly={isStaff} controllerFilter={isStaff ? (user?.username || null) : null} />
       </div>
     </div>
   );
