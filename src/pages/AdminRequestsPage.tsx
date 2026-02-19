@@ -873,12 +873,18 @@ const AdminRequestsPage = () => {
                 </div>
                 <div>
                   <Label htmlFor="edit-subject" className="text-muted-foreground text-sm">Subject:</Label>
-                  <Input
-                    id="edit-subject"
-                    value={editSubject}
-                    onChange={(e) => setEditSubject(e.target.value)}
-                    className="mt-1"
-                  />
+                  <Select value={editSubject} onValueChange={setEditSubject}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select subject" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50">
+                      {requestTypes.map((type: { value: string; label: string }) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="edit-description" className="text-muted-foreground text-sm">Description:</Label>
