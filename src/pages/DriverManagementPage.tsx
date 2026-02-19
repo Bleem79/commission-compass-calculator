@@ -47,7 +47,7 @@ const DriverManagementPage = () => {
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [resetPasswordDriver, setResetPasswordDriver] = useState<string | null>(null);
-  const [assignedDriverIds, setAssignedDriverIds] = useState<string[] | null>(null);
+  
 
   const isStaff = canAccessAdminPages && !isAdmin;
 
@@ -56,43 +56,8 @@ const DriverManagementPage = () => {
       navigate("/home");
       return;
     }
-
-    // For non-admin staff, fetch their assigned driver IDs first
-    if (isStaff && user?.username) {
-      const fetchAssigned = async () => {
-        try {
-          const PAGE_SIZE = 1000;
-          let allIds: string[] = [];
-          let from = 0;
-          let hasMore = true;
-          while (hasMore) {
-            const { data, error } = await supabase
-              .from('driver_master_file')
-              .select('driver_id')
-              .ilike('controller', user.username!)
-              .range(from, from + PAGE_SIZE - 1);
-            if (error) throw error;
-            if (data && data.length > 0) {
-              allIds = [...allIds, ...data.map(d => d.driver_id)];
-              from += PAGE_SIZE;
-              hasMore = data.length === PAGE_SIZE;
-            } else {
-              hasMore = false;
-            }
-          }
-          setAssignedDriverIds(allIds);
-        } catch (err) {
-          console.error("Error fetching assigned drivers:", err);
-          setAssignedDriverIds([]);
-        }
-      };
-      fetchAssigned();
-    } else {
-      setAssignedDriverIds(null); // admin sees all
-    }
-
     fetchDrivers();
-  }, [canAccessAdminPages, navigate, isStaff, user?.username]);
+  }, [canAccessAdminPages, navigate]);
 
   const fetchDrivers = async () => {
     setLoading(true);
@@ -252,17 +217,12 @@ const DriverManagementPage = () => {
     }
   };
 
-  // Filter drivers: staff only sees their assigned drivers
-  const visibleDrivers = isStaff && assignedDriverIds
-    ? drivers.filter(d => assignedDriverIds.includes(d.driver_id))
-    : drivers;
-
-  const filteredDrivers = visibleDrivers.filter(driver =>
+  const filteredDrivers = drivers.filter(driver =>
     driver.driver_id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const enabledCount = visibleDrivers.filter(d => d.status === 'enabled').length;
-  const disabledCount = visibleDrivers.filter(d => d.status === 'disabled').length;
+  const enabledCount = drivers.filter(d => d.status === 'enabled').length;
+  const disabledCount = drivers.filter(d => d.status === 'disabled').length;
 
   if (!canAccessAdminPages) {
     return null;
@@ -367,7 +327,7 @@ const DriverManagementPage = () => {
               </div>
               <div>
                 <p className="text-sm text-slate-600">Total Drivers</p>
-                <p className="text-2xl font-bold text-slate-800">{visibleDrivers.length}</p>
+                <p className="text-2xl font-bold text-slate-800">{drivers.length}</p>
               </div>
             </CardContent>
           </Card>
