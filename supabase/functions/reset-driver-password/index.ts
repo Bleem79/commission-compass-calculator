@@ -60,12 +60,12 @@ Deno.serve(async (req) => {
 
     const callerId = userData.user.id;
 
-    // Verify caller is admin
-    const { data: adminRole, error: roleError } = await adminClient
+    // Verify caller has admin, advanced, or user role
+    const { data: callerRole, error: roleError } = await adminClient
       .from("user_roles")
       .select("role")
       .eq("user_id", callerId)
-      .eq("role", "admin")
+      .in("role", ["admin", "advanced", "user"])
       .maybeSingle();
 
     if (roleError) {
@@ -73,10 +73,12 @@ Deno.serve(async (req) => {
       return json(500, { error: "Role check failed" });
     }
 
-    if (!adminRole) {
-      console.log("reset-driver-password: forbidden (not admin)", { callerId });
-      return json(403, { error: "Forbidden: admin access required" });
+    if (!callerRole) {
+      console.log("reset-driver-password: forbidden (no staff role)", { callerId });
+      return json(403, { error: "Forbidden: staff access required" });
     }
+
+    const isAdmin = callerRole.role === "admin";
 
     // Parse request body
     let body: { driverId?: string; newPassword?: string };
@@ -101,7 +103,32 @@ Deno.serve(async (req) => {
       return json(400, { error: "Password must be at least 6 characters" });
     }
 
-    console.log(`reset-driver-password: caller=${callerId} resetting password for driver=${driverId}`);
+    console.log(`reset-driver-password: caller=${callerId} (role=${callerRole.role}) resetting password for driver=${driverId}`);
+
+    // For non-admin staff, verify the driver is assigned to them
+    if (!isAdmin) {
+      // Get the caller's username from auth metadata
+      const callerUsername = userData.user.user_metadata?.username || null;
+      if (!callerUsername) {
+        return json(403, { error: "Forbidden: no username configured for your account" });
+      }
+
+      const { data: assignment, error: assignError } = await adminClient
+        .from("driver_master_file")
+        .select("id")
+        .eq("driver_id", driverId)
+        .ilike("controller", callerUsername)
+        .maybeSingle();
+
+      if (assignError) {
+        console.error("reset-driver-password: assignment check failed", assignError);
+        return json(500, { error: "Assignment check failed" });
+      }
+
+      if (!assignment) {
+        return json(403, { error: "Forbidden: this driver is not assigned to you" });
+      }
+    }
 
     // Find the driver credentials to get the user_id
     const { data: driverCredentials, error: credError } = await adminClient
