@@ -48,105 +48,78 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${pendingRequests.length} unresponded pending requests`);
 
-    // 2. Get unique driver IDs and look up their controllers
-    const driverIds = [...new Set(pendingRequests.map((r) => r.driver_id))];
-    const { data: masterData, error: masterError } = await supabase
-      .from("driver_master_file")
-      .select("driver_id, controller")
-      .in("driver_id", driverIds);
+    // 2. Get ALL revenue controllers (advanced + user roles) and admins
+    const { data: staffRoles, error: rolesError } = await supabase
+      .from("user_roles")
+      .select("user_id, role")
+      .in("role", ["advanced", "user", "admin"]);
 
-    if (masterError) {
-      console.error("Error fetching master file:", masterError);
-      throw masterError;
+    if (rolesError) {
+      console.error("Error fetching staff roles:", rolesError);
+      throw rolesError;
     }
 
-    // Build controller -> requests map
-    const controllerRequestsMap: Record<string, typeof pendingRequests> = {};
-    for (const request of pendingRequests) {
-      const master = masterData?.find((m) => m.driver_id === request.driver_id);
-      const controller = master?.controller;
-      if (controller) {
-        if (!controllerRequestsMap[controller]) {
-          controllerRequestsMap[controller] = [];
-        }
-        controllerRequestsMap[controller].push(request);
-      }
-    }
-
-    const controllerNames = Object.keys(controllerRequestsMap);
-    if (controllerNames.length === 0) {
-      console.log("No controllers found for pending requests");
+    if (!staffRoles || staffRoles.length === 0) {
+      console.log("No staff users found");
       return new Response(
-        JSON.stringify({ success: true, message: "No controllers to notify", reminded: 0 }),
+        JSON.stringify({ success: true, message: "No staff to notify", reminded: 0 }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // 3. Find user IDs for each controller by username
-    const { data: { users: allUsers }, error: usersError } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    if (usersError) throw usersError;
+    const staffUserIds = [...new Set(staffRoles.map((r) => r.user_id))];
+    console.log(`Found ${staffUserIds.length} staff users to notify`);
+
+    // 3. Get push subscriptions for all staff
+    const { data: subscriptions } = await supabase
+      .from("push_subscriptions")
+      .select("*")
+      .in("user_id", staffUserIds);
+
+    if (!subscriptions || subscriptions.length === 0) {
+      console.log("No push subscriptions found for staff");
+      return new Response(
+        JSON.stringify({ success: true, message: "No subscriptions", reminded: 0 }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     const webpush = await import("npm:web-push@3.6.7");
     webpush.setVapidDetails("mailto:admin@amandriver.com", vapidPublicKey, vapidPrivateKey);
 
+    const count = pendingRequests.length;
+    const notificationPayload = JSON.stringify({
+      title: "⏰ Pending Request Reminder",
+      body: `There are ${count} unresponded driver request${count > 1 ? "s" : ""} waiting for action.`,
+      icon: "/pwa-192x192.png",
+      badge: "/pwa-192x192.png",
+      vibrate: [200, 100, 200],
+      requireInteraction: true,
+      tag: `reminder-all-${Date.now()}`,
+      data: {
+        url: "/admin-requests",
+        type: "request_reminder",
+      },
+    });
+
     let totalSent = 0;
 
-    for (const controllerName of controllerNames) {
-      const requests = controllerRequestsMap[controllerName];
-      const matchingUsers = allUsers.filter(
-        (u) => u.user_metadata?.username?.toLowerCase() === controllerName.toLowerCase()
-      );
-
-      if (matchingUsers.length === 0) {
-        console.log(`No user found for controller: ${controllerName}`);
-        continue;
-      }
-
-      const controllerUserIds = matchingUsers.map((u) => u.id);
-
-      // Get push subscriptions for this controller
-      const { data: subscriptions } = await supabase
-        .from("push_subscriptions")
-        .select("*")
-        .in("user_id", controllerUserIds);
-
-      if (!subscriptions || subscriptions.length === 0) {
-        console.log(`No push subscriptions for controller: ${controllerName}`);
-        continue;
-      }
-
-      const count = requests.length;
-      const notificationPayload = JSON.stringify({
-        title: "⏰ Pending Request Reminder",
-        body: `You have ${count} unresponded driver request${count > 1 ? "s" : ""} waiting for your action.`,
-        icon: "/pwa-192x192.png",
-        badge: "/pwa-192x192.png",
-        vibrate: [200, 100, 200],
-        requireInteraction: true,
-        tag: `reminder-${controllerName}-${Date.now()}`,
-        data: {
-          url: "/admin-requests",
-          type: "request_reminder",
-        },
-      });
-
-      for (const subscription of subscriptions) {
-        try {
-          await webpush.sendNotification(
-            {
-              endpoint: subscription.endpoint,
-              keys: { p256dh: subscription.p256dh, auth: subscription.auth },
-            },
-            notificationPayload
-          );
-          totalSent++;
-          console.log(`Reminder sent to ${controllerName} at ${subscription.endpoint}`);
-        } catch (pushError: any) {
-          console.error(`Push error for ${controllerName}:`, pushError.message);
-          if (pushError.statusCode === 410 || pushError.statusCode === 404) {
-            await supabase.from("push_subscriptions").delete().eq("id", subscription.id);
-            console.log("Removed invalid subscription:", subscription.id);
-          }
+    for (const subscription of subscriptions) {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: subscription.endpoint,
+            keys: { p256dh: subscription.p256dh, auth: subscription.auth },
+          },
+          notificationPayload
+        );
+        totalSent++;
+        console.log(`Reminder sent to user ${subscription.user_id}`);
+      } catch (pushError: any) {
+        console.error(`Push error for ${subscription.user_id}:`, pushError.message);
+        if (pushError.statusCode === 410 || pushError.statusCode === 404) {
+          await supabase.from("push_subscriptions").delete().eq("id", subscription.id);
+          console.log("Removed invalid subscription:", subscription.id);
         }
       }
     }
