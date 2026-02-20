@@ -2,10 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, memo } from "react";
 import { Loader2 } from "lucide-react";
 
 // Lazy load all page components for code splitting
@@ -36,28 +36,30 @@ const RevenueControllerPortalPage = lazy(() => import("./pages/RevenueController
 const Index = lazy(() => import("./pages/Index"));
 
 // Loading fallback component
-const PageLoader = () => (
+const PageLoader = memo(() => (
   <div className="min-h-screen w-full flex items-center justify-center bg-background">
     <Loader2 className="h-8 w-8 animate-spin text-primary" />
   </div>
-);
+));
+PageLoader.displayName = "PageLoader";
 
-// Create a new QueryClient instance inside the component
-// to ensure it's created in the proper React context
-const App = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: 1,
-        staleTime: 30000,
-      },
+// Stable QueryClient instance outside component to prevent re-creation on every render
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes - reduces refetches
+      gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
+      refetchOnWindowFocus: false,
     },
-  });
+  },
+});
 
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
+        <TooltipProvider delayDuration={300}>
           <div className="min-h-screen w-full bg-background">
             <Toaster />
             <Sonner />
@@ -73,273 +75,61 @@ const App = () => {
   );
 };
 
-// Separating the routes component to use the useAuth hook safely
-const AppRoutes = () => {
+// Layout wrapper for protected routes with sidebar
+const ProtectedLayout = () => {
   const { isAuthenticated } = useAuth();
-  
+  const location = useLocation();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen w-full">
+        <Outlet />
+      </div>
+    </SidebarProvider>
+  );
+};
+
+const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<AuthRoute />} />
       <Route path="/" element={<Index />} />
-      <Route 
-        path="/home" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <HomePage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/dashboard" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <Dashboard />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/commission-table" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <CommissionTable />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/info" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <InfoPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/m-fuel" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <MFuelPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/hotspot" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <HotspotPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/cng-location" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <CNGLocationPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/driver-income" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <DriverIncomePage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/driver-management" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <DriverManagementPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/driver-absent-fine" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <DriverAbsentFinePage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/driver-portal" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <DriverPortalPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/driver-target-trips" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <DriverTargetTripsPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/driver-absent-fine-view" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <DriverAbsentFineViewPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/driver-request" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <DriverRequestPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/driver-warning-letter" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <DriverWarningLetterPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/target-trips-upload" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <TargetTripsUploadPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/warning-letters-upload" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <WarningLettersUploadPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/admin-requests" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <AdminRequestsPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/driver-activity-logs" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <DriverActivityLogsPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/driver-master-file" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <DriverMasterFilePage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/revenue-controller-portal" 
-        element={
-          <ProtectedRoute>
-            <SidebarProvider>
-              <div className="min-h-screen w-full">
-                <RevenueControllerPortalPage />
-              </div>
-            </SidebarProvider>
-          </ProtectedRoute>
-        } 
-      />
       <Route path="/install" element={<InstallPage />} />
+
+      {/* All protected routes share a single layout */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/commission-table" element={<CommissionTable />} />
+        <Route path="/info" element={<InfoPage />} />
+        <Route path="/m-fuel" element={<MFuelPage />} />
+        <Route path="/hotspot" element={<HotspotPage />} />
+        <Route path="/cng-location" element={<CNGLocationPage />} />
+        <Route path="/driver-income" element={<DriverIncomePage />} />
+        <Route path="/driver-management" element={<DriverManagementPage />} />
+        <Route path="/driver-absent-fine" element={<DriverAbsentFinePage />} />
+        <Route path="/driver-portal" element={<DriverPortalPage />} />
+        <Route path="/driver-target-trips" element={<DriverTargetTripsPage />} />
+        <Route path="/driver-absent-fine-view" element={<DriverAbsentFineViewPage />} />
+        <Route path="/driver-request" element={<DriverRequestPage />} />
+        <Route path="/driver-warning-letter" element={<DriverWarningLetterPage />} />
+        <Route path="/target-trips-upload" element={<TargetTripsUploadPage />} />
+        <Route path="/warning-letters-upload" element={<WarningLettersUploadPage />} />
+        <Route path="/admin-requests" element={<AdminRequestsPage />} />
+        <Route path="/driver-activity-logs" element={<DriverActivityLogsPage />} />
+        <Route path="/driver-master-file" element={<DriverMasterFilePage />} />
+        <Route path="/revenue-controller-portal" element={<RevenueControllerPortalPage />} />
+      </Route>
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
 
-// Add an AuthRoute component to handle redirecting authenticated users away from login
 const AuthRoute = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -351,22 +141,6 @@ const AuthRoute = () => {
   }, [isAuthenticated, navigate]);
   
   return <Login />;
-};
-
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { isAuthenticated } = useAuth();
-  const location = useLocation();
-  
-  useEffect(() => {
-    console.log("ProtectedRoute check - Auth status:", isAuthenticated);
-  }, [isAuthenticated]);
-  
-  if (!isAuthenticated) {
-    console.log("Not authenticated, redirecting to login from", location.pathname);
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
-  }
-  
-  return children;
 };
 
 export default App;

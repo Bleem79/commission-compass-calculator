@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ListCheck, 
@@ -23,19 +23,20 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { AdminMessages } from "@/components/messages/AdminMessages";
-import { DriverIncomeAuthDialog } from "@/components/driver-income/DriverIncomeAuthDialog";
-import { DriverSmsDialog } from "@/components/messages/DriverSmsDialog";
-import { DriverPortalSettingsDialog } from "@/components/admin/DriverPortalSettingsDialog";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
 import { supabase } from "@/integrations/supabase/client";
-import InstallBanner from "@/components/pwa/InstallBanner";
-import NotificationPrompt from "@/components/pwa/NotificationPrompt";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
-
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
+// Lazy load heavy dialog components - only loaded when opened
+const AdminMessages = lazy(() => import("@/components/messages/AdminMessages").then(m => ({ default: m.AdminMessages })));
+const DriverIncomeAuthDialog = lazy(() => import("@/components/driver-income/DriverIncomeAuthDialog").then(m => ({ default: m.DriverIncomeAuthDialog })));
+const DriverSmsDialog = lazy(() => import("@/components/messages/DriverSmsDialog").then(m => ({ default: m.DriverSmsDialog })));
+const DriverPortalSettingsDialog = lazy(() => import("@/components/admin/DriverPortalSettingsDialog").then(m => ({ default: m.DriverPortalSettingsDialog })));
+const InstallBanner = lazy(() => import("@/components/pwa/InstallBanner"));
+const NotificationPrompt = lazy(() => import("@/components/pwa/NotificationPrompt"));
 
 
 interface FeatureCardProps {
@@ -422,27 +423,35 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Dialogs */}
-      <AdminMessages
-        isOpen={isMessagesOpen}
-        onClose={() => setIsMessagesOpen(false)}
-      />
-      <DriverIncomeAuthDialog
-        isOpen={isDriverIncomeDialogOpen}
-        onClose={() => setIsDriverIncomeDialogOpen(false)}
-      />
-      <DriverSmsDialog
-        isOpen={isSmsDialogOpen}
-        onClose={() => setIsSmsDialogOpen(false)}
-      />
-      <DriverPortalSettingsDialog
-        open={isPortalSettingsOpen}
-        onOpenChange={setIsPortalSettingsOpen}
-      />
-
-      {/* PWA Prompts */}
-      <InstallBanner />
-      <NotificationPrompt />
+      {/* Lazy-loaded Dialogs */}
+      <Suspense fallback={null}>
+        {isMessagesOpen && (
+          <AdminMessages
+            isOpen={isMessagesOpen}
+            onClose={() => setIsMessagesOpen(false)}
+          />
+        )}
+        {isDriverIncomeDialogOpen && (
+          <DriverIncomeAuthDialog
+            isOpen={isDriverIncomeDialogOpen}
+            onClose={() => setIsDriverIncomeDialogOpen(false)}
+          />
+        )}
+        {isSmsDialogOpen && (
+          <DriverSmsDialog
+            isOpen={isSmsDialogOpen}
+            onClose={() => setIsSmsDialogOpen(false)}
+          />
+        )}
+        {isPortalSettingsOpen && (
+          <DriverPortalSettingsDialog
+            open={isPortalSettingsOpen}
+            onOpenChange={setIsPortalSettingsOpen}
+          />
+        )}
+        <InstallBanner />
+        <NotificationPrompt />
+      </Suspense>
     </div>
   );
 };
