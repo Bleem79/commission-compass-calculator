@@ -29,6 +29,9 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { QrCode } from "lucide-react";
+
+const DriverQRCodeDialog = lazy(() => import("@/components/driver-portal/DriverQRCodeDialog").then(m => ({ default: m.DriverQRCodeDialog })));
 
 // Lazy load heavy dialog components - only loaded when opened
 const AdminMessages = lazy(() => import("@/components/messages/AdminMessages").then(m => ({ default: m.AdminMessages })));
@@ -95,6 +98,7 @@ const HomePage = () => {
   const [isPortalSettingsOpen, setIsPortalSettingsOpen] = useState(false);
   const [controllerName, setControllerName] = useState<string | null>(null);
   const [controllerAvatarUrl, setControllerAvatarUrl] = useState<string | null>(null);
+  const [isQRCodeOpen, setIsQRCodeOpen] = useState(false);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const { driverInfo } = useDriverCredentials();
   const isDriver = !!driverInfo?.driverId;
@@ -360,9 +364,20 @@ const HomePage = () => {
                   {(user.username || user.email || '?').charAt(0).toUpperCase()}
                 </div>
               <div className="flex-1 min-w-0">
-                  <h2 className="text-white font-semibold text-base sm:text-lg truncate">
-                    {user.username || user.email}
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-white font-semibold text-base sm:text-lg truncate">
+                      {user.username || user.email}
+                    </h2>
+                    {driverInfo?.driverId && (
+                      <button
+                        onClick={() => setIsQRCodeOpen(true)}
+                        className="shrink-0 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 transition-colors"
+                        title="Show QR Code"
+                      >
+                        <QrCode className="w-4 h-4 text-white/80" />
+                      </button>
+                    )}
+                  </div>
                   <p className="text-white/60 text-xs sm:text-sm truncate">{user.email}</p>
                   {controllerName && (
                     <p className="text-white/50 text-xs mt-1">
@@ -447,6 +462,14 @@ const HomePage = () => {
           <DriverPortalSettingsDialog
             open={isPortalSettingsOpen}
             onOpenChange={setIsPortalSettingsOpen}
+          />
+        )}
+        {isQRCodeOpen && driverInfo?.driverId && (
+          <DriverQRCodeDialog
+            isOpen={isQRCodeOpen}
+            onClose={() => setIsQRCodeOpen(false)}
+            driverId={driverInfo.driverId}
+            driverName={driverInfo.driverName}
           />
         )}
         <InstallBanner />
