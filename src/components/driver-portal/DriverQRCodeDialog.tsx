@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QRCodeCanvas } from "qrcode.react";
+import { format } from "date-fns";
 
 interface DriverQRCodeDialogProps {
   isOpen: boolean;
@@ -9,6 +11,14 @@ interface DriverQRCodeDialogProps {
 }
 
 export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: DriverQRCodeDialogProps) => {
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, [isOpen]);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-[340px] sm:max-w-[380px] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-white/20 text-white">
@@ -46,6 +56,12 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
               <p className="text-lg font-semibold text-white/90">{driverName}</p>
             </div>
           )}
+
+          {/* Current Date & Time */}
+          <div className="text-center space-y-0.5">
+            <p className="text-xs uppercase tracking-widest text-white/50">Date & Time</p>
+            <p className="text-sm font-medium text-white/80">{format(now, "dd MMM yyyy  •  hh:mm:ss a")}</p>
+          </div>
 
           {/* Decorative divider */}
           <div className="w-full flex items-center gap-3">
