@@ -53,7 +53,7 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
           {driverName && (
             <div className="text-center space-y-1">
               <p className="text-xs uppercase tracking-widest text-white/50">Full Name</p>
-              <p className="text-lg font-semibold text-white/90">{driverName}</p>
+              <p className="text-lg font-semibold text-white/90 break-words max-w-full px-2" style={{ fontSize: driverName && driverName.length > 25 ? '0.875rem' : driverName && driverName.length > 18 ? '1rem' : '1.125rem' }}>{driverName}</p>
             </div>
           )}
 
