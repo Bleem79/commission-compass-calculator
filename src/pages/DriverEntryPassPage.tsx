@@ -12,16 +12,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const ENTRY_REASONS = [
-  "Vehicle Inspection",
-  "Document Submission",
-  "Office Visit",
-  "Vehicle Maintenance",
-  "Fuel Card Collection",
-  "Uniform Collection",
-  "Meeting",
-  "Training",
-  "Complaint / Issue",
-  "Other",
+  "Short Collection",
+  "ADNOC Fuel Issue",
+  "Fuel Chips Issue",
+  "CNG Card Lost",
+  "CNG Card Damage",
+  "Customer Run Away",
+  "Fine Removal",
+  "Double Shift Partner Complaint",
+  "Fuel bill Sign",
+  "Customer pay to aman account",
+  "Fuel Excess Inquiry",
+  "Need to meet operation team",
+  "Need to meet operations manager",
 ];
 
 interface EntryRecord {
