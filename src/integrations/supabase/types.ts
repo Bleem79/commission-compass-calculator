@@ -374,6 +374,33 @@ export type Database = {
         }
         Relationships: []
       }
+      entry_passes: {
+        Row: {
+          created_at: string
+          driver_id: string
+          driver_name: string | null
+          entry_no: string
+          id: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          driver_name?: string | null
+          entry_no: string
+          id?: string
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          driver_name?: string | null
+          entry_no?: string
+          id?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
