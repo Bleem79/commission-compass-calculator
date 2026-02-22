@@ -12,7 +12,8 @@ import {
   Clock,
   Mail,
   Loader2,
-  Droplets
+  Droplets,
+  ClipboardCheck
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -205,6 +206,13 @@ const DriverPortalPage = () => {
         setShowMessages(true);
       },
       badge: unreadCount,
+    },
+    {
+      key: "entry_pass",
+      icon: <ClipboardCheck className="w-8 h-8 sm:w-10 sm:h-10" />,
+      title: "Entry Pass",
+      gradient: "bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600",
+      onClick: () => navigate("/driver-entry-pass"),
     },
     {
       key: "oil_change_booking",
