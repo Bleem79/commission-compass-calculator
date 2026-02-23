@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowLeft, ClipboardCheck, Search, Plus, Filter } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, Search, Plus, Filter, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { QRCodeCanvas } from "qrcode.react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,6 +56,7 @@ const AdminEntryPassPage = () => {
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [deleteEntry, setDeleteEntry] = useState<EntryRecord | null>(null);
 
   const fetchEntries = useCallback(async () => {
     try {
@@ -127,6 +129,23 @@ const AdminEntryPassPage = () => {
       await fetchEntries();
     } catch (err: any) {
       toast.error(err.message || "Failed to update status.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteEntry) return;
+    try {
+      const { error } = await supabase
+        .from("entry_passes")
+        .delete()
+        .eq("id", deleteEntry.id);
+      if (error) throw error;
+      toast.success("Entry pass deleted.");
+      setDeleteEntry(null);
+      setSelectedEntry(null);
+      await fetchEntries();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete entry pass.");
     }
   };
 
@@ -362,25 +381,35 @@ const AdminEntryPassPage = () => {
                 </p>
               </div>
 
-              {/* Admin status update buttons */}
+              {/* Admin action buttons */}
               {isAdmin && (
-                <div className="w-full flex gap-2 pt-2">
-                  {selectedEntry.status !== "done" && (
-                    <Button
-                      onClick={() => handleUpdateStatus(selectedEntry, "done")}
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                    >
-                      Mark as Done
-                    </Button>
-                  )}
-                  {selectedEntry.status !== "pending" && (
-                    <Button
-                      onClick={() => handleUpdateStatus(selectedEntry, "pending")}
-                      className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
-                    >
-                      Mark as Pending
-                    </Button>
-                  )}
+                <div className="w-full space-y-2 pt-2">
+                  <div className="flex gap-2">
+                    {selectedEntry.status !== "done" && (
+                      <Button
+                        onClick={() => handleUpdateStatus(selectedEntry, "done")}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        Mark as Done
+                      </Button>
+                    )}
+                    {selectedEntry.status !== "pending" && (
+                      <Button
+                        onClick={() => handleUpdateStatus(selectedEntry, "pending")}
+                        className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        Mark as Pending
+                      </Button>
+                    )}
+                  </div>
+                  <Button
+                    onClick={() => setDeleteEntry(selectedEntry)}
+                    variant="destructive"
+                    className="w-full"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Entry Pass
+                  </Button>
                 </div>
               )}
 
@@ -393,6 +422,24 @@ const AdminEntryPassPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteEntry} onOpenChange={(open) => !open && setDeleteEntry(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Entry Pass?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete entry pass {deleteEntry?.entry_no}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
