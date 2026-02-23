@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ArrowLeft, Plus, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { QRCodeCanvas } from "qrcode.react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
@@ -33,31 +35,41 @@ interface EntryRecord {
   driver_id: string;
   driver_name: string | null;
   reason: string;
+  status: string;
   created_at: string;
 }
 
 const DriverEntryPassPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, canAccessAdminPages } = useAuth();
   const { driverInfo, loading: driverLoading } = useDriverCredentials();
   const [reason, setReason] = useState("");
+  const [driverIdInput, setDriverIdInput] = useState("");
   const [entries, setEntries] = useState<EntryRecord[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<EntryRecord | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [loadingEntries, setLoadingEntries] = useState(true);
+
+  const isStaff = canAccessAdminPages;
 
   useEffect(() => {
     if (!isAuthenticated) navigate("/login", { replace: true });
   }, [isAuthenticated, navigate]);
 
   const fetchEntries = useCallback(async () => {
-    if (!driverInfo?.driverId) return;
+    const driverId = isStaff ? null : driverInfo?.driverId;
+    if (!isStaff && !driverId) return;
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("entry_passes")
         .select("*")
-        .eq("driver_id", driverInfo.driverId)
         .order("created_at", { ascending: false });
+
+      if (!isStaff && driverId) {
+        query = query.eq("driver_id", driverId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       setEntries((data as EntryRecord[]) || []);
     } catch (err) {
@@ -65,7 +77,7 @@ const DriverEntryPassPage = () => {
     } finally {
       setLoadingEntries(false);
     }
-  }, [driverInfo?.driverId]);
+  }, [driverInfo?.driverId, isStaff]);
 
   useEffect(() => {
     fetchEntries();
@@ -76,22 +88,37 @@ const DriverEntryPassPage = () => {
       toast.error("Please select a reason for entry.");
       return;
     }
-    if (!driverInfo?.driverId) {
+
+    const targetDriverId = isStaff ? driverIdInput.trim() : driverInfo?.driverId;
+    if (!targetDriverId) {
       toast.error("Driver ID not found.");
       return;
     }
 
     setSubmitting(true);
     try {
+      // Look up driver name
+      let driverName: string | null = isStaff ? null : (driverInfo?.driverName || null);
+      if (isStaff) {
+        const { data: masterData } = await supabase
+          .from("driver_master_file")
+          .select("driver_name")
+          .eq("driver_id", targetDriverId)
+          .maybeSingle();
+        driverName = masterData?.driver_name || null;
+      }
+
       const { error } = await supabase.from("entry_passes").insert({
-        entry_no: "TEMP", // will be overwritten by trigger
-        driver_id: driverInfo.driverId,
-        driver_name: driverInfo.driverName,
+        entry_no: "TEMP",
+        driver_id: targetDriverId,
+        driver_name: driverName,
         reason,
+        created_by: isStaff ? (user?.id || null) : null,
       });
       if (error) throw error;
 
       setReason("");
+      setDriverIdInput("");
       toast.success("Entry pass created successfully!");
       await fetchEntries();
     } catch (err: any) {
@@ -101,12 +128,21 @@ const DriverEntryPassPage = () => {
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "done":
+        return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">Done</Badge>;
+      case "pending":
+      default:
+        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]">Pending</Badge>;
+    }
+  };
+
   const selectedName = selectedEntry?.driver_name || "";
   const nameFontSize = selectedName.length > 25 ? "0.875rem" : selectedName.length > 18 ? "1rem" : "1.125rem";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
-      {/* Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/30 rounded-full blur-3xl animate-pulse" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl animate-pulse delay-1000" />
@@ -114,12 +150,11 @@ const DriverEntryPassPage = () => {
 
       <div className="relative z-10 min-h-screen flex flex-col p-4 sm:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
-          {/* Header */}
           <header className="flex items-center gap-4 mb-6">
             <Button
               variant="outline"
               className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
-              onClick={() => navigate("/driver-portal")}
+              onClick={() => navigate(isStaff ? "/home" : "/driver-portal")}
             >
               <ArrowLeft className="h-4 w-4" />
               Back
@@ -130,6 +165,17 @@ const DriverEntryPassPage = () => {
 
           {/* Form */}
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 sm:p-6 mb-6 space-y-4">
+            {isStaff && (
+              <div>
+                <label className="text-sm text-white/70 mb-2 block">Driver ID</label>
+                <Input
+                  value={driverIdInput}
+                  onChange={(e) => setDriverIdInput(e.target.value)}
+                  placeholder="Enter Driver ID"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                />
+              </div>
+            )}
             <div>
               <label className="text-sm text-white/70 mb-2 block">Reason for Entry</label>
               <Select value={reason} onValueChange={setReason}>
@@ -148,7 +194,7 @@ const DriverEntryPassPage = () => {
 
             <Button
               onClick={handleSubmit}
-              disabled={driverLoading || !reason || submitting}
+              disabled={driverLoading || !reason || submitting || (isStaff && !driverIdInput.trim())}
               className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -172,7 +218,10 @@ const DriverEntryPassPage = () => {
                         <ClipboardCheck className="w-5 h-5 text-emerald-400" />
                       </div>
                       <div>
-                        <p className="text-white font-medium text-sm">{entry.entry_no}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-white font-medium text-sm">{entry.entry_no}</p>
+                          {getStatusBadge(entry.status)}
+                        </div>
                         <p className="text-white/60 text-xs">{entry.reason}</p>
                       </div>
                     </div>
@@ -206,12 +255,10 @@ const DriverEntryPassPage = () => {
 
           {selectedEntry && (
             <div className="flex flex-col items-center gap-5 py-2">
-              {/* Entry Pass No */}
               <div className="text-center">
                 <p className="text-lg font-bold tracking-wider text-emerald-400">{selectedEntry.entry_no}</p>
               </div>
 
-              {/* QR Code */}
               <div className="p-1 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-400 to-cyan-500 shadow-[0_0_30px_rgba(16,185,129,0.25)]">
                 <div className="bg-white rounded-xl p-4 flex items-center justify-center">
                   <QRCodeCanvas
@@ -225,13 +272,11 @@ const DriverEntryPassPage = () => {
                 </div>
               </div>
 
-              {/* Driver ID */}
               <div className="text-center space-y-1">
                 <p className="text-xs uppercase tracking-widest text-white/50">Driver ID</p>
                 <p className="text-3xl font-bold tracking-wider text-white">{selectedEntry.driver_id}</p>
               </div>
 
-              {/* Driver Name */}
               {selectedEntry.driver_name && (
                 <div className="text-center space-y-1">
                   <p className="text-xs uppercase tracking-widest text-white/50">Full Name</p>
@@ -241,13 +286,16 @@ const DriverEntryPassPage = () => {
                 </div>
               )}
 
-              {/* Reason */}
               <div className="text-center space-y-1">
                 <p className="text-xs uppercase tracking-widest text-white/50">Reason of Entry</p>
                 <p className="text-base font-medium text-white/90 bg-white/10 rounded-lg px-5 py-2.5">{selectedEntry.reason}</p>
               </div>
 
-              {/* Date & Time */}
+              <div className="text-center space-y-1">
+                <p className="text-xs uppercase tracking-widest text-white/50">Status</p>
+                <div>{getStatusBadge(selectedEntry.status)}</div>
+              </div>
+
               <div className="text-center space-y-1">
                 <p className="text-xs uppercase tracking-widest text-white/50">Date & Time</p>
                 <p className="text-base font-medium text-white/80">
@@ -255,7 +303,6 @@ const DriverEntryPassPage = () => {
                 </p>
               </div>
 
-              {/* Footer */}
               <div className="w-full flex items-center gap-3 pt-2">
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent to-white/20" />
                 <img src="/lovable-uploads/aman-logo-footer.png" alt="Aman" className="h-5 opacity-40" />

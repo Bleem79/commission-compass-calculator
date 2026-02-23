@@ -377,27 +377,33 @@ export type Database = {
       entry_passes: {
         Row: {
           created_at: string
+          created_by: string | null
           driver_id: string
           driver_name: string | null
           entry_no: string
           id: string
           reason: string
+          status: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           driver_id: string
           driver_name?: string | null
           entry_no: string
           id?: string
           reason: string
+          status?: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           driver_id?: string
           driver_name?: string | null
           entry_no?: string
           id?: string
           reason?: string
+          status?: string
         }
         Relationships: []
       }
