@@ -20,7 +20,8 @@ import {
   Activity,
   Settings2,
   FileSpreadsheet,
-  ShieldCheck
+  ShieldCheck,
+  ClipboardCheck
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
@@ -296,6 +297,12 @@ const HomePage = () => {
       title: "Driver Master File",
       gradient: "bg-gradient-to-br from-blue-600 via-sky-600 to-cyan-700",
       onClick: () => navigate("/driver-master-file"),
+    });
+    features.push({
+      icon: <ClipboardCheck className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Entry Pass",
+      gradient: "bg-gradient-to-br from-teal-500 via-emerald-500 to-green-600",
+      onClick: () => navigate("/admin-entry-pass"),
     });
     if (isAdmin) {
       features.push({
