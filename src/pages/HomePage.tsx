@@ -367,23 +367,24 @@ const HomePage = () => {
           {user && (
             <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl">
-                  {(user.username || user.email || '?').charAt(0).toUpperCase()}
-                </div>
+                {driverInfo?.driverId ? (
+                  <button
+                    onClick={() => setIsQRCodeOpen(true)}
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white transition-colors hover:opacity-90 active:scale-95 shrink-0"
+                    title="Show QR Code"
+                  >
+                    <QrCode className="w-6 h-6 sm:w-7 sm:h-7" />
+                  </button>
+                ) : (
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0">
+                    {(user.username || user.email || '?').charAt(0).toUpperCase()}
+                  </div>
+                )}
               <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h2 className="text-white font-semibold text-base sm:text-lg truncate">
                       {user.username || user.email}
                     </h2>
-                    {driverInfo?.driverId && (
-                      <button
-                        onClick={() => setIsQRCodeOpen(true)}
-                        className="shrink-0 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 transition-colors"
-                        title="Show QR Code"
-                      >
-                        <QrCode className="w-4 h-4 text-white/80" />
-                      </button>
-                    )}
                   </div>
                   <p className="text-white/60 text-xs sm:text-sm truncate">{user.email}</p>
                   {controllerName && (
