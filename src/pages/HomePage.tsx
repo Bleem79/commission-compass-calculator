@@ -402,11 +402,6 @@ const HomePage = () => {
                     <span className="text-[11px] text-white/80 font-medium max-w-[100px] text-center truncate">{controllerName}</span>
                   </div>
                 )}
-                {user.role && (
-                  <span className="px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-medium capitalize">
-                    {user.role}
-                  </span>
-                )}
               </div>
             </div>
           )}
