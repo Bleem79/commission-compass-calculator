@@ -388,24 +388,21 @@ const HomePage = () => {
                   </div>
                   <p className="text-white/60 text-xs sm:text-sm truncate">{user.email}</p>
                   {controllerName && (
-                    <p className="text-white/50 text-xs mt-1">
-                      Revenue Controller: <span className="text-white/80 font-medium">{controllerName}</span>
-                    </p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <Avatar className="h-6 w-6 border border-white/20">
+                        {controllerAvatarUrl ? (
+                          <AvatarImage src={controllerAvatarUrl} alt={controllerName} />
+                        ) : null}
+                        <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
+                          {controllerName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="text-white/50 text-xs">
+                        Revenue Controller: <span className="text-white/80 font-medium">{controllerName}</span>
+                      </p>
+                    </div>
                   )}
                 </div>
-                {controllerName && (
-                  <div className="flex flex-col items-center gap-1 shrink-0">
-                    <Avatar className="h-12 w-12 sm:h-14 sm:w-14 border-2 border-white/20">
-                      {controllerAvatarUrl ? (
-                        <AvatarImage src={controllerAvatarUrl} alt={controllerName} />
-                      ) : null}
-                      <AvatarFallback className="text-lg bg-primary/20 text-primary">
-                        {controllerName.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-[10px] text-white/50">RC</span>
-                  </div>
-                )}
                 {user.role && (
                   <span className="px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-medium capitalize">
                     {user.role}
