@@ -78,8 +78,6 @@ Deno.serve(async (req) => {
       return json(403, { error: "Forbidden: staff access required" });
     }
 
-    const isAdmin = callerRole.role === "admin";
-
     // Parse request body
     let body: { driverId?: string; newPassword?: string };
     try {
@@ -104,31 +102,6 @@ Deno.serve(async (req) => {
     }
 
     console.log(`reset-driver-password: caller=${callerId} (role=${callerRole.role}) resetting password for driver=${driverId}`);
-
-    // For non-admin staff, verify the driver is assigned to them
-    if (!isAdmin) {
-      // Get the caller's username from auth metadata
-      const callerUsername = userData.user.user_metadata?.username || null;
-      if (!callerUsername) {
-        return json(403, { error: "Forbidden: no username configured for your account" });
-      }
-
-      const { data: assignment, error: assignError } = await adminClient
-        .from("driver_master_file")
-        .select("id")
-        .eq("driver_id", driverId)
-        .ilike("controller", callerUsername)
-        .maybeSingle();
-
-      if (assignError) {
-        console.error("reset-driver-password: assignment check failed", assignError);
-        return json(500, { error: "Assignment check failed" });
-      }
-
-      if (!assignment) {
-        return json(403, { error: "Forbidden: this driver is not assigned to you" });
-      }
-    }
 
     // Find the driver credentials to get the user_id
     const { data: driverCredentials, error: credError } = await adminClient
