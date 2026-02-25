@@ -26,6 +26,7 @@ import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
 import { supabase } from "@/integrations/supabase/client";
 import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
+import NotificationBell from "@/components/shared/NotificationBell";
 
 interface PortalSetting {
   feature_key: string;
@@ -272,14 +273,17 @@ const DriverPortalPage = () => {
               <span className="hidden sm:inline">Back to Home</span>
             </Button>
             
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-white/70 hover:text-white hover:bg-white/10"
-              onClick={handleClose}
-            >
-              <X className="h-6 w-6" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <NotificationBell onClick={() => { markAllAsRead(); setShowMessages(true); }} />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white/70 hover:text-white hover:bg-white/10"
+                onClick={handleClose}
+              >
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
           </header>
 
           {/* Title */}

@@ -77,19 +77,30 @@ export default {
     					height: 'var(--radix-accordion-content-height)'
     				}
     			},
-    			'accordion-up': {
-    				from: {
-    					height: 'var(--radix-accordion-content-height)'
-    				},
-    				to: {
-    					height: '0'
-    				}
-    			}
-    		},
-    		animation: {
-    			'accordion-down': 'accordion-down 0.2s ease-out',
-    			'accordion-up': 'accordion-up 0.2s ease-out'
-    		},
+			'accordion-up': {
+				from: {
+					height: 'var(--radix-accordion-content-height)'
+				},
+				to: {
+					height: '0'
+				}
+			},
+			'bell-ring': {
+				'0%': { transform: 'rotate(0)' },
+				'10%': { transform: 'rotate(14deg)' },
+				'20%': { transform: 'rotate(-8deg)' },
+				'30%': { transform: 'rotate(14deg)' },
+				'40%': { transform: 'rotate(-4deg)' },
+				'50%': { transform: 'rotate(10deg)' },
+				'60%': { transform: 'rotate(0)' },
+				'100%': { transform: 'rotate(0)' },
+			}
+		},
+		animation: {
+			'accordion-down': 'accordion-down 0.2s ease-out',
+			'accordion-up': 'accordion-up 0.2s ease-out',
+			'bell-ring': 'bell-ring 1s ease-in-out infinite',
+		},
     		boxShadow: {
     			'2xs': 'var(--shadow-2xs)',
     			xs: 'var(--shadow-xs)',
