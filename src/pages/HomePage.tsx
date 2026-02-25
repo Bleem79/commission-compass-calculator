@@ -41,6 +41,7 @@ const DriverSmsDialog = lazy(() => import("@/components/messages/DriverSmsDialog
 const DriverPortalSettingsDialog = lazy(() => import("@/components/admin/DriverPortalSettingsDialog").then(m => ({ default: m.DriverPortalSettingsDialog })));
 const InstallBanner = lazy(() => import("@/components/pwa/InstallBanner"));
 const NotificationPrompt = lazy(() => import("@/components/pwa/NotificationPrompt"));
+import NotificationBell from "@/components/shared/NotificationBell";
 
 
 interface FeatureCardProps {
@@ -348,19 +349,22 @@ const HomePage = () => {
               </div>
             </div>
             
-            <button 
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className={cn(
+            <div className="flex items-center gap-2">
+              <NotificationBell onClick={() => setIsMessagesOpen(true)} />
+              <button 
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className={cn(
                 "flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm font-medium transition-all duration-300",
                 "bg-white/10 backdrop-blur-sm border border-white/20 text-white",
                 "hover:bg-red-500/80 hover:border-red-400",
                 isLoggingOut && "opacity-50 cursor-not-allowed"
               )}
             >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
-            </button>
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+              </button>
+            </div>
           </header>
 
           {/* User Profile Card */}
