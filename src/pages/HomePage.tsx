@@ -387,10 +387,12 @@ const HomePage = () => {
               <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h2 className="text-white font-semibold text-base sm:text-lg truncate">
-                      {user.username || user.email}
+                      {driverInfo?.driverId || user.username || user.email}
                     </h2>
                   </div>
-                  <p className="text-white/60 text-xs sm:text-sm truncate">{user.email}</p>
+                  <p className="text-white/60 text-xs sm:text-sm truncate">
+                    {driverInfo?.driverName || (user.email?.endsWith('@driver.temp') ? '' : user.email)}
+                  </p>
                 </div>
                 {controllerName && (
                   <div className="flex flex-col items-center gap-1 shrink-0">
