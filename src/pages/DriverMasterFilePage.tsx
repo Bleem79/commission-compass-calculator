@@ -357,60 +357,6 @@ const DriverMasterFilePage = () => {
           </>
         )}
 
-        <Card className="bg-white shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <Plus className="h-5 w-5" />
-              Add Single Driver
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <Label htmlFor="single-driver-id">Driver ID *</Label>
-                <Input
-                  id="single-driver-id"
-                  placeholder="e.g. 100525"
-                  value={singleDriverId}
-                  onChange={(e) => setSingleDriverId(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="single-driver-name">Driver Name *</Label>
-                <Input
-                  id="single-driver-name"
-                  placeholder="e.g. John Doe"
-                  value={singleDriverName}
-                  onChange={(e) => setSingleDriverName(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="single-controller">Controller</Label>
-                <Input
-                  id="single-controller"
-                  placeholder="e.g. Abdul Kadir"
-                  value={singleController}
-                  onChange={(e) => setSingleController(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-            <Button
-              onClick={handleAddSingleDriver}
-              disabled={isAddingSingle || !singleDriverId.trim() || !singleDriverName.trim()}
-              className="mt-4 bg-primary hover:bg-primary/90"
-            >
-              {isAddingSingle ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Adding...</>
-              ) : (
-                <><Plus className="h-4 w-4 mr-2" />Add Driver</>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-
         <DriverMasterList readOnly={isStaff} controllerFilter={isStaff ? (user?.username || null) : null} />
       </div>
     </div>
