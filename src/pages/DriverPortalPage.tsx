@@ -291,7 +291,7 @@ const DriverPortalPage = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Driver Main Portal</h1>
             {user && (
               <p className="text-white/60 text-sm">
-                Welcome, {user.username || user.email}
+                Welcome, {driverInfo?.driverName || driverInfo?.driverId || user.username || user.email}
               </p>
             )}
             {controllerName && (
