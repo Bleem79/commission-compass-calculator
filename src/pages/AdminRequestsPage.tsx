@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, X, MessageSquare, Loader2, Clock, CheckCircle, XCircle, 
-  Search, Filter, Send, ChevronDown, RefreshCw, AlertCircle, Settings, Plus, Trash2, CalendarDays, ChevronLeft, ChevronRight, FileSpreadsheet
+  Send, RefreshCw, AlertCircle, CalendarDays, FileSpreadsheet, Trash2
 } from "lucide-react";
-import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,8 +15,15 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { useRequestTypes } from "@/hooks/useRequestTypes";
+import { AdminRequestStats } from "@/components/admin-requests/AdminRequestStats";
+import { AdminRequestsFilters } from "@/components/admin-requests/AdminRequestsFilters";
+import { extractDayOffDate } from "@/utils/dateUtils";
+
+// Lazy load heavy components
+const DayOffCalendar = lazy(() => import("@/components/admin-requests/DayOffCalendar").then(m => ({ default: m.DayOffCalendar })));
+const ManageTypesDialog = lazy(() => import("@/components/admin-requests/ManageTypesDialog").then(m => ({ default: m.ManageTypesDialog })));
 
 interface DriverRequest {
   id: string;
@@ -35,14 +40,6 @@ interface DriverRequest {
   created_at: string;
 }
 
-const DEFAULT_REQUEST_TYPES = [
-  { value: "single_to_double", label: "Single to Double" },
-  { value: "double_to_single", label: "Double to Single" },
-  { value: "cng_to_hybrid", label: "CNG to Hybrid" },
-  { value: "day_off", label: "Day Off" },
-  { value: "other", label: "Other" },
-];
-
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending", color: "bg-yellow-500" },
   { value: "in_progress", label: "In Progress", color: "bg-blue-500" },
@@ -54,7 +51,6 @@ const AdminRequestsPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [requests, setRequests] = useState<DriverRequest[]>([]);
-  const [filteredRequests, setFilteredRequests] = useState<DriverRequest[]>([]);
   const [controllerMap, setControllerMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -74,20 +70,17 @@ const AdminRequestsPage = () => {
   const [editSubject, setEditSubject] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
-  // Request types management (from Supabase)
-  const { requestTypes, addType: addRequestType, deleteType: deleteRequestType } = useRequestTypes();
+  // Dialogs
   const [showTypesDialog, setShowTypesDialog] = useState(false);
-  const [newTypeValue, setNewTypeValue] = useState("");
-  const [newTypeLabel, setNewTypeLabel] = useState("");
-
-  // Delete confirmation
   const [deleteConfirmRequest, setDeleteConfirmRequest] = useState<DriverRequest | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Calendar state
+  // Calendar
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
+
+  const { requestTypes } = useRequestTypes();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -98,7 +91,6 @@ const AdminRequestsPage = () => {
   useEffect(() => {
     const checkAdminRole = async () => {
       if (!user?.id) return;
-
       try {
         const { data, error } = await supabase
           .from("user_roles")
@@ -120,65 +112,56 @@ const AdminRequestsPage = () => {
         navigate("/home", { replace: true });
       }
     };
-
     checkAdminRole();
   }, [user?.id, navigate]);
 
-  useEffect(() => {
-    const fetchRequests = async () => {
-      if (!isAdmin) return;
+  const fetchRequests = useCallback(async () => {
+    if (!isAdmin) return;
+    try {
+      const reqResult = await supabase
+        .from("driver_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      try {
-        // Fetch requests
-        const reqResult = await supabase
-          .from("driver_requests")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        // Fetch ALL driver_master_file rows (may exceed 1000 default limit)
-        let allMasterData: { driver_id: string; controller: string | null }[] = [];
-        let from = 0;
-        const pageSize = 1000;
-        while (true) {
-          const { data: page, error: pageErr } = await supabase
-            .from("driver_master_file")
-            .select("driver_id, controller")
-            .range(from, from + pageSize - 1);
-          if (pageErr) break;
-          if (!page || page.length === 0) break;
-          allMasterData = allMasterData.concat(page);
-          if (page.length < pageSize) break;
-          from += pageSize;
-        }
-
-        if (reqResult.error) throw reqResult.error;
-        setRequests(reqResult.data || []);
-        setFilteredRequests(reqResult.data || []);
-
-        // Build controller lookup map
-        const cMap: Record<string, string> = {};
-        allMasterData.forEach((d) => {
-          if (d.controller) cMap[d.driver_id] = d.controller;
-        });
-        setControllerMap(cMap);
-      } catch (error: any) {
-        console.error("Error fetching requests:", error);
-        toast.error("Failed to load requests");
-      } finally {
-        setLoading(false);
+      // Paginated fetch of driver_master_file
+      let allMasterData: { driver_id: string; controller: string | null }[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data: page, error: pageErr } = await supabase
+          .from("driver_master_file")
+          .select("driver_id, controller")
+          .range(from, from + pageSize - 1);
+        if (pageErr) break;
+        if (!page || page.length === 0) break;
+        allMasterData = allMasterData.concat(page);
+        if (page.length < pageSize) break;
+        from += pageSize;
       }
-    };
 
-    fetchRequests();
+      if (reqResult.error) throw reqResult.error;
+      setRequests(reqResult.data || []);
+
+      const cMap: Record<string, string> = {};
+      allMasterData.forEach((d) => {
+        if (d.controller) cMap[d.driver_id] = d.controller;
+      });
+      setControllerMap(cMap);
+    } catch (error: any) {
+      console.error("Error fetching requests:", error);
+      toast.error("Failed to load requests");
+    } finally {
+      setLoading(false);
+    }
   }, [isAdmin]);
 
-  // Build unique list of controllers from the map
+  useEffect(() => { fetchRequests(); }, [fetchRequests]);
+
   const controllerList = useMemo(() => {
-    const names = new Set<string>(Object.values(controllerMap));
-    return Array.from(names).sort();
+    return Array.from(new Set(Object.values(controllerMap))).sort();
   }, [controllerMap]);
 
-  useEffect(() => {
+  const filteredRequests = useMemo(() => {
     let filtered = [...requests];
 
     if (searchQuery) {
@@ -191,65 +174,49 @@ const AdminRequestsPage = () => {
           r.request_no?.toLowerCase().includes(query)
       );
     }
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((r) => r.status === statusFilter);
-    }
-
-    if (typeFilter !== "all") {
-      filtered = filtered.filter((r) => r.request_type === typeFilter);
-    }
-
+    if (statusFilter !== "all") filtered = filtered.filter((r) => r.status === statusFilter);
+    if (typeFilter !== "all") filtered = filtered.filter((r) => r.request_type === typeFilter);
     if (controllerFilter !== "all") {
       filtered = filtered.filter((r) => controllerMap[r.driver_id]?.toLowerCase() === controllerFilter.toLowerCase());
     }
-
-    // Filter by selected calendar date (day off date from subject)
     if (selectedCalendarDate) {
       filtered = filtered.filter((r) => {
         if (r.request_type !== "day_off") return false;
-        const dayOffDate = extractDayOffDate(r.subject);
-        return dayOffDate === selectedCalendarDate;
+        return extractDayOffDate(r.subject) === selectedCalendarDate;
       });
     }
-
-    setFilteredRequests(filtered);
+    return filtered;
   }, [requests, searchQuery, statusFilter, typeFilter, controllerFilter, selectedCalendarDate, controllerMap]);
 
-  const handleClose = () => {
-    navigate("/home");
-  };
+  const handleClose = useCallback(() => navigate("/home"), [navigate]);
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from("driver_requests")
         .select("*")
         .order("created_at", { ascending: false });
-
       if (error) throw error;
       setRequests(data || []);
       toast.success("Requests refreshed");
     } catch (error: any) {
-      console.error("Error refreshing requests:", error);
       toast.error("Failed to refresh requests");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const openResponseDialog = (request: DriverRequest) => {
+  const openResponseDialog = useCallback((request: DriverRequest) => {
     setSelectedRequest(request);
     setResponseText(request.admin_response || "");
     setNewStatus(request.status);
     setEditSubject(request.subject);
     setEditDescription(request.description);
-  };
+  }, []);
 
-  const handleSubmitResponse = async () => {
+  const handleSubmitResponse = useCallback(async () => {
     if (!selectedRequest || !user?.id) return;
-
     setSubmitting(true);
     try {
       const updateData: any = {
@@ -259,175 +226,53 @@ const AdminRequestsPage = () => {
         subject: editSubject.trim(),
         description: editDescription.trim(),
       };
-
-      if (responseText.trim()) {
-        updateData.admin_response = responseText.trim();
-      }
+      if (responseText.trim()) updateData.admin_response = responseText.trim();
 
       const { error } = await supabase
         .from("driver_requests")
         .update(updateData)
         .eq("id", selectedRequest.id);
-
       if (error) throw error;
 
-      // Update local state
-      setRequests((prev) =>
-        prev.map((r) =>
-          r.id === selectedRequest.id
-            ? { ...r, ...updateData }
-            : r
-        )
-      );
-
+      setRequests((prev) => prev.map((r) => r.id === selectedRequest.id ? { ...r, ...updateData } : r));
       setSelectedRequest(null);
-      setResponseText("");
-      setNewStatus("");
       toast.success("Request updated successfully");
     } catch (error: any) {
-      console.error("Error updating request:", error);
       toast.error("Failed to update request");
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [selectedRequest, user?.id, newStatus, editSubject, editDescription, responseText]);
 
-  const getStatusBadge = (status: string) => {
-    const statusOption = STATUS_OPTIONS.find((s) => s.value === status);
-    const Icon = status === "pending" ? Clock : 
-                 status === "approved" ? CheckCircle : 
-                 status === "rejected" ? XCircle : 
-                 status === "in_progress" ? Loader2 : AlertCircle;
-
-    return (
-      <Badge className={`${statusOption?.color || "bg-gray-500"} text-white`}>
-        <Icon className={`h-3 w-3 mr-1 ${status === "in_progress" ? "animate-spin" : ""}`} />
-        {statusOption?.label || status}
-      </Badge>
-    );
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const getRequestTypeLabel = (value: string) => {
-    return requestTypes.find((t: { value: string; label: string }) => t.value === value)?.label || value;
-  };
-
-  const handleAddRequestType = async () => {
-    if (!newTypeValue.trim() || !newTypeLabel.trim()) {
-      toast.error("Please enter both value and label");
-      return;
-    }
-
-    try {
-      await addRequestType(newTypeValue.trim(), newTypeLabel.trim());
-      setNewTypeValue("");
-      setNewTypeLabel("");
-      toast.success("Request type added successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to add request type");
-    }
-  };
-
-  const handleDeleteRequestType = async (value: string) => {
-    try {
-      await deleteRequestType(value);
-      toast.success("Request type deleted");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete request type");
-    }
-  };
-
-  const handleDeleteRequest = async () => {
+  const handleDeleteRequest = useCallback(async () => {
     if (!deleteConfirmRequest) return;
-    
     setDeleting(true);
     try {
       const { error } = await supabase
         .from("driver_requests")
         .delete()
         .eq("id", deleteConfirmRequest.id);
-
       if (error) throw error;
-
       setRequests((prev) => prev.filter((r) => r.id !== deleteConfirmRequest.id));
       setDeleteConfirmRequest(null);
       toast.success("Request deleted successfully");
     } catch (error: any) {
-      console.error("Error deleting request:", error);
       toast.error("Failed to delete request");
     } finally {
       setDeleting(false);
     }
-  };
+  }, [deleteConfirmRequest]);
 
-  // Extract day off date from subject (format: "Day Off Request - DD MMM YYYY")
-  const extractDayOffDate = (subject: string): string | null => {
-    const match = subject.match(/Day Off Request - (\d{1,2} \w+ \d{4})/);
-    if (match) {
-      try {
-        const parsedDate = new Date(match[1]);
-        if (!isNaN(parsedDate.getTime())) {
-          return format(parsedDate, "yyyy-MM-dd");
-        }
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  };
-
-  // Calculate day off counts per day for the calendar
-  const dayOffCountsByDate = useMemo(() => {
-    const counts: Record<string, { total: number; approved: number; pending: number }> = {};
+  // Dynamic import of xlsx for export
+  const handleExportToExcel = useCallback(async () => {
+    const XLSX = await import("xlsx");
+    const getLabel = (value: string) => requestTypes.find((t: { value: string; label: string }) => t.value === value)?.label || value;
     
-    requests
-      .filter((r) => r.request_type === "day_off")
-      .forEach((r) => {
-        // Extract the actual day off date from subject, not created_at
-        const dateStr = extractDayOffDate(r.subject);
-        if (!dateStr) return;
-        
-        if (!counts[dateStr]) {
-          counts[dateStr] = { total: 0, approved: 0, pending: 0 };
-        }
-        counts[dateStr].total++;
-        if (r.status === "approved") {
-          counts[dateStr].approved++;
-        } else if (r.status === "pending") {
-          counts[dateStr].pending++;
-        }
-      });
-    
-    return counts;
-  }, [requests]);
-
-  // Get days in current calendar month
-  const calendarDays = useMemo(() => {
-    const start = startOfMonth(calendarMonth);
-    const end = endOfMonth(calendarMonth);
-    return eachDayOfInterval({ start, end });
-  }, [calendarMonth]);
-
-  // Get the starting day of week offset (0 = Sunday)
-  const startingDayOffset = useMemo(() => {
-    return startOfMonth(calendarMonth).getDay();
-  }, [calendarMonth]);
-
-  const handleExportToExcel = () => {
     const exportData = requests.map((r) => ({
       "Request No": r.request_no || "-",
       "Driver ID": r.driver_id,
       "Driver Name": r.driver_name || "-",
-      "Request Type": getRequestTypeLabel(r.request_type),
+      "Request Type": getLabel(r.request_type),
       "Subject": r.subject,
       "Description": r.description,
       "Status": STATUS_OPTIONS.find(s => s.value === r.status)?.label || r.status,
@@ -439,24 +284,43 @@ const AdminRequestsPage = () => {
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Driver Requests");
-    
-    // Auto-size columns
-    const colWidths = Object.keys(exportData[0] || {}).map(key => ({
-      wch: Math.max(key.length, 15)
-    }));
-    worksheet['!cols'] = colWidths;
-    
+    worksheet['!cols'] = Object.keys(exportData[0] || {}).map(key => ({ wch: Math.max(key.length, 15) }));
     XLSX.writeFile(workbook, `Driver_Requests_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
     toast.success("Exported to Excel successfully");
+  }, [requests, requestTypes]);
+
+  const getStatusBadge = (status: string) => {
+    const statusOption = STATUS_OPTIONS.find((s) => s.value === status);
+    const Icon = status === "pending" ? Clock : status === "approved" ? CheckCircle : status === "rejected" ? XCircle : status === "in_progress" ? Loader2 : AlertCircle;
+    return (
+      <Badge className={`${statusOption?.color || "bg-gray-500"} text-white`}>
+        <Icon className={`h-3 w-3 mr-1 ${status === "in_progress" ? "animate-spin" : ""}`} />
+        {statusOption?.label || status}
+      </Badge>
+    );
   };
 
-  const stats = {
+  const getRequestTypeLabel = (value: string) => {
+    return requestTypes.find((t: { value: string; label: string }) => t.value === value)?.label || value;
+  };
+
+  const stats = useMemo(() => ({
     total: requests.length,
     pending: requests.filter((r) => r.status === "pending").length,
     inProgress: requests.filter((r) => r.status === "in_progress").length,
     resolved: requests.filter((r) => r.status === "approved" || r.status === "rejected").length,
     dayOff: requests.filter((r) => r.request_type === "day_off").length,
-  };
+  }), [requests]);
+
+  const hasActiveFilters = searchQuery || statusFilter !== "all" || typeFilter !== "all" || controllerFilter !== "all";
+
+  const clearAllFilters = useCallback(() => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setTypeFilter("all");
+    setControllerFilter("all");
+    setSelectedCalendarDate(null);
+  }, []);
 
   if (!isAdmin) {
     return (
@@ -468,12 +332,7 @@ const AdminRequestsPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-blue-50/50 to-cyan-100/50 p-4 sm:p-6">
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="absolute top-4 right-4 z-10"
-        onClick={handleClose}
-      >
+      <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-10" onClick={handleClose}>
         <X className="h-6 w-6 text-muted-foreground hover:text-foreground" />
       </Button>
       
@@ -487,6 +346,7 @@ const AdminRequestsPage = () => {
       </Button>
 
       <div className="max-w-6xl mx-auto pt-16">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
@@ -507,240 +367,37 @@ const AdminRequestsPage = () => {
           </div>
         </div>
 
-        {/* Day Off Calendar */}
+        {/* Day Off Calendar - lazy loaded */}
         {showCalendar && (
-          <Card className="mb-6 bg-card border-border">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <CalendarDays className="h-5 w-5 text-blue-600" />
-                  Day Off Requests Calendar
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm font-medium min-w-[120px] text-center">
-                    {format(calendarMonth, "MMMM yyyy")}
-                  </span>
-                  <Button variant="outline" size="icon" onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {/* Day headers */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                  <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              {/* Calendar grid */}
-              <div className="grid grid-cols-7 gap-1">
-                {/* Empty cells for offset */}
-                {Array.from({ length: startingDayOffset }).map((_, i) => (
-                  <div key={`empty-${i}`} className="h-16 sm:h-20" />
-                ))}
-                {/* Day cells */}
-                {calendarDays.map((day) => {
-                  const dateStr = format(day, "yyyy-MM-dd");
-                  const counts = dayOffCountsByDate[dateStr];
-                  const hasRequests = counts && counts.total > 0;
-                  const isSelected = selectedCalendarDate === dateStr;
-                  
-                  return (
-                    <div
-                      key={dateStr}
-                      onClick={() => {
-                        if (hasRequests) {
-                          setSelectedCalendarDate(isSelected ? null : dateStr);
-                        }
-                      }}
-                      className={`h-16 sm:h-20 p-1 rounded-lg border transition-colors ${
-                        hasRequests ? "cursor-pointer hover:border-blue-400" : ""
-                      } ${
-                        isSelected ? "border-blue-600 bg-blue-100 ring-2 ring-blue-400" :
-                        isToday(day) ? "border-blue-500 bg-blue-50" : 
-                        hasRequests ? "border-border bg-muted/30" : "border-border/50"
-                      }`}
-                    >
-                      <div className={`text-xs font-medium ${isSelected ? "text-blue-700" : isToday(day) ? "text-blue-600" : "text-foreground"}`}>
-                        {format(day, "d")}
-                      </div>
-                      {hasRequests && (
-                        <div className="mt-1 space-y-0.5">
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 rounded-full bg-green-500" />
-                            <span className="text-xs text-green-700">{counts.approved}</span>
-                          </div>
-                          {counts.pending > 0 && (
-                            <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                              <span className="text-xs text-yellow-700">{counts.pending}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Legend and selected date indicator */}
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span>Approved</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                    <span>Pending</span>
-                  </div>
-                </div>
-                {selectedCalendarDate && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setSelectedCalendarDate(null)}
-                    className="text-xs"
-                  >
-                    <X className="h-3 w-3 mr-1" />
-                    Clear filter: {format(new Date(selectedCalendarDate), "dd MMM yyyy")}
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
+            <DayOffCalendar
+              requests={requests}
+              calendarMonth={calendarMonth}
+              selectedDate={selectedCalendarDate}
+              onMonthChange={setCalendarMonth}
+              onDateSelect={setSelectedCalendarDate}
+            />
+          </Suspense>
         )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <Card className="bg-card border-border">
-            <CardContent className="p-4">
-              <div className="text-sm text-muted-foreground">Total Requests</div>
-              <div className="text-2xl font-bold text-foreground">{stats.total}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-yellow-50 border-yellow-200">
-            <CardContent className="p-4">
-              <div className="text-sm text-yellow-700">Pending</div>
-              <div className="text-2xl font-bold text-yellow-800">{stats.pending}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
-              <div className="text-sm text-blue-700">In Progress</div>
-              <div className="text-2xl font-bold text-blue-800">{stats.inProgress}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-4">
-              <div className="text-sm text-green-700">Resolved</div>
-              <div className="text-2xl font-bold text-green-800">{stats.resolved}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-purple-50 border-purple-200">
-            <CardContent className="p-4">
-              <div className="text-sm text-purple-700">Day Off</div>
-              <div className="text-2xl font-bold text-purple-800">{stats.dayOff}</div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Stats */}
+        <AdminRequestStats stats={stats} />
 
         {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by driver ID, name, subject, or request no..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-8"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-[180px]">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  {STATUS_OPTIONS.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-full md:w-[220px]">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Request Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {requestTypes.map((type: { value: string; label: string }) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={controllerFilter} onValueChange={setControllerFilter}>
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Controller" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Controllers</SelectItem>
-                  {controllerList.map((name) => (
-                    <SelectItem key={name} value={name}>
-                      {name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button variant="outline" onClick={() => setShowTypesDialog(true)}>
-                <Settings className="h-4 w-4 mr-2" />
-                Manage Types
-              </Button>
-            </div>
-            {(searchQuery || statusFilter !== "all" || typeFilter !== "all" || controllerFilter !== "all") && (
-              <div className="flex items-center justify-end mt-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setStatusFilter("all");
-                    setTypeFilter("all");
-                    setControllerFilter("all");
-                    setSelectedCalendarDate(null);
-                  }}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Clear All Filters
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <AdminRequestsFilters
+          searchQuery={searchQuery}
+          statusFilter={statusFilter}
+          typeFilter={typeFilter}
+          controllerFilter={controllerFilter}
+          controllerList={controllerList}
+          onSearchChange={setSearchQuery}
+          onStatusChange={setStatusFilter}
+          onTypeChange={setTypeFilter}
+          onControllerChange={setControllerFilter}
+          onClearAll={clearAllFilters}
+          onManageTypes={() => setShowTypesDialog(true)}
+          hasActiveFilters={!!hasActiveFilters}
+        />
 
         {/* Requests List */}
         {loading ? (
@@ -754,9 +411,7 @@ const AdminRequestsPage = () => {
               <MessageSquare className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-foreground mb-2">No Requests Found</h2>
               <p className="text-muted-foreground">
-                {requests.length === 0
-                  ? "No driver requests have been submitted yet."
-                  : "No requests match your current filters."}
+                {requests.length === 0 ? "No driver requests have been submitted yet." : "No requests match your current filters."}
               </p>
             </CardContent>
           </Card>
@@ -788,10 +443,7 @@ const AdminRequestsPage = () => {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteConfirmRequest(request);
-                            }}
+                            onClick={(e) => { e.stopPropagation(); setDeleteConfirmRequest(request); }}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -806,22 +458,16 @@ const AdminRequestsPage = () => {
                         Driver: {request.driver_name || request.driver_id}
                       </span>
                       {controllerMap[request.driver_id] && (
-                        <span className="text-xs text-muted-foreground">
-                          • RC: {controllerMap[request.driver_id]}
-                        </span>
+                        <span className="text-xs text-muted-foreground">• RC: {controllerMap[request.driver_id]}</span>
                       )}
-                      <span className="text-xs text-muted-foreground">
-                        • {formatDate(request.created_at)}
-                      </span>
+                      <span className="text-xs text-muted-foreground">• {formatDate(request.created_at)}</span>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-2">
                   <p className="text-sm text-muted-foreground line-clamp-2">{request.description}</p>
                   {request.admin_response && (
-                    <div className="mt-2 text-xs text-blue-600">
-                      ✓ Response provided
-                    </div>
+                    <div className="mt-2 text-xs text-blue-600">✓ Response provided</div>
                   )}
                 </CardContent>
               </Card>
@@ -847,7 +493,6 @@ const AdminRequestsPage = () => {
 
           {selectedRequest && (
             <div className="space-y-4">
-              {/* Request Details */}
               <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
@@ -879,9 +524,7 @@ const AdminRequestsPage = () => {
                     </SelectTrigger>
                     <SelectContent className="bg-white z-50">
                       {requestTypes.map((type: { value: string; label: string }) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
+                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -897,7 +540,6 @@ const AdminRequestsPage = () => {
                 </div>
               </div>
 
-              {/* Status Update */}
               <div>
                 <Label htmlFor="status">Update Status</Label>
                 <Select value={newStatus} onValueChange={setNewStatus}>
@@ -906,15 +548,12 @@ const AdminRequestsPage = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {STATUS_OPTIONS.map((status) => (
-                      <SelectItem key={status.value} value={status.value}>
-                        {status.label}
-                      </SelectItem>
+                      <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Response */}
               <div>
                 <Label htmlFor="response">Admin Response</Label>
                 <Textarea
@@ -925,108 +564,28 @@ const AdminRequestsPage = () => {
                   className="mt-1 min-h-[120px]"
                   maxLength={1000}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {responseText.length}/1000 characters
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">{responseText.length}/1000 characters</p>
               </div>
             </div>
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedRequest(null)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmitResponse}
-              disabled={submitting || !newStatus}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
+            <Button variant="outline" onClick={() => setSelectedRequest(null)}>Cancel</Button>
+            <Button onClick={handleSubmitResponse} disabled={submitting || !newStatus} className="bg-blue-600 hover:bg-blue-700">
               {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
               ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Save Response
-                </>
+                <><Send className="h-4 w-4 mr-2" />Save Response</>
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Manage Request Types Dialog */}
-      <Dialog open={showTypesDialog} onOpenChange={setShowTypesDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-blue-600" />
-              Manage Request Types
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Add new type form */}
-            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-              <Label className="text-sm font-medium">Add New Request Type</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Input
-                    placeholder="Value (e.g. leave_request)"
-                    value={newTypeValue}
-                    onChange={(e) => setNewTypeValue(e.target.value)}
-                    className="text-sm"
-                  />
-                </div>
-                <div>
-                  <Input
-                    placeholder="Label (e.g. Leave Request)"
-                    value={newTypeLabel}
-                    onChange={(e) => setNewTypeLabel(e.target.value)}
-                    className="text-sm"
-                  />
-                </div>
-              </div>
-              <Button onClick={handleAddRequestType} size="sm" className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Request Type
-              </Button>
-            </div>
-
-            {/* Existing types list */}
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              <Label className="text-sm font-medium">Existing Types ({requestTypes.length})</Label>
-              {requestTypes.map((type: { value: string; label: string }) => (
-                <div
-                  key={type.value}
-                  className="flex items-center justify-between p-3 bg-card border rounded-lg"
-                >
-                  <div>
-                    <div className="font-medium text-sm">{type.label}</div>
-                    <div className="text-xs text-muted-foreground font-mono">{type.value}</div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteRequestType(type.value)}
-                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTypesDialog(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Manage Request Types Dialog - lazy loaded */}
+      <Suspense fallback={null}>
+        <ManageTypesDialog open={showTypesDialog} onOpenChange={setShowTypesDialog} />
+      </Suspense>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteConfirmRequest} onOpenChange={() => setDeleteConfirmRequest(null)}>
@@ -1045,21 +604,11 @@ const AdminRequestsPage = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteRequest}
-              disabled={deleting}
-              className="bg-destructive hover:bg-destructive/90"
-            >
+            <AlertDialogAction onClick={handleDeleteRequest} disabled={deleting} className="bg-destructive hover:bg-destructive/90">
               {deleting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
-                </>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Deleting...</>
               ) : (
-                <>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </>
+                <><Trash2 className="h-4 w-4 mr-2" />Delete</>
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -1067,6 +616,16 @@ const AdminRequestsPage = () => {
       </AlertDialog>
     </div>
   );
+};
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
 export default AdminRequestsPage;

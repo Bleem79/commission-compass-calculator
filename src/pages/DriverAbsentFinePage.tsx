@@ -1,16 +1,15 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, Upload, Loader2, AlertCircle, Trash2, Search, X } from "lucide-react";
+import { ArrowLeft, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Progress } from "@/components/ui/progress";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { FineUploadSection } from "@/components/absent-fine/FineUploadSection";
+import { FineTable } from "@/components/absent-fine/FineTable";
 
 interface FineRecord {
   id: string;
@@ -39,8 +38,7 @@ const DriverAbsentFinePage = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fineTypes = useMemo(() => {
-    const types = [...new Set(fines.map(f => f.fine_type))];
-    return types.sort();
+    return [...new Set(fines.map(f => f.fine_type))].sort();
   }, [fines]);
 
   const filteredFines = useMemo(() => {
@@ -51,28 +49,22 @@ const DriverAbsentFinePage = () => {
         fine.vehicle_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
         fine.entered_by.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (fine.driver_reason?.toLowerCase().includes(searchQuery.toLowerCase()));
-      
       const matchesFineType = fineTypeFilter === "all" || fine.fine_type === fineTypeFilter;
-      
       return matchesSearch && matchesFineType;
     });
   }, [fines, searchQuery, fineTypeFilter]);
 
   useEffect(() => {
-    if (!isAdmin) {
-      navigate("/home");
-      return;
-    }
+    if (!isAdmin) { navigate("/home"); return; }
     fetchFines();
   }, [isAdmin, navigate]);
 
-  const fetchFines = async () => {
+  const fetchFines = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("driver_absent_fines")
         .select("*")
         .order("timestamp", { ascending: false });
-
       if (error) throw error;
       setFines(data || []);
     } catch (error: any) {
@@ -80,15 +72,14 @@ const DriverAbsentFinePage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const downloadTemplate = () => {
+  const downloadTemplate = useCallback(() => {
     const headers = "Fine No.,Driver ID,Vehicle Number,Fine Type,Driver Reason,Start Date,End Date,Days,Total Amount,Timestamp,Entered By";
     const sampleRows = [
       "VA2411,113944,A675,Not Reporting For Daily Payment,Late Payment,08-01-26,08-01-26,1,50,09-01-26 8:34,vajid@amantaxi.com",
       "VA2410,115154,A818,Not Reporting For Daily Payment,Dubai-Trip,08-01-26,08-01-26,1,50,09-01-26 8:31,vajid@amantaxi.com"
     ];
-    
     const csvContent = [headers, ...sampleRows].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
@@ -101,44 +92,36 @@ const DriverAbsentFinePage = () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     toast.success("Template downloaded successfully");
-  };
+  }, []);
 
   const parseDate = (dateStr: string): string => {
-    // Handle format DD-MM-YY
     const parts = dateStr.trim().split("-");
     if (parts.length === 3) {
       const day = parts[0].padStart(2, "0");
       const month = parts[1].padStart(2, "0");
       let year = parts[2];
-      if (year.length === 2) {
-        year = "20" + year;
-      }
+      if (year.length === 2) year = "20" + year;
       return `${year}-${month}-${day}`;
     }
     return dateStr;
   };
 
   const parseTimestamp = (timestampStr: string): string => {
-    // Handle format DD-MM-YY H:MM
     const parts = timestampStr.trim().split(" ");
     if (parts.length >= 1) {
       const datePart = parseDate(parts[0]);
       if (parts.length >= 2) {
-        const timePart = parts[1];
-        const [hours, minutes] = timePart.split(":");
-        const paddedHours = hours.padStart(2, "0");
-        const paddedMinutes = (minutes || "00").padStart(2, "0");
-        return `${datePart}T${paddedHours}:${paddedMinutes}:00`;
+        const [hours, minutes] = parts[1].split(":");
+        return `${datePart}T${hours.padStart(2, "0")}:${(minutes || "00").padStart(2, "0")}:00`;
       }
       return `${datePart}T00:00:00`;
     }
     return new Date().toISOString();
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     if (!file.name.endsWith(".csv")) {
       toast.error("Invalid file type", { description: "Please upload a CSV file" });
       return;
@@ -150,26 +133,11 @@ const DriverAbsentFinePage = () => {
     try {
       const text = await file.text();
       const lines = text.split("\n").filter(line => line.trim());
-      
-      if (lines.length < 2) {
-        throw new Error("CSV file must have a header row and at least one data row");
-      }
+      if (lines.length < 2) throw new Error("CSV file must have a header row and at least one data row");
 
       const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-      const requiredHeaders = ["fine no.", "driver id", "vehicle number", "fine type"];
-      
       const headerMap: Record<string, number> = {};
-      headers.forEach((h, i) => {
-        headerMap[h] = i;
-      });
-
-      const missingHeaders = requiredHeaders.filter(rh => 
-        !headers.some(h => h.includes(rh.replace(".", "").toLowerCase()) || h === rh)
-      );
-
-      if (missingHeaders.length > 0) {
-        throw new Error(`Missing required columns: ${missingHeaders.join(", ")}`);
-      }
+      headers.forEach((h, i) => { headerMap[h] = i; });
 
       const records: any[] = [];
       const dataLines = lines.slice(1);
@@ -177,7 +145,6 @@ const DriverAbsentFinePage = () => {
       for (let i = 0; i < dataLines.length; i++) {
         const line = dataLines[i];
         if (!line.trim()) continue;
-
         const values = line.split(",").map(v => v.trim());
         
         const record = {
@@ -195,25 +162,16 @@ const DriverAbsentFinePage = () => {
           uploaded_by: user?.id || ""
         };
 
-        if (record.driver_id && record.fine_type) {
-          records.push(record);
-        }
-
+        if (record.driver_id && record.fine_type) records.push(record);
         setUploadProgress(Math.round(((i + 1) / dataLines.length) * 50));
       }
 
-      if (records.length === 0) {
-        throw new Error("No valid records found in the CSV file");
-      }
+      if (records.length === 0) throw new Error("No valid records found in the CSV file");
 
-      // Insert in chunks of 100
       const chunkSize = 100;
       for (let i = 0; i < records.length; i += chunkSize) {
-        const chunk = records.slice(i, i + chunkSize);
-        const { error } = await supabase.from("driver_absent_fines").insert(chunk);
-        
+        const { error } = await supabase.from("driver_absent_fines").insert(records.slice(i, i + chunkSize));
         if (error) throw error;
-        
         setUploadProgress(50 + Math.round(((i + chunkSize) / records.length) * 50));
       }
 
@@ -226,9 +184,9 @@ const DriverAbsentFinePage = () => {
       setUploadProgress(0);
       event.target.value = "";
     }
-  };
+  }, [user, fetchFines]);
 
-  const clearAllFines = async () => {
+  const clearAllFines = useCallback(async () => {
     try {
       const { error } = await supabase.from("driver_absent_fines").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       if (error) throw error;
@@ -237,9 +195,9 @@ const DriverAbsentFinePage = () => {
     } catch (error: any) {
       toast.error("Failed to clear fines", { description: error.message });
     }
-  };
+  }, []);
 
-  const deleteFine = async (id: string) => {
+  const deleteFine = useCallback(async (id: string) => {
     setDeletingId(id);
     try {
       const { error } = await supabase.from("driver_absent_fines").delete().eq("id", id);
@@ -251,11 +209,17 @@ const DriverAbsentFinePage = () => {
     } finally {
       setDeletingId(null);
     }
-  };
+  }, []);
 
-  if (!isAdmin) {
-    return null;
-  }
+  // Memoized stats
+  const stats = useMemo(() => ({
+    records: filteredFines.length,
+    totalAmount: filteredFines.reduce((sum, f) => sum + f.total_amount, 0),
+    uniqueDrivers: new Set(filteredFines.map(f => f.driver_id)).size,
+    totalDays: filteredFines.reduce((sum, f) => sum + f.days, 0),
+  }), [filteredFines]);
+
+  if (!isAdmin) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">
@@ -263,12 +227,7 @@ const DriverAbsentFinePage = () => {
         {/* Header */}
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/home")}
-              className="text-white hover:bg-white/10"
-            >
+            <Button variant="ghost" size="icon" onClick={() => navigate("/home")} className="text-white hover:bg-white/10">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
@@ -278,122 +237,31 @@ const DriverAbsentFinePage = () => {
           </div>
         </div>
 
-        {/* Actions Card */}
-        <Card className="mb-6 bg-white/10 backdrop-blur-md border-white/20">
-          <CardHeader>
-            <CardTitle className="text-white text-lg">Upload Fine Records</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-3">
-              <Button
-                variant="outline"
-                onClick={downloadTemplate}
-                className="bg-white hover:bg-gray-50 border-green-200 text-green-700 hover:text-green-800"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download Template
-              </Button>
-              
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="fine-csv-upload"
-                disabled={isUploading}
-              />
-              <Button
-                variant="outline"
-                disabled={isUploading}
-                onClick={() => document.getElementById("fine-csv-upload")?.click()}
-                className="bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800"
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload CSV
-                  </>
-                )}
-              </Button>
-
-              {fines.length > 0 && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="ml-auto">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Clear All
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Clear All Fine Records?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will permanently delete all {fines.length} fine records. This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={clearAllFines} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Delete All
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
-
-            {isUploading && (
-              <div className="space-y-2">
-                <Progress value={uploadProgress} className="h-2" />
-                <p className="text-xs text-white/60">Processing... {uploadProgress}%</p>
-              </div>
-            )}
-
-            <p className="text-xs text-white/60">
-              CSV columns: <strong>Fine No.</strong>, <strong>Driver ID</strong>, <strong>Vehicle Number</strong>, <strong>Fine Type</strong>, 
-              <strong>Driver Reason</strong>, <strong>Start Date</strong>, <strong>End Date</strong>, <strong>Days</strong>, 
-              <strong>Total Amount</strong>, <strong>Timestamp</strong>, <strong>Entered By</strong>
-            </p>
-          </CardContent>
-        </Card>
+        {/* Upload Section */}
+        <FineUploadSection
+          isUploading={isUploading}
+          uploadProgress={uploadProgress}
+          totalFines={fines.length}
+          onDownloadTemplate={downloadTemplate}
+          onFileUpload={handleFileUpload}
+          onClearAll={clearAllFines}
+        />
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-white">{filteredFines.length}</p>
-              <p className="text-xs text-white/60">Records {searchQuery || fineTypeFilter !== "all" ? "(filtered)" : ""}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-white">
-                {filteredFines.reduce((sum, f) => sum + f.total_amount, 0).toLocaleString()}
-              </p>
-              <p className="text-xs text-white/60">Total Amount</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-white">
-                {new Set(filteredFines.map(f => f.driver_id)).size}
-              </p>
-              <p className="text-xs text-white/60">Unique Drivers</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-white">
-                {filteredFines.reduce((sum, f) => sum + f.days, 0)}
-              </p>
-              <p className="text-xs text-white/60">Total Days</p>
-            </CardContent>
-          </Card>
+          {[
+            { label: `Records ${searchQuery || fineTypeFilter !== "all" ? "(filtered)" : ""}`, value: stats.records },
+            { label: "Total Amount", value: stats.totalAmount.toLocaleString() },
+            { label: "Unique Drivers", value: stats.uniqueDrivers },
+            { label: "Total Days", value: stats.totalDays },
+          ].map(({ label, value }) => (
+            <Card key={label} className="bg-white/10 backdrop-blur-md border-white/20">
+              <CardContent className="p-4 text-center">
+                <p className="text-2xl font-bold text-white">{value}</p>
+                <p className="text-xs text-white/60">{label}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Search and Filter */}
@@ -409,12 +277,7 @@ const DriverAbsentFinePage = () => {
                   className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/50"
                 />
                 {searchQuery && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-white/60 hover:text-white"
-                    onClick={() => setSearchQuery("")}
-                  >
+                  <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-white/60 hover:text-white" onClick={() => setSearchQuery("")}>
                     <X className="h-4 w-4" />
                   </Button>
                 )}
@@ -444,103 +307,18 @@ const DriverAbsentFinePage = () => {
         </Card>
 
         {/* Table */}
-        <Card className="bg-white/10 backdrop-blur-md border-white/20">
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="flex items-center justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-white" />
-              </div>
-            ) : filteredFines.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-8 text-white/60">
-                <AlertCircle className="h-12 w-12 mb-4" />
-                <p>{fines.length === 0 ? "No fine records found" : "No matching records"}</p>
-                <p className="text-sm">{fines.length === 0 ? "Upload a CSV file to get started" : "Try adjusting your search or filters"}</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-white/20 hover:bg-white/5">
-                      <TableHead className="text-white/80">Fine No.</TableHead>
-                      <TableHead className="text-white/80">Driver ID</TableHead>
-                      <TableHead className="text-white/80">Vehicle</TableHead>
-                      <TableHead className="text-white/80">Fine Type</TableHead>
-                      <TableHead className="text-white/80">Reason</TableHead>
-                      <TableHead className="text-white/80">Start</TableHead>
-                      <TableHead className="text-white/80">End</TableHead>
-                      <TableHead className="text-white/80 text-right">Days</TableHead>
-                      <TableHead className="text-white/80 text-right">Amount</TableHead>
-                      <TableHead className="text-white/80">Entered By</TableHead>
-                      <TableHead className="text-white/80 text-center w-16">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredFines.slice(0, 100).map((fine) => (
-                      <TableRow key={fine.id} className="border-white/10 hover:bg-white/5">
-                        <TableCell className="text-white font-medium">{fine.fine_no}</TableCell>
-                        <TableCell className="text-white">{fine.driver_id}</TableCell>
-                        <TableCell className="text-white">{fine.vehicle_number}</TableCell>
-                        <TableCell className="text-white text-sm">{fine.fine_type}</TableCell>
-                        <TableCell className="text-white/80 text-sm">{fine.driver_reason || "-"}</TableCell>
-                        <TableCell className="text-white/80 text-sm">{fine.start_date}</TableCell>
-                        <TableCell className="text-white/80 text-sm">{fine.end_date}</TableCell>
-                        <TableCell className="text-white text-right">{fine.days}</TableCell>
-                        <TableCell className="text-white text-right font-medium">{fine.total_amount}</TableCell>
-                        <TableCell className="text-white/80 text-sm">{fine.entered_by}</TableCell>
-                        <TableCell className="text-center">
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                                disabled={deletingId === fine.id}
-                              >
-                                {deletingId === fine.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Fine Record?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently delete fine <strong>{fine.fine_no}</strong> for driver <strong>{fine.driver_id}</strong>. This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => deleteFine(fine.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {filteredFines.length > 100 && (
-                  <p className="text-center text-white/60 text-sm py-4">
-                    Showing 100 of {filteredFines.length} records
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <FineTable
+          fines={filteredFines}
+          totalCount={fines.length}
+          isLoading={isLoading}
+          deletingId={deletingId}
+          onDelete={deleteFine}
+        />
 
         {/* Footer */}
         <footer className="mt-8 pt-6 border-t border-white/10">
           <div className="flex flex-col items-center gap-3">
-            <img 
-              src="/lovable-uploads/aman-logo-footer.png" 
-              alt="Aman Taxi Sharjah" 
-              className="h-8 sm:h-10 object-contain opacity-70"
-            />
+            <img src="/lovable-uploads/aman-logo-footer.png" alt="Aman Taxi Sharjah" className="h-8 sm:h-10 object-contain opacity-70" />
             <p className="text-xs text-white/40">© {new Date().getFullYear()} All Rights Reserved</p>
           </div>
         </footer>
