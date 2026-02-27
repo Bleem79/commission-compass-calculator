@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowLeft, ClipboardCheck, Search, Plus, Filter, Trash2 } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, Search, Plus, Filter, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -149,6 +149,9 @@ const AdminEntryPassPage = () => {
     }
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
+
   const filteredEntries = entries.filter((e) => {
     const matchesSearch =
       !searchQuery ||
@@ -159,6 +162,17 @@ const AdminEntryPassPage = () => {
     const matchesStatus = statusFilter === "all" || e.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE));
+  const paginatedEntries = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredEntries.slice(start, start + PAGE_SIZE);
+  }, [filteredEntries, currentPage]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -279,10 +293,15 @@ const AdminEntryPassPage = () => {
 
           {/* Entries List */}
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold text-white/80">
-              All Entries ({filteredEntries.length})
-            </h2>
-            {filteredEntries.map((entry) => (
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white/80">
+                All Entries ({filteredEntries.length})
+              </h2>
+              <p className="text-white/50 text-xs">
+                {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, filteredEntries.length)} of {filteredEntries.length}
+              </p>
+            </div>
+            {paginatedEntries.map((entry) => (
               <button
                 key={entry.id}
                 onClick={() => setSelectedEntry(entry)}
@@ -316,6 +335,45 @@ const AdminEntryPassPage = () => {
               <div className="flex flex-col items-center justify-center text-white/40 gap-3 py-12">
                 <ClipboardCheck className="w-12 h-12" />
                 <p className="text-sm">No entry passes found.</p>
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-4 pb-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-30"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className={`min-w-[36px] border-white/20 ${
+                      currentPage === page
+                        ? "bg-purple-600 text-white border-purple-500 hover:bg-purple-700"
+                        : "bg-white/10 text-white/70 hover:bg-white/20"
+                    }`}
+                  >
+                    {page}
+                  </Button>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-30"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
             )}
           </div>
