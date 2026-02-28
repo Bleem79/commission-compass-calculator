@@ -204,7 +204,7 @@ Deno.serve(async (req) => {
       updatedCount: 0,
     };
 
-    const credentialRows: Array<{ driver_id: string; user_id: string; status: string }> = [];
+    const credentialRows: Array<{ driver_id: string; user_id: string; status: string; password_text: string }> = [];
     const roleRows: Array<{ user_id: string; role: string }> = [];
 
     for (const raw of drivers) {
@@ -273,7 +273,7 @@ Deno.serve(async (req) => {
 
         if (!userId) throw new Error("Could not determine user id");
 
-        credentialRows.push({ driver_id: driverId, user_id: userId, status });
+        credentialRows.push({ driver_id: driverId, user_id: userId, status, password_text: password });
         roleRows.push({ user_id: userId, role: "driver" });
         
         // Track new vs updated

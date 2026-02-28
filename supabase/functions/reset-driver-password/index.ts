@@ -168,10 +168,10 @@ Deno.serve(async (req) => {
         return json(500, { error: `Failed to update password: ${updateError.message}` });
       }
 
-      // Link the user_id to driver_credentials
+      // Link the user_id and store plaintext password in driver_credentials
       await adminClient
         .from("driver_credentials")
-        .update({ user_id: foundUserId })
+        .update({ user_id: foundUserId, password_text: newPassword })
         .eq("driver_id", driverId);
 
       console.log(`reset-driver-password: successfully reset password for driver=${driverId}`);
@@ -187,6 +187,12 @@ Deno.serve(async (req) => {
       console.error("reset-driver-password: failed to update password", updateError);
       return json(500, { error: `Failed to update password: ${updateError.message}` });
     }
+
+    // Store plaintext password
+    await adminClient
+      .from("driver_credentials")
+      .update({ password_text: newPassword })
+      .eq("driver_id", driverId);
 
     console.log(`reset-driver-password: successfully reset password for driver=${driverId}`);
     return json(200, { success: true, message: `Password reset for driver ${driverId}` });
