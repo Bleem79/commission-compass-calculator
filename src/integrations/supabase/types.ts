@@ -163,6 +163,7 @@ export type Database = {
           created_at: string | null
           driver_id: string
           id: string
+          password_text: string | null
           status: string
           user_id: string | null
         }
@@ -170,6 +171,7 @@ export type Database = {
           created_at?: string | null
           driver_id: string
           id?: string
+          password_text?: string | null
           status?: string
           user_id?: string | null
         }
@@ -177,6 +179,7 @@ export type Database = {
           created_at?: string | null
           driver_id?: string
           id?: string
+          password_text?: string | null
           status?: string
           user_id?: string | null
         }

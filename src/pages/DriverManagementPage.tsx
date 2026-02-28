@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2, Trash2, KeyRound } from "lucide-react";
+import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2, Trash2, KeyRound, Eye, EyeOff } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -24,6 +24,7 @@ interface DriverCredential {
   user_id: string | null;
   status: string;
   created_at: string | null;
+  password_text: string | null;
 }
 
 const DriverManagementPage = () => {
@@ -39,6 +40,19 @@ const DriverManagementPage = () => {
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [resetPasswordDriver, setResetPasswordDriver] = useState<string | null>(null);
+  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
+
+  const togglePasswordVisibility = useCallback((driverId: string) => {
+    setVisiblePasswords(prev => {
+      const next = new Set(prev);
+      if (next.has(driverId)) {
+        next.delete(driverId);
+      } else {
+        next.add(driverId);
+      }
+      return next;
+    });
+  }, []);
 
   const isStaff = canAccessAdminPages && !isAdmin;
 
@@ -312,6 +326,7 @@ const DriverManagementPage = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[200px]">Driver ID</TableHead>
+                      <TableHead>Password</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created At</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -321,6 +336,31 @@ const DriverManagementPage = () => {
                     {filteredDrivers.map((driver) => (
                       <TableRow key={driver.id}>
                         <TableCell className="font-medium">{driver.driver_id}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm text-slate-600 min-w-[80px]">
+                              {visiblePasswords.has(driver.id)
+                                ? (driver.password_text || "—")
+                                : driver.password_text
+                                  ? "••••••"
+                                  : "—"}
+                            </span>
+                            {driver.password_text && (
+                              <button
+                                type="button"
+                                onClick={() => togglePasswordVisibility(driver.id)}
+                                className="text-slate-400 hover:text-indigo-600 transition-colors"
+                                title={visiblePasswords.has(driver.id) ? "Hide password" : "Show password"}
+                              >
+                                {visiblePasswords.has(driver.id) ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge
                             variant={driver.status === 'enabled' ? 'default' : 'secondary'}
