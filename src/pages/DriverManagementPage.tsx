@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2, Trash2, KeyRound, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2, Trash2, KeyRound, Eye, EyeOff, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -40,6 +40,8 @@ const DriverManagementPage = () => {
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [resetPasswordDriver, setResetPasswordDriver] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
 
   const togglePasswordVisibility = useCallback((driverId: string) => {
@@ -176,6 +178,15 @@ const DriverManagementPage = () => {
     drivers.filter(driver => driver.driver_id.toLowerCase().includes(searchTerm.toLowerCase())),
     [drivers, searchTerm]
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredDrivers.length / PAGE_SIZE));
+  const paginatedDrivers = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredDrivers.slice(start, start + PAGE_SIZE);
+  }, [filteredDrivers, currentPage]);
+
+  // Reset page when search changes
+  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   const { enabledCount, disabledCount } = useMemo(() => ({
     enabledCount: drivers.filter(d => d.status === 'enabled').length,
@@ -321,6 +332,7 @@ const DriverManagementPage = () => {
                 {searchTerm ? "No drivers found matching your search" : "No drivers registered yet. Upload a CSV to add drivers."}
               </div>
             ) : (
+              <>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -333,7 +345,7 @@ const DriverManagementPage = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredDrivers.map((driver) => (
+                    {paginatedDrivers.map((driver) => (
                       <TableRow key={driver.id}>
                         <TableCell className="font-medium">{driver.driver_id}</TableCell>
                         <TableCell>
@@ -386,6 +398,39 @@ const DriverManagementPage = () => {
                   </TableBody>
                 </Table>
               </div>
+              {/* Pagination */}
+              {filteredDrivers.length > PAGE_SIZE && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t">
+                  <p className="text-sm text-slate-500">
+                    Showing {((currentPage - 1) * PAGE_SIZE) + 1}-{Math.min(currentPage * PAGE_SIZE, filteredDrivers.length)} of {filteredDrivers.length}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                      .reduce<(number | string)[]>((acc, p, i, arr) => {
+                        if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push('...');
+                        acc.push(p);
+                        return acc;
+                      }, [])
+                      .map((p, i) =>
+                        typeof p === 'string' ? (
+                          <span key={`ellipsis-${i}`} className="px-2 text-slate-400">…</span>
+                        ) : (
+                          <Button key={p} variant={p === currentPage ? "default" : "outline"} size="sm" className="min-w-[36px]" onClick={() => setCurrentPage(p)}>
+                            {p}
+                          </Button>
+                        )
+                      )}
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              </>
             )}
           </CardContent>
         </Card>
