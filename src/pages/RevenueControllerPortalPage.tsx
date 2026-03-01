@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, UserPlus, Users, Shield, Eye, Loader2, RefreshCw, Camera, Bell, BellOff, BellRing } from "lucide-react";
+import { ArrowLeft, UserPlus, Users, Shield, Eye, Loader2, RefreshCw, Camera, Bell, BellOff, BellRing, KeyRound, Dices } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
@@ -41,6 +41,9 @@ const RevenueControllerPortalPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarTargetUserId, setAvatarTargetUserId] = useState<string | null>(null);
   const [subscribedUserIds, setSubscribedUserIds] = useState<Set<string>>(new Set());
+  const [resetPasswordUserId, setResetPasswordUserId] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const { isSupported, isGranted, isDenied, requestPermission } = usePushNotifications();
   usePushSubscriptionRegistration(user?.id, null);
@@ -217,6 +220,33 @@ const RevenueControllerPortalPage = () => {
       setUploadingAvatarId(null);
       setAvatarTargetUserId(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const generateRandomPassword = useCallback(() => {
+    const pw = Math.floor(100000 + Math.random() * 900000).toString();
+    setNewPassword(pw);
+  }, []);
+
+  const handleResetPassword = async (userId: string) => {
+    if (!newPassword.trim() || newPassword.length < 6) {
+      toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      const response = await supabase.functions.invoke("create-portal-user", {
+        body: { action: "reset_password", user_id: userId, new_password: newPassword.trim() },
+      });
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+      toast({ title: "Success", description: "Password has been reset" });
+      setResetPasswordUserId(null);
+      setNewPassword("");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to reset password", variant: "destructive" });
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -465,6 +495,18 @@ const RevenueControllerPortalPage = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs gap-1"
+                              onClick={() => {
+                                setResetPasswordUserId(resetPasswordUserId === u.id ? null : u.id);
+                                setNewPassword("");
+                              }}
+                            >
+                              <KeyRound className="w-3 h-3" />
+                              Reset
+                            </Button>
                             <Switch
                               checked={!u.banned}
                               onCheckedChange={() => handleToggleStatus(u.id, u.banned)}
@@ -474,6 +516,34 @@ const RevenueControllerPortalPage = () => {
                               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                             )}
                           </div>
+                          {resetPasswordUserId === u.id && (
+                            <div className="mt-2 flex items-center gap-1.5 justify-end">
+                              <Input
+                                type="text"
+                                placeholder="New password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                className="h-7 text-xs w-32"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={generateRandomPassword}
+                                title="Generate random password"
+                              >
+                                <Dices className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={() => handleResetPassword(u.id)}
+                                disabled={resettingPassword || !newPassword.trim()}
+                              >
+                                {resettingPassword ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                              </Button>
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
