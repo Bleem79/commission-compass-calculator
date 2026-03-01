@@ -120,6 +120,14 @@ const DriverEntryPassPage = () => {
       setReason("");
       setDriverIdInput("");
       toast.success("Entry pass created successfully!");
+
+      // Send push notification to the driver
+      supabase.functions
+        .invoke("send-entry-pass-notification", {
+          body: { driverId: targetDriverId, driverName, reason },
+        })
+        .catch((err) => console.log("Entry pass notification failed (non-critical):", err));
+
       await fetchEntries();
     } catch (err: any) {
       toast.error(err.message || "Failed to create entry pass.");

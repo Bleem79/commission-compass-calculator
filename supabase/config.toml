@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.send-request-reminder]
 verify_jwt = false
+
+[functions.send-entry-pass-notification]
+verify_jwt = false

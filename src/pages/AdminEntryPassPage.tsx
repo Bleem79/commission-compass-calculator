@@ -105,6 +105,13 @@ const AdminEntryPassPage = () => {
       });
       if (error) throw error;
 
+      // Send push notification to the driver
+      supabase.functions
+        .invoke("send-entry-pass-notification", {
+          body: { driverId: driverIdInput.trim(), driverName: masterData?.driver_name || null, reason },
+        })
+        .catch((err) => console.log("Entry pass notification failed (non-critical):", err));
+
       setDriverIdInput("");
       setReason("");
       setShowCreateForm(false);
