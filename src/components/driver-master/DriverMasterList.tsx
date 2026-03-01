@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Users, Loader2, Pencil, Check, X } from "lucide-react";
+import { Search, Users, Loader2, Pencil, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -26,6 +26,8 @@ const DriverMasterList = ({ readOnly = false, controllerFilter }: DriverMasterLi
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   const fetchRecords = async () => {
     setLoading(true);
@@ -117,6 +119,15 @@ const DriverMasterList = ({ readOnly = false, controllerFilter }: DriverMasterLi
     );
   });
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, currentPage]);
+
+  // Reset page when search changes
+  useEffect(() => { setCurrentPage(1); }, [search]);
+
   const controllerSummary = records.reduce<Record<string, number>>((acc, r) => {
     const key = r.controller || "Unassigned";
     acc[key] = (acc[key] || 0) + 1;
@@ -170,7 +181,8 @@ const DriverMasterList = ({ readOnly = false, controllerFilter }: DriverMasterLi
             {records.length === 0 ? "No records uploaded yet." : "No matching records found."}
           </p>
         ) : (
-          <div className="max-h-[400px] overflow-auto rounded-md border">
+          <>
+          <div className="overflow-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -182,9 +194,9 @@ const DriverMasterList = ({ readOnly = false, controllerFilter }: DriverMasterLi
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((r, i) => (
+                {paginatedData.map((r, i) => (
                   <TableRow key={r.id}>
-                    <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                    <TableCell className="text-muted-foreground">{(currentPage - 1) * PAGE_SIZE + i + 1}</TableCell>
                     <TableCell className="font-medium">{r.driver_id}</TableCell>
                     <TableCell>{r.driver_name || "-"}</TableCell>
                     <TableCell>
@@ -226,6 +238,39 @@ const DriverMasterList = ({ readOnly = false, controllerFilter }: DriverMasterLi
               </TableBody>
             </Table>
           </div>
+          {/* Pagination */}
+          {filtered.length > PAGE_SIZE && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+              <p className="text-sm text-muted-foreground">
+                Showing {((currentPage - 1) * PAGE_SIZE) + 1}-{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length}
+              </p>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                  .reduce<(number | string)[]>((acc, p, i, arr) => {
+                    if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push('...');
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, i) =>
+                    typeof p === 'string' ? (
+                      <span key={`ellipsis-${i}`} className="px-2 text-muted-foreground">…</span>
+                    ) : (
+                      <Button key={p} variant={p === currentPage ? "default" : "outline"} size="sm" className="min-w-[36px]" onClick={() => setCurrentPage(p)}>
+                        {p}
+                      </Button>
+                    )
+                  )}
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
         )}
       </CardContent>
     </Card>
