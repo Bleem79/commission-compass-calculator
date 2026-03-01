@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Loader2, Search, X, Download, Users, TrendingUp, Car } from "lucide-react";
+import { Trash2, Loader2, Search, X, Download, Users, TrendingUp, Car, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -38,6 +38,8 @@ export const DriverIncomeTable = ({
 }: DriverIncomeTableProps) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
@@ -99,6 +101,15 @@ export const DriverIncomeTable = ({
     const totalIncome = data.reduce((sum, row) => sum + row.total_income, 0);
     return { uniqueDrivers, totalTrips, totalIncome };
   }, [data]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredData.slice(start, start + PAGE_SIZE);
+  }, [filteredData, currentPage]);
+
+  // Reset page when search changes
+  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
 
   return (
     <div className="space-y-4">
@@ -242,7 +253,7 @@ export const DriverIncomeTable = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredData.map((row) => (
+                {paginatedData.map((row) => (
                   <TableRow key={row.id} className="hover:bg-muted/30">
                     <TableCell className="font-medium">{row.driver_id}</TableCell>
                     <TableCell>{row.driver_name || '-'}</TableCell>
@@ -279,9 +290,38 @@ export const DriverIncomeTable = ({
             </Table>
           </div>
           <div className="px-4 py-3 bg-muted/30 border-t border-border text-sm text-muted-foreground">
-            Showing {filteredData.length} of {data.length} driver record(s)
+            Showing {((currentPage - 1) * PAGE_SIZE) + 1}-{Math.min(currentPage * PAGE_SIZE, filteredData.length)} of {filteredData.length} driver record(s)
             {searchQuery && ` (filtered by "${searchQuery}")`}
           </div>
+          {/* Pagination */}
+          {filteredData.length > PAGE_SIZE && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-border">
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                  .reduce<(number | string)[]>((acc, p, i, arr) => {
+                    if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push('...');
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, i) =>
+                    typeof p === 'string' ? (
+                      <span key={`ellipsis-${i}`} className="px-2 text-muted-foreground">…</span>
+                    ) : (
+                      <Button key={p} variant={p === currentPage ? "default" : "outline"} size="sm" className="min-w-[36px]" onClick={() => setCurrentPage(p)}>
+                        {p}
+                      </Button>
+                    )
+                  )}
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
