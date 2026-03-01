@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2, Trash2, KeyRound, Eye, EyeOff, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2, Trash2, KeyRound, Eye, EyeOff, ChevronLeft, ChevronRight, UserPlus, Dices } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -42,6 +42,10 @@ const DriverManagementPage = () => {
   const [resetPasswordDriver, setResetPasswordDriver] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 15;
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newDriverId, setNewDriverId] = useState("");
+  const [newDriverPassword, setNewDriverPassword] = useState("");
+  const [isAddingDriver, setIsAddingDriver] = useState(false);
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
 
   const togglePasswordVisibility = useCallback((driverId: string) => {
@@ -54,6 +58,11 @@ const DriverManagementPage = () => {
       }
       return next;
     });
+  }, []);
+
+  const generateRandomPassword = useCallback(() => {
+    const password = Math.floor(100000 + Math.random() * 900000).toString();
+    setNewDriverPassword(password);
   }, []);
 
   const isStaff = canAccessAdminPages && !isAdmin;
@@ -94,6 +103,36 @@ const DriverManagementPage = () => {
       setLoading(false);
     }
   }, []);
+
+  const handleAddDriver = useCallback(async () => {
+    const trimmedId = newDriverId.trim();
+    const trimmedPw = newDriverPassword.trim();
+    if (!trimmedId) { toast.error("Please enter a Driver ID"); return; }
+    if (!trimmedPw || trimmedPw.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    if (drivers.some(d => d.driver_id === trimmedId)) { toast.error(`Driver ${trimmedId} already exists`); return; }
+
+    setIsAddingDriver(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("driver-credentials-bulk", {
+        body: { drivers: [{ driverId: trimmedId, password: trimmedPw, status: "enabled" }], replaceExisting: false },
+      });
+      if (error) throw error;
+      const result = data as any;
+      if (result?.errors?.length > 0) {
+        toast.error(result.errors[0]?.error || "Failed to add driver");
+      } else {
+        toast.success(`Driver ${trimmedId} added successfully`);
+        setNewDriverId("");
+        setNewDriverPassword("");
+        setShowAddForm(false);
+        await fetchDrivers();
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to add driver");
+    } finally {
+      setIsAddingDriver(false);
+    }
+  }, [newDriverId, newDriverPassword, drivers, fetchDrivers]);
 
   const toggleDriverStatus = useCallback(async (driver: DriverCredential) => {
     setUpdatingId(driver.id);
@@ -224,6 +263,11 @@ const DriverManagementPage = () => {
                   <><Upload className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Upload CSV</span><span className="sm:hidden">Upload</span></>
                 )}
               </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowAddForm(!showAddForm)} className="bg-white hover:bg-indigo-50 border-indigo-200 text-indigo-700 hover:text-indigo-800 text-xs sm:text-sm">
+                <UserPlus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Add Driver</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
             </div>
           )}
         </div>
@@ -239,6 +283,48 @@ const DriverManagementPage = () => {
                 </div>
                 <Progress value={(uploadProgress.current / uploadProgress.total) * 100} className="h-2" />
                 <p className="text-xs text-slate-500 text-center">{Math.round((uploadProgress.current / uploadProgress.total) * 100)}% complete</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Add Driver Form */}
+        {isAdmin && showAddForm && (
+          <Card className="bg-white shadow-sm border-indigo-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold text-indigo-800 flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Add Individual Driver Account
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-3 items-end">
+                <div className="flex-1 space-y-1">
+                  <label className="text-sm font-medium text-slate-700">Driver ID</label>
+                  <Input
+                    placeholder="Enter Driver ID (e.g., 113441)"
+                    value={newDriverId}
+                    onChange={(e) => setNewDriverId(e.target.value)}
+                  />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <label className="text-sm font-medium text-slate-700">Password</label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter or generate password"
+                      value={newDriverPassword}
+                      onChange={(e) => setNewDriverPassword(e.target.value)}
+                      className="font-mono"
+                    />
+                    <Button variant="outline" size="icon" onClick={generateRandomPassword} title="Generate 6-digit random password" className="shrink-0 border-indigo-200 text-indigo-600 hover:bg-indigo-50">
+                      <Dices className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <Button onClick={handleAddDriver} disabled={isAddingDriver} className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0">
+                  {isAddingDriver ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserPlus className="h-4 w-4 mr-2" />}
+                  {isAddingDriver ? "Adding..." : "Add Driver"}
+                </Button>
               </div>
             </CardContent>
           </Card>
