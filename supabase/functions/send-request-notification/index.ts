@@ -127,6 +127,44 @@ Deno.serve(async (req) => {
     );
 
     const displayName = driverName || driverId;
+
+    // --- Send confirmation notification to the DRIVER ---
+    const { data: driverSubs } = await supabase
+      .from("push_subscriptions")
+      .select("*")
+      .eq("driver_id", driverId);
+
+    if (driverSubs && driverSubs.length > 0) {
+      const driverPayload = JSON.stringify({
+        title: "✅ Request Submitted",
+        body: `Your request "${subject || requestType}" has been submitted successfully.`,
+        icon: "/pwa-192x192.png",
+        badge: "/pwa-192x192.png",
+        vibrate: [200, 100, 200],
+        tag: `driver-request-confirm-${driverId}-${Date.now()}`,
+        data: {
+          url: "/driver-requests",
+          type: "driver_request_confirmed",
+        },
+      });
+
+      for (const sub of driverSubs) {
+        try {
+          await webpush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            driverPayload
+          );
+          console.log("Confirmation push sent to driver:", sub.endpoint);
+        } catch (e: any) {
+          console.error("Driver confirmation push error:", e.message);
+          if (e.statusCode === 410 || e.statusCode === 404) {
+            await supabase.from("push_subscriptions").delete().eq("id", sub.id);
+          }
+        }
+      }
+    }
+
+    // --- Send notification to controllers/admins ---
     const notificationPayload = JSON.stringify({
       title: "🔔 New Driver Request",
       body: `Driver ${displayName} submitted: ${subject || requestType}`,
