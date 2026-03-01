@@ -171,6 +171,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // RESET PASSWORD
+    if (action === "reset_password") {
+      const { user_id, new_password } = body;
+      if (!user_id || !new_password) throw new Error("user_id and new_password required");
+      if (new_password.length < 6) throw new Error("Password must be at least 6 characters");
+
+      const { error } = await adminClient.auth.admin.updateUserById(user_id, {
+        password: new_password,
+      });
+      if (error) throw new Error(error.message);
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // CREATE USER (default action)
     const { email, password, username, role } = body;
 
