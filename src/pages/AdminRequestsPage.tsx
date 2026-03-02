@@ -91,6 +91,15 @@ const AdminRequestsPage = () => {
   useEffect(() => {
     const checkAdminRole = async () => {
       if (!user?.id) return;
+      
+      // Fleet user gets read-only access to driver requests
+      const isFleet = user.email?.toLowerCase() === 'fleet@amantaxi.com';
+      if (isFleet) {
+        setIsAdmin(true);
+        setIsActualAdmin(false);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from("user_roles")
@@ -113,7 +122,7 @@ const AdminRequestsPage = () => {
       }
     };
     checkAdminRole();
-  }, [user?.id, navigate]);
+  }, [user?.id, user?.email, navigate]);
 
   const fetchRequests = useCallback(async () => {
     if (!isAdmin) return;
@@ -236,6 +245,23 @@ const AdminRequestsPage = () => {
 
       setRequests((prev) => prev.map((r) => r.id === selectedRequest.id ? { ...r, ...updateData } : r));
       setSelectedRequest(null);
+
+      // Notify fleet@amantaxi.com when request is approved or in_progress
+      if (newStatus === "approved" || newStatus === "in_progress") {
+        supabase.functions
+          .invoke("send-request-notification", {
+            body: {
+              notifyFleet: true,
+              driverId: selectedRequest.driver_id,
+              driverName: selectedRequest.driver_name,
+              requestType: selectedRequest.request_type,
+              subject: editSubject.trim(),
+              status: newStatus,
+            },
+          })
+          .catch((err) => console.log("Fleet notification failed (non-critical):", err));
+      }
+
       toast.success("Request updated successfully");
     } catch (error: any) {
       toast.error("Failed to update request");

@@ -611,6 +611,7 @@ export type Database = {
               error: true
             } & "Could not choose the best candidate function between: public.has_role(role_name => text), public.has_role(role_name => app_role). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
+      is_fleet_user: { Args: never; Returns: boolean }
       is_guest_account: { Args: { email: string }; Returns: boolean }
     }
     Enums: {
