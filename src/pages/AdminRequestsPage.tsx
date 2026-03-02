@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, X, MessageSquare, Loader2, Clock, CheckCircle, XCircle, 
-  Send, RefreshCw, AlertCircle, CalendarDays, FileSpreadsheet, Trash2
+  Send, RefreshCw, AlertCircle, CalendarDays, FileSpreadsheet, Trash2, Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,8 @@ import { useRequestTypes } from "@/hooks/useRequestTypes";
 import { AdminRequestStats } from "@/components/admin-requests/AdminRequestStats";
 import { AdminRequestsFilters } from "@/components/admin-requests/AdminRequestsFilters";
 import { extractDayOffDate } from "@/utils/dateUtils";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 
 // Lazy load heavy components
 const DayOffCalendar = lazy(() => import("@/components/admin-requests/DayOffCalendar").then(m => ({ default: m.DayOffCalendar })));
@@ -81,6 +83,10 @@ const AdminRequestsPage = () => {
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
 
   const { requestTypes } = useRequestTypes();
+  const { isSupported: pushSupported, isGranted: pushGranted, requestPermission } = usePushNotifications();
+  usePushSubscriptionRegistration(user?.id, null);
+
+  const isFleetUser = user?.email?.toLowerCase() === 'fleet@amantaxi.com';
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -390,6 +396,17 @@ const AdminRequestsPage = () => {
             <Button onClick={handleRefresh} variant="outline" size="sm" disabled={loading}>
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
+            {pushSupported && !pushGranted && (
+              <Button onClick={requestPermission} variant="outline" size="sm" className="text-xs sm:text-sm">
+                <Bell className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Enable Notifications</span>
+              </Button>
+            )}
+            {pushGranted && (
+              <Badge variant="outline" className="text-xs gap-1 py-1">
+                <Bell className="h-3 w-3" /> Notifications On
+              </Badge>
+            )}
           </div>
         </div>
 
