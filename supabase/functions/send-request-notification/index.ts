@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { driverId, driverName, requestType, subject } = await req.json();
+    const { driverId, driverName, requestType, subject, notifyFleet, status } = await req.json();
 
     if (!driverId) {
       return new Response(
@@ -205,6 +205,58 @@ Deno.serve(async (req) => {
             .eq("id", subscription.id);
           console.log("Removed invalid subscription:", subscription.id);
         }
+      }
+    }
+
+    // --- Notify fleet@amantaxi.com when request is approved or in_progress ---
+    if (notifyFleet && (status === "approved" || status === "in_progress")) {
+      try {
+        const { data: { users: fleetUsers } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+        const fleetUser = fleetUsers.find(
+          (u) => u.email?.toLowerCase() === "fleet@amantaxi.com"
+        );
+
+        if (fleetUser) {
+          const { data: fleetSubs } = await supabase
+            .from("push_subscriptions")
+            .select("*")
+            .eq("user_id", fleetUser.id);
+
+          if (fleetSubs && fleetSubs.length > 0) {
+            const statusLabel = status === "approved" ? "✅ Approved" : "🔄 In Progress";
+            const fleetPayload = JSON.stringify({
+              title: `📋 Request ${statusLabel}`,
+              body: `Driver ${displayName}: "${subject || requestType}" has been ${status === "approved" ? "approved" : "set to in-progress"}.`,
+              icon: "/pwa-192x192.png",
+              badge: "/pwa-192x192.png",
+              vibrate: [200, 100, 200],
+              tag: `fleet-request-${driverId}-${Date.now()}`,
+              data: {
+                url: "/admin-requests",
+                type: "fleet_request_update",
+              },
+            });
+
+            for (const sub of fleetSubs) {
+              try {
+                await webpush.sendNotification(
+                  { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+                  fleetPayload
+                );
+                console.log("Fleet notification sent to:", sub.endpoint);
+              } catch (e: any) {
+                console.error("Fleet push error:", e.message);
+                if (e.statusCode === 410 || e.statusCode === 404) {
+                  await supabase.from("push_subscriptions").delete().eq("id", sub.id);
+                }
+              }
+            }
+          }
+        } else {
+          console.log("Fleet user not found");
+        }
+      } catch (fleetErr: any) {
+        console.error("Fleet notification error:", fleetErr.message);
       }
     }
 

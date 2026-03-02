@@ -14,6 +14,23 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
     const displayUsername = metadataUsername || userEmail;
     try {
       // Specific check for admin emails
+      // Special fleet user - restricted to Driver Requests only
+      if (userEmail.toLowerCase() === 'fleet@amantaxi.com') {
+        console.log("Fleet user detected - setting as advanced (restricted):", userEmail);
+        setUser(prevUser => {
+          if (!prevUser || prevUser.role !== 'advanced') {
+            return {
+              id: userId,
+              username: displayUsername,
+              email: userEmail,
+              role: 'advanced'
+            };
+          }
+          return prevUser;
+        });
+        return;
+      }
+
       const adminEmails = ['erico.ariata@outlook.com', 'binu@amantaxi.com', 'rev.counter@amantaximena.com'];
       if (adminEmails.includes(userEmail.toLowerCase())) {
         console.log("Found admin user - setting as admin:", userEmail);

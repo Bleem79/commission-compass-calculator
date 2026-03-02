@@ -247,7 +247,9 @@ const HomePage = () => {
     },
   ];
 
-  if (canAccessAdminPages) {
+  const isFleetUser = user?.email?.toLowerCase() === 'fleet@amantaxi.com';
+
+  if (canAccessAdminPages && !isFleetUser) {
     features.push({
       icon: <Users className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Driver Management",
@@ -274,6 +276,10 @@ const HomePage = () => {
         onClick: () => navigate("/warning-letters-upload"),
       });
     }
+  }
+
+  // Driver Requests - visible to all staff including fleet user
+  if (canAccessAdminPages) {
     features.push({
       icon: <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Driver Requests",
@@ -281,6 +287,9 @@ const HomePage = () => {
       onClick: () => navigate("/admin-requests"),
       badge: pendingRequestCount,
     });
+  }
+
+  if (canAccessAdminPages && !isFleetUser) {
     features.push({
       icon: <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "SMS",
