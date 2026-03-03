@@ -124,9 +124,72 @@ Deno.serve(async (req) => {
       }
     }
 
+    // --- Also remind fleet@amantaxi.com about approved/in_progress requests ---
+    const approvedOrInProgress = pendingRequests.filter(
+      (r) => r.status === "approved" || r.status === "in_progress"
+    );
+    // Also count all approved/in_progress requests (not just from pending batch)
+    const { data: fleetPendingRequests } = await supabase
+      .from("driver_requests")
+      .select("*")
+      .in("status", ["approved", "in_progress"])
+      .is("fleet_remarks", null);
+
+    const fleetCount = fleetPendingRequests?.length || 0;
+
+    if (fleetCount > 0) {
+      try {
+        const { data: { users: allUsersForFleet } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+        const fleetUser = allUsersForFleet.find(
+          (u) => u.email?.toLowerCase() === "fleet@amantaxi.com"
+        );
+
+        if (fleetUser) {
+          const { data: fleetSubs } = await supabase
+            .from("push_subscriptions")
+            .select("*")
+            .eq("user_id", fleetUser.id);
+
+          if (fleetSubs && fleetSubs.length > 0) {
+            const fleetPayload = JSON.stringify({
+              title: "⏰ Fleet Reminder",
+              body: `There are ${fleetCount} approved/in-progress request${fleetCount > 1 ? "s" : ""} awaiting your remarks.`,
+              icon: "/pwa-192x192.png",
+              badge: "/pwa-192x192.png",
+              vibrate: [200, 100, 200],
+              requireInteraction: true,
+              tag: `fleet-reminder-${Date.now()}`,
+              data: {
+                url: "/admin-requests",
+                type: "fleet_reminder",
+              },
+            });
+
+            for (const sub of fleetSubs) {
+              try {
+                await webpush.sendNotification(
+                  { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+                  fleetPayload
+                );
+                totalSent++;
+                console.log("Fleet reminder sent to:", sub.endpoint);
+              } catch (e: any) {
+                console.error("Fleet reminder push error:", e.message);
+                if (e.statusCode === 410 || e.statusCode === 404) {
+                  await supabase.from("push_subscriptions").delete().eq("id", sub.id);
+                }
+              }
+            }
+          }
+        }
+      } catch (fleetErr: any) {
+        console.error("Fleet reminder error:", fleetErr.message);
+      }
+    }
+
     console.log(`Reminder complete. Sent ${totalSent} notifications.`);
     return new Response(
-      JSON.stringify({ success: true, reminded: totalSent, pendingCount: pendingRequests.length }),
+      JSON.stringify({ success: true, reminded: totalSent, pendingCount: pendingRequests.length, fleetPendingCount: fleetCount }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
