@@ -40,6 +40,7 @@ interface DriverRequest {
   responded_at: string | null;
   responded_by: string | null;
   created_at: string;
+  fleet_remarks: string | null;
 }
 
 const STATUS_OPTIONS = [
@@ -71,6 +72,7 @@ const AdminRequestsPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [editSubject, setEditSubject] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [fleetRemarks, setFleetRemarks] = useState("");
 
   // Dialogs
   const [showTypesDialog, setShowTypesDialog] = useState(false);
@@ -233,6 +235,7 @@ const AdminRequestsPage = () => {
     setNewStatus(request.status);
     setEditSubject(request.subject);
     setEditDescription(request.description);
+    setFleetRemarks(request.fleet_remarks || "");
   }, []);
 
   const handleSubmitResponse = useCallback(async () => {
@@ -280,6 +283,25 @@ const AdminRequestsPage = () => {
       setSubmitting(false);
     }
   }, [selectedRequest, user?.id, newStatus, editSubject, editDescription, responseText]);
+
+  const handleFleetRemarksSubmit = useCallback(async () => {
+    if (!selectedRequest || !user?.id) return;
+    setSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("driver_requests")
+        .update({ fleet_remarks: fleetRemarks.trim() || null })
+        .eq("id", selectedRequest.id);
+      if (error) throw error;
+      setRequests((prev) => prev.map((r) => r.id === selectedRequest.id ? { ...r, fleet_remarks: fleetRemarks.trim() || null } : r));
+      setSelectedRequest(null);
+      toast.success("Remarks saved successfully");
+    } catch (error: any) {
+      toast.error("Failed to save remarks");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [selectedRequest, user?.id, fleetRemarks]);
 
   const handleDeleteRequest = useCallback(async () => {
     if (!deleteConfirmRequest) return;
@@ -517,6 +539,9 @@ const AdminRequestsPage = () => {
                   {request.admin_response && (
                     <div className="mt-2 text-xs text-blue-600">✓ Response provided</div>
                   )}
+                  {request.fleet_remarks && (
+                    <div className="mt-1 text-xs text-orange-600">📝 Fleet remarks added</div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -530,7 +555,7 @@ const AdminRequestsPage = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-blue-600" />
-              Respond to Request
+              {isFleetUser ? "Request Details" : "Respond to Request"}
               {selectedRequest?.request_no && (
                 <Badge variant="secondary" className="text-xs font-mono bg-blue-100 text-blue-700">
                   {selectedRequest.request_no}
@@ -559,73 +584,136 @@ const AdminRequestsPage = () => {
                     <span className="text-muted-foreground">Submitted:</span>
                     <span className="ml-2 font-medium">{formatDate(selectedRequest.created_at)}</span>
                   </div>
+                  <div>
+                    <span className="text-muted-foreground">Status:</span>
+                    <span className="ml-2">{getStatusBadge(selectedRequest.status)}</span>
+                  </div>
                 </div>
                 <div className="border-t pt-3 mt-3">
                   <span className="text-muted-foreground">Revenue Controller In Charge:</span>
                   <span className="ml-2 font-medium text-primary">{controllerMap[selectedRequest.driver_id] || "N/A"}</span>
                 </div>
+
+                {/* Fleet user sees read-only subject/description */}
+                {isFleetUser ? (
+                  <>
+                    <div>
+                      <span className="text-muted-foreground text-sm">Subject:</span>
+                      <p className="mt-1 text-sm font-medium">{getRequestTypeLabel(selectedRequest.subject) || selectedRequest.subject}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-sm">Description:</span>
+                      <p className="mt-1 text-sm">{selectedRequest.description}</p>
+                    </div>
+                    {selectedRequest.admin_response && (
+                      <div>
+                        <span className="text-muted-foreground text-sm">Admin Response:</span>
+                        <p className="mt-1 text-sm text-blue-700">{selectedRequest.admin_response}</p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <Label htmlFor="edit-subject" className="text-muted-foreground text-sm">Subject:</Label>
+                      <Select value={editSubject} onValueChange={setEditSubject}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select subject" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white z-50">
+                          {requestTypes.map((type: { value: string; label: string }) => (
+                            <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-description" className="text-muted-foreground text-sm">Description:</Label>
+                      <Textarea
+                        id="edit-description"
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        className="mt-1 min-h-[80px]"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Fleet user: remarks input */}
+              {isFleetUser ? (
                 <div>
-                  <Label htmlFor="edit-subject" className="text-muted-foreground text-sm">Subject:</Label>
-                  <Select value={editSubject} onValueChange={setEditSubject}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select subject" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white z-50">
-                      {requestTypes.map((type: { value: string; label: string }) => (
-                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-description" className="text-muted-foreground text-sm">Description:</Label>
+                  <Label htmlFor="fleet-remarks">Fleet Remarks</Label>
                   <Textarea
-                    id="edit-description"
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    className="mt-1 min-h-[80px]"
+                    id="fleet-remarks"
+                    value={fleetRemarks}
+                    onChange={(e) => setFleetRemarks(e.target.value)}
+                    placeholder="Add your remarks here..."
+                    className="mt-1 min-h-[100px]"
+                    maxLength={1000}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">{fleetRemarks.length}/1000 characters</p>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div>
+                    <Label htmlFor="status">Update Status</Label>
+                    <Select value={newStatus} onValueChange={setNewStatus}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map((status) => (
+                          <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <Label htmlFor="status">Update Status</Label>
-                <Select value={newStatus} onValueChange={setNewStatus}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map((status) => (
-                      <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div>
+                    <Label htmlFor="response">Admin Response</Label>
+                    <Textarea
+                      id="response"
+                      value={responseText}
+                      onChange={(e) => setResponseText(e.target.value)}
+                      placeholder="Enter your response to the driver..."
+                      className="mt-1 min-h-[120px]"
+                      maxLength={1000}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{responseText.length}/1000 characters</p>
+                  </div>
 
-              <div>
-                <Label htmlFor="response">Admin Response</Label>
-                <Textarea
-                  id="response"
-                  value={responseText}
-                  onChange={(e) => setResponseText(e.target.value)}
-                  placeholder="Enter your response to the driver..."
-                  className="mt-1 min-h-[120px]"
-                  maxLength={1000}
-                />
-                <p className="text-xs text-muted-foreground mt-1">{responseText.length}/1000 characters</p>
-              </div>
+                  {/* Show fleet remarks to admin (read-only) */}
+                  {selectedRequest.fleet_remarks && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                      <Label className="text-orange-700 text-sm font-medium">Fleet Remarks:</Label>
+                      <p className="mt-1 text-sm text-orange-800">{selectedRequest.fleet_remarks}</p>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelectedRequest(null)}>Cancel</Button>
-            <Button onClick={handleSubmitResponse} disabled={submitting || !newStatus} className="bg-blue-600 hover:bg-blue-700">
-              {submitting ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
-              ) : (
-                <><Send className="h-4 w-4 mr-2" />Save Response</>
-              )}
-            </Button>
+            {isFleetUser ? (
+              <Button onClick={handleFleetRemarksSubmit} disabled={submitting} className="bg-orange-600 hover:bg-orange-700">
+                {submitting ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
+                ) : (
+                  <><Send className="h-4 w-4 mr-2" />Save Remarks</>
+                )}
+              </Button>
+            ) : (
+              <Button onClick={handleSubmitResponse} disabled={submitting || !newStatus} className="bg-blue-600 hover:bg-blue-700">
+                {submitting ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
+                ) : (
+                  <><Send className="h-4 w-4 mr-2" />Save Response</>
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
