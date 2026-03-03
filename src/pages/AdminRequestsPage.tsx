@@ -179,6 +179,11 @@ const AdminRequestsPage = () => {
   const filteredRequests = useMemo(() => {
     let filtered = [...requests];
 
+    // Fleet user should not see pending requests
+    if (isFleetUser) {
+      filtered = filtered.filter((r) => r.status !== "pending");
+    }
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -201,7 +206,7 @@ const AdminRequestsPage = () => {
       });
     }
     return filtered;
-  }, [requests, searchQuery, statusFilter, typeFilter, controllerFilter, selectedCalendarDate, controllerMap]);
+  }, [requests, searchQuery, statusFilter, typeFilter, controllerFilter, selectedCalendarDate, controllerMap, isFleetUser]);
 
   const handleClose = useCallback(() => navigate("/home"), [navigate]);
 
