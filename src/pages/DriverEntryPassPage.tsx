@@ -278,7 +278,7 @@ const DriverEntryPassPage = () => {
                     size={200}
                     level="L"
                     bgColor="#ffffff"
-                    fgColor="#000000"
+                    fgColor={selectedEntry.status === "done" ? "#10b981" : "#f97316"}
                     includeMargin={true}
                   />
                 </div>
