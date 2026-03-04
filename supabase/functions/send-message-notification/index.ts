@@ -9,7 +9,7 @@ const corsHeaders = {
 
 interface NotificationRequest {
   type: "broadcast" | "private";
-  driverIds?: string[]; // For private messages - specific driver IDs
+  driverIds?: string[];
   messageContent: string;
   imageUrl?: string | null;
 }
@@ -28,7 +28,6 @@ const handler = async (req: Request): Promise<Response> => {
     const vapidPrivateKey = Deno.env.get("WEB_PUSH_VAPID_PRIVATE_KEY");
 
     if (!vapidPublicKey || !vapidPrivateKey) {
-      console.log("VAPID keys not configured, skipping push notification");
       return new Response(
         JSON.stringify({ success: true, message: "VAPID keys not configured" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -37,7 +36,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get push subscriptions based on type
     let query = supabase.from("push_subscriptions").select("*");
     
     if (type === "private" && driverIds && driverIds.length > 0) {
@@ -52,7 +50,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (!subscriptions || subscriptions.length === 0) {
-      console.log("No push subscriptions found");
       return new Response(
         JSON.stringify({ success: true, message: "No subscriptions found" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -87,38 +84,48 @@ const handler = async (req: Request): Promise<Response> => {
       }
     });
 
-    const results = [];
-    for (const subscription of subscriptions) {
-      try {
-        const pushSubscription = {
-          endpoint: subscription.endpoint,
-          keys: {
-            p256dh: subscription.p256dh,
-            auth: subscription.auth
-          }
-        };
+    const invalidIds: string[] = [];
+    const BATCH_SIZE = 10;
+    let successCount = 0;
+    let totalProcessed = 0;
 
-        await webpush.sendNotification(pushSubscription, notificationPayload);
-        results.push({ endpoint: subscription.endpoint, success: true });
-      } catch (pushError: any) {
-        console.error("Error sending push notification:", pushError);
-        results.push({ endpoint: subscription.endpoint, success: false, error: pushError.message });
-        
-        if (pushError.statusCode === 410 || pushError.statusCode === 404) {
-          await supabase
-            .from("push_subscriptions")
-            .delete()
-            .eq("id", subscription.id);
-          console.log("Removed invalid subscription:", subscription.id);
-        }
+    // Process in batches of 10 concurrently
+    for (let i = 0; i < subscriptions.length; i += BATCH_SIZE) {
+      const batch = subscriptions.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(async (subscription) => {
+          const pushSubscription = {
+            endpoint: subscription.endpoint,
+            keys: { p256dh: subscription.p256dh, auth: subscription.auth }
+          };
+          try {
+            await webpush.sendNotification(pushSubscription, notificationPayload);
+            return { success: true };
+          } catch (pushError: any) {
+            if (pushError.statusCode === 410 || pushError.statusCode === 404) {
+              invalidIds.push(subscription.id);
+            }
+            return { success: false };
+          }
+        })
+      );
+
+      for (const r of results) {
+        totalProcessed++;
+        if (r.status === "fulfilled" && r.value.success) successCount++;
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
-    console.log(`Sent ${successCount}/${results.length} notifications`);
+    // Bulk delete invalid subscriptions
+    if (invalidIds.length > 0) {
+      await supabase.from("push_subscriptions").delete().in("id", invalidIds);
+      console.log(`Removed ${invalidIds.length} invalid subscriptions`);
+    }
+
+    console.log(`Sent ${successCount}/${totalProcessed} notifications`);
 
     return new Response(
-      JSON.stringify({ success: true, sent: successCount, total: results.length, results }),
+      JSON.stringify({ success: true, sent: successCount, total: totalProcessed }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
