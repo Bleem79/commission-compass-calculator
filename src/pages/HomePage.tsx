@@ -21,7 +21,8 @@ import {
   Settings2,
   FileSpreadsheet,
   ShieldCheck,
-  ClipboardCheck
+  ClipboardCheck,
+  Video
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
@@ -326,6 +327,12 @@ const HomePage = () => {
         title: "Revenue Controller Portal",
         gradient: "bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600",
         onClick: () => navigate("/revenue-controller-portal"),
+      });
+      features.push({
+        icon: <Video className="w-6 h-6 sm:w-8 sm:h-8" />,
+        title: "Video Tutorials",
+        gradient: "bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600",
+        onClick: () => navigate("/video-tutorials"),
       });
     }
   }
