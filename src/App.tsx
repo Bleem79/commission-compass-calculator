@@ -35,6 +35,7 @@ const DriverMasterFilePage = lazy(() => import("./pages/DriverMasterFilePage"));
 const RevenueControllerPortalPage = lazy(() => import("./pages/RevenueControllerPortalPage"));
 const DriverEntryPassPage = lazy(() => import("./pages/DriverEntryPassPage"));
 const AdminEntryPassPage = lazy(() => import("./pages/AdminEntryPassPage"));
+const VideoTutorialsPage = lazy(() => import("./pages/VideoTutorialsPage"));
 const Index = lazy(() => import("./pages/Index"));
 
 // Loading fallback component
@@ -127,6 +128,7 @@ const AppRoutes = () => {
         <Route path="/revenue-controller-portal" element={<RevenueControllerPortalPage />} />
         <Route path="/driver-entry-pass" element={<DriverEntryPassPage />} />
         <Route path="/admin-entry-pass" element={<AdminEntryPassPage />} />
+        <Route path="/video-tutorials" element={<VideoTutorialsPage />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

@@ -13,7 +13,8 @@ import {
   Mail,
   Loader2,
   Droplets,
-  ClipboardCheck
+  ClipboardCheck,
+  Video
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -214,6 +215,13 @@ const DriverPortalPage = () => {
       title: "Entry Pass",
       gradient: "bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600",
       onClick: () => navigate("/driver-entry-pass"),
+    },
+    {
+      key: "video_tutorials",
+      icon: <Video className="w-8 h-8 sm:w-10 sm:h-10" />,
+      title: "Video Tutorials",
+      gradient: "bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600",
+      onClick: () => navigate("/video-tutorials"),
     },
     {
       key: "oil_change_booking",

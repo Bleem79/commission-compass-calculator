@@ -1,0 +1,2 @@
+INSERT INTO public.driver_portal_settings (feature_key, feature_name, is_enabled, updated_by)
+SELECT 'video_tutorials', 'Video Tutorials', true, id FROM auth.users WHERE email = 'admin@amantaxi.com' LIMIT 1;
