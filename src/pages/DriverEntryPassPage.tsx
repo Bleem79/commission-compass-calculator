@@ -267,7 +267,11 @@ const DriverEntryPassPage = () => {
                 <p className="text-lg font-bold tracking-wider text-emerald-400">{selectedEntry.entry_no}</p>
               </div>
 
-              <div className="p-1 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-400 to-cyan-500 shadow-[0_0_30px_rgba(16,185,129,0.25)]">
+              <div className={`p-1 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.25)] ${
+                selectedEntry.status === "done"
+                  ? "bg-gradient-to-br from-emerald-500 via-teal-400 to-cyan-500"
+                  : "bg-gradient-to-br from-amber-500 via-orange-400 to-yellow-500"
+              }`}>
                 <div className="bg-white rounded-xl p-4 flex items-center justify-center">
                   <QRCodeCanvas
                     value={`ENTRY:${selectedEntry.entry_no}|${selectedEntry.driver_id}|${selectedEntry.reason}|${selectedEntry.created_at}`}
