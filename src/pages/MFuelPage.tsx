@@ -151,48 +151,46 @@ const MFuelPage = () => {
           </div>
         )}
 
-        {/* Documents Display - Same as Commission Table */}
-        {(isAdmin || isGuest) && (
-          <div className="space-y-6">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+        {/* Documents Display - visible to all authenticated users */}
+        <div className="space-y-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+            </div>
+          ) : documents.length === 0 ? (
+            <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100 p-8 text-center">
+              <p className="text-gray-500">No documents available.</p>
+            </div>
+          ) : (
+            documents.map((doc) => (
+              <div key={doc.id} className="relative">
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => deleteDocument(doc)}
+                    className="absolute top-2 right-2 z-10 text-red-600 border-red-200 hover:bg-red-50 bg-white"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
+                )}
+                
+                {doc.file_type.startsWith('image/') && imageUrls[doc.id] ? (
+                  <img
+                    src={imageUrls[doc.id]}
+                    alt={doc.file_name}
+                    className="w-full rounded-lg shadow-lg border border-indigo-100"
+                  />
+                ) : (
+                  <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100 p-6">
+                    <p className="text-gray-700">{doc.file_name}</p>
+                  </div>
+                )}
               </div>
-            ) : documents.length === 0 ? (
-              <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100 p-8 text-center">
-                <p className="text-gray-500">No documents available.</p>
-              </div>
-            ) : (
-              documents.map((doc) => (
-                <div key={doc.id} className="relative">
-                  {isAdmin && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => deleteDocument(doc)}
-                      className="absolute top-2 right-2 z-10 text-red-600 border-red-200 hover:bg-red-50 bg-white"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
-                    </Button>
-                  )}
-                  
-                  {doc.file_type.startsWith('image/') && imageUrls[doc.id] ? (
-                    <img
-                      src={imageUrls[doc.id]}
-                      alt={doc.file_name}
-                      className="w-full rounded-lg shadow-lg border border-indigo-100"
-                    />
-                  ) : (
-                    <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-indigo-100 p-6">
-                      <p className="text-gray-700">{doc.file_name}</p>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
