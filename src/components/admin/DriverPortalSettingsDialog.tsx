@@ -84,6 +84,8 @@ export const DriverPortalSettingsDialog = ({ open, onOpenChange }: DriverPortalS
     warning_letter: "📄",
     private_messages: "💬",
     oil_change_booking: "🛢️",
+    entry_pass: "🎫",
+    video_tutorials: "🎬",
   };
 
   return (
