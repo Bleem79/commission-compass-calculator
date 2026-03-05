@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Video, Plus, Trash2, ExternalLink, Loader2 } from "lucide-react";
+import { Video, Plus, Trash2, Play, Loader2, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,6 +17,18 @@ interface VideoTutorial {
   created_at: string;
 }
 
+/** Convert a Google Drive sharing URL to an embeddable preview URL */
+const toEmbedUrl = (url: string): string | null => {
+  // Match /file/d/FILE_ID patterns
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) {
+    return `https://drive.google.com/file/d/${match[1]}/preview`;
+  }
+  // Already an embed/preview link
+  if (url.includes("/preview")) return url;
+  return null;
+};
+
 const VideoTutorialsPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isAdmin } = useAuth();
@@ -26,6 +38,7 @@ const VideoTutorialsPage = () => {
   const [title, setTitle] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [playingVideo, setPlayingVideo] = useState<VideoTutorial | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -89,6 +102,16 @@ const VideoTutorialsPage = () => {
     }
   };
 
+  const handlePlay = (video: VideoTutorial) => {
+    const embedUrl = toEmbedUrl(video.video_url);
+    if (embedUrl) {
+      setPlayingVideo(video);
+    } else {
+      // Fallback: open in new tab if not a Google Drive link
+      window.open(video.video_url, "_blank", "noopener,noreferrer");
+    }
+  };
+
   return (
     <PageLayout
       title="Video Tutorials"
@@ -117,26 +140,29 @@ const VideoTutorialsPage = () => {
       ) : (
         <div className="space-y-3">
           {videos.map((video) => (
-            <Card key={video.id} className="p-4 sm:p-5 flex items-center justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-base sm:text-lg leading-snug break-words">{video.title}</h3>
-                <p className="text-sm text-muted-foreground break-all mt-1 line-clamp-2">{video.video_url}</p>
+            <Card
+              key={video.id}
+              className="p-4 sm:p-5 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-transform"
+              onClick={() => handlePlay(video)}
+            >
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="shrink-0 h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Play className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-base sm:text-lg leading-snug break-words">{video.title}</h3>
+                </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="h-10 w-10 min-h-[44px] min-w-[44px]"
-                  onClick={() => window.open(video.video_url, "_blank", "noopener,noreferrer")}
-                >
-                  <ExternalLink className="h-5 w-5" />
-                </Button>
                 {isAdmin && (
                   <Button
                     size="icon"
                     variant="destructive"
                     className="h-10 w-10 min-h-[44px] min-w-[44px]"
-                    onClick={() => handleDelete(video.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(video.id);
+                    }}
                   >
                     <Trash2 className="h-5 w-5" />
                   </Button>
@@ -147,6 +173,36 @@ const VideoTutorialsPage = () => {
         </div>
       )}
 
+      {/* In-app video player dialog */}
+      {playingVideo && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
+          <div className="flex items-center justify-between p-3 sm:p-4">
+            <h2 className="text-white text-sm sm:text-base font-medium truncate flex-1 mr-3">
+              {playingVideo.title}
+            </h2>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="text-white hover:bg-white/20 min-h-[44px] min-w-[44px]"
+              onClick={() => setPlayingVideo(null)}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+          <div className="flex-1 flex items-center justify-center px-2 pb-4">
+            <iframe
+              src={toEmbedUrl(playingVideo.video_url) || ""}
+              className="w-full h-full max-w-4xl rounded-lg"
+              style={{ aspectRatio: "16/9", maxHeight: "80vh" }}
+              allow="autoplay; encrypted-media; fullscreen"
+              allowFullScreen
+              sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Add video dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent>
           <DialogHeader>
