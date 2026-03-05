@@ -117,26 +117,28 @@ const VideoTutorialsPage = () => {
       ) : (
         <div className="space-y-3">
           {videos.map((video) => (
-            <Card key={video.id} className="p-4 flex items-center justify-between gap-3">
+            <Card key={video.id} className="p-4 sm:p-5 flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-sm sm:text-base truncate">{video.title}</h3>
-                <p className="text-xs text-muted-foreground truncate">{video.video_url}</p>
+                <h3 className="font-medium text-base sm:text-lg leading-snug break-words">{video.title}</h3>
+                <p className="text-sm text-muted-foreground break-all mt-1 line-clamp-2">{video.video_url}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Button
-                  size="sm"
+                  size="icon"
                   variant="outline"
+                  className="h-10 w-10 min-h-[44px] min-w-[44px]"
                   onClick={() => window.open(video.video_url, "_blank", "noopener,noreferrer")}
                 >
-                  <ExternalLink className="h-4 w-4" />
+                  <ExternalLink className="h-5 w-5" />
                 </Button>
                 {isAdmin && (
                   <Button
-                    size="sm"
+                    size="icon"
                     variant="destructive"
+                    className="h-10 w-10 min-h-[44px] min-w-[44px]"
                     onClick={() => handleDelete(video.id)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-5 w-5" />
                   </Button>
                 )}
               </div>
