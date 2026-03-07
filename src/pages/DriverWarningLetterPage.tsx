@@ -42,14 +42,14 @@ const DriverWarningLetterPage = () => {
       <div className="max-w-4xl mx-auto pt-16">
         <div className="flex items-center gap-3 mb-6">
           <FileWarning className="h-8 w-8 text-red-600" />
-          <h1 className="text-2xl font-bold text-foreground">Warning Letter</h1>
+          <h1 className="text-2xl font-bold text-foreground">Booking Rejection</h1>
         </div>
 
         <div className="bg-card rounded-lg border border-border p-8 text-center">
           <FileWarning className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">Coming Soon</h2>
           <p className="text-muted-foreground">
-            Warning letter feature will be available soon.
+            Booking rejection feature will be available soon.
           </p>
         </div>
       </div>

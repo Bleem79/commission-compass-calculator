@@ -11,14 +11,13 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 
-interface WarningLetterRow {
-  date: string;
-  taxi_no: string;
+interface BookingRejectionRow {
+  month: string;
   driver_id: string;
-  name: string;
-  reasons: string;
-  action_taken: string;
-  document_no: string;
+  driver_name: string;
+  offer: string;
+  accept: string;
+  reject: string;
 }
 
 const CHUNK_SIZE = 250;
@@ -34,7 +33,7 @@ const WarningLettersUploadPage = () => {
   const { isAdmin, user } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewData, setPreviewData] = useState<WarningLetterRow[] | null>(null);
+  const [previewData, setPreviewData] = useState<BookingRejectionRow[] | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ total: number; uploaded: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -45,17 +44,15 @@ const WarningLettersUploadPage = () => {
   }, [isAdmin, navigate]);
 
   const downloadTemplate = () => {
-    const csvContent = `Date,Taxi No,Driver ID,Name,Reasons,Action Taken,Document No.
-1/25/2025,A853,112455,ABEDNEGO OSABUTEY,Not Reporting - With out Sick Leave Paper,1-Warning Letter,AT/WL/OPR/00344
-1/27/2025,S565,112214,SPENCER ASANTE,Not reporting for payment in daily basis/ Low Income,2-Warning Letter,AT/WL/OPR/00345
-1/27/2025,A122,112112,MICHEAL MAWUKO,Low income Single Shift Driver,1-Warning Letter,AT/WL/OPR/00346
-1/27/2025,A610,113258,ISSACK ARTHUR,Low income DoubleShift Driver,1-Warning Letter,AT/WL/OPR/00347
-1/27/2025,A270,114185,UMAR ISLAM MUHAMMAD IJAZ,Not reporting for payment in daily basis/ Low Income,1-Warning Letter,AT/WL/OPR/00348`;
+    const csvContent = `Month,driverId,driverName,offer,accept,reject
+January,112455,ABEDNEGO OSABUTEY,50,45,5
+February,112214,SPENCER ASANTE,60,55,5
+March,112112,MICHEAL MAWUKO,40,38,2`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", "warning_letters_template.csv");
+    link.setAttribute("download", "booking_rejection_template.csv");
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -63,37 +60,34 @@ const WarningLettersUploadPage = () => {
     toast.success("Template downloaded");
   };
 
-  const parseCSV = (text: string): WarningLetterRow[] => {
+  const parseCSV = (text: string): BookingRejectionRow[] => {
     const lines = text.trim().split('\n');
     if (lines.length < 2) throw new Error("File must have at least a header row and one data row");
     
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    const dateIdx = headers.findIndex(h => h === 'date');
-    const taxiNoIdx = headers.findIndex(h => h.includes('taxi'));
-    const driverIdIdx = headers.findIndex(h => h.includes('driver') && h.includes('id'));
-    const nameIdx = headers.findIndex(h => h === 'name');
-    const reasonsIdx = headers.findIndex(h => h.includes('reason'));
-    const actionTakenIdx = headers.findIndex(h => h.includes('action'));
-    const documentNoIdx = headers.findIndex(h => h.includes('document'));
+    const monthIdx = headers.findIndex(h => h === 'month');
+    const driverIdIdx = headers.findIndex(h => h.includes('driverid') || h.includes('driver_id') || (h.includes('driver') && h.includes('id')));
+    const driverNameIdx = headers.findIndex(h => h.includes('drivername') || h.includes('driver_name') || h === 'name');
+    const offerIdx = headers.findIndex(h => h === 'offer');
+    const acceptIdx = headers.findIndex(h => h === 'accept');
+    const rejectIdx = headers.findIndex(h => h === 'reject');
 
     if (driverIdIdx === -1) {
-      throw new Error("CSV must contain 'Driver ID' column");
+      throw new Error("CSV must contain 'driverId' column");
     }
 
-    const data: WarningLetterRow[] = [];
+    const data: BookingRejectionRow[] = [];
     for (let i = 1; i < lines.length; i++) {
-      // Handle CSV values that might contain commas within quotes
       const values = lines[i].split(',').map(v => v.trim());
       if (values.length < 2 || !values[driverIdIdx]) continue;
       
       data.push({
-        date: dateIdx !== -1 ? values[dateIdx] : new Date().toLocaleDateString(),
-        taxi_no: taxiNoIdx !== -1 ? values[taxiNoIdx] : '',
+        month: monthIdx !== -1 ? values[monthIdx] : '',
         driver_id: values[driverIdIdx],
-        name: nameIdx !== -1 ? values[nameIdx] : '',
-        reasons: reasonsIdx !== -1 ? values[reasonsIdx] : '',
-        action_taken: actionTakenIdx !== -1 ? values[actionTakenIdx] : '1-Warning Letter',
-        document_no: documentNoIdx !== -1 ? values[documentNoIdx] : '',
+        driver_name: driverNameIdx !== -1 ? values[driverNameIdx] : '',
+        offer: offerIdx !== -1 ? values[offerIdx] : '0',
+        accept: acceptIdx !== -1 ? values[acceptIdx] : '0',
+        reject: rejectIdx !== -1 ? values[rejectIdx] : '0',
       });
     }
     
@@ -115,7 +109,7 @@ const WarningLettersUploadPage = () => {
       const text = await file.text();
       const data = parseCSV(text);
       setPreviewData(data.slice(0, 5));
-      toast.success(`File loaded: ${data.length} row(s). Click "Import Warning Letters" to save.`);
+      toast.success(`File loaded: ${data.length} row(s). Click "Import Booking Rejection" to save.`);
     } catch (error: any) {
       toast.error(error.message || "Failed to parse file");
       setSelectedFile(null);
@@ -137,13 +131,13 @@ const WarningLettersUploadPage = () => {
       const data = parseCSV(text);
 
       const insertData = data.map((row) => ({
-        date: row.date,
-        taxi_no: row.taxi_no,
+        date: row.month,
+        taxi_no: '',
         driver_id: row.driver_id,
-        name: row.name,
-        reasons: row.reasons,
-        action_taken: row.action_taken,
-        document_no: row.document_no,
+        name: row.driver_name,
+        reasons: `Offer: ${row.offer}, Accept: ${row.accept}, Reject: ${row.reject}`,
+        action_taken: `Offer:${row.offer}|Accept:${row.accept}|Reject:${row.reject}`,
+        document_no: '',
         uploaded_by: user.id,
       }));
 
@@ -163,7 +157,7 @@ const WarningLettersUploadPage = () => {
         });
       }
 
-      toast.success(`Successfully imported ${insertData.length} warning letter records`);
+      toast.success(`Successfully imported ${insertData.length} booking rejection records`);
       setSelectedFile(null);
       setPreviewData(null);
       setUploadProgress(null);
@@ -171,8 +165,8 @@ const WarningLettersUploadPage = () => {
         fileInputRef.current.value = "";
       }
     } catch (error: any) {
-      console.error("Error uploading warning letters:", error);
-      toast.error(error.message || "Failed to upload warning letters data");
+      console.error("Error uploading booking rejection:", error);
+      toast.error(error.message || "Failed to upload booking rejection data");
     } finally {
       setIsUploading(false);
     }
@@ -196,9 +190,9 @@ const WarningLettersUploadPage = () => {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-orange-800 flex items-center gap-3">
               <FileWarning className="h-8 w-8" />
-              Warning Letters Upload
+              Booking Rejection Upload
             </h1>
-            <p className="text-slate-600">Upload driver warning letters data</p>
+            <p className="text-slate-600">Upload driver booking rejection data</p>
           </div>
         </div>
 
@@ -206,7 +200,7 @@ const WarningLettersUploadPage = () => {
         <Card className="bg-white shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-slate-800">
-              Upload Warning Letters Data
+              Upload Booking Rejection Data
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -235,7 +229,7 @@ const WarningLettersUploadPage = () => {
                   className="mt-1"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Required: Driver ID | Optional: Date, Taxi No, Name, Reasons, Action Taken, Document No.
+                  Required: driverId | Optional: Month, driverName, offer, accept, reject
                 </p>
               </div>
               <Button
@@ -251,7 +245,7 @@ const WarningLettersUploadPage = () => {
                 ) : (
                   <>
                     <Upload className="h-4 w-4 mr-2" />
-                    Import Warning Letters
+                    Import Booking Rejection
                   </>
                 )}
               </Button>
@@ -280,25 +274,23 @@ const WarningLettersUploadPage = () => {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left p-2">Date</th>
-                      <th className="text-left p-2">Taxi No</th>
+                      <th className="text-left p-2">Month</th>
                       <th className="text-left p-2">Driver ID</th>
-                      <th className="text-left p-2">Name</th>
-                      <th className="text-left p-2">Reasons</th>
-                      <th className="text-left p-2">Action Taken</th>
-                      <th className="text-left p-2">Document No.</th>
+                      <th className="text-left p-2">Driver Name</th>
+                      <th className="text-left p-2">Offer</th>
+                      <th className="text-left p-2">Accept</th>
+                      <th className="text-left p-2">Reject</th>
                     </tr>
                   </thead>
                   <tbody>
                     {previewData.map((row, index) => (
                       <tr key={index} className="border-b border-border">
-                        <td className="p-2">{row.date}</td>
-                        <td className="p-2">{row.taxi_no || '-'}</td>
+                        <td className="p-2">{row.month || '-'}</td>
                         <td className="p-2">{row.driver_id}</td>
-                        <td className="p-2">{row.name || '-'}</td>
-                        <td className="p-2 max-w-[200px] truncate">{row.reasons || '-'}</td>
-                        <td className="p-2">{row.action_taken}</td>
-                        <td className="p-2">{row.document_no || '-'}</td>
+                        <td className="p-2">{row.driver_name || '-'}</td>
+                        <td className="p-2">{row.offer}</td>
+                        <td className="p-2">{row.accept}</td>
+                        <td className="p-2">{row.reject}</td>
                       </tr>
                     ))}
                   </tbody>

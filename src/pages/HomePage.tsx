@@ -272,7 +272,7 @@ const HomePage = () => {
       });
       features.push({
         icon: <Upload className="w-6 h-6 sm:w-8 sm:h-8" />,
-        title: "Warning Letters",
+        title: "Booking Rejection",
         gradient: "bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-600",
         onClick: () => navigate("/warning-letters-upload"),
       });
