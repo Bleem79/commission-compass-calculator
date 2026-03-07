@@ -11,14 +11,13 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 
-interface WarningLetterRow {
-  date: string;
-  taxi_no: string;
+interface BookingRejectionRow {
+  month: string;
   driver_id: string;
-  name: string;
-  reasons: string;
-  action_taken: string;
-  document_no: string;
+  driver_name: string;
+  offer: string;
+  accept: string;
+  reject: string;
 }
 
 const CHUNK_SIZE = 250;
