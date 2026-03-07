@@ -196,7 +196,7 @@ const DriverPortalPage = () => {
       icon: <FileWarning className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Booking Rejection",
       gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-600",
-      onClick: () => showComingSoon("Booking Rejection"),
+      onClick: () => navigate("/driver-warning-letter"),
     },
     {
       key: "private_messages",
