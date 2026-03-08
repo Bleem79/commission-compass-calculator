@@ -59,6 +59,44 @@ const formatMonth = (dateStr: string): string => {
   }
 };
 
+const FULL_MONTH_NAMES = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+const SHORT_MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+const monthToDate = (raw: string): string => {
+  const s = raw.trim();
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // YYYY-MM
+  if (/^\d{4}-\d{2}$/.test(s)) return s + "-01";
+
+  // "Mon-YYYY" e.g. "Feb-2026" or "Mon YYYY"
+  const shortMatch = s.match(/^([A-Za-z]{3})[- ](\d{4})$/);
+  if (shortMatch) {
+    const idx = SHORT_MONTH_NAMES.indexOf(shortMatch[1].toLowerCase());
+    if (idx !== -1) return `${shortMatch[2]}-${String(idx + 1).padStart(2, '0')}-01`;
+  }
+
+  // Full month name e.g. "February" or "February 2026" or "February-2026"
+  const fullMatch = s.match(/^([A-Za-z]+)(?:[- ](\d{4}))?$/);
+  if (fullMatch) {
+    const idx = FULL_MONTH_NAMES.indexOf(fullMatch[1].toLowerCase());
+    if (idx !== -1) {
+      const year = fullMatch[2] || new Date().getFullYear().toString();
+      return `${year}-${String(idx + 1).padStart(2, '0')}-01`;
+    }
+  }
+
+  // Fallback: try to parse and format
+  try {
+    const d = new Date(s + "T00:00:00");
+    if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  } catch {}
+
+  // Last resort: return first day of current month
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+};
+
 const parseActionTaken = (action: string) => {
   const parts = action.split("|");
   let offer = 0, accept = 0, reject = 0;
