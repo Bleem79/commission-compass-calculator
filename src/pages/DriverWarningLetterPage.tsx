@@ -91,7 +91,7 @@ const DriverWarningLetterPage = () => {
     const monthMap = new Map<string, { offer: number; accept: number; reject: number }>();
     records.forEach((r) => {
       const { offer, accept, reject } = parseActionTaken(r.action_taken);
-      const month = r.date || "Unknown";
+      const month = formatMonth(r.date || "Unknown");
       const existing = monthMap.get(month);
       if (existing) {
         existing.offer += offer;
