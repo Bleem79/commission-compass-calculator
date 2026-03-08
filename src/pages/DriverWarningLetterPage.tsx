@@ -27,6 +27,18 @@ interface ParsedRecord {
   reject: number;
 }
 
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const formatMonth = (dateStr: string): string => {
+  try {
+    const d = new Date(dateStr + "T00:00:00");
+    if (isNaN(d.getTime())) return dateStr;
+    return `${MONTH_NAMES[d.getMonth()]}-${d.getFullYear()}`;
+  } catch {
+    return dateStr;
+  }
+};
+
 const parseActionTaken = (action: string): { offer: number; accept: number; reject: number } => {
   const parts = action.split("|");
   let offer = 0, accept = 0, reject = 0;
@@ -79,7 +91,7 @@ const DriverWarningLetterPage = () => {
     const monthMap = new Map<string, { offer: number; accept: number; reject: number }>();
     records.forEach((r) => {
       const { offer, accept, reject } = parseActionTaken(r.action_taken);
-      const month = r.date || "Unknown";
+      const month = formatMonth(r.date || "Unknown");
       const existing = monthMap.get(month);
       if (existing) {
         existing.offer += offer;
