@@ -227,7 +227,7 @@ March,112112,MICHEAL MAWUKO,40,38,2`;
       const text = await selectedFile.text();
       const data = parseCSV(text);
       const insertData = data.map((row) => ({
-        date: row.month,
+        date: monthToDate(row.month),
         taxi_no: '',
         driver_id: row.driver_id,
         name: row.driver_name,
