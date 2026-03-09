@@ -88,7 +88,7 @@ const DriverWarningLetterPage = () => {
   }, [fetchRecords]);
 
   const parsed: ParsedRecord[] = useMemo(() => {
-    const monthMap = new Map<string, { offer: number; accept: number; reject: number }>();
+    const monthMap = new Map<string, { offer: number; accept: number; reject: number; rawDate: string }>();
     records.forEach((r) => {
       const { offer, accept, reject } = parseActionTaken(r.action_taken);
       const month = formatMonth(r.date || "Unknown");
@@ -98,13 +98,18 @@ const DriverWarningLetterPage = () => {
         existing.accept += accept;
         existing.reject += reject;
       } else {
-        monthMap.set(month, { offer, accept, reject });
+        monthMap.set(month, { offer, accept, reject, rawDate: r.date || "" });
       }
     });
-    return Array.from(monthMap.entries()).map(([month, vals]) => ({
-      month,
-      ...vals,
-    }));
+    return Array.from(monthMap.entries())
+      .map(([month, vals]) => ({
+        month,
+        offer: vals.offer,
+        accept: vals.accept,
+        reject: vals.reject,
+        rawDate: vals.rawDate,
+      }))
+      .sort((a, b) => (b.rawDate > a.rawDate ? 1 : b.rawDate < a.rawDate ? -1 : 0));
   }, [records]);
 
   const totals = useMemo(() => {
