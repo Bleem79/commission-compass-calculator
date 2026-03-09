@@ -213,34 +213,6 @@ const DriverWarningLetterPage = () => {
               </Card>
             </div>
 
-            {/* Bar Chart */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold">Monthly Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip
-                      contentStyle={{
-                        background: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
-                        fontSize: 12,
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="Offer" fill="hsl(221, 83%, 53%)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Accept" fill="hsl(142, 76%, 36%)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Reject" fill="hsl(0, 84%, 60%)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Pie Chart */}
               <Card>
