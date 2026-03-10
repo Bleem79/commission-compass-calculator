@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +9,6 @@ import { CalculatorContainer } from "@/components/calculator/CalculatorContainer
 import { UserProfile } from "@/components/calculator/UserProfile";
 import { FloatingCalculator } from "@/components/calculator/FloatingCalculator";
 
-// Get current month in format matching months array (e.g., "25-Dec")
 const getCurrentMonth = () => {
   const now = new Date();
   const year = now.getFullYear().toString().slice(-2);
@@ -32,14 +30,9 @@ const Dashboard = () => {
   const [nextTierInfo, setNextTierInfo] = useState<NextTierInfo[]>([]);
 
   useEffect(() => {
-    if (!user) {
-      navigate("/login");
-    } else {
-      console.log("Dashboard loaded with user role:", user.role);
-    }
+    if (!user) navigate("/login");
   }, [user, navigate]);
 
-  // Auto-set commission type to "With Basic" when Double Shift is selected
   useEffect(() => {
     if (shiftType === "Double Shift" && commissionType !== "With Basic") {
       setCommissionType("With Basic");
@@ -48,21 +41,14 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (totalIncome !== undefined && workingDays !== undefined && workingDays > 0 && month !== "" && shiftType !== "" && commissionType !== "") {
-      // Calculate average daily income with proper precision
       const income = Number((totalIncome / workingDays).toFixed(2));
-      console.log("Average daily income calculated:", income);
       setAverageDailyIncome(income);
 
-      // Filter data based on the user selected shift type and commission type
       let filteredData = commissionData.filter(
         (item) => item.shiftType === shiftType && item.commissionType === commissionType
       );
-      
-      // Sort filtered data by the 'from' value to ensure proper tier comparison
       const sortedData = [...filteredData].sort((a, b) => a.from - b.from);
-      console.log("Sorted commission data:", sortedData);
       
-      // Find matching tier based on average daily income
       let matchedTier = null;
       for (const tier of sortedData) {
         if (income >= tier.from && income <= tier.to) {
@@ -72,16 +58,13 @@ const Dashboard = () => {
       }
 
       if (matchedTier) {
-        console.log("Matched tier found:", matchedTier);
         setCommissionPercentage(matchedTier.percentage);
       } else {
-        // Check for the highest tier (when income is above the highest defined range)
         const highestTier = sortedData
           .filter(item => income >= item.from)
           .sort((a, b) => b.from - a.from)[0];
           
         if (highestTier) {
-          console.log("Highest applicable tier found:", highestTier);
           setCommissionPercentage(highestTier.percentage);
         } else {
           setCommissionPercentage(0);
@@ -92,11 +75,8 @@ const Dashboard = () => {
         }
       }
 
-      // Calculate next tiers with precise values
       let tiers: NextTierInfo[] = [];
-      
       if (sortedData.length > 0) {
-        // Find all tiers higher than current income
         tiers = sortedData
           .filter(tier => tier.from > income)
           .map(tier => ({
@@ -105,8 +85,6 @@ const Dashboard = () => {
           }))
           .sort((a, b) => a.amountNeeded - b.amountNeeded);
       }
-      
-      console.log("Next tier info:", tiers);
       setNextTierInfo(tiers);
     } else {
       setAverageDailyIncome(undefined);
@@ -132,7 +110,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 flex flex-col justify-start items-center p-4 sm:p-6 md:p-10">
+    <div className="min-h-screen bg-gradient-to-br from-background via-indigo-50 to-purple-100 flex flex-col justify-start items-center p-4 sm:p-6 md:p-10">
       <div className="w-full max-w-4xl mx-auto">
         <div className="flex flex-col gap-4 sm:gap-6">
           <CalculatorHeader userRole={user?.role} onLogout={handleLogout} />
