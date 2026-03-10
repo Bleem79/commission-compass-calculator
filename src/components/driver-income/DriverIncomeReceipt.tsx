@@ -137,7 +137,7 @@ export const DriverIncomeReceipt = ({
                         <td className="py-3 px-2 text-center font-medium text-gray-700">
                           {record.total_trips ?? '-'}
                         </td>
-                        <td className="py-3 px-2 text-right font-bold text-green-600 text-lg">
+                        <td className="py-3 px-2 text-right font-bold text-green-600 text-3xl">
                           {record.total_income.toFixed(2)} AED
                         </td>
                       </tr>
