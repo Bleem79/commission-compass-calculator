@@ -27,6 +27,9 @@ import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegi
 import { PageLayout } from "@/components/shared/PageLayout";
 import { Input } from "@/components/ui/input";
 
+const DayOffCalendar = lazy(() => import("@/components/admin-requests/DayOffCalendar").then(m => ({ default: m.DayOffCalendar })));
+const ManageTypesDialog = lazy(() => import("@/components/admin-requests/ManageTypesDialog").then(m => ({ default: m.ManageTypesDialog })));
+
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending", color: "bg-yellow-500" },
   { value: "in_progress", label: "In Progress", color: "bg-blue-500" },
