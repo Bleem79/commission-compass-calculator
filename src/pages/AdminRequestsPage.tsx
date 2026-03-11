@@ -238,7 +238,7 @@ const AdminRequestsPage = () => {
     >
       {showCalendar && (
         <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
-          <DayOffCalendar requests={requests.filter(r => r.request_type === "day_off")} month={calendarMonth} onMonthChange={setCalendarMonth} onDateSelect={(date) => setSelectedCalendarDate(date)} selectedDate={selectedCalendarDate} />
+          <DayOffCalendar requests={requests.filter(r => r.request_type === "day_off")} calendarMonth={calendarMonth} onMonthChange={setCalendarMonth} onDateSelect={(date) => setSelectedCalendarDate(date)} selectedDate={selectedCalendarDate} />
         </Suspense>
       )}
 
