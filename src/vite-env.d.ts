@@ -8,6 +8,8 @@ interface Window {
     maps: {
       Map: any;
       Marker: any;
+      InfoWindow: any;
+      event: any;
       MapTypeId: {
         ROADMAP: string;
         SATELLITE: string;

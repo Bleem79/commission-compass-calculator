@@ -20,8 +20,10 @@ export interface DriverRequest {
   status: string;
   admin_response: string | null;
   responded_at: string | null;
+  responded_by: string | null;
   created_at: string;
   request_no: string | null;
+  fleet_remarks: string | null;
 }
 
 export const getRequestTypeLabel = (value: string): string => {

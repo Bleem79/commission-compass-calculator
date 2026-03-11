@@ -249,9 +249,9 @@ const AdminRequestsPage = () => {
         statusFilter={statusFilter} onStatusChange={setStatusFilter}
         typeFilter={typeFilter} onTypeChange={setTypeFilter}
         controllerFilter={controllerFilter} onControllerChange={setControllerFilter}
-        controllerList={controllerList} requestTypes={requestTypes}
-        hasActiveFilters={!!hasActiveFilters} onClearFilters={clearAllFilters}
-        isActualAdmin={isActualAdmin} onManageTypes={() => setShowTypesDialog(true)}
+        controllerList={controllerList}
+        hasActiveFilters={!!hasActiveFilters} onClearAll={clearAllFilters}
+        onManageTypes={() => setShowTypesDialog(true)}
       />
 
       {loading ? (
