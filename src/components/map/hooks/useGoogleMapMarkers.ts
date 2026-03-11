@@ -65,7 +65,7 @@ export const useGoogleMapMarkers = ({
           });
           
           // Add info window
-          const infoWindow = new window.google.maps.InfoWindow({
+          const infoWindow = new (window.google?.maps as any).InfoWindow({
             content: `<div class="p-2"><strong>${markerData.name}</strong></div>`,
           });
           

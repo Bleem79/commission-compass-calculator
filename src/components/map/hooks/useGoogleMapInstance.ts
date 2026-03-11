@@ -95,7 +95,7 @@ export const useGoogleMapInstance = ({
       }, 200);
       
       // Listen for tiles loaded event
-      window.google.maps.event.addListenerOnce(mapInstanceRef.current, 'tilesloaded', () => {
+      (window.google?.maps as any).event.addListenerOnce(mapInstanceRef.current, 'tilesloaded', () => {
         clearInterval(errorCheckInterval);
         
         // Double check for auth errors even after tiles loaded

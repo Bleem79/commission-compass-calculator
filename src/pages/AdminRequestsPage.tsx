@@ -21,6 +21,7 @@ import { AdminRequestStats } from "@/components/admin-requests/AdminRequestStats
 import { AdminRequestsFilters } from "@/components/admin-requests/AdminRequestsFilters";
 import { AdminRequestCard } from "@/components/admin-requests/AdminRequestCard";
 import { extractDayOffDate } from "@/utils/dateUtils";
+import { DriverRequest, getRequestTypeLabel } from "@/constants/requestTypes";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 import { PageLayout } from "@/components/shared/PageLayout";
@@ -28,22 +29,6 @@ import { Input } from "@/components/ui/input";
 
 const DayOffCalendar = lazy(() => import("@/components/admin-requests/DayOffCalendar").then(m => ({ default: m.DayOffCalendar })));
 const ManageTypesDialog = lazy(() => import("@/components/admin-requests/ManageTypesDialog").then(m => ({ default: m.ManageTypesDialog })));
-
-interface DriverRequest {
-  id: string;
-  request_no: string | null;
-  driver_id: string;
-  driver_name: string | null;
-  request_type: string;
-  subject: string;
-  description: string;
-  status: string;
-  admin_response: string | null;
-  responded_at: string | null;
-  responded_by: string | null;
-  created_at: string;
-  fleet_remarks: string | null;
-}
 
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending", color: "bg-yellow-500" },
@@ -238,7 +223,7 @@ const AdminRequestsPage = () => {
     >
       {showCalendar && (
         <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
-          <DayOffCalendar requests={requests.filter(r => r.request_type === "day_off")} month={calendarMonth} onMonthChange={setCalendarMonth} onDateSelect={(date) => setSelectedCalendarDate(date)} selectedDate={selectedCalendarDate} />
+          <DayOffCalendar requests={requests.filter(r => r.request_type === "day_off")} calendarMonth={calendarMonth} onMonthChange={setCalendarMonth} onDateSelect={(date) => setSelectedCalendarDate(date)} selectedDate={selectedCalendarDate} />
         </Suspense>
       )}
 
@@ -249,9 +234,9 @@ const AdminRequestsPage = () => {
         statusFilter={statusFilter} onStatusChange={setStatusFilter}
         typeFilter={typeFilter} onTypeChange={setTypeFilter}
         controllerFilter={controllerFilter} onControllerChange={setControllerFilter}
-        controllerList={controllerList} requestTypes={requestTypes}
-        hasActiveFilters={!!hasActiveFilters} onClearFilters={clearAllFilters}
-        isActualAdmin={isActualAdmin} onManageTypes={() => setShowTypesDialog(true)}
+        controllerList={controllerList}
+        hasActiveFilters={!!hasActiveFilters} onClearAll={clearAllFilters}
+        onManageTypes={() => setShowTypesDialog(true)}
       />
 
       {loading ? (

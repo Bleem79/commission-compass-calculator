@@ -1,424 +1,142 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import React from "react";
+import { Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2, Trash2, KeyRound, Eye, EyeOff, ChevronLeft, ChevronRight, UserPlus, Dices, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-import { ArrowLeft, Search, Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2, Trash2, KeyRound, Eye, EyeOff, ChevronLeft, ChevronRight, UserPlus, Dices } from "lucide-react";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { uploadDriverCredential } from "@/services/driverUploadService";
 import { Progress } from "@/components/ui/progress";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ResetDriverPasswordDialog } from "@/components/admin/ResetDriverPasswordDialog";
-
-interface DriverCredential {
-  id: string;
-  driver_id: string;
-  user_id: string | null;
-  status: string;
-  created_at: string | null;
-  password_text: string | null;
-}
+import { PageLayout } from "@/components/shared/PageLayout";
+import { useDriverCredentialsManagement } from "@/hooks/useDriverCredentialsManagement";
 
 const DriverManagementPage = () => {
-  const navigate = useNavigate();
-  const { isAdmin, canAccessAdminPages, user } = useAuth();
-  const [drivers, setDrivers] = useState<DriverCredential[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; currentDriverId: string } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [bulkUpdating, setBulkUpdating] = useState(false);
-  const [isClearing, setIsClearing] = useState(false);
-  const [resetPasswordDriver, setResetPasswordDriver] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 15;
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newDriverId, setNewDriverId] = useState("");
-  const [newDriverPassword, setNewDriverPassword] = useState("");
-  const [isAddingDriver, setIsAddingDriver] = useState(false);
-  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
-
-  const togglePasswordVisibility = useCallback((driverId: string) => {
-    setVisiblePasswords(prev => {
-      const next = new Set(prev);
-      if (next.has(driverId)) {
-        next.delete(driverId);
-      } else {
-        next.add(driverId);
-      }
-      return next;
-    });
-  }, []);
-
-  const generateRandomPassword = useCallback(() => {
-    const password = Math.floor(100000 + Math.random() * 900000).toString();
-    setNewDriverPassword(password);
-  }, []);
-
-  const isStaff = canAccessAdminPages && !isAdmin;
-
-  useEffect(() => {
-    if (!canAccessAdminPages) { navigate("/home"); return; }
-    fetchDrivers();
-  }, [canAccessAdminPages, navigate]);
-
-  const fetchDrivers = useCallback(async () => {
-    setLoading(true);
-    try {
-      const PAGE_SIZE = 1000;
-      let allDrivers: DriverCredential[] = [];
-      let from = 0;
-      let hasMore = true;
-
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from('driver_credentials')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .range(from, from + PAGE_SIZE - 1);
-        if (error) throw error;
-        if (data && data.length > 0) {
-          allDrivers = [...allDrivers, ...data];
-          from += PAGE_SIZE;
-          hasMore = data.length === PAGE_SIZE;
-        } else {
-          hasMore = false;
-        }
-      }
-      setDrivers(allDrivers);
-    } catch (error: any) {
-      console.error("Error fetching drivers:", error);
-      toast.error("Failed to load drivers");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const handleAddDriver = useCallback(async () => {
-    const trimmedId = newDriverId.trim();
-    const trimmedPw = newDriverPassword.trim();
-    if (!trimmedId) { toast.error("Please enter a Driver ID"); return; }
-    if (!trimmedPw || trimmedPw.length < 6) { toast.error("Password must be at least 6 characters"); return; }
-    if (drivers.some(d => d.driver_id === trimmedId)) { toast.error(`Driver ${trimmedId} already exists`); return; }
-
-    setIsAddingDriver(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("driver-credentials-bulk", {
-        body: { drivers: [{ driverId: trimmedId, password: trimmedPw, status: "enabled" }], replaceExisting: false },
-      });
-      if (error) throw error;
-      const result = data as any;
-      if (result?.errors?.length > 0) {
-        toast.error(result.errors[0]?.error || "Failed to add driver");
-      } else {
-        toast.success(`Driver ${trimmedId} added successfully`);
-        setNewDriverId("");
-        setNewDriverPassword("");
-        setShowAddForm(false);
-        await fetchDrivers();
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to add driver");
-    } finally {
-      setIsAddingDriver(false);
-    }
-  }, [newDriverId, newDriverPassword, drivers, fetchDrivers]);
-
-  const toggleDriverStatus = useCallback(async (driver: DriverCredential) => {
-    setUpdatingId(driver.id);
-    const newStatus = driver.status === 'enabled' ? 'disabled' : 'enabled';
-    try {
-      const { error } = await supabase.from('driver_credentials').update({ status: newStatus }).eq('id', driver.id);
-      if (error) throw error;
-      setDrivers(prev => prev.map(d => d.id === driver.id ? { ...d, status: newStatus } : d));
-      toast.success(`Driver ${driver.driver_id} ${newStatus}`);
-    } catch (error: any) {
-      toast.error("Failed to update driver status");
-    } finally {
-      setUpdatingId(null);
-    }
-  }, []);
-
-  const bulkUpdateStatus = useCallback(async (newStatus: 'enabled' | 'disabled') => {
-    if (drivers.length === 0) return;
-    setBulkUpdating(true);
-    try {
-      const { error } = await supabase.from('driver_credentials').update({ status: newStatus }).neq('status', newStatus);
-      if (error) throw error;
-      setDrivers(prev => prev.map(d => ({ ...d, status: newStatus })));
-      const count = drivers.filter(d => d.status !== newStatus).length;
-      toast.success(`${count} driver(s) ${newStatus}`);
-    } catch (error: any) {
-      toast.error("Failed to update drivers");
-    } finally {
-      setBulkUpdating(false);
-    }
-  }, [drivers]);
-
-  const clearAllDriverCredentials = useCallback(async () => {
-    if (drivers.length === 0) return;
-    setIsClearing(true);
-    try {
-      const { error } = await supabase.from('driver_credentials').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      if (error) throw error;
-      setDrivers([]);
-      toast.success("All driver credentials cleared successfully");
-    } catch (error: any) {
-      toast.error("Failed to clear driver credentials: " + error.message);
-    } finally {
-      setIsClearing(false);
-    }
-  }, [drivers.length]);
-
-  const downloadTemplate = useCallback(() => {
-    const csvContent = "driverId,password,status\nDRV001,password123,enabled\nDRV002,password456,disabled";
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "driver_credentials_template.csv");
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("Template downloaded");
-  }, []);
-
-  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setIsUploading(true);
-    setUploadProgress(null);
-    try {
-      const result = await uploadDriverCredential(file, (progress) => setUploadProgress(progress));
-      if (result.success.length > 0) toast.success(`Successfully uploaded ${result.success.length} driver(s)`);
-      if (result.errors.length > 0) toast.error(`Failed to upload ${result.errors.length} driver(s)`);
-      await fetchDrivers();
-    } catch (error: any) {
-      toast.error("Failed to upload file: " + error.message);
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }, [fetchDrivers]);
-
-  const filteredDrivers = useMemo(() => 
-    drivers.filter(driver => driver.driver_id.toLowerCase().includes(searchTerm.toLowerCase())),
-    [drivers, searchTerm]
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filteredDrivers.length / PAGE_SIZE));
-  const paginatedDrivers = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredDrivers.slice(start, start + PAGE_SIZE);
-  }, [filteredDrivers, currentPage]);
-
-  // Reset page when search changes
-  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
-
-  const { enabledCount, disabledCount } = useMemo(() => ({
-    enabledCount: drivers.filter(d => d.status === 'enabled').length,
-    disabledCount: drivers.filter(d => d.status === 'disabled').length,
-  }), [drivers]);
+  const {
+    drivers, loading, searchTerm, setSearchTerm, updatingId, isUploading, uploadProgress,
+    fileInputRef, bulkUpdating, isClearing, resetPasswordDriver, setResetPasswordDriver,
+    currentPage, setCurrentPage, PAGE_SIZE, showAddForm, setShowAddForm,
+    newDriverId, setNewDriverId, newDriverPassword, setNewDriverPassword,
+    isAddingDriver, visiblePasswords, isAdmin, canAccessAdminPages,
+    togglePasswordVisibility, generateRandomPassword, fetchDrivers,
+    handleAddDriver, toggleDriverStatus, bulkUpdateStatus, clearAllDriverCredentials,
+    downloadTemplate, handleFileUpload, filteredDrivers, totalPages, paginatedDrivers,
+    enabledCount, disabledCount,
+  } = useDriverCredentialsManagement();
 
   if (!canAccessAdminPages) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100 p-4 sm:p-6 md:p-10">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/home")} className="hover:bg-indigo-100">
-              <ArrowLeft className="h-5 w-5" />
+    <PageLayout
+      title="Driver Management"
+      icon={<Users className="h-6 w-6" />}
+      gradient="from-background via-indigo-50/50 to-purple-100/50"
+      headerActions={
+        isAdmin ? (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={downloadTemplate} className="text-xs sm:text-sm">
+              <Download className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Download CSV Template</span><span className="sm:hidden">Template</span>
             </Button>
-            <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-indigo-800">Driver Management</h1>
-              <p className="text-sm text-slate-600">Manage driver accounts and access</p>
-            </div>
+            <input type="file" accept=".csv" onChange={handleFileUpload} ref={fileInputRef} className="hidden" />
+            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="text-xs sm:text-sm">
+              {isUploading ? <><Loader2 className="h-4 w-4 sm:mr-2 animate-spin" /><span className="hidden sm:inline">Uploading...</span></> : <><Upload className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Upload CSV</span><span className="sm:hidden">Upload</span></>}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowAddForm(!showAddForm)} className="text-xs sm:text-sm">
+              <UserPlus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Add Driver</span><span className="sm:hidden">Add</span>
+            </Button>
           </div>
-          {isAdmin && (
-            <div className="flex flex-wrap gap-2 sm:ml-auto">
-              <Button variant="outline" size="sm" onClick={downloadTemplate} className="bg-white hover:bg-green-50 border-green-200 text-green-700 hover:text-green-800 text-xs sm:text-sm">
-                <Download className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Download CSV Template</span>
-                <span className="sm:hidden">Template</span>
-              </Button>
-              <input type="file" accept=".csv" onChange={handleFileUpload} ref={fileInputRef} className="hidden" id="driver-csv-upload" />
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="bg-white hover:bg-purple-50 border-purple-200 text-purple-700 hover:text-purple-800 text-xs sm:text-sm">
-                {isUploading ? (
-                  <><Loader2 className="h-4 w-4 sm:mr-2 animate-spin" /><span className="hidden sm:inline">Uploading...</span></>
-                ) : (
-                  <><Upload className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Upload CSV</span><span className="sm:hidden">Upload</span></>
-                )}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowAddForm(!showAddForm)} className="bg-white hover:bg-indigo-50 border-indigo-200 text-indigo-700 hover:text-indigo-800 text-xs sm:text-sm">
-                <UserPlus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Add Driver</span>
-                <span className="sm:hidden">Add</span>
-              </Button>
+        ) : undefined
+      }
+    >
+      {/* Upload Progress */}
+      {isUploading && uploadProgress && (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Processing: <span className="font-medium text-primary">{uploadProgress.currentDriverId}</span></span>
+                <span className="text-muted-foreground">{uploadProgress.current} / {uploadProgress.total}</span>
+              </div>
+              <Progress value={(uploadProgress.current / uploadProgress.total) * 100} className="h-2" />
             </div>
-          )}
-        </div>
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Upload Progress */}
-        {isUploading && uploadProgress && (
-          <Card className="bg-white shadow-sm border-purple-200">
-            <CardContent className="p-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">Processing: <span className="font-medium text-purple-700">{uploadProgress.currentDriverId}</span></span>
-                  <span className="text-slate-600">{uploadProgress.current} / {uploadProgress.total}</span>
-                </div>
-                <Progress value={(uploadProgress.current / uploadProgress.total) * 100} className="h-2" />
-                <p className="text-xs text-slate-500 text-center">{Math.round((uploadProgress.current / uploadProgress.total) * 100)}% complete</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Add Driver Form */}
-        {isAdmin && showAddForm && (
-          <Card className="bg-white shadow-sm border-indigo-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold text-indigo-800 flex items-center gap-2">
-                <UserPlus className="h-5 w-5" />
-                Add Individual Driver Account
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-3 items-end">
-                <div className="flex-1 space-y-1">
-                  <label className="text-sm font-medium text-slate-700">Driver ID</label>
-                  <Input
-                    placeholder="Enter Driver ID (e.g., 113441)"
-                    value={newDriverId}
-                    onChange={(e) => setNewDriverId(e.target.value)}
-                  />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <label className="text-sm font-medium text-slate-700">Password</label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter or generate password"
-                      value={newDriverPassword}
-                      onChange={(e) => setNewDriverPassword(e.target.value)}
-                      className="font-mono"
-                    />
-                    <Button variant="outline" size="icon" onClick={generateRandomPassword} title="Generate 6-digit random password" className="shrink-0 border-indigo-200 text-indigo-600 hover:bg-indigo-50">
-                      <Dices className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <Button onClick={handleAddDriver} disabled={isAddingDriver} className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0">
-                  {isAddingDriver ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserPlus className="h-4 w-4 mr-2" />}
-                  {isAddingDriver ? "Adding..." : "Add Driver"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="bg-white shadow-sm">
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="p-3 bg-blue-100 rounded-full"><Users className="h-6 w-6 text-blue-600" /></div>
-              <div>
-                <p className="text-sm text-slate-600">Total Drivers</p>
-                <p className="text-2xl font-bold text-slate-800">{drivers.length}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white shadow-sm">
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="p-3 bg-green-100 rounded-full"><UserCheck className="h-6 w-6 text-green-600" /></div>
-              <div>
-                <p className="text-sm text-slate-600">Enabled</p>
-                <p className="text-2xl font-bold text-green-600">{enabledCount}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white shadow-sm">
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="p-3 bg-red-100 rounded-full"><UserX className="h-6 w-6 text-red-600" /></div>
-              <div>
-                <p className="text-sm text-slate-600">Disabled</p>
-                <p className="text-2xl font-bold text-red-600">{disabledCount}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Driver Table */}
-        <Card className="bg-white shadow-sm">
-          <CardHeader className="pb-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <CardTitle className="text-lg font-semibold text-slate-800">Driver Accounts</CardTitle>
-              <div className="flex flex-wrap items-center gap-2">
-                {isAdmin && (
-                  <>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" disabled={isClearing || drivers.length === 0} className="bg-red-50 border-red-300 text-red-700 hover:bg-red-100 hover:text-red-800">
-                          {isClearing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1" />}
-                          Clear All
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Clear All Driver Credentials?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete all {drivers.length} driver credential records. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={clearAllDriverCredentials} className="bg-red-600 hover:bg-red-700">Yes, Clear All</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                    <Button variant="outline" size="sm" onClick={() => bulkUpdateStatus('enabled')} disabled={bulkUpdating || drivers.length === 0 || enabledCount === drivers.length} className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800">
-                      <CheckCircle2 className="h-4 w-4 mr-1" />Enable All
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => bulkUpdateStatus('disabled')} disabled={bulkUpdating || drivers.length === 0 || disabledCount === drivers.length} className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100 hover:text-red-800">
-                      <XCircle className="h-4 w-4 mr-1" />Disable All
-                    </Button>
-                  </>
-                )}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input placeholder="Search by Driver ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 w-full md:w-64" />
-                </div>
-                <Button variant="outline" size="icon" onClick={fetchDrivers} disabled={loading}>
-                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                </Button>
-              </div>
-            </div>
+      {/* Add Driver Form */}
+      {isAdmin && showAddForm && (
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2"><UserPlus className="h-5 w-5" /> Add Individual Driver Account</CardTitle>
           </CardHeader>
           <CardContent>
-            {loading || bulkUpdating ? (
-              <div className="flex items-center justify-center py-8">
-                <RefreshCw className="h-6 w-6 animate-spin text-slate-400" />
-                <span className="ml-2 text-slate-600">{bulkUpdating ? "Updating drivers..." : "Loading drivers..."}</span>
+            <div className="flex flex-col sm:flex-row gap-3 items-end">
+              <div className="flex-1 space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Driver ID</label>
+                <Input placeholder="Enter Driver ID (e.g., 113441)" value={newDriverId} onChange={(e) => setNewDriverId(e.target.value)} />
               </div>
-            ) : filteredDrivers.length === 0 ? (
-              <div className="text-center py-8 text-slate-500">
-                {searchTerm ? "No drivers found matching your search" : "No drivers registered yet. Upload a CSV to add drivers."}
+              <div className="flex-1 space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Password</label>
+                <div className="flex gap-2">
+                  <Input placeholder="Enter or generate password" value={newDriverPassword} onChange={(e) => setNewDriverPassword(e.target.value)} className="font-mono" />
+                  <Button variant="outline" size="icon" onClick={generateRandomPassword} title="Generate 6-digit random password" className="shrink-0"><Dices className="h-4 w-4" /></Button>
+                </div>
               </div>
-            ) : (
-              <>
+              <Button onClick={handleAddDriver} disabled={isAddingDriver} className="shrink-0">
+                {isAddingDriver ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserPlus className="h-4 w-4 mr-2" />}
+                {isAddingDriver ? "Adding..." : "Add Driver"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <Card><CardContent className="flex items-center gap-4 p-4"><div className="p-3 bg-primary/10 rounded-full"><Users className="h-6 w-6 text-primary" /></div><div><p className="text-sm text-muted-foreground">Total Drivers</p><p className="text-2xl font-bold">{drivers.length}</p></div></CardContent></Card>
+        <Card><CardContent className="flex items-center gap-4 p-4"><div className="p-3 bg-green-100 rounded-full"><UserCheck className="h-6 w-6 text-green-600" /></div><div><p className="text-sm text-muted-foreground">Enabled</p><p className="text-2xl font-bold text-green-600">{enabledCount}</p></div></CardContent></Card>
+        <Card><CardContent className="flex items-center gap-4 p-4"><div className="p-3 bg-destructive/10 rounded-full"><UserX className="h-6 w-6 text-destructive" /></div><div><p className="text-sm text-muted-foreground">Disabled</p><p className="text-2xl font-bold text-destructive">{disabledCount}</p></div></CardContent></Card>
+      </div>
+
+      {/* Driver Table */}
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <CardTitle className="text-lg font-semibold">Driver Accounts</CardTitle>
+            <div className="flex flex-wrap items-center gap-2">
+              {isAdmin && (
+                <>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" disabled={isClearing || drivers.length === 0} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                        {isClearing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1" />} Clear All
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader><AlertDialogTitle>Clear All Driver Credentials?</AlertDialogTitle><AlertDialogDescription>This will permanently delete all {drivers.length} driver credential records.</AlertDialogDescription></AlertDialogHeader>
+                      <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={clearAllDriverCredentials} className="bg-destructive hover:bg-destructive/90">Yes, Clear All</AlertDialogAction></AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                  <Button variant="outline" size="sm" onClick={() => bulkUpdateStatus('enabled')} disabled={bulkUpdating || drivers.length === 0 || enabledCount === drivers.length}><CheckCircle2 className="h-4 w-4 mr-1" />Enable All</Button>
+                  <Button variant="outline" size="sm" onClick={() => bulkUpdateStatus('disabled')} disabled={bulkUpdating || drivers.length === 0 || disabledCount === drivers.length}><XCircle className="h-4 w-4 mr-1" />Disable All</Button>
+                </>
+              )}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search by Driver ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 w-full md:w-64" />
+              </div>
+              <Button variant="outline" size="icon" onClick={fetchDrivers} disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /></Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading || bulkUpdating ? (
+            <div className="flex items-center justify-center py-8"><RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" /><span className="ml-2 text-muted-foreground">{bulkUpdating ? "Updating drivers..." : "Loading drivers..."}</span></div>
+          ) : filteredDrivers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">{searchTerm ? "No drivers found matching your search" : "No drivers registered yet."}</div>
+          ) : (
+            <>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -436,46 +154,26 @@ const DriverManagementPage = () => {
                         <TableCell className="font-medium">{driver.driver_id}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-sm text-slate-600 min-w-[80px]">
-                              {visiblePasswords.has(driver.id)
-                                ? (driver.password_text || "—")
-                                : driver.password_text
-                                  ? "••••••"
-                                  : "—"}
+                            <span className="font-mono text-sm text-muted-foreground min-w-[80px]">
+                              {visiblePasswords.has(driver.id) ? (driver.password_text || "—") : driver.password_text ? "••••••" : "—"}
                             </span>
                             {driver.password_text && (
-                              <button
-                                type="button"
-                                onClick={() => togglePasswordVisibility(driver.id)}
-                                className="text-slate-400 hover:text-indigo-600 transition-colors"
-                                title={visiblePasswords.has(driver.id) ? "Hide password" : "Show password"}
-                              >
-                                {visiblePasswords.has(driver.id) ? (
-                                  <EyeOff className="h-4 w-4" />
-                                ) : (
-                                  <Eye className="h-4 w-4" />
-                                )}
+                              <button type="button" onClick={() => togglePasswordVisibility(driver.id)} className="text-muted-foreground hover:text-primary transition-colors">
+                                {visiblePasswords.has(driver.id) ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                               </button>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={driver.status === 'enabled' ? 'default' : 'secondary'}
-                            className={driver.status === 'enabled' ? 'bg-green-100 text-green-700 hover:bg-green-100' : 'bg-red-100 text-red-700 hover:bg-red-100'}
-                          >
+                          <Badge variant={driver.status === 'enabled' ? 'default' : 'secondary'} className={driver.status === 'enabled' ? 'bg-green-100 text-green-700 hover:bg-green-100' : 'bg-destructive/10 text-destructive hover:bg-destructive/10'}>
                             {driver.status === 'enabled' ? 'Enabled' : 'Disabled'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-slate-600">
-                          {driver.created_at ? new Date(driver.created_at).toLocaleDateString() : 'N/A'}
-                        </TableCell>
+                        <TableCell className="text-muted-foreground">{driver.created_at ? new Date(driver.created_at).toLocaleDateString() : 'N/A'}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => setResetPasswordDriver(driver.driver_id)} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50" title="Reset Password">
-                              <KeyRound className="h-4 w-4" />
-                            </Button>
-                            <span className="text-sm text-slate-600 mr-2">{driver.status === 'enabled' ? 'Enabled' : 'Disabled'}</span>
+                            <Button variant="ghost" size="sm" onClick={() => setResetPasswordDriver(driver.driver_id)} title="Reset Password"><KeyRound className="h-4 w-4" /></Button>
+                            <span className="text-sm text-muted-foreground mr-2">{driver.status === 'enabled' ? 'Enabled' : 'Disabled'}</span>
                             <Switch checked={driver.status === 'enabled'} onCheckedChange={() => toggleDriverStatus(driver)} disabled={updatingId === driver.id} />
                           </div>
                         </TableCell>
@@ -484,57 +182,26 @@ const DriverManagementPage = () => {
                   </TableBody>
                 </Table>
               </div>
-              {/* Pagination */}
               {filteredDrivers.length > PAGE_SIZE && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t">
-                  <p className="text-sm text-slate-500">
-                    Showing {((currentPage - 1) * PAGE_SIZE) + 1}-{Math.min(currentPage * PAGE_SIZE, filteredDrivers.length)} of {filteredDrivers.length}
-                  </p>
+                  <p className="text-sm text-muted-foreground">Showing {((currentPage - 1) * PAGE_SIZE) + 1}-{Math.min(currentPage * PAGE_SIZE, filteredDrivers.length)} of {filteredDrivers.length}</p>
                   <div className="flex items-center gap-1">
-                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
-                      .reduce<(number | string)[]>((acc, p, i, arr) => {
-                        if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push('...');
-                        acc.push(p);
-                        return acc;
-                      }, [])
-                      .map((p, i) =>
-                        typeof p === 'string' ? (
-                          <span key={`ellipsis-${i}`} className="px-2 text-slate-400">…</span>
-                        ) : (
-                          <Button key={p} variant={p === currentPage ? "default" : "outline"} size="sm" className="min-w-[36px]" onClick={() => setCurrentPage(p)}>
-                            {p}
-                          </Button>
-                        )
-                      )}
-                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+                      .reduce<(number | string)[]>((acc, p, i, arr) => { if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push('...'); acc.push(p); return acc; }, [])
+                      .map((p, i) => typeof p === 'string' ? <span key={`ellipsis-${i}`} className="px-2 text-muted-foreground">…</span> : <Button key={p} variant={p === currentPage ? "default" : "outline"} size="sm" className="min-w-[36px]" onClick={() => setCurrentPage(p)}>{p}</Button>)}
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight className="h-4 w-4" /></Button>
                   </div>
                 </div>
               )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Footer */}
-        <footer className="mt-8 flex flex-col items-center justify-center gap-2 py-4 border-t border-gray-200">
-          <img src="/lovable-uploads/aman-logo-footer.png" alt="Aman Taxi Sharjah" className="h-8 sm:h-10 object-contain" />
-          <p className="text-xs sm:text-sm text-gray-500">All Rights Reserved</p>
-        </footer>
-      </div>
-
-      <ResetDriverPasswordDialog
-        isOpen={!!resetPasswordDriver}
-        onClose={() => setResetPasswordDriver(null)}
-        driverId={resetPasswordDriver || ""}
-        onSuccess={fetchDrivers}
-      />
-    </div>
+      <ResetDriverPasswordDialog isOpen={!!resetPasswordDriver} onClose={() => setResetPasswordDriver(null)} driverId={resetPasswordDriver || ""} onSuccess={fetchDrivers} />
+    </PageLayout>
   );
 };
 
