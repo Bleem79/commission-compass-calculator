@@ -137,7 +137,7 @@ const DriverTierTable = ({ driverId }: DriverTierTableProps) => {
   }
 
   return (
-    <Card className="bg-white/10 backdrop-blur-md border-white/20 overflow-hidden">
+    <Card className="bg-background border overflow-hidden">
       {/* Header with driver info */}
       <div className="bg-gradient-to-r from-emerald-600/80 to-teal-600/80 p-4">
         <div className="flex items-center justify-between">
@@ -169,40 +169,40 @@ const DriverTierTable = ({ driverId }: DriverTierTableProps) => {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-white/5 border-b border-white/10">
-                <th className="text-left p-3 font-semibold text-white/90">Target</th>
-                <th className="text-center p-3 font-semibold text-white/90">
+              <tr className="bg-muted/50 border-b">
+                <th className="text-left p-3 font-semibold text-foreground">Target</th>
+                <th className="text-center p-3 font-semibold text-foreground">
                   <div className="flex flex-col items-center">
                     <span>Avg</span>
-                    <span className="text-[10px] font-normal text-white/60">Trip/Day</span>
+                    <span className="text-[10px] font-normal text-muted-foreground">Trip/Day</span>
                   </div>
                 </th>
-                <th className="text-center p-3 font-semibold text-white/90">
+                <th className="text-center p-3 font-semibold text-foreground">
                   <div className="flex flex-col items-center">
                     <span>Total Trips/</span>
-                    <span className="text-[10px] font-normal text-white/60">Month</span>
+                    <span className="text-[10px] font-normal text-muted-foreground">Month</span>
                   </div>
                 </th>
-                <th className="text-center p-3 font-semibold text-white/90">Incentive</th>
+                <th className="text-center p-3 font-semibold text-foreground">Incentive</th>
               </tr>
             </thead>
             <tbody>
               {tierData.map((tier, index) => (
                 <tr
                   key={tier.tier}
-                  className={`border-b border-white/5 ${index % 2 === 0 ? 'bg-white/[0.02]' : ''}`}
+                  className={`border-b ${index % 2 === 0 ? 'bg-muted/20' : ''}`}
                 >
                   <td className="p-3">
-                    <span className="font-medium text-white/90">{tier.tier}</span>
+                    <span className="font-medium text-foreground">{tier.tier}</span>
                   </td>
                   <td className="p-3 text-center">
-                    <span className="text-white/80">{tier.avgTripsPerDay.toFixed(2)}</span>
+                    <span className="text-muted-foreground">{tier.avgTripsPerDay.toFixed(2)}</span>
                   </td>
                   <td className="p-3 text-center">
-                    <span className="font-semibold text-white">{tier.totalTripsMonth}</span>
+                    <span className="font-semibold text-foreground">{tier.totalTripsMonth}</span>
                   </td>
                   <td className="p-3 text-center">
-                    <Badge className="bg-emerald-500/30 text-emerald-300 hover:bg-emerald-500/40 font-bold">
+                    <Badge className="bg-emerald-500/20 text-emerald-700 hover:bg-emerald-500/30 font-bold">
                       {tier.incentive}
                     </Badge>
                   </td>
