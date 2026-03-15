@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
 import { format } from "date-fns";
-import { ArrowLeft, ClipboardCheck, Search, Plus, Filter, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { ClipboardCheck, Search, Plus, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,187 +8,31 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { QRCodeCanvas } from "qrcode.react";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/AuthContext";
-import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { PageLayout } from "@/components/shared/PageLayout";
+import { useEntryPassManagement } from "@/hooks/useEntryPassManagement";
 
-const ENTRY_REASONS = [
-  "Short Collection",
-  "ADNOC Fuel Issue",
-  "Fuel Chips Issue",
-  "CNG Card Lost",
-  "CNG Card Damage",
-  "Customer Run Away",
-  "Fine Removal",
-  "Double Shift Partner Complaint",
-  "Fuel bill Sign",
-  "Customer pay to aman account",
-  "Fuel Excess Inquiry",
-  "Need to meet operation team",
-  "Need to meet operations manager",
-];
-
-interface EntryRecord {
-  id: string;
-  entry_no: string;
-  driver_id: string;
-  driver_name: string | null;
-  reason: string;
-  status: string;
-  created_at: string;
-  created_by: string | null;
-}
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case "done":
+      return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Done</Badge>;
+    case "pending":
+    default:
+      return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Pending</Badge>;
+  }
+};
 
 const AdminEntryPassPage = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { isAdmin, loading: adminLoading } = useAdminCheck(false);
-  const [entries, setEntries] = useState<EntryRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedEntry, setSelectedEntry] = useState<EntryRecord | null>(null);
-
-  // Staff creation form
-  const [driverIdInput, setDriverIdInput] = useState("");
-  const [reason, setReason] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [deleteEntry, setDeleteEntry] = useState<EntryRecord | null>(null);
-
-  const fetchEntries = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from("entry_passes")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      setEntries((data as EntryRecord[]) || []);
-    } catch (err) {
-      console.error("Error fetching entries:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!adminLoading) fetchEntries();
-  }, [adminLoading, fetchEntries]);
-
-  const handleSubmit = async () => {
-    if (!driverIdInput.trim()) {
-      toast.error("Please enter a Driver ID.");
-      return;
-    }
-    if (!reason) {
-      toast.error("Please select a reason for entry.");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      // Look up driver name from master file
-      const { data: masterData } = await supabase
-        .from("driver_master_file")
-        .select("driver_name")
-        .eq("driver_id", driverIdInput.trim())
-        .maybeSingle();
-
-      const { error } = await supabase.from("entry_passes").insert({
-        entry_no: "TEMP",
-        driver_id: driverIdInput.trim(),
-        driver_name: masterData?.driver_name || null,
-        reason,
-        created_by: user?.id || null,
-      });
-      if (error) throw error;
-
-      // Send push notification to the driver
-      supabase.functions
-        .invoke("send-entry-pass-notification", {
-          body: { driverId: driverIdInput.trim(), driverName: masterData?.driver_name || null, reason },
-        })
-        .catch((err) => console.log("Entry pass notification failed (non-critical):", err));
-
-      setDriverIdInput("");
-      setReason("");
-      setShowCreateForm(false);
-      toast.success("Entry pass created successfully!");
-      await fetchEntries();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create entry pass.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleUpdateStatus = async (entry: EntryRecord, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from("entry_passes")
-        .update({ status: newStatus })
-        .eq("id", entry.id);
-      if (error) throw error;
-      toast.success(`Status updated to ${newStatus}`);
-      setSelectedEntry(null);
-      await fetchEntries();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update status.");
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteEntry) return;
-    try {
-      const { error } = await supabase
-        .from("entry_passes")
-        .delete()
-        .eq("id", deleteEntry.id);
-      if (error) throw error;
-      toast.success("Entry pass deleted.");
-      setDeleteEntry(null);
-      setSelectedEntry(null);
-      await fetchEntries();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete entry pass.");
-    }
-  };
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 15;
-
-  const filteredEntries = entries.filter((e) => {
-    const matchesSearch =
-      !searchQuery ||
-      e.driver_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.entry_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (e.driver_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.reason.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || e.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE));
-  const paginatedEntries = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredEntries.slice(start, start + PAGE_SIZE);
-  }, [filteredEntries, currentPage]);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "done":
-        return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Done</Badge>;
-      case "pending":
-      default:
-        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Pending</Badge>;
-    }
-  };
+  const {
+    isAdmin, adminLoading, loading,
+    filteredEntries, paginatedEntries, totalPages, currentPage, setCurrentPage,
+    searchQuery, setSearchQuery, statusFilter, setStatusFilter,
+    selectedEntry, setSelectedEntry,
+    driverIdInput, setDriverIdInput, reason, setReason,
+    submitting, showCreateForm, setShowCreateForm,
+    deleteEntry, setDeleteEntry,
+    handleSubmit, handleUpdateStatus, handleDelete,
+    ENTRY_REASONS, PAGE_SIZE,
+  } = useEntryPassManagement();
 
   const selectedName = selectedEntry?.driver_name || "";
   const nameFontSize = selectedName.length > 25 ? "0.875rem" : selectedName.length > 18 ? "1rem" : "1.125rem";
@@ -203,216 +46,162 @@ const AdminEntryPassPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/30 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl animate-pulse delay-1000" />
+    <PageLayout
+      title="Entry Pass Management"
+      icon={<ClipboardCheck className="h-6 w-6" />}
+      maxWidth="4xl"
+      variant="dark"
+      gradient="from-slate-900 via-purple-900 to-slate-900"
+    >
+      {/* Create Entry Pass Button */}
+      <div className="mb-4">
+        <Button
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Create Entry Pass
+        </Button>
       </div>
 
-      <div className="relative z-10 min-h-screen flex flex-col p-4 sm:p-6 lg:p-8">
-        <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col">
-          {/* Header */}
-          <header className="flex items-center gap-4 mb-6">
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
-              onClick={() => navigate("/home")}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-          </header>
-
-          <h1 className="text-2xl sm:text-3xl font-bold text-white text-center mb-6">Entry Pass Management</h1>
-
-          {/* Create Entry Pass Button */}
-          <div className="mb-4">
-            <Button
-              onClick={() => setShowCreateForm(!showCreateForm)}
-              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Entry Pass
-            </Button>
+      {/* Create Form */}
+      {showCreateForm && (
+        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 sm:p-6 mb-6 space-y-4">
+          <div>
+            <label className="text-sm text-white/70 mb-2 block">Driver ID</label>
+            <Input
+              value={driverIdInput}
+              onChange={(e) => setDriverIdInput(e.target.value)}
+              placeholder="Enter Driver ID"
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+            />
           </div>
-
-          {/* Create Form */}
-          {showCreateForm && (
-            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 sm:p-6 mb-6 space-y-4">
-              <div>
-                <label className="text-sm text-white/70 mb-2 block">Driver ID</label>
-                <Input
-                  value={driverIdInput}
-                  onChange={(e) => setDriverIdInput(e.target.value)}
-                  placeholder="Enter Driver ID"
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-white/70 mb-2 block">Reason for Entry</label>
-                <Select value={reason} onValueChange={setReason}>
-                  <SelectTrigger className="bg-white/10 border-white/20 text-white [&>span]:text-white">
-                    <SelectValue placeholder="Select a reason" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-white/20 z-[100]">
-                    {ENTRY_REASONS.map((r) => (
-                      <SelectItem key={r} value={r} className="text-white focus:bg-white/20 focus:text-white">
-                        {r}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                onClick={handleSubmit}
-                disabled={!driverIdInput.trim() || !reason || submitting}
-                className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {submitting ? "Submitting..." : "Submit Entry Pass"}
-              </Button>
-            </div>
-          )}
-
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by Driver ID, Entry No, Name..."
-                className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/40"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[160px] bg-white/10 border-white/20 text-white [&>span]:text-white">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue />
+          <div>
+            <label className="text-sm text-white/70 mb-2 block">Reason for Entry</label>
+            <Select value={reason} onValueChange={setReason}>
+              <SelectTrigger className="bg-white/10 border-white/20 text-white [&>span]:text-white">
+                <SelectValue placeholder="Select a reason" />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-white/20 z-[100]">
-                <SelectItem value="all" className="text-white focus:bg-white/20 focus:text-white">All Status</SelectItem>
-                <SelectItem value="pending" className="text-white focus:bg-white/20 focus:text-white">Pending</SelectItem>
-                <SelectItem value="done" className="text-white focus:bg-white/20 focus:text-white">Done</SelectItem>
+                {ENTRY_REASONS.map((r) => (
+                  <SelectItem key={r} value={r} className="text-white focus:bg-white/20 focus:text-white">
+                    {r}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
-
-          {/* Entries List */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white/80">
-                All Entries ({filteredEntries.length})
-              </h2>
-              <p className="text-white/50 text-xs">
-                {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, filteredEntries.length)} of {filteredEntries.length}
-              </p>
-            </div>
-            {paginatedEntries.map((entry) => (
-              <button
-                key={entry.id}
-                onClick={() => setSelectedEntry(entry)}
-                className="w-full text-left bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-white/10">
-                      <ClipboardCheck className="w-5 h-5 text-emerald-400" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-white font-medium text-sm">{entry.entry_no}</p>
-                        {getStatusBadge(entry.status)}
-                      </div>
-                      <p className="text-white/60 text-xs">{entry.driver_id} — {entry.reason}</p>
-                      {entry.driver_name && (
-                        <p className="text-white/40 text-xs">{entry.driver_name}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-white/60 text-xs">{format(new Date(entry.created_at), "dd MMM yyyy")}</p>
-                    <p className="text-white/50 text-xs">{format(new Date(entry.created_at), "hh:mm:ss a")}</p>
-                  </div>
-                </div>
-              </button>
-            ))}
-
-            {filteredEntries.length === 0 && (
-              <div className="flex flex-col items-center justify-center text-white/40 gap-3 py-12">
-                <ClipboardCheck className="w-12 h-12" />
-                <p className="text-sm">No entry passes found.</p>
-              </div>
-            )}
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-4 pb-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-30"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(page)}
-                    className={`min-w-[36px] border-white/20 ${
-                      currentPage === page
-                        ? "bg-purple-600 text-white border-purple-500 hover:bg-purple-700"
-                        : "bg-white/10 text-white/70 hover:bg-white/20"
-                    }`}
-                  >
-                    {page}
-                  </Button>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-30"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </div>
+          <Button
+            onClick={handleSubmit}
+            disabled={!driverIdInput.trim() || !reason || submitting}
+            className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {submitting ? "Submitting..." : "Submit Entry Pass"}
+          </Button>
         </div>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by Driver ID, Entry No, Name..."
+            className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-[160px] bg-white/10 border-white/20 text-white [&>span]:text-white">
+            <Filter className="w-4 h-4 mr-2" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-slate-800 border-white/20 z-[100]">
+            <SelectItem value="all" className="text-white focus:bg-white/20 focus:text-white">All Status</SelectItem>
+            <SelectItem value="pending" className="text-white focus:bg-white/20 focus:text-white">Pending</SelectItem>
+            <SelectItem value="done" className="text-white focus:bg-white/20 focus:text-white">Done</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Entries List */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white/80">All Entries ({filteredEntries.length})</h2>
+          <p className="text-white/50 text-xs">
+            {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, filteredEntries.length)} of {filteredEntries.length}
+          </p>
+        </div>
+        {paginatedEntries.map((entry) => (
+          <button
+            key={entry.id}
+            onClick={() => setSelectedEntry(entry)}
+            className="w-full text-left bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-colors"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-white/10">
+                  <ClipboardCheck className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-white font-medium text-sm">{entry.entry_no}</p>
+                    {getStatusBadge(entry.status)}
+                  </div>
+                  <p className="text-white/60 text-xs">{entry.driver_id} — {entry.reason}</p>
+                  {entry.driver_name && <p className="text-white/40 text-xs">{entry.driver_name}</p>}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-white/60 text-xs">{format(new Date(entry.created_at), "dd MMM yyyy")}</p>
+                <p className="text-white/50 text-xs">{format(new Date(entry.created_at), "hh:mm:ss a")}</p>
+              </div>
+            </div>
+          </button>
+        ))}
+
+        {filteredEntries.length === 0 && (
+          <div className="flex flex-col items-center justify-center text-white/40 gap-3 py-12">
+            <ClipboardCheck className="w-12 h-12" />
+            <p className="text-sm">No entry passes found.</p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 pt-4 pb-2">
+            <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-30">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button key={page} variant="outline" size="sm" onClick={() => setCurrentPage(page)} className={`min-w-[36px] border-white/20 ${currentPage === page ? "bg-purple-600 text-white border-purple-500 hover:bg-purple-700" : "bg-white/10 text-white/70 hover:bg-white/20"}`}>
+                {page}
+              </Button>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-30">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Entry Detail Dialog */}
       <Dialog open={!!selectedEntry} onOpenChange={(open) => !open && setSelectedEntry(null)}>
         <DialogContent className="max-w-[380px] sm:max-w-[420px] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-white/20 text-white">
           <DialogHeader>
-            <DialogTitle className="text-center text-white text-xl font-bold tracking-wide">
-              Entry Pass
-            </DialogTitle>
+            <DialogTitle className="text-center text-white text-xl font-bold tracking-wide">Entry Pass</DialogTitle>
           </DialogHeader>
-
           {selectedEntry && (
             <div className="flex flex-col items-center gap-5 py-2">
-              <div className="text-center">
-                <p className="text-lg font-bold tracking-wider text-emerald-400">{selectedEntry.entry_no}</p>
-              </div>
+              <p className="text-lg font-bold tracking-wider text-emerald-400">{selectedEntry.entry_no}</p>
 
-              <div className={`p-1 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.25)] ${
-                selectedEntry.status === "done"
-                  ? "bg-gradient-to-br from-emerald-500 via-teal-400 to-cyan-500"
-                  : "bg-gradient-to-br from-amber-500 via-orange-400 to-yellow-500"
-              }`}>
+              <div className={`p-1 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.25)] ${selectedEntry.status === "done" ? "bg-gradient-to-br from-emerald-500 via-teal-400 to-cyan-500" : "bg-gradient-to-br from-amber-500 via-orange-400 to-yellow-500"}`}>
                 <div className="bg-white rounded-xl p-4 flex items-center justify-center">
                   <QRCodeCanvas
                     value={`ENTRY:${selectedEntry.entry_no}|${selectedEntry.driver_id}|${selectedEntry.reason}|${selectedEntry.created_at}`}
-                    size={200}
-                    level="L"
-                    bgColor="#ffffff"
+                    size={200} level="L" bgColor="#ffffff"
                     fgColor={selectedEntry.status === "done" ? "#10b981" : "#f97316"}
                     includeMargin={true}
                   />
@@ -427,9 +216,7 @@ const AdminEntryPassPage = () => {
               {selectedEntry.driver_name && (
                 <div className="text-center space-y-1">
                   <p className="text-xs uppercase tracking-widest text-white/50">Full Name</p>
-                  <p className="font-semibold text-white/90 break-words max-w-full px-2" style={{ fontSize: nameFontSize }}>
-                    {selectedEntry.driver_name}
-                  </p>
+                  <p className="font-semibold text-white/90 break-words max-w-full px-2" style={{ fontSize: nameFontSize }}>{selectedEntry.driver_name}</p>
                 </div>
               )}
 
@@ -445,40 +232,21 @@ const AdminEntryPassPage = () => {
 
               <div className="text-center space-y-1">
                 <p className="text-xs uppercase tracking-widest text-white/50">Date & Time</p>
-                <p className="text-base font-medium text-white/80">
-                  {format(new Date(selectedEntry.created_at), "dd MMM yyyy  •  hh:mm:ss a")}
-                </p>
+                <p className="text-base font-medium text-white/80">{format(new Date(selectedEntry.created_at), "dd MMM yyyy  •  hh:mm:ss a")}</p>
               </div>
 
-              {/* Admin action buttons */}
+              {/* Admin actions */}
               {isAdmin && (
                 <div className="w-full space-y-2 pt-2">
                   <div className="flex gap-2">
                     {selectedEntry.status !== "done" && (
-                      <Button
-                        onClick={() => handleUpdateStatus(selectedEntry, "done")}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                      >
-                        Mark as Done
-                      </Button>
+                      <Button onClick={() => handleUpdateStatus(selectedEntry, "done")} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">Mark as Done</Button>
                     )}
                     {selectedEntry.status !== "pending" && (
-                      <Button
-                        onClick={() => handleUpdateStatus(selectedEntry, "pending")}
-                        className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
-                      >
-                        Mark as Pending
-                      </Button>
+                      <Button onClick={() => handleUpdateStatus(selectedEntry, "pending")} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white">Mark Pending</Button>
                     )}
                   </div>
-                  <Button
-                    onClick={() => setDeleteEntry(selectedEntry)}
-                    variant="destructive"
-                    className="w-full"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Entry Pass
-                  </Button>
+                  <Button variant="destructive" className="w-full" onClick={() => setDeleteEntry(selectedEntry)}>Delete Entry Pass</Button>
                 </div>
               )}
 
@@ -494,22 +262,18 @@ const AdminEntryPassPage = () => {
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteEntry} onOpenChange={(open) => !open && setDeleteEntry(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-slate-900 border-white/20 text-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Entry Pass?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete entry pass {deleteEntry?.entry_no}. This action cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogTitle className="text-white">Delete Entry Pass?</AlertDialogTitle>
+            <AlertDialogDescription className="text-white/60">This action cannot be undone. Entry pass {deleteEntry?.entry_no} will be permanently deleted.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
+            <AlertDialogCancel className="bg-white/10 border-white/20 text-white hover:bg-white/20">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageLayout>
   );
 };
 

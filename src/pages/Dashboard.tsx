@@ -4,10 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { commissionData, months } from "@/constants/calculator";
 import type { NextTierInfo } from "@/types/calculator";
-import { CalculatorHeader } from "@/components/calculator/CalculatorHeader";
 import { CalculatorContainer } from "@/components/calculator/CalculatorContainer";
 import { UserProfile } from "@/components/calculator/UserProfile";
 import { FloatingCalculator } from "@/components/calculator/FloatingCalculator";
+import { PageLayout } from "@/components/shared/PageLayout";
+import { Calculator } from "lucide-react";
 
 const getCurrentMonth = () => {
   const now = new Date();
@@ -18,7 +19,7 @@ const getCurrentMonth = () => {
 };
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [month, setMonth] = useState(getCurrentMonth());
   const [shiftType, setShiftType] = useState("");
@@ -104,45 +105,41 @@ const Dashboard = () => {
     setNextTierInfo([]);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-indigo-50 to-purple-100 flex flex-col justify-start items-center p-4 sm:p-6 md:p-10">
-      <div className="w-full max-w-4xl mx-auto">
-        <div className="flex flex-col gap-4 sm:gap-6">
-          <CalculatorHeader userRole={user?.role} onLogout={handleLogout} />
-          
-          {user && (
-            <UserProfile 
-              email={user.email} 
-              username={user.username} 
-              role={user.role}
-            />
-          )}
-          
-          <CalculatorContainer
-            month={month}
-            shiftType={shiftType}
-            commissionType={commissionType}
-            totalIncome={totalIncome}
-            workingDays={workingDays}
-            averageDailyIncome={averageDailyIncome}
-            commissionPercentage={commissionPercentage}
-            nextTierInfo={nextTierInfo}
-            onReset={handleReset}
-            onMonthChange={setMonth}
-            onShiftTypeChange={setShiftType}
-            onCommissionTypeChange={setCommissionType}
-            onTotalIncomeChange={setTotalIncome}
-            onWorkingDaysChange={setWorkingDays}
-          />
-        </div>
+    <PageLayout
+      title="Commission Calculator"
+      icon={<Calculator className="h-6 w-6" />}
+      maxWidth="4xl"
+      gradient="from-background via-indigo-50 to-purple-100"
+    >
+      {user && (
+        <UserProfile 
+          email={user.email} 
+          username={user.username} 
+          role={user.role}
+        />
+      )}
+      
+      <div className="mt-4">
+        <CalculatorContainer
+          month={month}
+          shiftType={shiftType}
+          commissionType={commissionType}
+          totalIncome={totalIncome}
+          workingDays={workingDays}
+          averageDailyIncome={averageDailyIncome}
+          commissionPercentage={commissionPercentage}
+          nextTierInfo={nextTierInfo}
+          onReset={handleReset}
+          onMonthChange={setMonth}
+          onShiftTypeChange={setShiftType}
+          onCommissionTypeChange={setCommissionType}
+          onTotalIncomeChange={setTotalIncome}
+          onWorkingDaysChange={setWorkingDays}
+        />
       </div>
       <FloatingCalculator />
-    </div>
+    </PageLayout>
   );
 };
 
