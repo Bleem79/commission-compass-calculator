@@ -15,6 +15,7 @@ interface PageLayoutProps {
   headerActions?: React.ReactNode;
   maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "4xl" | "6xl" | "full";
   gradient?: string;
+  variant?: "light" | "dark";
 }
 
 const maxWidthClasses = {
@@ -30,6 +31,7 @@ const maxWidthClasses = {
 
 /**
  * Shared page layout component with consistent navigation and styling.
+ * Supports light (default) and dark variants.
  */
 export const PageLayout = ({
   children,
@@ -42,12 +44,15 @@ export const PageLayout = ({
   headerActions,
   maxWidth = "6xl",
   gradient = "from-background via-blue-50/50 to-cyan-100/50",
+  variant = "light",
 }: PageLayoutProps) => {
   const navigate = useNavigate();
 
   const handleClose = () => {
     navigate(backPath);
   };
+
+  const isDark = variant === "dark";
 
   return (
     <div
@@ -57,34 +62,53 @@ export const PageLayout = ({
         className
       )}
     >
+      {/* Animated background elements for dark variant */}
+      {isDark && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/30 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl animate-pulse delay-1000" />
+        </div>
+      )}
+
       {/* Close button */}
       {showClose && (
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-4 right-4 z-10"
+          className={cn(
+            "absolute top-4 right-4 z-10",
+            isDark && "text-white/70 hover:text-white hover:bg-white/10"
+          )}
           onClick={handleClose}
         >
-          <X className="h-6 w-6 text-muted-foreground hover:text-foreground" />
+          <X className={cn("h-6 w-6", isDark ? "text-white/70" : "text-muted-foreground hover:text-foreground")} />
         </Button>
       )}
 
       {/* Back button */}
       <Button
         variant="outline"
-        className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-background hover:bg-accent text-primary border-border"
+        className={cn(
+          "absolute top-4 left-4 z-10 flex items-center gap-2",
+          isDark
+            ? "bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
+            : "bg-background hover:bg-accent text-primary border-border"
+        )}
         onClick={handleClose}
       >
         <ArrowLeft className="h-4 w-4" />
         <span className="hidden sm:inline">{backLabel}</span>
       </Button>
 
-      <div className={cn("mx-auto pt-16", maxWidthClasses[maxWidth])}>
+      <div className={cn("mx-auto pt-16 relative z-10", maxWidthClasses[maxWidth])}>
         {/* Page header */}
         {(title || headerActions) && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             {title && (
-              <h1 className="text-lg sm:text-2xl font-bold text-foreground flex items-center gap-2">
+              <h1 className={cn(
+                "text-lg sm:text-2xl font-bold flex items-center gap-2",
+                isDark ? "text-white" : "text-foreground"
+              )}>
                 {icon}
                 {title}
               </h1>
