@@ -76,7 +76,7 @@ export const PageLayout = ({
           variant="ghost"
           size="icon"
           className={cn(
-            "absolute top-4 right-4 z-10",
+            "fixed top-4 right-4 z-50 min-w-[44px] min-h-[44px]",
             isDark && "text-white/70 hover:text-white hover:bg-white/10"
           )}
           onClick={handleClose}
@@ -89,7 +89,7 @@ export const PageLayout = ({
       <Button
         variant="outline"
         className={cn(
-          "absolute top-4 left-4 z-10 flex items-center gap-2",
+          "fixed top-4 left-4 z-50 flex items-center gap-2 min-h-[44px]",
           isDark
             ? "bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
             : "bg-background hover:bg-accent text-primary border-border"
