@@ -22,7 +22,8 @@ import {
   FileSpreadsheet,
   ShieldCheck,
   ClipboardCheck,
-  Video
+  Video,
+  FileText
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
@@ -333,6 +334,12 @@ const HomePage = () => {
         title: "Video Tutorials",
         gradient: "bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600",
         onClick: () => navigate("/video-tutorials"),
+      });
+      features.push({
+        icon: <FileText className="w-6 h-6 sm:w-8 sm:h-8" />,
+        title: "PRD Document",
+        gradient: "bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-700",
+        onClick: () => navigate("/prd"),
       });
     }
   }
