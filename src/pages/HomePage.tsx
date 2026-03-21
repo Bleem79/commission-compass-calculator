@@ -22,7 +22,8 @@ import {
   FileSpreadsheet,
   ShieldCheck,
   ClipboardCheck,
-  Video
+  Video,
+  FileText
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
