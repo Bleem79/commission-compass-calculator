@@ -23,7 +23,8 @@ import {
   ShieldCheck,
   ClipboardCheck,
   Video,
-  FileText
+  FileText,
+  BookOpen
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
