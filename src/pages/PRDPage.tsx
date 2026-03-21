@@ -1,13 +1,14 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { PageLayout } from "@/components/shared/PageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import {
   FileText, Users, Shield, Layers, Database, Globe,
-  Bell, Smartphone, Settings2, Target, ClipboardCheck
+  Bell, Smartphone, Settings2, Target, ClipboardCheck, Printer
 } from "lucide-react";
 
 const Section = ({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
@@ -34,6 +35,10 @@ const PRDPage = () => {
   const { isAdmin, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login", { replace: true });
@@ -53,6 +58,17 @@ const PRDPage = () => {
       variant="dark"
       gradient="from-slate-900 via-indigo-900 to-slate-900"
       maxWidth="4xl"
+      headerActions={
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handlePrint}
+          className="bg-white/10 border-white/20 text-white hover:bg-white/20 print:hidden"
+        >
+          <Printer className="h-4 w-4 mr-2" />
+          Export PDF
+        </Button>
+      }
     >
       <div className="space-y-6 pb-10">
         {/* Overview */}

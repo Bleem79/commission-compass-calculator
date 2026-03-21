@@ -412,3 +412,35 @@
     break-inside: avoid;
   }
 }
+
+@media print {
+  /* PRD page print styles */
+  .print\:hidden,
+  button,
+  nav,
+  [data-sidebar] {
+    display: none !important;
+  }
+
+  body, html {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  * {
+    color: black !important;
+    border-color: #ccc !important;
+    background: white !important;
+  }
+
+  .min-h-screen {
+    min-height: auto !important;
+    padding: 0 !important;
+  }
+
+  h1, h2, h3, h4, strong, code {
+    color: black !important;
+  }
+}
