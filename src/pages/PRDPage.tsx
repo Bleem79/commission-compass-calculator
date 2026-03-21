@@ -35,6 +35,10 @@ const PRDPage = () => {
   const { isAdmin, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login", { replace: true });
@@ -46,10 +50,6 @@ const PRDPage = () => {
   }, [isAuthenticated, isAdmin, navigate]);
 
   if (!isAdmin) return null;
-
-  const handlePrint = useCallback(() => {
-    window.print();
-  }, []);
 
   return (
     <PageLayout
