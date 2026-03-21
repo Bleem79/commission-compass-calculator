@@ -36,6 +36,7 @@ const RevenueControllerPortalPage = lazy(() => import("./pages/RevenueController
 const DriverEntryPassPage = lazy(() => import("./pages/DriverEntryPassPage"));
 const AdminEntryPassPage = lazy(() => import("./pages/AdminEntryPassPage"));
 const VideoTutorialsPage = lazy(() => import("./pages/VideoTutorialsPage"));
+const PRDPage = lazy(() => import("./pages/PRDPage"));
 const Index = lazy(() => import("./pages/Index"));
 
 // Loading fallback component
