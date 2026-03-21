@@ -132,6 +132,7 @@ const AppRoutes = () => {
         <Route path="/admin-entry-pass" element={<AdminEntryPassPage />} />
         <Route path="/video-tutorials" element={<VideoTutorialsPage />} />
         <Route path="/prd" element={<PRDPage />} />
+        <Route path="/system-guide" element={<SystemGuidePage />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
