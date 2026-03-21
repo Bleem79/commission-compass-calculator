@@ -47,6 +47,10 @@ const PRDPage = () => {
 
   if (!isAdmin) return null;
 
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
   return (
     <PageLayout
       title="Product Requirements Document"
@@ -54,6 +58,17 @@ const PRDPage = () => {
       variant="dark"
       gradient="from-slate-900 via-indigo-900 to-slate-900"
       maxWidth="4xl"
+      headerActions={
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handlePrint}
+          className="bg-white/10 border-white/20 text-white hover:bg-white/20 print:hidden"
+        >
+          <Printer className="h-4 w-4 mr-2" />
+          Export PDF
+        </Button>
+      }
     >
       <div className="space-y-6 pb-10">
         {/* Overview */}
