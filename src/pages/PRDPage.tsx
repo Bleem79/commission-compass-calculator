@@ -1,13 +1,14 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { PageLayout } from "@/components/shared/PageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import {
   FileText, Users, Shield, Layers, Database, Globe,
-  Bell, Smartphone, Settings2, Target, ClipboardCheck
+  Bell, Smartphone, Settings2, Target, ClipboardCheck, Printer
 } from "lucide-react";
 
 const Section = ({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
