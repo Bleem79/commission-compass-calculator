@@ -23,7 +23,8 @@ import {
   ShieldCheck,
   ClipboardCheck,
   Video,
-  FileText
+  FileText,
+  BookOpen
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
@@ -340,6 +341,12 @@ const HomePage = () => {
         title: "PRD Document",
         gradient: "bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-700",
         onClick: () => navigate("/prd"),
+      });
+      features.push({
+        icon: <BookOpen className="w-6 h-6 sm:w-8 sm:h-8" />,
+        title: "System Guide",
+        gradient: "bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700",
+        onClick: () => navigate("/system-guide"),
       });
     }
   }
