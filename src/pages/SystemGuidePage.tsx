@@ -139,7 +139,7 @@ const SystemGuidePage = () => {
             <div>
               <h4 className="text-white font-medium text-sm">Driver Login</h4>
               <StepList steps={[
-                "Use the driver email format: driverID@amantaxi.com",
+                "Enter your Driver ID only (e.g. 12345) — no email needed",
                 "Enter the password provided by admin",
                 "Access is limited to the Driver Portal features",
               ]} />
