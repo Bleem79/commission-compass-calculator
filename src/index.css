@@ -376,6 +376,23 @@
     border: 1px solid #ddd !important;
   }
 
+  /* Let long guide/PRD cards flow across multiple pages instead of clipping */
+  .overflow-x-auto,
+  .overflow-hidden,
+  .card,
+  .card-content {
+    overflow: visible !important;
+  }
+
+  .card,
+  .card-content,
+  .card-header,
+  .space-y-6,
+  .space-y-6 > * {
+    height: auto !important;
+    max-height: none !important;
+  }
+
   [class*="bg-emerald-500/10"],
   [class*="bg-amber-500/10"],
   [class*="bg-blue-500/10"] {
@@ -399,7 +416,17 @@
 
   /* Page breaks */
   .space-y-6 > * {
-    page-break-inside: avoid;
-    break-inside: avoid;
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+
+  .card-header,
+  .card-content,
+  ol,
+  ul,
+  li,
+  p {
+    page-break-inside: auto;
+    break-inside: auto;
   }
 }
