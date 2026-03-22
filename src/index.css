@@ -157,7 +157,7 @@
 @media print {
   /* Let the browser auto-detect paper size */
   @page {
-    margin: 0;
+    margin: 10mm;
     size: auto;
   }
 
@@ -173,23 +173,23 @@
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
-    /* Use viewport-relative sizing for auto-scaling */
-    font-size: clamp(6pt, 2vw, 11pt) !important;
+    color: black !important;
+    font-size: 10pt !important;
   }
 
-  .print\:hidden {
-    display: none !important;
-  }
-
-  /* Hide non-print elements */
+  /* Hide UI elements */
   .print\:hidden,
-  button:not(.print-receipt *),
   nav,
-  [class*="gap-"]:not(.print-receipt *):not(.driver-info *) {
+  [data-sidebar] {
     display: none !important;
   }
 
-  /* Show the receipt content */
+  /* Hide non-content buttons (but not inside print areas) */
+  button:not(.print-receipt *) {
+    display: none !important;
+  }
+
+  /* ---- Receipt-specific print styles ---- */
   .print-receipt,
   .print-receipt * {
     display: block !important;
@@ -228,7 +228,6 @@
     display: flex !important;
   }
 
-  /* Receipt container - fluid width */
   .print-receipt {
     width: 100% !important;
     max-width: 100% !important;
@@ -249,7 +248,6 @@
     break-inside: avoid;
   }
 
-  /* Header with logo - auto-scale */
   .print-receipt .card-header {
     padding: 2mm !important;
     background: #f5f5f5 !important;
@@ -266,9 +264,8 @@
     padding: 2mm !important;
   }
 
-  /* Report heading - responsive */
   .print-receipt .report-heading {
-    font-size: clamp(8pt, 2.5vw, 12pt) !important;
+    font-size: 12pt !important;
     padding: 1.5mm 2mm !important;
     margin-bottom: 2mm !important;
     background: #333 !important;
@@ -277,7 +274,6 @@
     border-radius: 1mm !important;
   }
 
-  /* Driver info section - flexible grid */
   .print-receipt .driver-info {
     padding: 2mm !important;
     margin-bottom: 2mm !important;
@@ -296,24 +292,18 @@
     min-width: 0 !important;
   }
 
-  /* Table - auto-scaling columns */
   .print-receipt table {
     width: 100% !important;
     table-layout: auto !important;
     border-collapse: collapse !important;
-    font-size: clamp(6pt, 1.8vw, 10pt) !important;
-  }
-
-  .print-receipt thead tr {
-    background: #eee !important;
+    font-size: 9pt !important;
   }
 
   .print-receipt th,
   .print-receipt td {
-    padding: clamp(1mm, 0.5vw, 3mm) clamp(0.5mm, 0.3vw, 2mm) !important;
+    padding: 1mm 2mm !important;
     font-size: inherit !important;
     word-wrap: break-word !important;
-    overflow-wrap: break-word !important;
     white-space: normal !important;
   }
 
@@ -327,74 +317,6 @@
     border-bottom: 1px solid #ddd !important;
   }
 
-  /* Text scaling */
-  .print-receipt p,
-  .print-receipt span,
-  .print-receipt div {
-    font-size: clamp(7pt, 1.8vw, 10pt) !important;
-    line-height: 1.3 !important;
-  }
-
-  .print-receipt .text-xs {
-    font-size: clamp(5pt, 1.2vw, 8pt) !important;
-  }
-
-  .print-receipt .text-sm {
-    font-size: clamp(6pt, 1.5vw, 9pt) !important;
-  }
-
-  .print-receipt .text-lg {
-    font-size: clamp(8pt, 2vw, 11pt) !important;
-  }
-
-  .print-receipt .text-xl,
-  .print-receipt .text-2xl {
-    font-size: clamp(9pt, 2.2vw, 13pt) !important;
-  }
-
-  /* Badges/pills - compact */
-  .print-receipt .rounded-full {
-    border-radius: 1mm !important;
-    padding: 0.5mm 1.5mm !important;
-    font-size: clamp(6pt, 1.5vw, 9pt) !important;
-  }
-
-  /* Color adjustments for monochrome thermal printers */
-  .print-receipt .bg-gradient-to-r,
-  .print-receipt .bg-gradient-to-br {
-    background: #f0f0f0 !important;
-    color: #000 !important;
-  }
-
-  .print-receipt .bg-amber-50,
-  .print-receipt .bg-amber-100 {
-    background: #f5f5f5 !important;
-  }
-
-  .print-receipt .text-green-600 {
-    color: #000 !important;
-    font-weight: bold !important;
-  }
-
-  .print-receipt .bg-orange-100,
-  .print-receipt .bg-red-100 {
-    background: #e8e8e8 !important;
-  }
-
-  .print-receipt .text-orange-700,
-  .print-receipt .text-red-700,
-  .print-receipt .text-primary {
-    color: #222 !important;
-  }
-
-  .print-receipt .text-gray-500,
-  .print-receipt .text-gray-600,
-  .print-receipt .text-gray-700,
-  .print-receipt .text-muted-foreground {
-    color: #444 !important;
-  }
-
-  /* Remove decorative elements */
   .print-receipt .shadow-lg,
   .print-receipt .shadow-md,
   .print-receipt .shadow-sm,
@@ -402,45 +324,82 @@
     box-shadow: none !important;
   }
 
-  .print-receipt .rounded-lg {
-    border-radius: 1mm !important;
-  }
-
-  /* Ensure each card fits on one page if possible */
   .print-receipt > .space-y-6 > * {
     page-break-inside: avoid;
     break-inside: avoid;
   }
-}
 
-@media print {
-  /* PRD page print styles */
-  .print\:hidden,
-  button,
-  nav,
-  [data-sidebar] {
-    display: none !important;
-  }
-
-  body, html {
-    background: white !important;
-    color: black !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  * {
-    color: black !important;
-    border-color: #ccc !important;
-    background: white !important;
-  }
-
+  /* ---- PRD & System Guide print styles ---- */
   .min-h-screen {
     min-height: auto !important;
     padding: 0 !important;
+    background: white !important;
   }
 
+  /* Make dark-themed guide/PRD pages readable */
+  [class*="from-slate-900"],
+  [class*="from-background"] {
+    background: white !important;
+  }
+
+  /* Force text colors for readability */
+  .text-white,
+  .text-white\/80,
+  .text-white\/70,
+  .text-white\/60,
+  .text-white\/50 {
+    color: #111 !important;
+  }
+
+  [class*="text-emerald-"],
+  [class*="text-amber-"],
+  [class*="text-blue-"],
+  [class*="text-pink-"],
+  [class*="text-purple-"],
+  [class*="text-cyan-"],
+  [class*="text-green-"],
+  [class*="text-orange-"],
+  [class*="text-red-"],
+  [class*="text-teal-"],
+  [class*="text-indigo-"],
+  [class*="text-violet-"],
+  [class*="text-gray-"],
+  [class*="text-sky-"] {
+    color: #333 !important;
+  }
+
+  /* Card backgrounds */
+  [class*="bg-white/5"],
+  [class*="bg-white/10"],
+  [class*="backdrop-blur"] {
+    background: #f8f8f8 !important;
+    border: 1px solid #ddd !important;
+  }
+
+  [class*="bg-emerald-500/10"],
+  [class*="bg-amber-500/10"],
+  [class*="bg-blue-500/10"] {
+    background: #f0f0f0 !important;
+    border: 1px solid #ccc !important;
+  }
+
+  /* Borders */
+  [class*="border-white/10"],
+  [class*="border-white/20"],
+  [class*="border-emerald-"],
+  [class*="border-amber-"],
+  [class*="border-blue-"] {
+    border-color: #ccc !important;
+  }
+
+  /* Headings */
   h1, h2, h3, h4, strong, code {
     color: black !important;
+  }
+
+  /* Page breaks */
+  .space-y-6 > * {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 }
