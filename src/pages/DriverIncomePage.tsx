@@ -129,7 +129,7 @@ const DriverIncomePage = () => {
       {isAdmin || canAccessAdminPages ? (
         <DriverIncomeTable data={incomeData} isLoading={isLoading} onDataChange={fetchIncomeData} isAdmin={isAdmin} reportHeading={reportHeading} />
       ) : (
-        <DriverIncomeReceipt data={incomeData} isLoading={isLoading} driverName={user?.username} permitId={driverInfo?.driverId} reportHeading={reportHeading} />
+        <DriverIncomeReceipt data={incomeData} isLoading={isLoading} driverName={user?.username} permitId={driverInfo?.driverId} reportHeading={reportHeading} reportNote={reportNote} />
       )}
 
       <FloatingCalculator />
