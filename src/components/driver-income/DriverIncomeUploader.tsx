@@ -210,6 +210,18 @@ export const DriverIncomeUploader = ({
         </Button>
       </div>
 
+      {/* Notes input */}
+      <div>
+        <Label htmlFor="report-note">Notes (optional — shown on driver receipts)</Label>
+        <textarea
+          id="report-note"
+          placeholder="Enter notes to display on all driver income receipts..."
+          value={reportNote}
+          onChange={(e) => onNoteChange(e.target.value)}
+          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-y"
+        />
+      </div>
+
       {/* File input and Import button */}
       <div className="flex flex-col sm:flex-row gap-4 items-end">
         <div className="flex-1">
