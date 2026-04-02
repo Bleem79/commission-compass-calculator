@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileSpreadsheet, Loader2, Download } from "lucide-react";
+import { Upload, FileSpreadsheet, Loader2, Download, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { processDriverIncomeFile, DriverIncomeRow, SkippedRow } from "@/utils/excel/processDriverIncomeFile";
@@ -213,13 +213,33 @@ export const DriverIncomeUploader = ({
       {/* Notes input */}
       <div>
         <Label htmlFor="report-note">Notes (optional — shown on driver receipts)</Label>
-        <textarea
-          id="report-note"
-          placeholder="Enter notes to display on all driver income receipts..."
-          value={reportNote}
-          onChange={(e) => onNoteChange(e.target.value)}
-          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-y"
-        />
+        <div className="flex gap-2 mt-1">
+          <textarea
+            id="report-note"
+            placeholder="Enter notes to display on all driver income receipts..."
+            value={reportNote}
+            onChange={(e) => onNoteChange(e.target.value)}
+            className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-y"
+          />
+          <Button
+            variant="outline"
+            onClick={async () => {
+              try {
+                const { data: existing } = await supabase.from('driver_income_settings').select('id').limit(1).maybeSingle();
+                if (existing) {
+                  await supabase.from('driver_income_settings').update({ report_note: reportNote, updated_at: new Date().toISOString(), updated_by: userId } as any).eq('id', existing.id);
+                } else {
+                  await supabase.from('driver_income_settings').insert({ report_note: reportNote, updated_by: userId } as any);
+                }
+                toast.success("Notes saved successfully");
+              } catch { toast.error("Failed to save notes"); }
+            }}
+            className="shrink-0 self-end"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Save Notes
+          </Button>
+        </div>
       </div>
 
       {/* File input and Import button */}
