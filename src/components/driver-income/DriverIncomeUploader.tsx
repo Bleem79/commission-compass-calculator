@@ -136,12 +136,12 @@ export const DriverIncomeUploader = ({
       if (existingSettings) {
         await supabase
           .from('driver_income_settings')
-          .update({ report_heading: reportHeading, updated_at: new Date().toISOString(), updated_by: userId } as any)
+          .update({ report_heading: reportHeading, report_note: reportNote, updated_at: new Date().toISOString(), updated_by: userId } as any)
           .eq('id', existingSettings.id);
       } else {
         await supabase
           .from('driver_income_settings')
-          .insert({ report_heading: reportHeading, updated_by: userId } as any);
+          .insert({ report_heading: reportHeading, report_note: reportNote, updated_by: userId } as any);
       }
 
       const skippedCount = result.skipped.length;
