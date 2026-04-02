@@ -31,6 +31,7 @@ const DriverIncomePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showUploader, setShowUploader] = useState(false);
   const [reportHeading, setReportHeading] = useState("");
+  const [reportNote, setReportNote] = useState("");
   const [driverInfo, setDriverInfo] = useState<{ driverId: string; permitId?: string } | null>(null);
 
   useEffect(() => {
@@ -61,11 +62,12 @@ const DriverIncomePage = () => {
 
   // Fetch report heading
   useEffect(() => {
-    const fetchReportHeading = async () => {
-      const { data } = await supabase.from('driver_income_settings').select('report_heading').limit(1).maybeSingle();
+    const fetchSettings = async () => {
+      const { data } = await supabase.from('driver_income_settings').select('report_heading, report_note').limit(1).maybeSingle();
       if (data?.report_heading) setReportHeading(data.report_heading);
+      if ((data as any)?.report_note) setReportNote((data as any).report_note);
     };
-    if (isAuthenticated) fetchReportHeading();
+    if (isAuthenticated) fetchSettings();
   }, [isAuthenticated]);
 
   const fetchIncomeData = useCallback(async () => {
@@ -118,6 +120,8 @@ const DriverIncomePage = () => {
             onUploadSuccess={(heading: string) => { setReportHeading(heading); fetchIncomeData(); setShowUploader(false); }}
             reportHeading={reportHeading}
             onHeadingChange={setReportHeading}
+            reportNote={reportNote}
+            onNoteChange={setReportNote}
           />
         </div>
       )}
@@ -125,7 +129,7 @@ const DriverIncomePage = () => {
       {isAdmin || canAccessAdminPages ? (
         <DriverIncomeTable data={incomeData} isLoading={isLoading} onDataChange={fetchIncomeData} isAdmin={isAdmin} reportHeading={reportHeading} />
       ) : (
-        <DriverIncomeReceipt data={incomeData} isLoading={isLoading} driverName={user?.username} permitId={driverInfo?.driverId} reportHeading={reportHeading} />
+        <DriverIncomeReceipt data={incomeData} isLoading={isLoading} driverName={user?.username} permitId={driverInfo?.driverId} reportHeading={reportHeading} reportNote={reportNote} />
       )}
 
       <FloatingCalculator />

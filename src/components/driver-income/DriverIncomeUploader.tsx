@@ -13,6 +13,8 @@ interface DriverIncomeUploaderProps {
   onUploadSuccess: (heading: string) => void;
   reportHeading: string;
   onHeadingChange: (heading: string) => void;
+  reportNote: string;
+  onNoteChange: (note: string) => void;
 }
 
 const CHUNK_SIZE = 250;
@@ -32,7 +34,9 @@ export const DriverIncomeUploader = ({
   userId, 
   onUploadSuccess, 
   reportHeading, 
-  onHeadingChange 
+  onHeadingChange,
+  reportNote,
+  onNoteChange
 }: DriverIncomeUploaderProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -132,12 +136,12 @@ export const DriverIncomeUploader = ({
       if (existingSettings) {
         await supabase
           .from('driver_income_settings')
-          .update({ report_heading: reportHeading, updated_at: new Date().toISOString(), updated_by: userId } as any)
+          .update({ report_heading: reportHeading, report_note: reportNote, updated_at: new Date().toISOString(), updated_by: userId } as any)
           .eq('id', existingSettings.id);
       } else {
         await supabase
           .from('driver_income_settings')
-          .insert({ report_heading: reportHeading, updated_by: userId } as any);
+          .insert({ report_heading: reportHeading, report_note: reportNote, updated_by: userId } as any);
       }
 
       const skippedCount = result.skipped.length;
@@ -204,6 +208,18 @@ export const DriverIncomeUploader = ({
           <Download className="h-4 w-4 mr-2" />
           Download Template
         </Button>
+      </div>
+
+      {/* Notes input */}
+      <div>
+        <Label htmlFor="report-note">Notes (optional — shown on driver receipts)</Label>
+        <textarea
+          id="report-note"
+          placeholder="Enter notes to display on all driver income receipts..."
+          value={reportNote}
+          onChange={(e) => onNoteChange(e.target.value)}
+          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-y"
+        />
       </div>
 
       {/* File input and Import button */}
