@@ -148,6 +148,14 @@ export const DriverIncomeReceipt = ({
                 </div>
               </div>
             ))}
+
+            {/* Notes Section */}
+            {reportNote && (
+              <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm font-semibold text-blue-800 mb-1">📝 Notes</p>
+                <p className="text-sm text-blue-700 whitespace-pre-line">{reportNote}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       ))}
