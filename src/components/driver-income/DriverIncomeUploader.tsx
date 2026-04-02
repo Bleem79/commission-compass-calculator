@@ -34,7 +34,9 @@ export const DriverIncomeUploader = ({
   userId, 
   onUploadSuccess, 
   reportHeading, 
-  onHeadingChange 
+  onHeadingChange,
+  reportNote,
+  onNoteChange
 }: DriverIncomeUploaderProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
