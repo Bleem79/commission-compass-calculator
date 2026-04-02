@@ -22,6 +22,7 @@ interface DriverIncomeReceiptProps {
   driverName?: string;
   permitId?: string;
   reportHeading?: string;
+  reportNote?: string;
 }
 
 export const DriverIncomeReceipt = ({
