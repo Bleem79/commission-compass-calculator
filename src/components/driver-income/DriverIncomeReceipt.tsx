@@ -30,7 +30,8 @@ export const DriverIncomeReceipt = ({
   isLoading,
   driverName,
   permitId,
-  reportHeading
+  reportHeading,
+  reportNote
 }: DriverIncomeReceiptProps) => {
   if (isLoading) {
     return (
