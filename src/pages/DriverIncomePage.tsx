@@ -62,11 +62,12 @@ const DriverIncomePage = () => {
 
   // Fetch report heading
   useEffect(() => {
-    const fetchReportHeading = async () => {
-      const { data } = await supabase.from('driver_income_settings').select('report_heading').limit(1).maybeSingle();
+    const fetchSettings = async () => {
+      const { data } = await supabase.from('driver_income_settings').select('report_heading, report_note').limit(1).maybeSingle();
       if (data?.report_heading) setReportHeading(data.report_heading);
+      if ((data as any)?.report_note) setReportNote((data as any).report_note);
     };
-    if (isAuthenticated) fetchReportHeading();
+    if (isAuthenticated) fetchSettings();
   }, [isAuthenticated]);
 
   const fetchIncomeData = useCallback(async () => {
