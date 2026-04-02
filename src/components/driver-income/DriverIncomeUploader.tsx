@@ -13,6 +13,8 @@ interface DriverIncomeUploaderProps {
   onUploadSuccess: (heading: string) => void;
   reportHeading: string;
   onHeadingChange: (heading: string) => void;
+  reportNote: string;
+  onNoteChange: (note: string) => void;
 }
 
 const CHUNK_SIZE = 250;
