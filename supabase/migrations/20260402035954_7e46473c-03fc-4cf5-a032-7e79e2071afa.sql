@@ -1,0 +1,1 @@
+ALTER TABLE public.driver_income_settings ADD COLUMN report_note text DEFAULT null;
