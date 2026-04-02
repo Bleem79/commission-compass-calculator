@@ -31,6 +31,7 @@ const DriverIncomePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showUploader, setShowUploader] = useState(false);
   const [reportHeading, setReportHeading] = useState("");
+  const [reportNote, setReportNote] = useState("");
   const [driverInfo, setDriverInfo] = useState<{ driverId: string; permitId?: string } | null>(null);
 
   useEffect(() => {
