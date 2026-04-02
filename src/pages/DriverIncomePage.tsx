@@ -120,6 +120,8 @@ const DriverIncomePage = () => {
             onUploadSuccess={(heading: string) => { setReportHeading(heading); fetchIncomeData(); setShowUploader(false); }}
             reportHeading={reportHeading}
             onHeadingChange={setReportHeading}
+            reportNote={reportNote}
+            onNoteChange={setReportNote}
           />
         </div>
       )}
