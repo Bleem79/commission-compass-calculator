@@ -51,6 +51,9 @@ const TotalOutstandingPage = () => {
   const [driverInfo, setDriverInfo] = useState<{ driverId: string } | null>(null);
   const [reportHeading, setReportHeading] = useState("");
   const [reportNote, setReportNote] = useState("");
+  const [uploadHistory, setUploadHistory] = useState<{ key: string; date: string; count: number }[]>([]);
+  const [selectedBatches, setSelectedBatches] = useState<Set<string>>(new Set());
+  const [isDeletingBatch, setIsDeletingBatch] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isStaff = isAdmin || canAccessAdminPages;
 
