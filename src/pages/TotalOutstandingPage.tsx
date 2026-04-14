@@ -103,7 +103,12 @@ const TotalOutstandingPage = () => {
     } finally { setIsLoading(false); }
   }, [isStaff, driverInfo?.driverId]);
 
-  useEffect(() => { if (isAuthenticated) fetchRecords(); }, [fetchRecords, isAuthenticated]);
+  // For drivers, wait until driverInfo is resolved before fetching
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (!isStaff && !driverInfo?.driverId) return; // wait for driver ID
+    fetchRecords();
+  }, [fetchRecords, isAuthenticated, isStaff, driverInfo?.driverId]);
 
   const downloadTemplate = () => {
     const csvContent = `Emp Cde,Fleet Status,Accident,Traffic Fines,SHJ RTA Fines,Total External Fines,Total Outstanding
