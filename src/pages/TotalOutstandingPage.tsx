@@ -590,8 +590,8 @@ const TotalOutstandingPage = () => {
                     <p className="font-bold text-lg text-primary">{records[0]?.emp_cde}</p>
                   </div>
 
-                  {/* Comparison Table */}
-                  <div className="overflow-x-auto">
+                  {/* Comparison Table - Desktop */}
+                  <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full border-collapse text-sm">
                       <thead>
                         <tr className="bg-amber-50 border-b-2 border-amber-200">
@@ -610,10 +610,8 @@ const TotalOutstandingPage = () => {
                           const prev = idx > 0 ? batches[idx - 1].record : null;
                           const dateLabel = new Date(batch.dateKey + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
                           const internalMisc = r.total_outstanding - r.total_external_fines;
-
                           return (
                             <React.Fragment key={batch.dateKey}>
-                              {/* Value row */}
                               <tr className="border-b border-gray-200">
                                 <td className="py-3 px-2 font-medium text-gray-700">{dateLabel}</td>
                                 <td className="py-3 px-2 text-center font-medium text-gray-700">{formatVal(r.accident)}</td>
@@ -623,7 +621,6 @@ const TotalOutstandingPage = () => {
                                 <td className="py-3 px-2 text-center font-medium text-gray-700">{formatVal(internalMisc)}</td>
                                 <td className="py-3 px-2 text-right font-bold text-red-600">{formatVal(r.total_outstanding)}</td>
                               </tr>
-                              {/* Diff row */}
                               {prev && (
                                 <tr className="bg-gray-50 border-b border-gray-100">
                                   <td className="py-1 px-2 text-xs text-gray-400 italic">Change</td>
@@ -640,6 +637,46 @@ const TotalOutstandingPage = () => {
                         })}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Comparison Cards - Mobile */}
+                  <div className="sm:hidden space-y-3">
+                    {batches.map((batch, idx) => {
+                      const r = batch.record;
+                      const prev = idx > 0 ? batches[idx - 1].record : null;
+                      const dateLabel = new Date(batch.dateKey + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                      const internalMisc = r.total_outstanding - r.total_external_fines;
+
+                      const rows = [
+                        { label: "Accident", val: formatVal(r.accident), diff: prev ? r.accident - prev.accident : null },
+                        { label: "Traffic Fines", val: formatVal(r.traffic_fines), diff: prev ? r.traffic_fines - prev.traffic_fines : null },
+                        { label: "SHJ RTA Fines", val: formatVal(r.shj_rta_fines), diff: prev ? r.shj_rta_fines - prev.shj_rta_fines : null },
+                        { label: "Total External Fines", val: formatVal(r.total_external_fines), diff: prev ? r.total_external_fines - prev.total_external_fines : null, highlight: true },
+                        { label: "Internal & Misc", val: formatVal(internalMisc), diff: prev ? internalMisc - (prev.total_outstanding - prev.total_external_fines) : null },
+                        { label: "Total Balance", val: formatVal(r.total_outstanding), diff: prev ? r.total_outstanding - prev.total_outstanding : null, highlight: true },
+                      ];
+
+                      return (
+                        <div key={batch.dateKey} className="bg-white border border-amber-200 rounded-lg overflow-hidden">
+                          <div className="bg-amber-50 px-3 py-2 border-b border-amber-200">
+                            <span className="font-semibold text-sm text-gray-700">📅 {dateLabel}</span>
+                          </div>
+                          <div className="divide-y divide-gray-100">
+                            {rows.map((row) => (
+                              <div key={row.label} className="flex items-center justify-between px-3 py-2">
+                                <span className={`text-xs ${row.highlight ? 'font-semibold text-red-700' : 'text-gray-500'}`}>{row.label}</span>
+                                <div className="text-right">
+                                  <span className={`text-sm ${row.highlight ? 'font-bold text-red-600' : 'font-medium text-gray-700'}`}>{row.val}</span>
+                                  {row.diff !== null && (
+                                    <div className="text-xs mt-0.5">{formatDiff(row.diff)}</div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Legend */}
