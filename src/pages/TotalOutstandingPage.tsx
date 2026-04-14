@@ -257,6 +257,7 @@ const TotalOutstandingPage = () => {
       "Traffic Fines": r.traffic_fines,
       "SHJ RTA Fines": r.shj_rta_fines,
       "Total External Fines": r.total_external_fines,
+      "Internal & Misc": Math.max(0, r.total_outstanding - r.total_external_fines),
       "Total Balance": r.total_outstanding,
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -456,6 +457,7 @@ const TotalOutstandingPage = () => {
                       <thead>
                         <tr className="bg-red-50 border-b-2 border-red-200">
                           <th className="text-center py-3 px-2 text-sm font-semibold text-red-700">Total External Fines</th>
+                          <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Internal & Misc</th>
                           <th className="text-right py-3 px-2 text-sm font-semibold text-red-700">Total Balance</th>
                         </tr>
                       </thead>
@@ -463,6 +465,9 @@ const TotalOutstandingPage = () => {
                         <tr>
                           <td className="py-3 px-2 text-center font-bold text-red-600 text-xl">
                             {r.total_external_fines.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-3 px-2 text-center font-bold text-gray-700 text-xl">
+                            {(r.total_outstanding - r.total_external_fines).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="py-3 px-2 text-right font-bold text-red-600 text-3xl">
                             {r.total_outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -533,6 +538,7 @@ const TotalOutstandingPage = () => {
                   <TableHead className="text-right">Traffic Fines</TableHead>
                   <TableHead className="text-right">SHJ RTA Fines</TableHead>
                   <TableHead className="text-right text-destructive font-semibold">Total External Fines</TableHead>
+                  <TableHead className="text-right font-semibold">Internal & Misc</TableHead>
                   <TableHead className="text-right text-destructive font-semibold">Total Balance</TableHead>
                 </TableRow>
               </TableHeader>
@@ -550,6 +556,7 @@ const TotalOutstandingPage = () => {
                       <TableCell className="text-right">{r.traffic_fines.toFixed(2)}</TableCell>
                       <TableCell className="text-right">{r.shj_rta_fines.toFixed(2)}</TableCell>
                       <TableCell className="text-right font-semibold text-destructive">{r.total_external_fines.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-semibold">{(r.total_outstanding - r.total_external_fines).toFixed(2)}</TableCell>
                       <TableCell className="text-right font-semibold text-destructive">{r.total_outstanding.toFixed(2)}</TableCell>
                     </TableRow>
                   ))
