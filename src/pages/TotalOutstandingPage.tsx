@@ -15,7 +15,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { FileSpreadsheet, Upload, Download, Trash2, Loader2, Search, X, Printer } from "lucide-react";
+import { FileSpreadsheet, Upload, Download, Trash2, Loader2, Search, X, Printer, Save } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -48,12 +49,24 @@ const TotalOutstandingPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [driverInfo, setDriverInfo] = useState<{ driverId: string } | null>(null);
+  const [reportHeading, setReportHeading] = useState("");
+  const [reportNote, setReportNote] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isStaff = isAdmin || canAccessAdminPages;
 
   useEffect(() => {
     if (!isAuthenticated) navigate("/login", { replace: true });
   }, [isAuthenticated, navigate]);
+
+  // Fetch report heading/note
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const { data } = await supabase.from('total_outstanding_settings').select('report_heading, report_note').limit(1).maybeSingle();
+      if (data?.report_heading) setReportHeading(data.report_heading);
+      if (data?.report_note) setReportNote(data.report_note);
+    };
+    if (isAuthenticated) fetchSettings();
+  }, [isAuthenticated]);
 
   // Resolve driver ID for non-admin users
   useEffect(() => {
@@ -283,8 +296,57 @@ const TotalOutstandingPage = () => {
     >
       {/* Upload Section - Admin Only */}
       {isStaff && user?.id && (
-        <div className="mb-6 bg-card rounded-lg border border-border p-6 shadow-sm">
+        <div className="mb-6 bg-card rounded-lg border border-border p-6 shadow-sm space-y-4">
           <h2 className="text-lg font-semibold text-foreground mb-4">Upload Data</h2>
+
+          {/* Report Heading */}
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+            <div className="flex-1">
+              <Label htmlFor="outstanding-heading">Report Heading (optional)</Label>
+              <input
+                id="outstanding-heading"
+                type="text"
+                placeholder="Enter heading shown on driver receipts..."
+                value={reportHeading}
+                onChange={e => setReportHeading(e.target.value)}
+                className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <Label htmlFor="outstanding-note">Notes (optional — shown on driver receipts)</Label>
+            <div className="flex gap-2 mt-1">
+              <textarea
+                id="outstanding-note"
+                placeholder="Enter notes to display on all driver receipts..."
+                value={reportNote}
+                onChange={e => setReportNote(e.target.value)}
+                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-y"
+              />
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const { data: existing } = await supabase.from('total_outstanding_settings').select('id').limit(1).maybeSingle();
+                    if (existing) {
+                      await supabase.from('total_outstanding_settings').update({ report_heading: reportHeading, report_note: reportNote, updated_at: new Date().toISOString(), updated_by: user?.id || '' } as any).eq('id', existing.id);
+                    } else {
+                      await supabase.from('total_outstanding_settings').insert({ report_heading: reportHeading, report_note: reportNote, updated_by: user?.id || '' } as any);
+                    }
+                    toast.success("Heading & Notes saved successfully");
+                  } catch { toast.error("Failed to save"); }
+                }}
+                className="shrink-0 self-end"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save
+              </Button>
+            </div>
+          </div>
+
+          {/* File upload */}
           <div className="flex flex-col sm:flex-row gap-3">
             <Button variant="outline" onClick={downloadTemplate} className="flex items-center gap-2">
               <Download className="h-4 w-4" /> Download Template
@@ -299,11 +361,11 @@ const TotalOutstandingPage = () => {
               {isUploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</> : <><Upload className="h-4 w-4" /> Upload Excel/CSV</>}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-xs text-muted-foreground">
             Columns: Emp Cde, Fleet Status, Accident, Traffic Fines, SHJ RTA Fines, Total External Fines, Total Outstanding
           </p>
           {uploadProgress && (
-            <div className="mt-3 space-y-1">
+            <div className="space-y-1">
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Uploading…</span>
                 <span>{uploadProgress.uploaded}/{uploadProgress.total}</span>
@@ -342,7 +404,7 @@ const TotalOutstandingPage = () => {
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                   <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 rounded-lg font-bold text-lg">
-                    Total Outstanding Report
+                    {reportHeading || "Total Outstanding Report"}
                   </div>
 
                   {/* Driver Info */}
@@ -400,6 +462,14 @@ const TotalOutstandingPage = () => {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Notes */}
+                  {reportNote && (
+                    <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm font-semibold text-blue-800 mb-1">📝 Notes</p>
+                      <p className="text-sm text-blue-700 whitespace-pre-line">{reportNote}</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))
