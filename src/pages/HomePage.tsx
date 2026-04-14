@@ -24,7 +24,8 @@ import {
   ClipboardCheck,
   Video,
   FileText,
-  BookOpen
+  BookOpen,
+  DollarSign
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
@@ -277,6 +278,12 @@ const HomePage = () => {
         title: "Booking Rejection",
         gradient: "bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-600",
         onClick: () => navigate("/warning-letters-upload"),
+      });
+      features.push({
+        icon: <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" />,
+        title: "Total Outstanding",
+        gradient: "bg-gradient-to-br from-red-500 via-rose-500 to-orange-600",
+        onClick: () => navigate("/total-outstanding"),
       });
     }
   }
