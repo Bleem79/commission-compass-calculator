@@ -227,7 +227,7 @@ const DriverPortalPage = () => {
     {
       key: "total_outstanding",
       icon: <DollarSign className="w-8 h-8 sm:w-10 sm:h-10" />,
-      title: "Total Outstanding",
+      title: "Total Balance",
       gradient: "bg-gradient-to-br from-red-500 via-rose-500 to-orange-600",
       onClick: () => navigate("/total-outstanding"),
     },

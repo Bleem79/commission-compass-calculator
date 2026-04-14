@@ -281,7 +281,7 @@ const HomePage = () => {
       });
       features.push({
         icon: <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" />,
-        title: "Total Outstanding",
+        title: "Total Balance",
         gradient: "bg-gradient-to-br from-red-500 via-rose-500 to-orange-600",
         onClick: () => navigate("/total-outstanding"),
       });
