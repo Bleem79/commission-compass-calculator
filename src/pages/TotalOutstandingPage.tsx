@@ -139,7 +139,7 @@ const TotalOutstandingPage = () => {
         const batches = new Map<string, number>();
         for (const r of all) {
           const d = new Date(r.created_at);
-          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
           batches.set(key, (batches.get(key) || 0) + 1);
         }
         const history = Array.from(batches.entries()).map(([key, count]) => ({
