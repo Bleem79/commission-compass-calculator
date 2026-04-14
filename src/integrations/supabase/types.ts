@@ -488,6 +488,45 @@ export type Database = {
         }
         Relationships: []
       }
+      total_outstanding: {
+        Row: {
+          accident: number | null
+          created_at: string
+          emp_cde: string
+          fleet_status: string | null
+          id: string
+          shj_rta_fines: number | null
+          total_external_fines: number | null
+          total_outstanding: number | null
+          traffic_fines: number | null
+          uploaded_by: string
+        }
+        Insert: {
+          accident?: number | null
+          created_at?: string
+          emp_cde: string
+          fleet_status?: string | null
+          id?: string
+          shj_rta_fines?: number | null
+          total_external_fines?: number | null
+          total_outstanding?: number | null
+          traffic_fines?: number | null
+          uploaded_by: string
+        }
+        Update: {
+          accident?: number | null
+          created_at?: string
+          emp_cde?: string
+          fleet_status?: string | null
+          id?: string
+          shj_rta_fines?: number | null
+          total_external_fines?: number | null
+          total_outstanding?: number | null
+          traffic_fines?: number | null
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       uploaded_files: {
         Row: {
           category: string
