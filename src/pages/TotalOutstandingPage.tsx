@@ -15,7 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { FileSpreadsheet, Upload, Download, Trash2, Loader2, Search, X, Printer, Save } from "lucide-react";
+import { FileSpreadsheet, Upload, Download, Trash2, Loader2, Search, X, Printer, Save, History, CheckSquare, Square } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -51,6 +51,9 @@ const TotalOutstandingPage = () => {
   const [driverInfo, setDriverInfo] = useState<{ driverId: string } | null>(null);
   const [reportHeading, setReportHeading] = useState("");
   const [reportNote, setReportNote] = useState("");
+  const [uploadHistory, setUploadHistory] = useState<{ key: string; date: string; count: number }[]>([]);
+  const [selectedBatches, setSelectedBatches] = useState<Set<string>>(new Set());
+  const [isDeletingBatch, setIsDeletingBatch] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isStaff = isAdmin || canAccessAdminPages;
 
@@ -119,7 +122,6 @@ const TotalOutstandingPage = () => {
           .select("*")
           .order("created_at", { ascending: false });
 
-        // Non-admin: filter by their driver ID
         if (!isStaff && driverInfo?.driverId) {
           query = query.eq("emp_cde", driverInfo.driverId);
         }
@@ -130,15 +132,70 @@ const TotalOutstandingPage = () => {
         else hasMore = false;
       }
       setRecords(all);
+
+      // Build upload history by grouping records by created_at rounded to the minute
+      if (isStaff) {
+        const batches = new Map<string, number>();
+        for (const r of all) {
+          const d = new Date(r.created_at);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+          batches.set(key, (batches.get(key) || 0) + 1);
+        }
+        const history = Array.from(batches.entries()).map(([key, count]) => ({
+          key,
+          date: key,
+          count,
+        }));
+        setUploadHistory(history);
+      }
     } finally { setIsLoading(false); }
   }, [isStaff, driverInfo?.driverId]);
 
   // For drivers, wait until driverInfo is resolved before fetching
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (!isStaff && !driverInfo?.driverId) return; // wait for driver ID
+    if (!isStaff && !driverInfo?.driverId) return;
     fetchRecords();
   }, [fetchRecords, isAuthenticated, isStaff, driverInfo?.driverId]);
+
+  const toggleBatchSelect = (key: string) => {
+    setSelectedBatches(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleAllBatches = () => {
+    if (selectedBatches.size === uploadHistory.length) {
+      setSelectedBatches(new Set());
+    } else {
+      setSelectedBatches(new Set(uploadHistory.map(b => b.key)));
+    }
+  };
+
+  const handleDeleteSelectedBatches = async () => {
+    if (selectedBatches.size === 0) return;
+    setIsDeletingBatch(true);
+    try {
+      for (const key of selectedBatches) {
+        // key format: "YYYY-MM-DD HH:mm" — delete records matching that minute window
+        const startTime = new Date(key.replace(' ', 'T') + ':00').toISOString();
+        const endTime = new Date(key.replace(' ', 'T') + ':59.999').toISOString();
+        const { error } = await supabase
+          .from("total_outstanding")
+          .delete()
+          .gte("created_at", startTime)
+          .lte("created_at", endTime);
+        if (error) throw error;
+      }
+      toast.success(`Deleted ${selectedBatches.size} upload batch(es)`);
+      setSelectedBatches(new Set());
+      fetchRecords();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete batches");
+    } finally { setIsDeletingBatch(false); }
+  };
 
   const downloadTemplate = () => {
     const csvContent = `Emp Cde,Accident,Traffic Fines,SHJ RTA Fines,Total External Fines,Total Outstanding
@@ -312,84 +369,143 @@ const TotalOutstandingPage = () => {
     >
       {/* Upload Section - Admin Only */}
       {isStaff && user?.id && (
-        <div className="mb-6 bg-card rounded-lg border border-border p-6 shadow-sm space-y-4">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Upload Data</h2>
+        <>
+          <div className="mb-6 bg-card rounded-lg border border-border p-6 shadow-sm space-y-4">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Upload Data</h2>
 
-          {/* Report Heading */}
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-            <div className="flex-1">
-              <Label htmlFor="outstanding-heading">Report Heading (optional)</Label>
-              <input
-                id="outstanding-heading"
-                type="text"
-                placeholder="Enter heading shown on driver receipts..."
-                value={reportHeading}
-                onChange={e => setReportHeading(e.target.value)}
-                className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              <div className="flex-1">
+                <Label htmlFor="outstanding-heading">Report Heading (optional)</Label>
+                <input
+                  id="outstanding-heading"
+                  type="text"
+                  placeholder="Enter heading shown on driver receipts..."
+                  value={reportHeading}
+                  onChange={e => setReportHeading(e.target.value)}
+                  className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Notes */}
-          <div>
-            <Label htmlFor="outstanding-note">Notes (optional — shown on driver receipts)</Label>
-            <div className="flex gap-2 mt-1">
-              <textarea
-                id="outstanding-note"
-                placeholder="Enter notes to display on all driver receipts..."
-                value={reportNote}
-                onChange={e => setReportNote(e.target.value)}
-                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-y"
-              />
+            <div>
+              <Label htmlFor="outstanding-note">Notes (optional — shown on driver receipts)</Label>
+              <div className="flex gap-2 mt-1">
+                <textarea
+                  id="outstanding-note"
+                  placeholder="Enter notes to display on all driver receipts..."
+                  value={reportNote}
+                  onChange={e => setReportNote(e.target.value)}
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-y"
+                />
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const { data: existing } = await supabase.from('total_outstanding_settings').select('id').limit(1).maybeSingle();
+                      if (existing) {
+                        await supabase.from('total_outstanding_settings').update({ report_heading: reportHeading, report_note: reportNote, updated_at: new Date().toISOString(), updated_by: user?.id || '' } as any).eq('id', existing.id);
+                      } else {
+                        await supabase.from('total_outstanding_settings').insert({ report_heading: reportHeading, report_note: reportNote, updated_by: user?.id || '' } as any);
+                      }
+                      toast.success("Heading & Notes saved successfully");
+                    } catch { toast.error("Failed to save"); }
+                  }}
+                  className="shrink-0 self-end"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button variant="outline" onClick={downloadTemplate} className="flex items-center gap-2">
+                <Download className="h-4 w-4" /> Download Template
+              </Button>
+              <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFileUpload} className="hidden" id="outstanding-upload" />
               <Button
                 variant="outline"
-                onClick={async () => {
-                  try {
-                    const { data: existing } = await supabase.from('total_outstanding_settings').select('id').limit(1).maybeSingle();
-                    if (existing) {
-                      await supabase.from('total_outstanding_settings').update({ report_heading: reportHeading, report_note: reportNote, updated_at: new Date().toISOString(), updated_by: user?.id || '' } as any).eq('id', existing.id);
-                    } else {
-                      await supabase.from('total_outstanding_settings').insert({ report_heading: reportHeading, report_note: reportNote, updated_by: user?.id || '' } as any);
-                    }
-                    toast.success("Heading & Notes saved successfully");
-                  } catch { toast.error("Failed to save"); }
-                }}
-                className="shrink-0 self-end"
+                disabled={isUploading}
+                onClick={() => document.getElementById("outstanding-upload")?.click()}
+                className="flex items-center gap-2"
               >
-                <Save className="h-4 w-4 mr-2" />
-                Save
+                {isUploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</> : <><Upload className="h-4 w-4" /> Upload Excel/CSV</>}
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Columns: Emp Cde, Accident, Traffic Fines, SHJ RTA Fines, Total External Fines, Total Outstanding
+            </p>
+            {uploadProgress && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Uploading…</span>
+                  <span>{uploadProgress.uploaded}/{uploadProgress.total}</span>
+                </div>
+                <Progress value={uploadProgress.total > 0 ? Math.round((uploadProgress.uploaded / uploadProgress.total) * 100) : 0} />
+              </div>
+            )}
           </div>
 
-          {/* File upload */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button variant="outline" onClick={downloadTemplate} className="flex items-center gap-2">
-              <Download className="h-4 w-4" /> Download Template
-            </Button>
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFileUpload} className="hidden" id="outstanding-upload" />
-            <Button
-              variant="outline"
-              disabled={isUploading}
-              onClick={() => document.getElementById("outstanding-upload")?.click()}
-              className="flex items-center gap-2"
-            >
-              {isUploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</> : <><Upload className="h-4 w-4" /> Upload Excel/CSV</>}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Columns: Emp Cde, Accident, Traffic Fines, SHJ RTA Fines, Total External Fines, Total Outstanding
-          </p>
-          {uploadProgress && (
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Uploading…</span>
-                <span>{uploadProgress.uploaded}/{uploadProgress.total}</span>
+          {/* Upload History */}
+          {uploadHistory.length > 0 && (
+            <div className="mb-6 bg-card rounded-lg border border-border p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <History className="h-5 w-5" /> Upload History
+                </h2>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={selectedBatches.size === 0 || isDeletingBatch}
+                      className="flex items-center gap-2"
+                    >
+                      {isDeletingBatch ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      Delete Selected ({selectedBatches.size})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete selected uploads?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove all records from {selectedBatches.size} selected upload batch(es).
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteSelectedBatches}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
-              <Progress value={uploadProgress.total > 0 ? Math.round((uploadProgress.uploaded / uploadProgress.total) * 100) : 0} />
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <button onClick={toggleAllBatches} className="p-1">
+                        {selectedBatches.size === uploadHistory.length ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4 text-muted-foreground" />}
+                      </button>
+                    </TableHead>
+                    <TableHead>Upload Date & Time</TableHead>
+                    <TableHead className="text-right">Records</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {uploadHistory.map(b => (
+                    <TableRow key={b.key} className="cursor-pointer" onClick={() => toggleBatchSelect(b.key)}>
+                      <TableCell>
+                        {selectedBatches.has(b.key) ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4 text-muted-foreground" />}
+                      </TableCell>
+                      <TableCell>{b.date}</TableCell>
+                      <TableCell className="text-right font-medium">{b.count}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Driver Receipt View */}
