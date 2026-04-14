@@ -6,6 +6,7 @@ import { PageLayout } from "@/components/shared/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -14,7 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { FileSpreadsheet, Upload, Download, Trash2, Loader2, Search, X } from "lucide-react";
+import { FileSpreadsheet, Upload, Download, Trash2, Loader2, Search, X, Printer } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
