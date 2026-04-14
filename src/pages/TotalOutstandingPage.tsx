@@ -444,8 +444,67 @@ const TotalOutstandingPage = () => {
                 <span>{uploadProgress.uploaded}/{uploadProgress.total}</span>
               </div>
               <Progress value={uploadProgress.total > 0 ? Math.round((uploadProgress.uploaded / uploadProgress.total) * 100) : 0} />
+        </div>
+
+        {/* Upload History */}
+        {uploadHistory.length > 0 && (
+          <div className="mb-6 bg-card rounded-lg border border-border p-6 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <History className="h-5 w-5" /> Upload History
+              </h2>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={selectedBatches.size === 0 || isDeletingBatch}
+                    className="flex items-center gap-2"
+                  >
+                    {isDeletingBatch ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    Delete Selected ({selectedBatches.size})
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete selected uploads?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently remove all records from {selectedBatches.size} selected upload batch(es).
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteSelectedBatches}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
-          )}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">
+                    <button onClick={toggleAllBatches} className="p-1">
+                      {selectedBatches.size === uploadHistory.length ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4 text-muted-foreground" />}
+                    </button>
+                  </TableHead>
+                  <TableHead>Upload Date & Time</TableHead>
+                  <TableHead className="text-right">Records</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {uploadHistory.map(b => (
+                  <TableRow key={b.key} className="cursor-pointer" onClick={() => toggleBatchSelect(b.key)}>
+                    <TableCell>
+                      {selectedBatches.has(b.key) ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4 text-muted-foreground" />}
+                    </TableCell>
+                    <TableCell>{b.date}</TableCell>
+                    <TableCell className="text-right font-medium">{b.count}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
         </div>
       )}
 
