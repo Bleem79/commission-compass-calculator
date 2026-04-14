@@ -180,9 +180,9 @@ const TotalOutstandingPage = () => {
     setIsDeletingBatch(true);
     try {
       for (const key of selectedBatches) {
-        // key format: "YYYY-MM-DD HH:mm" — delete records matching that minute window
-        const startTime = new Date(key.replace(' ', 'T') + ':00').toISOString();
-        const endTime = new Date(key.replace(' ', 'T') + ':59.999').toISOString();
+        // key format: "YYYY-MM-DD" — delete records matching that date
+        const startTime = new Date(key + 'T00:00:00').toISOString();
+        const endTime = new Date(key + 'T23:59:59.999').toISOString();
         const { error } = await supabase
           .from("total_outstanding")
           .delete()
