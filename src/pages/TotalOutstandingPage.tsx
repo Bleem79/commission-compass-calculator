@@ -58,6 +58,16 @@ const TotalOutstandingPage = () => {
     if (!isAuthenticated) navigate("/login", { replace: true });
   }, [isAuthenticated, navigate]);
 
+  // Fetch report heading/note
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const { data } = await supabase.from('total_outstanding_settings').select('report_heading, report_note').limit(1).maybeSingle();
+      if (data?.report_heading) setReportHeading(data.report_heading);
+      if (data?.report_note) setReportNote(data.report_note);
+    };
+    if (isAuthenticated) fetchSettings();
+  }, [isAuthenticated]);
+
   // Resolve driver ID for non-admin users
   useEffect(() => {
     const fetchDriverInfo = async () => {
