@@ -46,11 +46,35 @@ const TotalOutstandingPage = () => {
   const [uploadProgress, setUploadProgress] = useState<{ total: number; uploaded: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [driverInfo, setDriverInfo] = useState<{ driverId: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isStaff = isAdmin || canAccessAdminPages;
 
   useEffect(() => {
     if (!isAuthenticated) navigate("/login", { replace: true });
   }, [isAuthenticated, navigate]);
+
+  // Resolve driver ID for non-admin users
+  useEffect(() => {
+    const fetchDriverInfo = async () => {
+      if (!isAuthenticated || isStaff) return;
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const actualUserId = authUser?.id || user?.id;
+      const actualEmail = (authUser?.email || user?.email || "").toLowerCase();
+      if (!actualUserId) return;
+
+      const driverIdFromEmail = actualEmail.endsWith("@driver.temp") ? actualEmail.split("@")[0].trim() : null;
+      if (driverIdFromEmail) {
+        const { data: credentialRows } = await supabase.rpc("get_driver_credentials", { p_driver_id: driverIdFromEmail, p_user_id: actualUserId });
+        const credentials = credentialRows && credentialRows.length > 0 ? credentialRows[0] : null;
+        if (credentials?.driver_id) { setDriverInfo({ driverId: credentials.driver_id }); return; }
+      }
+
+      const { data } = await supabase.from("driver_credentials").select("driver_id").eq("user_id", actualUserId).maybeSingle();
+      if (data?.driver_id) setDriverInfo({ driverId: data.driver_id });
+    };
+    fetchDriverInfo();
+  }, [isAuthenticated, isStaff, user?.id, user?.email]);
 
   const fetchRecords = useCallback(async () => {
     setIsLoading(true);
@@ -60,18 +84,24 @@ const TotalOutstandingPage = () => {
       let page = 0;
       let hasMore = true;
       while (hasMore) {
-        const { data, error } = await supabase
+        let query = supabase
           .from("total_outstanding")
           .select("*")
-          .order("created_at", { ascending: false })
-          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+          .order("created_at", { ascending: false });
+
+        // Non-admin: filter by their driver ID
+        if (!isStaff && driverInfo?.driverId) {
+          query = query.eq("emp_cde", driverInfo.driverId);
+        }
+
+        const { data, error } = await query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
         if (error) { console.error(error); break; }
         if (data && data.length > 0) { all = [...all, ...data]; hasMore = data.length === PAGE_SIZE; page++; }
         else hasMore = false;
       }
       setRecords(all);
     } finally { setIsLoading(false); }
-  }, []);
+  }, [isStaff, driverInfo?.driverId]);
 
   useEffect(() => { if (isAuthenticated) fetchRecords(); }, [fetchRecords, isAuthenticated]);
 
@@ -208,17 +238,17 @@ const TotalOutstandingPage = () => {
     return r.emp_cde.toLowerCase().includes(q) || (r.fleet_status || "").toLowerCase().includes(q);
   });
 
-  const backPath = isAdmin || canAccessAdminPages ? "/home" : "/driver-portal";
+  const backPath = isStaff ? "/home" : "/driver-portal";
 
   return (
     <PageLayout
-      title="Total Outstanding"
+      title={isStaff ? "Total Outstanding" : "My Outstanding"}
       icon={<FileSpreadsheet className="h-6 w-6" />}
       backPath={backPath}
-      backLabel="Back to Home"
+      backLabel={isStaff ? "Back to Home" : "Back to Portal"}
       gradient="from-background via-amber-50/50 to-orange-100/50"
       headerActions={
-        (isAdmin || canAccessAdminPages) && user?.id ? (
+        isStaff && user?.id ? (
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleExport} className="flex items-center gap-2">
               <Download className="h-4 w-4" /> Export
@@ -246,7 +276,7 @@ const TotalOutstandingPage = () => {
       }
     >
       {/* Upload Section - Admin Only */}
-      {(isAdmin || canAccessAdminPages) && user?.id && (
+      {isStaff && user?.id && (
         <div className="mb-6 bg-card rounded-lg border border-border p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-foreground mb-4">Upload Data</h2>
           <div className="flex flex-col sm:flex-row gap-3">

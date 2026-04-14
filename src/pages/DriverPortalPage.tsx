@@ -14,7 +14,8 @@ import {
   Loader2,
   Droplets,
   ClipboardCheck,
-  Video
+  Video,
+  DollarSign
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -222,6 +223,13 @@ const DriverPortalPage = () => {
       title: "Video Tutorials",
       gradient: "bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600",
       onClick: () => navigate("/video-tutorials"),
+    },
+    {
+      key: "total_outstanding",
+      icon: <DollarSign className="w-8 h-8 sm:w-10 sm:h-10" />,
+      title: "Total Outstanding",
+      gradient: "bg-gradient-to-br from-red-500 via-rose-500 to-orange-600",
+      onClick: () => navigate("/total-outstanding"),
     },
     {
       key: "oil_change_booking",
