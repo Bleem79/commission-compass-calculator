@@ -122,7 +122,6 @@ const TotalOutstandingPage = () => {
           .select("*")
           .order("created_at", { ascending: false });
 
-        // Non-admin: filter by their driver ID
         if (!isStaff && driverInfo?.driverId) {
           query = query.eq("emp_cde", driverInfo.driverId);
         }
@@ -133,15 +132,70 @@ const TotalOutstandingPage = () => {
         else hasMore = false;
       }
       setRecords(all);
+
+      // Build upload history by grouping records by created_at rounded to the minute
+      if (isStaff) {
+        const batches = new Map<string, number>();
+        for (const r of all) {
+          const d = new Date(r.created_at);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+          batches.set(key, (batches.get(key) || 0) + 1);
+        }
+        const history = Array.from(batches.entries()).map(([key, count]) => ({
+          key,
+          date: key,
+          count,
+        }));
+        setUploadHistory(history);
+      }
     } finally { setIsLoading(false); }
   }, [isStaff, driverInfo?.driverId]);
 
   // For drivers, wait until driverInfo is resolved before fetching
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (!isStaff && !driverInfo?.driverId) return; // wait for driver ID
+    if (!isStaff && !driverInfo?.driverId) return;
     fetchRecords();
   }, [fetchRecords, isAuthenticated, isStaff, driverInfo?.driverId]);
+
+  const toggleBatchSelect = (key: string) => {
+    setSelectedBatches(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleAllBatches = () => {
+    if (selectedBatches.size === uploadHistory.length) {
+      setSelectedBatches(new Set());
+    } else {
+      setSelectedBatches(new Set(uploadHistory.map(b => b.key)));
+    }
+  };
+
+  const handleDeleteSelectedBatches = async () => {
+    if (selectedBatches.size === 0) return;
+    setIsDeletingBatch(true);
+    try {
+      for (const key of selectedBatches) {
+        // key format: "YYYY-MM-DD HH:mm" — delete records matching that minute window
+        const startTime = new Date(key.replace(' ', 'T') + ':00').toISOString();
+        const endTime = new Date(key.replace(' ', 'T') + ':59.999').toISOString();
+        const { error } = await supabase
+          .from("total_outstanding")
+          .delete()
+          .gte("created_at", startTime)
+          .lte("created_at", endTime);
+        if (error) throw error;
+      }
+      toast.success(`Deleted ${selectedBatches.size} upload batch(es)`);
+      setSelectedBatches(new Set());
+      fetchRecords();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete batches");
+    } finally { setIsDeletingBatch(false); }
+  };
 
   const downloadTemplate = () => {
     const csvContent = `Emp Cde,Accident,Traffic Fines,SHJ RTA Fines,Total External Fines,Total Outstanding
