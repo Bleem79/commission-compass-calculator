@@ -329,7 +329,8 @@ const TotalOutstandingPage = () => {
         )}
       </div>
 
-      {/* Stats */}
+      {/* Stats - Admin only */}
+      {isStaff && (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         <div className="bg-card rounded-lg border p-3 text-center">
           <p className="text-xs text-muted-foreground">Records</p>
@@ -341,13 +342,14 @@ const TotalOutstandingPage = () => {
         </div>
         <div className="bg-card rounded-lg border p-3 text-center">
           <p className="text-xs text-muted-foreground">Total Ext. Fines</p>
-          <p className="text-lg font-bold text-red-600">{filteredRecords.reduce((s, r) => s + r.total_external_fines, 0).toFixed(2)}</p>
+          <p className="text-lg font-bold text-destructive">{filteredRecords.reduce((s, r) => s + r.total_external_fines, 0).toFixed(2)}</p>
         </div>
         <div className="bg-card rounded-lg border p-3 text-center">
           <p className="text-xs text-muted-foreground">Total Outstanding</p>
-          <p className="text-lg font-bold text-red-600">{filteredRecords.reduce((s, r) => s + r.total_outstanding, 0).toFixed(2)}</p>
+          <p className="text-lg font-bold text-destructive">{filteredRecords.reduce((s, r) => s + r.total_outstanding, 0).toFixed(2)}</p>
         </div>
       </div>
+      )}
 
       {/* Table */}
       <div className="bg-card rounded-lg border shadow-sm overflow-x-auto">
