@@ -54,6 +54,7 @@ const TotalOutstandingPage = () => {
   const [uploadHistory, setUploadHistory] = useState<{ key: string; date: string; count: number }[]>([]);
   const [selectedBatches, setSelectedBatches] = useState<Set<string>>(new Set());
   const [isDeletingBatch, setIsDeletingBatch] = useState(false);
+  const [batchDate, setBatchDate] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isStaff = isAdmin || canAccessAdminPages;
 
