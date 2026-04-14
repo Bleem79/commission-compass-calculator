@@ -258,11 +258,11 @@ const TotalOutstandingPage = () => {
       "Traffic Fines": r.traffic_fines,
       "SHJ RTA Fines": r.shj_rta_fines,
       "Total External Fines": r.total_external_fines,
-      "Total Outstanding": r.total_outstanding,
+      "Total Balance": r.total_outstanding,
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Total Outstanding");
+    XLSX.utils.book_append_sheet(wb, ws, "Total Balance");
     XLSX.writeFile(wb, "total_outstanding.xlsx");
     toast.success("Exported to Excel");
   };
@@ -298,7 +298,7 @@ const TotalOutstandingPage = () => {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete all records?</AlertDialogTitle>
-                  <AlertDialogDescription>This will permanently remove all Total Outstanding records.</AlertDialogDescription>
+                  <AlertDialogDescription>This will permanently remove all Total Balance records.</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
