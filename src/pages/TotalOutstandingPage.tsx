@@ -469,7 +469,7 @@ const TotalOutstandingPage = () => {
                           <td className="py-3 px-2 text-center font-bold text-gray-700 text-xl">
                             {(r.total_outstanding - r.total_external_fines).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
-                          <td className="py-3 px-2 text-right font-bold text-red-600 text-3xl">
+                          <td className="py-3 px-2 text-right font-bold text-red-600 text-xl">
                             {r.total_outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                         </tr>
