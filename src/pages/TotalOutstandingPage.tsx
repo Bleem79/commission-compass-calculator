@@ -599,8 +599,8 @@ const TotalOutstandingPage = () => {
                           <th className="py-3 px-2 text-center font-semibold text-gray-700">Accident</th>
                           <th className="py-3 px-2 text-center font-semibold text-gray-700">Traffic Fines</th>
                           <th className="py-3 px-2 text-center font-semibold text-gray-700">SHJ RTA Fines</th>
-                          <th className="py-3 px-2 text-center font-semibold text-gray-700">Internal & Misc</th>
                           <th className="py-3 px-2 text-center font-semibold text-red-700">Total External Fines</th>
+                          <th className="py-3 px-2 text-center font-semibold text-gray-700">Internal & Misc</th>
                           <th className="py-3 px-2 text-right font-semibold text-red-700">Total Balance</th>
                         </tr>
                       </thead>
@@ -619,8 +619,8 @@ const TotalOutstandingPage = () => {
                                 <td className="py-3 px-2 text-center font-medium text-gray-700">{formatVal(r.accident)}</td>
                                 <td className="py-3 px-2 text-center font-medium text-gray-700">{formatVal(r.traffic_fines)}</td>
                                 <td className="py-3 px-2 text-center font-medium text-gray-700">{formatVal(r.shj_rta_fines)}</td>
-                                <td className="py-3 px-2 text-center font-medium text-gray-700">{formatVal(internalMisc)}</td>
                                 <td className="py-3 px-2 text-center font-bold text-red-600">{formatVal(r.total_external_fines)}</td>
+                                <td className="py-3 px-2 text-center font-medium text-gray-700">{formatVal(internalMisc)}</td>
                                 <td className="py-3 px-2 text-right font-bold text-red-600">{formatVal(r.total_outstanding)}</td>
                               </tr>
                               {/* Diff row */}
@@ -630,8 +630,8 @@ const TotalOutstandingPage = () => {
                                   <td className="py-1 px-2 text-center text-xs">{formatDiff(r.accident - prev.accident)}</td>
                                   <td className="py-1 px-2 text-center text-xs">{formatDiff(r.traffic_fines - prev.traffic_fines)}</td>
                                   <td className="py-1 px-2 text-center text-xs">{formatDiff(r.shj_rta_fines - prev.shj_rta_fines)}</td>
-                                  <td className="py-1 px-2 text-center text-xs">{formatDiff(internalMisc - (prev.total_outstanding - prev.total_external_fines))}</td>
                                   <td className="py-1 px-2 text-center text-xs">{formatDiff(r.total_external_fines - prev.total_external_fines)}</td>
+                                  <td className="py-1 px-2 text-center text-xs">{formatDiff(internalMisc - (prev.total_outstanding - prev.total_external_fines))}</td>
                                   <td className="py-1 px-2 text-right text-xs">{formatDiff(r.total_outstanding - prev.total_outstanding)}</td>
                                 </tr>
                               )}
