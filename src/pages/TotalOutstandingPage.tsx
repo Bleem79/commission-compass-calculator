@@ -238,17 +238,17 @@ const TotalOutstandingPage = () => {
     return r.emp_cde.toLowerCase().includes(q) || (r.fleet_status || "").toLowerCase().includes(q);
   });
 
-  const backPath = isAdmin || canAccessAdminPages ? "/home" : "/driver-portal";
+  const backPath = isStaff ? "/home" : "/driver-portal";
 
   return (
     <PageLayout
-      title="Total Outstanding"
+      title={isStaff ? "Total Outstanding" : "My Outstanding"}
       icon={<FileSpreadsheet className="h-6 w-6" />}
       backPath={backPath}
-      backLabel="Back to Home"
+      backLabel={isStaff ? "Back to Home" : "Back to Portal"}
       gradient="from-background via-amber-50/50 to-orange-100/50"
       headerActions={
-        (isAdmin || canAccessAdminPages) && user?.id ? (
+        isStaff && user?.id ? (
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleExport} className="flex items-center gap-2">
               <Download className="h-4 w-4" /> Export
