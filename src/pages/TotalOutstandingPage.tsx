@@ -49,6 +49,8 @@ const TotalOutstandingPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [driverInfo, setDriverInfo] = useState<{ driverId: string } | null>(null);
+  const [reportHeading, setReportHeading] = useState("");
+  const [reportNote, setReportNote] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isStaff = isAdmin || canAccessAdminPages;
 
