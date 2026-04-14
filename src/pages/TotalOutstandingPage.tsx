@@ -638,7 +638,6 @@ const TotalOutstandingPage = () => {
                       </tbody>
                     </table>
                   </div>
-                          <th className="py-3 px-2 text-center font-semibold text-gray-700">Accident</th>
                           <th className="py-3 px-2 text-center font-semibold text-gray-700">Traffic Fines</th>
                           <th className="py-3 px-2 text-center font-semibold text-gray-700">SHJ RTA Fines</th>
                           <th className="py-3 px-2 text-center font-semibold text-red-700">Total External Fines</th>
