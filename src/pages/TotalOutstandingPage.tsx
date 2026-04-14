@@ -80,12 +80,17 @@ const TotalOutstandingPage = () => {
       const driverIdFromEmail = actualEmail.endsWith("@driver.temp") ? actualEmail.split("@")[0].trim() : null;
       if (driverIdFromEmail) {
         const { data: credentialRows } = await supabase.rpc("get_driver_credentials", { p_driver_id: driverIdFromEmail, p_user_id: actualUserId });
-        const credentials = credentialRows && credentialRows.length > 0 ? credentialRows[0] : null;
+        const enabledCred = credentialRows?.find((r: any) => r.status === "enabled");
+        const credentials = enabledCred || (credentialRows && credentialRows.length > 0 ? credentialRows[0] : null);
         if (credentials?.driver_id) { setDriverInfo({ driverId: credentials.driver_id }); return; }
       }
 
-      const { data } = await supabase.from("driver_credentials").select("driver_id").eq("user_id", actualUserId).maybeSingle();
-      if (data?.driver_id) setDriverInfo({ driverId: data.driver_id });
+      const { data } = await supabase.from("driver_credentials").select("driver_id").eq("user_id", actualUserId).eq("status", "enabled").maybeSingle();
+      if (data?.driver_id) { setDriverInfo({ driverId: data.driver_id }); return; }
+
+      // Fallback without status filter
+      const { data: fallback } = await supabase.from("driver_credentials").select("driver_id").eq("user_id", actualUserId).limit(1).maybeSingle();
+      if (fallback?.driver_id) setDriverInfo({ driverId: fallback.driver_id });
     };
     fetchDriverInfo();
   }, [isAuthenticated, isStaff, user?.id, user?.email]);
