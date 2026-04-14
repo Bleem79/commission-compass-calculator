@@ -505,9 +505,7 @@ const TotalOutstandingPage = () => {
                 ))}
               </TableBody>
             </Table>
-          </div>
         )}
-        </div>
       )}
 
       {/* Driver Receipt View */}
