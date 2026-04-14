@@ -314,79 +314,172 @@ const TotalOutstandingPage = () => {
         </div>
       )}
 
-      {/* Search */}
-      <div className="mb-4 relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by Emp Code or Fleet Status..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className="pl-9 pr-8"
-        />
-        {searchQuery && (
-          <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2">
-            <X className="h-4 w-4 text-muted-foreground" />
-          </button>
-        )}
-      </div>
+      {/* Driver Receipt View */}
+      {!isStaff ? (
+        <div className="space-y-6 print-receipt">
+          <div className="flex justify-end print:hidden">
+            <Button onClick={() => window.print()} variant="outline" className="gap-2">
+              <Printer className="h-4 w-4" />
+              Print Receipt
+            </Button>
+          </div>
 
-      {/* Stats - Admin only */}
-      {isStaff && (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        <div className="bg-card rounded-lg border p-3 text-center">
-          <p className="text-xs text-muted-foreground">Records</p>
-          <p className="text-lg font-bold">{filteredRecords.length}</p>
-        </div>
-        <div className="bg-card rounded-lg border p-3 text-center">
-          <p className="text-xs text-muted-foreground">Total Accidents</p>
-          <p className="text-lg font-bold">{filteredRecords.reduce((s, r) => s + r.accident, 0).toFixed(2)}</p>
-        </div>
-        <div className="bg-card rounded-lg border p-3 text-center">
-          <p className="text-xs text-muted-foreground">Total Ext. Fines</p>
-          <p className="text-lg font-bold text-destructive">{filteredRecords.reduce((s, r) => s + r.total_external_fines, 0).toFixed(2)}</p>
-        </div>
-        <div className="bg-card rounded-lg border p-3 text-center">
-          <p className="text-xs text-muted-foreground">Total Outstanding</p>
-          <p className="text-lg font-bold text-destructive">{filteredRecords.reduce((s, r) => s + r.total_outstanding, 0).toFixed(2)}</p>
-        </div>
-      </div>
-      )}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : records.length === 0 ? (
+            <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100 p-8 text-center">
+              <p className="text-muted-foreground">No outstanding records found for your account.</p>
+            </div>
+          ) : (
+            records.map(r => (
+              <Card key={r.id} className="bg-white shadow-lg overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-amber-50 to-amber-100 p-4 border-b">
+                  <div className="flex items-center justify-center gap-3">
+                    <img src="/lovable-uploads/aman-logo-footer.png" alt="Aman Taxi" className="h-12 object-contain" />
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 rounded-lg font-bold text-lg">
+                    Total Outstanding Report
+                  </div>
 
-      {/* Table */}
-      <div className="bg-card rounded-lg border shadow-sm overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Emp Cde</TableHead>
-              <TableHead>Fleet Status</TableHead>
-              <TableHead className="text-right">Accident</TableHead>
-              <TableHead className="text-right">Traffic Fines</TableHead>
-              <TableHead className="text-right">SHJ RTA Fines</TableHead>
-              <TableHead className="text-right text-red-600 font-semibold">Total External Fines</TableHead>
-              <TableHead className="text-right text-red-600 font-semibold">Total Outstanding</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
-            ) : filteredRecords.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No records found</TableCell></TableRow>
-            ) : (
-              filteredRecords.map(r => (
-                <TableRow key={r.id}>
-                  <TableCell className="font-medium">{r.emp_cde}</TableCell>
-                  <TableCell>{r.fleet_status || "-"}</TableCell>
-                  <TableCell className="text-right">{r.accident.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">{r.traffic_fines.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">{r.shj_rta_fines.toFixed(2)}</TableCell>
-                  <TableCell className="text-right font-semibold text-red-600">{r.total_external_fines.toFixed(2)}</TableCell>
-                  <TableCell className="text-right font-semibold text-red-600">{r.total_outstanding.toFixed(2)}</TableCell>
-                </TableRow>
-              ))
+                  {/* Driver Info */}
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-gray-500 text-sm">Emp Code</span>
+                        <p className="font-bold text-lg text-primary">{r.emp_cde}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 text-sm">Fleet Status</span>
+                        <p className="font-semibold text-gray-800">{r.fleet_status || '-'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Fines Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-amber-50 border-b-2 border-amber-200">
+                          <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Accident</th>
+                          <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Traffic Fines</th>
+                          <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">SHJ RTA Fines</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-gray-200">
+                          <td className="py-3 px-2 text-center font-medium text-gray-700">{r.accident.toFixed(2)}</td>
+                          <td className="py-3 px-2 text-center font-medium text-gray-700">{r.traffic_fines.toFixed(2)}</td>
+                          <td className="py-3 px-2 text-center font-medium text-gray-700">{r.shj_rta_fines.toFixed(2)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Totals */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-red-50 border-b-2 border-red-200">
+                          <th className="text-center py-3 px-2 text-sm font-semibold text-red-700">Total External Fines</th>
+                          <th className="text-right py-3 px-2 text-sm font-semibold text-red-700">Total Outstanding</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="py-3 px-2 text-center font-bold text-red-600 text-xl">
+                            {r.total_external_fines.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-3 px-2 text-right font-bold text-red-600 text-3xl">
+                            {r.total_outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Search */}
+          <div className="mb-4 relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by Emp Code or Fleet Status..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9 pr-8"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2">
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
             )}
-          </TableBody>
-        </Table>
-      </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="bg-card rounded-lg border p-3 text-center">
+              <p className="text-xs text-muted-foreground">Records</p>
+              <p className="text-lg font-bold">{filteredRecords.length}</p>
+            </div>
+            <div className="bg-card rounded-lg border p-3 text-center">
+              <p className="text-xs text-muted-foreground">Total Accidents</p>
+              <p className="text-lg font-bold">{filteredRecords.reduce((s, r) => s + r.accident, 0).toFixed(2)}</p>
+            </div>
+            <div className="bg-card rounded-lg border p-3 text-center">
+              <p className="text-xs text-muted-foreground">Total Ext. Fines</p>
+              <p className="text-lg font-bold text-destructive">{filteredRecords.reduce((s, r) => s + r.total_external_fines, 0).toFixed(2)}</p>
+            </div>
+            <div className="bg-card rounded-lg border p-3 text-center">
+              <p className="text-xs text-muted-foreground">Total Outstanding</p>
+              <p className="text-lg font-bold text-destructive">{filteredRecords.reduce((s, r) => s + r.total_outstanding, 0).toFixed(2)}</p>
+            </div>
+          </div>
+
+          {/* Admin Table */}
+          <div className="bg-card rounded-lg border shadow-sm overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Emp Cde</TableHead>
+                  <TableHead>Fleet Status</TableHead>
+                  <TableHead className="text-right">Accident</TableHead>
+                  <TableHead className="text-right">Traffic Fines</TableHead>
+                  <TableHead className="text-right">SHJ RTA Fines</TableHead>
+                  <TableHead className="text-right text-destructive font-semibold">Total External Fines</TableHead>
+                  <TableHead className="text-right text-destructive font-semibold">Total Outstanding</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow><TableCell colSpan={7} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                ) : filteredRecords.length === 0 ? (
+                  <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No records found</TableCell></TableRow>
+                ) : (
+                  filteredRecords.map(r => (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-medium">{r.emp_cde}</TableCell>
+                      <TableCell>{r.fleet_status || "-"}</TableCell>
+                      <TableCell className="text-right">{r.accident.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{r.traffic_fines.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{r.shj_rta_fines.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-semibold text-destructive">{r.total_external_fines.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-semibold text-destructive">{r.total_outstanding.toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      )}
     </PageLayout>
   );
 };
