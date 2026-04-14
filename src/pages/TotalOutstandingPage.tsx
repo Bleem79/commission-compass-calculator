@@ -276,7 +276,7 @@ const TotalOutstandingPage = () => {
       }
     >
       {/* Upload Section - Admin Only */}
-      {(isAdmin || canAccessAdminPages) && user?.id && (
+      {isStaff && user?.id && (
         <div className="mb-6 bg-card rounded-lg border border-border p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-foreground mb-4">Upload Data</h2>
           <div className="flex flex-col sm:flex-row gap-3">
