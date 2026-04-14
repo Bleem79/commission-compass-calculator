@@ -369,143 +369,143 @@ const TotalOutstandingPage = () => {
     >
       {/* Upload Section - Admin Only */}
       {isStaff && user?.id && (
-        <div className="mb-6 bg-card rounded-lg border border-border p-6 shadow-sm space-y-4">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Upload Data</h2>
+        <>
+          <div className="mb-6 bg-card rounded-lg border border-border p-6 shadow-sm space-y-4">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Upload Data</h2>
 
-          {/* Report Heading */}
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-            <div className="flex-1">
-              <Label htmlFor="outstanding-heading">Report Heading (optional)</Label>
-              <input
-                id="outstanding-heading"
-                type="text"
-                placeholder="Enter heading shown on driver receipts..."
-                value={reportHeading}
-                onChange={e => setReportHeading(e.target.value)}
-                className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              <div className="flex-1">
+                <Label htmlFor="outstanding-heading">Report Heading (optional)</Label>
+                <input
+                  id="outstanding-heading"
+                  type="text"
+                  placeholder="Enter heading shown on driver receipts..."
+                  value={reportHeading}
+                  onChange={e => setReportHeading(e.target.value)}
+                  className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Notes */}
-          <div>
-            <Label htmlFor="outstanding-note">Notes (optional — shown on driver receipts)</Label>
-            <div className="flex gap-2 mt-1">
-              <textarea
-                id="outstanding-note"
-                placeholder="Enter notes to display on all driver receipts..."
-                value={reportNote}
-                onChange={e => setReportNote(e.target.value)}
-                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-y"
-              />
+            <div>
+              <Label htmlFor="outstanding-note">Notes (optional — shown on driver receipts)</Label>
+              <div className="flex gap-2 mt-1">
+                <textarea
+                  id="outstanding-note"
+                  placeholder="Enter notes to display on all driver receipts..."
+                  value={reportNote}
+                  onChange={e => setReportNote(e.target.value)}
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-y"
+                />
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const { data: existing } = await supabase.from('total_outstanding_settings').select('id').limit(1).maybeSingle();
+                      if (existing) {
+                        await supabase.from('total_outstanding_settings').update({ report_heading: reportHeading, report_note: reportNote, updated_at: new Date().toISOString(), updated_by: user?.id || '' } as any).eq('id', existing.id);
+                      } else {
+                        await supabase.from('total_outstanding_settings').insert({ report_heading: reportHeading, report_note: reportNote, updated_by: user?.id || '' } as any);
+                      }
+                      toast.success("Heading & Notes saved successfully");
+                    } catch { toast.error("Failed to save"); }
+                  }}
+                  className="shrink-0 self-end"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button variant="outline" onClick={downloadTemplate} className="flex items-center gap-2">
+                <Download className="h-4 w-4" /> Download Template
+              </Button>
+              <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFileUpload} className="hidden" id="outstanding-upload" />
               <Button
                 variant="outline"
-                onClick={async () => {
-                  try {
-                    const { data: existing } = await supabase.from('total_outstanding_settings').select('id').limit(1).maybeSingle();
-                    if (existing) {
-                      await supabase.from('total_outstanding_settings').update({ report_heading: reportHeading, report_note: reportNote, updated_at: new Date().toISOString(), updated_by: user?.id || '' } as any).eq('id', existing.id);
-                    } else {
-                      await supabase.from('total_outstanding_settings').insert({ report_heading: reportHeading, report_note: reportNote, updated_by: user?.id || '' } as any);
-                    }
-                    toast.success("Heading & Notes saved successfully");
-                  } catch { toast.error("Failed to save"); }
-                }}
-                className="shrink-0 self-end"
+                disabled={isUploading}
+                onClick={() => document.getElementById("outstanding-upload")?.click()}
+                className="flex items-center gap-2"
               >
-                <Save className="h-4 w-4 mr-2" />
-                Save
+                {isUploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</> : <><Upload className="h-4 w-4" /> Upload Excel/CSV</>}
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Columns: Emp Cde, Accident, Traffic Fines, SHJ RTA Fines, Total External Fines, Total Outstanding
+            </p>
+            {uploadProgress && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Uploading…</span>
+                  <span>{uploadProgress.uploaded}/{uploadProgress.total}</span>
+                </div>
+                <Progress value={uploadProgress.total > 0 ? Math.round((uploadProgress.uploaded / uploadProgress.total) * 100) : 0} />
+              </div>
+            )}
           </div>
 
-          {/* File upload */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button variant="outline" onClick={downloadTemplate} className="flex items-center gap-2">
-              <Download className="h-4 w-4" /> Download Template
-            </Button>
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFileUpload} className="hidden" id="outstanding-upload" />
-            <Button
-              variant="outline"
-              disabled={isUploading}
-              onClick={() => document.getElementById("outstanding-upload")?.click()}
-              className="flex items-center gap-2"
-            >
-              {isUploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</> : <><Upload className="h-4 w-4" /> Upload Excel/CSV</>}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Columns: Emp Cde, Accident, Traffic Fines, SHJ RTA Fines, Total External Fines, Total Outstanding
-          </p>
-          {uploadProgress && (
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Uploading…</span>
-                <span>{uploadProgress.uploaded}/{uploadProgress.total}</span>
+          {/* Upload History */}
+          {uploadHistory.length > 0 && (
+            <div className="mb-6 bg-card rounded-lg border border-border p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <History className="h-5 w-5" /> Upload History
+                </h2>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={selectedBatches.size === 0 || isDeletingBatch}
+                      className="flex items-center gap-2"
+                    >
+                      {isDeletingBatch ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      Delete Selected ({selectedBatches.size})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete selected uploads?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove all records from {selectedBatches.size} selected upload batch(es).
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteSelectedBatches}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
-              <Progress value={uploadProgress.total > 0 ? Math.round((uploadProgress.uploaded / uploadProgress.total) * 100) : 0} />
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <button onClick={toggleAllBatches} className="p-1">
+                        {selectedBatches.size === uploadHistory.length ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4 text-muted-foreground" />}
+                      </button>
+                    </TableHead>
+                    <TableHead>Upload Date & Time</TableHead>
+                    <TableHead className="text-right">Records</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {uploadHistory.map(b => (
+                    <TableRow key={b.key} className="cursor-pointer" onClick={() => toggleBatchSelect(b.key)}>
+                      <TableCell>
+                        {selectedBatches.has(b.key) ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4 text-muted-foreground" />}
+                      </TableCell>
+                      <TableCell>{b.date}</TableCell>
+                      <TableCell className="text-right font-medium">{b.count}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
-        </div>
-
-        {/* Upload History */}
-        {uploadHistory.length > 0 && (
-          <div className="mb-6 bg-card rounded-lg border border-border p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <History className="h-5 w-5" /> Upload History
-              </h2>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    disabled={selectedBatches.size === 0 || isDeletingBatch}
-                    className="flex items-center gap-2"
-                  >
-                    {isDeletingBatch ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                    Delete Selected ({selectedBatches.size})
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete selected uploads?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently remove all records from {selectedBatches.size} selected upload batch(es).
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteSelectedBatches}>Delete</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10">
-                    <button onClick={toggleAllBatches} className="p-1">
-                      {selectedBatches.size === uploadHistory.length ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4 text-muted-foreground" />}
-                    </button>
-                  </TableHead>
-                  <TableHead>Upload Date & Time</TableHead>
-                  <TableHead className="text-right">Records</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {uploadHistory.map(b => (
-                  <TableRow key={b.key} className="cursor-pointer" onClick={() => toggleBatchSelect(b.key)}>
-                    <TableCell>
-                      {selectedBatches.has(b.key) ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4 text-muted-foreground" />}
-                    </TableCell>
-                    <TableCell>{b.date}</TableCell>
-                    <TableCell className="text-right font-medium">{b.count}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-        )}
+        </>
       )}
 
       {/* Driver Receipt View */}
