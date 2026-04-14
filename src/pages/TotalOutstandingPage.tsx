@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -546,6 +546,113 @@ const TotalOutstandingPage = () => {
               <p className="text-muted-foreground">No outstanding records found for your account.</p>
             </div>
           ) : (() => {
+            // Group records by batch date, take latest per date
+            const batchMap = new Map<string, OutstandingRecord>();
+            for (const r of [...records].reverse()) {
+              const dateKey = new Date(r.created_at).toISOString().split('T')[0];
+              batchMap.set(dateKey, r);
+            }
+            // Sort batches oldest first for table display
+            const batches = Array.from(batchMap.entries())
+              .sort((a, b) => a[0].localeCompare(b[0]))
+              .map(([dateKey, record]) => ({ dateKey, record }));
+
+            const formatDiff = (diff: number) => {
+              if (diff === 0) return <span className="text-gray-400">—</span>;
+              const isUp = diff > 0;
+              return (
+                <span className={isUp ? "text-red-600 font-semibold" : "text-green-600 font-semibold"}>
+                  {isUp ? "▲" : "▼"} {Math.abs(diff).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              );
+            };
+
+            const formatVal = (val: number) => {
+              if (val === 0) return "-";
+              return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
+
+            return (
+              <Card className="bg-white shadow-lg overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-amber-50 to-amber-100 p-4 border-b">
+                  <div className="flex items-center justify-center gap-3">
+                    <img src="/lovable-uploads/aman-logo-footer.png" alt="Aman Taxi" className="h-12 object-contain" />
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4 space-y-4">
+                  <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 rounded-lg font-bold text-lg">
+                    {reportHeading || "Total Balance Report"}
+                  </div>
+
+                  {/* Driver Info */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <span className="text-gray-500 text-sm">Emp Code</span>
+                    <p className="font-bold text-lg text-primary">{records[0]?.emp_cde}</p>
+                  </div>
+
+                  {/* Comparison Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-sm">
+                      <thead>
+                        <tr className="bg-amber-50 border-b-2 border-amber-200">
+                          <th className="py-3 px-2 text-left font-semibold text-gray-700">Date</th>
+                          <th className="py-3 px-2 text-center font-semibold text-gray-700">Accident</th>
+                          <th className="py-3 px-2 text-center font-semibold text-gray-700">Traffic Fines</th>
+                          <th className="py-3 px-2 text-center font-semibold text-gray-700">SHJ RTA Fines</th>
+                          <th className="py-3 px-2 text-center font-semibold text-gray-700">Internal & Misc</th>
+                          <th className="py-3 px-2 text-center font-semibold text-red-700">Total External Fines</th>
+                          <th className="py-3 px-2 text-right font-semibold text-red-700">Total Balance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {batches.map((batch, idx) => {
+                          const r = batch.record;
+                          const prev = idx > 0 ? batches[idx - 1].record : null;
+                          const dateLabel = new Date(batch.dateKey + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                          const internalMisc = r.total_outstanding - r.total_external_fines;
+
+                          return (
+                            <React.Fragment key={batch.dateKey}>
+                              {/* Value row */}
+                              <tr className="border-b border-gray-200">
+                                <td className="py-3 px-2 font-medium text-gray-700">{dateLabel}</td>
+                                <td className="py-3 px-2 text-center font-medium text-gray-700">{formatVal(r.accident)}</td>
+                                <td className="py-3 px-2 text-center font-medium text-gray-700">{formatVal(r.traffic_fines)}</td>
+                                <td className="py-3 px-2 text-center font-medium text-gray-700">{formatVal(r.shj_rta_fines)}</td>
+                                <td className="py-3 px-2 text-center font-medium text-gray-700">{formatVal(internalMisc)}</td>
+                                <td className="py-3 px-2 text-center font-bold text-red-600">{formatVal(r.total_external_fines)}</td>
+                                <td className="py-3 px-2 text-right font-bold text-red-600">{formatVal(r.total_outstanding)}</td>
+                              </tr>
+                              {/* Diff row */}
+                              {prev && (
+                                <tr className="bg-gray-50 border-b border-gray-100">
+                                  <td className="py-1 px-2 text-xs text-gray-400 italic">Change</td>
+                                  <td className="py-1 px-2 text-center text-xs">{formatDiff(r.accident - prev.accident)}</td>
+                                  <td className="py-1 px-2 text-center text-xs">{formatDiff(r.traffic_fines - prev.traffic_fines)}</td>
+                                  <td className="py-1 px-2 text-center text-xs">{formatDiff(r.shj_rta_fines - prev.shj_rta_fines)}</td>
+                                  <td className="py-1 px-2 text-center text-xs">{formatDiff(internalMisc - (prev.total_outstanding - prev.total_external_fines))}</td>
+                                  <td className="py-1 px-2 text-center text-xs">{formatDiff(r.total_external_fines - prev.total_external_fines)}</td>
+                                  <td className="py-1 px-2 text-right text-xs">{formatDiff(r.total_outstanding - prev.total_outstanding)}</td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Notes */}
+                  {reportNote && (
+                    <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm font-semibold text-blue-800 mb-1">📝 Notes</p>
+                      <p className="text-sm text-blue-700 whitespace-pre-line">{reportNote}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
             // Group records by batch date (YYYY-MM-DD from created_at), take latest per date
             const batchMap = new Map<string, OutstandingRecord>();
             for (const r of [...records].reverse()) {
