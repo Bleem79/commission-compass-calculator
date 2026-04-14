@@ -262,7 +262,7 @@ const TotalOutstandingPage = () => {
           const n = parseFloat(String(v).replace(/,/g, ""));
           return isNaN(n) ? 0 : n;
         };
-        return {
+        const row_data: any = {
           emp_cde: String(mapped.emp_cde || "").trim(),
           fleet_status: mapped.fleet_status ? String(mapped.fleet_status).trim() : null,
           accident: parseNum(mapped.accident),
@@ -272,7 +272,11 @@ const TotalOutstandingPage = () => {
           total_outstanding: parseNum(mapped.total_outstanding),
           uploaded_by: user.id,
         };
-      }).filter(r => r.emp_cde);
+        if (batchDate) {
+          row_data.created_at = new Date(batchDate).toISOString();
+        }
+        return row_data;
+      }).filter((r: any) => r.emp_cde);
 
       if (!insertData.length) { toast.error("No valid rows found"); return; }
 
