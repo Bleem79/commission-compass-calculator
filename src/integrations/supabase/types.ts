@@ -527,6 +527,30 @@ export type Database = {
         }
         Relationships: []
       }
+      total_outstanding_settings: {
+        Row: {
+          id: string
+          report_heading: string | null
+          report_note: string | null
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          id?: string
+          report_heading?: string | null
+          report_note?: string | null
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          id?: string
+          report_heading?: string | null
+          report_note?: string | null
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: []
+      }
       uploaded_files: {
         Row: {
           category: string
