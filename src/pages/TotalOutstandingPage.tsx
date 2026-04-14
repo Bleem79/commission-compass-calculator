@@ -54,6 +54,7 @@ const TotalOutstandingPage = () => {
   const [uploadHistory, setUploadHistory] = useState<{ key: string; date: string; count: number }[]>([]);
   const [selectedBatches, setSelectedBatches] = useState<Set<string>>(new Set());
   const [isDeletingBatch, setIsDeletingBatch] = useState(false);
+  const [batchDate, setBatchDate] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isStaff = isAdmin || canAccessAdminPages;
 
@@ -138,7 +139,7 @@ const TotalOutstandingPage = () => {
         const batches = new Map<string, number>();
         for (const r of all) {
           const d = new Date(r.created_at);
-          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
           batches.set(key, (batches.get(key) || 0) + 1);
         }
         const history = Array.from(batches.entries()).map(([key, count]) => ({
@@ -179,9 +180,9 @@ const TotalOutstandingPage = () => {
     setIsDeletingBatch(true);
     try {
       for (const key of selectedBatches) {
-        // key format: "YYYY-MM-DD HH:mm" — delete records matching that minute window
-        const startTime = new Date(key.replace(' ', 'T') + ':00').toISOString();
-        const endTime = new Date(key.replace(' ', 'T') + ':59.999').toISOString();
+        // key format: "YYYY-MM-DD" — delete records matching that date
+        const startTime = new Date(key + 'T00:00:00').toISOString();
+        const endTime = new Date(key + 'T23:59:59.999').toISOString();
         const { error } = await supabase
           .from("total_outstanding")
           .delete()
@@ -261,7 +262,7 @@ const TotalOutstandingPage = () => {
           const n = parseFloat(String(v).replace(/,/g, ""));
           return isNaN(n) ? 0 : n;
         };
-        return {
+        const row_data: any = {
           emp_cde: String(mapped.emp_cde || "").trim(),
           fleet_status: mapped.fleet_status ? String(mapped.fleet_status).trim() : null,
           accident: parseNum(mapped.accident),
@@ -271,7 +272,11 @@ const TotalOutstandingPage = () => {
           total_outstanding: parseNum(mapped.total_outstanding),
           uploaded_by: user.id,
         };
-      }).filter(r => r.emp_cde);
+        if (batchDate) {
+          row_data.created_at = new Date(batchDate).toISOString();
+        }
+        return row_data;
+      }).filter((r: any) => r.emp_cde);
 
       if (!insertData.length) { toast.error("No valid rows found"); return; }
 
@@ -415,6 +420,20 @@ const TotalOutstandingPage = () => {
                   <Save className="h-4 w-4 mr-2" />
                   Save
                 </Button>
+              </div>
+            </div>
+
+            {/* Batch Date */}
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              <div className="flex-1 max-w-xs">
+                <Label htmlFor="batch-date">Batch Date (optional — used for upload grouping)</Label>
+                <input
+                  id="batch-date"
+                  type="date"
+                  value={batchDate}
+                  onChange={e => setBatchDate(e.target.value)}
+                  className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
               </div>
             </div>
 
