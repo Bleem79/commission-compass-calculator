@@ -444,6 +444,8 @@ const TotalOutstandingPage = () => {
                 <span>{uploadProgress.uploaded}/{uploadProgress.total}</span>
               </div>
               <Progress value={uploadProgress.total > 0 ? Math.round((uploadProgress.uploaded / uploadProgress.total) * 100) : 0} />
+            </div>
+          )}
         </div>
 
         {/* Upload History */}
