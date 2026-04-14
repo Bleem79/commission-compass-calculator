@@ -404,7 +404,7 @@ const TotalOutstandingPage = () => {
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                   <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 rounded-lg font-bold text-lg">
-                    Total Outstanding Report
+                    {reportHeading || "Total Outstanding Report"}
                   </div>
 
                   {/* Driver Info */}
