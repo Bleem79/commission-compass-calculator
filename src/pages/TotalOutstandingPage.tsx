@@ -141,8 +141,8 @@ const TotalOutstandingPage = () => {
   }, [fetchRecords, isAuthenticated, isStaff, driverInfo?.driverId]);
 
   const downloadTemplate = () => {
-    const csvContent = `Emp Cde,Fleet Status,Accident,Traffic Fines,SHJ RTA Fines,Total External Fines,Total Outstanding
-114291,OnRoad,0.00,3498.48,1488.62,4987.10,5363.40`;
+    const csvContent = `Emp Cde,Accident,Traffic Fines,SHJ RTA Fines,Total External Fines,Total Outstanding
+114291,0.00,3498.48,1488.62,4987.10,5363.40`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -253,7 +253,6 @@ const TotalOutstandingPage = () => {
     if (!filteredRecords.length) { toast.error("No data to export"); return; }
     const exportData = filteredRecords.map(r => ({
       "Emp Cde": r.emp_cde,
-      "Fleet Status": r.fleet_status || "",
       "Accident": r.accident,
       "Traffic Fines": r.traffic_fines,
       "SHJ RTA Fines": r.shj_rta_fines,
@@ -270,7 +269,7 @@ const TotalOutstandingPage = () => {
   const filteredRecords = records.filter(r => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return r.emp_cde.toLowerCase().includes(q) || (r.fleet_status || "").toLowerCase().includes(q);
+    return r.emp_cde.toLowerCase().includes(q);
   });
 
   const backPath = isStaff ? "/home" : "/driver-portal";
@@ -378,7 +377,7 @@ const TotalOutstandingPage = () => {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Columns: Emp Cde, Fleet Status, Accident, Traffic Fines, SHJ RTA Fines, Total External Fines, Total Outstanding
+            Columns: Emp Cde, Accident, Traffic Fines, SHJ RTA Fines, Total External Fines, Total Outstanding
           </p>
           {uploadProgress && (
             <div className="space-y-1">
@@ -431,9 +430,6 @@ const TotalOutstandingPage = () => {
                         <p className="font-bold text-lg text-primary">{r.emp_cde}</p>
                       </div>
                       <div>
-                        <span className="text-gray-500 text-sm">Fleet Status</span>
-                        <p className="font-semibold text-gray-800">{r.fleet_status || '-'}</p>
-                      </div>
                     </div>
                   </div>
 
@@ -497,7 +493,7 @@ const TotalOutstandingPage = () => {
           <div className="mb-4 relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by Emp Code or Fleet Status..."
+              placeholder="Search by Emp Code..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="pl-9 pr-8"
@@ -535,7 +531,7 @@ const TotalOutstandingPage = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Emp Cde</TableHead>
-                  <TableHead>Fleet Status</TableHead>
+                  
                   <TableHead className="text-right">Accident</TableHead>
                   <TableHead className="text-right">Traffic Fines</TableHead>
                   <TableHead className="text-right">SHJ RTA Fines</TableHead>
@@ -552,7 +548,7 @@ const TotalOutstandingPage = () => {
                   filteredRecords.map(r => (
                     <TableRow key={r.id}>
                       <TableCell className="font-medium">{r.emp_cde}</TableCell>
-                      <TableCell>{r.fleet_status || "-"}</TableCell>
+                      
                       <TableCell className="text-right">{r.accident.toFixed(2)}</TableCell>
                       <TableCell className="text-right">{r.traffic_fines.toFixed(2)}</TableCell>
                       <TableCell className="text-right">{r.shj_rta_fines.toFixed(2)}</TableCell>
