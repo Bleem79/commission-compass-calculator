@@ -545,84 +545,133 @@ const TotalOutstandingPage = () => {
             <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100 p-8 text-center">
               <p className="text-muted-foreground">No outstanding records found for your account.</p>
             </div>
-          ) : (
-            records.map(r => (
-              <Card key={r.id} className="bg-white shadow-lg overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-amber-50 to-amber-100 p-4 border-b">
-                  <div className="flex items-center justify-center gap-3">
-                    <img src="/lovable-uploads/aman-logo-footer.png" alt="Aman Taxi" className="h-12 object-contain" />
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 rounded-lg font-bold text-lg">
-                    {reportHeading || "Total Balance Report"}
-                  </div>
+          ) : (() => {
+            // Group records by batch date (YYYY-MM-DD from created_at), take latest per date
+            const batchMap = new Map<string, OutstandingRecord>();
+            for (const r of [...records].reverse()) {
+              const dateKey = new Date(r.created_at).toISOString().split('T')[0];
+              batchMap.set(dateKey, r); // latest per date wins
+            }
+            // Sort batches newest first
+            const batches = Array.from(batchMap.entries())
+              .sort((a, b) => b[0].localeCompare(a[0]))
+              .map(([dateKey, record]) => ({ dateKey, record }));
 
-                  {/* Driver Info */}
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                    <div>
-                      <span className="text-gray-500 text-sm">Emp Code</span>
-                      <p className="font-bold text-lg text-primary">{r.emp_cde}</p>
+            const formatDiff = (diff: number) => {
+              if (diff === 0) return <span className="text-gray-400">—</span>;
+              const isUp = diff > 0;
+              return (
+                <span className={isUp ? "text-red-600 font-semibold" : "text-green-600 font-semibold"}>
+                  {isUp ? "▲" : "▼"} {Math.abs(diff).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              );
+            };
+
+            return batches.map((batch, idx) => {
+              const r = batch.record;
+              const prevBatch = idx < batches.length - 1 ? batches[idx + 1] : null;
+              const prev = prevBatch?.record;
+              const batchLabel = new Date(batch.dateKey + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+              return (
+                <Card key={batch.dateKey} className="bg-white shadow-lg overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-amber-50 to-amber-100 p-4 border-b">
+                    <div className="flex items-center justify-center gap-3">
+                      <img src="/lovable-uploads/aman-logo-footer.png" alt="Aman Taxi" className="h-12 object-contain" />
                     </div>
-                  </div>
-
-                  {/* Fines Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-amber-50 border-b-2 border-amber-200">
-                          <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Accident</th>
-                          <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Traffic Fines</th>
-                          <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">SHJ RTA Fines</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b border-gray-200">
-                          <td className="py-3 px-2 text-center font-medium text-gray-700">{r.accident.toFixed(2)}</td>
-                          <td className="py-3 px-2 text-center font-medium text-gray-700">{r.traffic_fines.toFixed(2)}</td>
-                          <td className="py-3 px-2 text-center font-medium text-gray-700">{r.shj_rta_fines.toFixed(2)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Totals */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-red-50 border-b-2 border-red-200">
-                          <th className="text-center py-3 px-2 text-sm font-semibold text-red-700">Total External Fines</th>
-                          <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Internal & Misc</th>
-                          <th className="text-right py-3 px-2 text-sm font-semibold text-red-700">Total Balance</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="py-3 px-2 text-center font-bold text-red-600 text-xl">
-                            {r.total_external_fines.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                          <td className="py-3 px-2 text-center font-bold text-gray-700 text-xl">
-                            {(r.total_outstanding - r.total_external_fines).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                          <td className="py-3 px-2 text-right font-bold text-red-600 text-xl">
-                            {r.total_outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Notes */}
-                  {reportNote && (
-                    <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm font-semibold text-blue-800 mb-1">📝 Notes</p>
-                      <p className="text-sm text-blue-700 whitespace-pre-line">{reportNote}</p>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-4">
+                    <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 rounded-lg font-bold text-lg">
+                      {reportHeading || "Total Balance Report"}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))
-          )}
+
+                    {/* Batch Date Badge */}
+                    <div className="flex justify-center">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-sm font-medium border border-amber-200">
+                        📅 {batchLabel}
+                      </span>
+                    </div>
+
+                    {/* Driver Info */}
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                      <div>
+                        <span className="text-gray-500 text-sm">Emp Code</span>
+                        <p className="font-bold text-lg text-primary">{r.emp_cde}</p>
+                      </div>
+                    </div>
+
+                    {/* Fines Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-amber-50 border-b-2 border-amber-200">
+                            <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Accident</th>
+                            <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Traffic Fines</th>
+                            <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">SHJ RTA Fines</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b border-gray-200">
+                            <td className="py-3 px-2 text-center font-medium text-gray-700">{r.accident.toFixed(2)}</td>
+                            <td className="py-3 px-2 text-center font-medium text-gray-700">{r.traffic_fines.toFixed(2)}</td>
+                            <td className="py-3 px-2 text-center font-medium text-gray-700">{r.shj_rta_fines.toFixed(2)}</td>
+                          </tr>
+                          {prev && (
+                            <tr className="bg-gray-50 border-b border-gray-100">
+                              <td className="py-2 px-2 text-center text-xs">{formatDiff(r.accident - prev.accident)}</td>
+                              <td className="py-2 px-2 text-center text-xs">{formatDiff(r.traffic_fines - prev.traffic_fines)}</td>
+                              <td className="py-2 px-2 text-center text-xs">{formatDiff(r.shj_rta_fines - prev.shj_rta_fines)}</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Totals */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-red-50 border-b-2 border-red-200">
+                            <th className="text-center py-3 px-2 text-sm font-semibold text-red-700">Total External Fines</th>
+                            <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Internal & Misc</th>
+                            <th className="text-right py-3 px-2 text-sm font-semibold text-red-700">Total Balance</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="py-3 px-2 text-center font-bold text-red-600 text-xl">
+                              {r.total_external_fines.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-3 px-2 text-center font-bold text-gray-700 text-xl">
+                              {(r.total_outstanding - r.total_external_fines).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-3 px-2 text-right font-bold text-red-600 text-xl">
+                              {r.total_outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                          {prev && (
+                            <tr className="bg-gray-50 border-t border-gray-100">
+                              <td className="py-2 px-2 text-center text-xs">{formatDiff(r.total_external_fines - prev.total_external_fines)}</td>
+                              <td className="py-2 px-2 text-center text-xs">{formatDiff((r.total_outstanding - r.total_external_fines) - (prev.total_outstanding - prev.total_external_fines))}</td>
+                              <td className="py-2 px-2 text-right text-xs">{formatDiff(r.total_outstanding - prev.total_outstanding)}</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Notes */}
+                    {reportNote && (
+                      <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm font-semibold text-blue-800 mb-1">📝 Notes</p>
+                        <p className="text-sm text-blue-700 whitespace-pre-line">{reportNote}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            });
+          })()}
         </div>
       ) : (
         <>
