@@ -277,7 +277,7 @@ const TotalOutstandingPage = () => {
 
   return (
     <PageLayout
-      title={isStaff ? "Total Outstanding" : "My Outstanding"}
+      title={isStaff ? "Total Balance" : "My Balance"}
       icon={<FileSpreadsheet className="h-6 w-6" />}
       backPath={backPath}
       backLabel={isStaff ? "Back to Home" : "Back to Portal"}
@@ -420,7 +420,7 @@ const TotalOutstandingPage = () => {
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                   <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 rounded-lg font-bold text-lg">
-                    {reportHeading || "Total Outstanding Report"}
+                    {reportHeading || "Total Balance Report"}
                   </div>
 
                   {/* Driver Info */}
@@ -463,7 +463,7 @@ const TotalOutstandingPage = () => {
                       <thead>
                         <tr className="bg-red-50 border-b-2 border-red-200">
                           <th className="text-center py-3 px-2 text-sm font-semibold text-red-700">Total External Fines</th>
-                          <th className="text-right py-3 px-2 text-sm font-semibold text-red-700">Total Outstanding</th>
+                          <th className="text-right py-3 px-2 text-sm font-semibold text-red-700">Total Balance</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -524,7 +524,7 @@ const TotalOutstandingPage = () => {
               <p className="text-lg font-bold text-destructive">{filteredRecords.reduce((s, r) => s + r.total_external_fines, 0).toFixed(2)}</p>
             </div>
             <div className="bg-card rounded-lg border p-3 text-center">
-              <p className="text-xs text-muted-foreground">Total Outstanding</p>
+              <p className="text-xs text-muted-foreground">Total Balance</p>
               <p className="text-lg font-bold text-destructive">{filteredRecords.reduce((s, r) => s + r.total_outstanding, 0).toFixed(2)}</p>
             </div>
           </div>
@@ -540,7 +540,7 @@ const TotalOutstandingPage = () => {
                   <TableHead className="text-right">Traffic Fines</TableHead>
                   <TableHead className="text-right">SHJ RTA Fines</TableHead>
                   <TableHead className="text-right text-destructive font-semibold">Total External Fines</TableHead>
-                  <TableHead className="text-right text-destructive font-semibold">Total Outstanding</TableHead>
+                  <TableHead className="text-right text-destructive font-semibold">Total Balance</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
