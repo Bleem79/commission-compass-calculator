@@ -667,33 +667,6 @@ const TotalOutstandingPage = () => {
                     </table>
                   </div>
 
-                  {/* Legend */}
-                  <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <p className="text-sm font-semibold text-amber-800 mb-3">ℹ️ Inquiry Guide</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="flex items-start gap-2 bg-white rounded-md p-3 border border-amber-100">
-                        <span className="text-lg">🚗</span>
-                        <div>
-                          <p className="text-xs font-semibold text-gray-700">Accident & Traffic Fines</p>
-                          <p className="text-xs text-amber-700 font-medium">📍 Counter No. 3</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2 bg-white rounded-md p-3 border border-amber-100">
-                        <span className="text-lg">🏛️</span>
-                        <div>
-                          <p className="text-xs font-semibold text-gray-700">SHJ RTA Fines</p>
-                          <p className="text-xs text-amber-700 font-medium">📍 Room No. 4</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2 bg-white rounded-md p-3 border border-amber-100">
-                        <span className="text-lg">📋</span>
-                        <div>
-                          <p className="text-xs font-semibold text-gray-700">Internal & Misc</p>
-                          <p className="text-xs text-amber-700 font-medium">📍 Counter No. 8</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Notes */}
                   {reportNote && (
