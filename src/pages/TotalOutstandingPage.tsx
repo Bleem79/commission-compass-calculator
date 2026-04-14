@@ -423,6 +423,20 @@ const TotalOutstandingPage = () => {
               </div>
             </div>
 
+            {/* Batch Date */}
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              <div className="flex-1 max-w-xs">
+                <Label htmlFor="batch-date">Batch Date (optional — used for upload grouping)</Label>
+                <input
+                  id="batch-date"
+                  type="date"
+                  value={batchDate}
+                  onChange={e => setBatchDate(e.target.value)}
+                  className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-3">
               <Button variant="outline" onClick={downloadTemplate} className="flex items-center gap-2">
                 <Download className="h-4 w-4" /> Download Template
