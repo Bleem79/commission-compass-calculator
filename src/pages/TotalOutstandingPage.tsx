@@ -424,12 +424,9 @@ const TotalOutstandingPage = () => {
 
                   {/* Driver Info */}
                   <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-gray-500 text-sm">Emp Code</span>
-                        <p className="font-bold text-lg text-primary">{r.emp_cde}</p>
-                      </div>
-                      <div>
+                    <div>
+                      <span className="text-gray-500 text-sm">Emp Code</span>
+                      <p className="font-bold text-lg text-primary">{r.emp_cde}</p>
                     </div>
                   </div>
 
