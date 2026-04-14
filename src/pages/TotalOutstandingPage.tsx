@@ -584,10 +584,38 @@ const TotalOutstandingPage = () => {
                     {reportHeading || "Total Balance Report"}
                   </div>
 
-                  {/* Driver Info */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <span className="text-gray-500 text-sm">Emp Code</span>
-                    <p className="font-bold text-lg text-primary">{records[0]?.emp_cde}</p>
+                  {/* Driver Info + Inquiry Guide inline */}
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div>
+                      <span className="text-gray-500 text-sm">Emp Code</span>
+                      <p className="font-bold text-lg text-primary">{records[0]?.emp_cde}</p>
+                    </div>
+                    <div className="border-t border-gray-200 pt-3">
+                      <p className="text-sm font-semibold text-amber-800 mb-2">ℹ️ Inquiry Guide</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="flex items-center gap-1.5 bg-white rounded-md px-2 py-1.5 border border-amber-100">
+                          <span className="text-sm">🚗</span>
+                          <div className="min-w-0">
+                            <p className="text-[10px] sm:text-xs font-semibold text-gray-700 leading-tight">Accident & Traffic Fines</p>
+                            <p className="text-[10px] sm:text-xs text-amber-700 font-medium">📍 Counter No. 3</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-white rounded-md px-2 py-1.5 border border-amber-100">
+                          <span className="text-sm">🏛️</span>
+                          <div className="min-w-0">
+                            <p className="text-[10px] sm:text-xs font-semibold text-gray-700 leading-tight">SHJ RTA Fines</p>
+                            <p className="text-[10px] sm:text-xs text-amber-700 font-medium">📍 Room No. 4</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-white rounded-md px-2 py-1.5 border border-amber-100">
+                          <span className="text-sm">📋</span>
+                          <div className="min-w-0">
+                            <p className="text-[10px] sm:text-xs font-semibold text-gray-700 leading-tight">Internal & Misc</p>
+                            <p className="text-[10px] sm:text-xs text-amber-700 font-medium">📍 Counter No. 8</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Comparison Table */}
@@ -639,33 +667,6 @@ const TotalOutstandingPage = () => {
                     </table>
                   </div>
 
-                  {/* Legend */}
-                  <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <p className="text-sm font-semibold text-amber-800 mb-3">ℹ️ Inquiry Guide</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="flex items-start gap-2 bg-white rounded-md p-3 border border-amber-100">
-                        <span className="text-lg">🚗</span>
-                        <div>
-                          <p className="text-xs font-semibold text-gray-700">Accident & Traffic Fines</p>
-                          <p className="text-xs text-amber-700 font-medium">📍 Counter No. 3</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2 bg-white rounded-md p-3 border border-amber-100">
-                        <span className="text-lg">🏛️</span>
-                        <div>
-                          <p className="text-xs font-semibold text-gray-700">SHJ RTA Fines</p>
-                          <p className="text-xs text-amber-700 font-medium">📍 Room No. 4</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2 bg-white rounded-md p-3 border border-amber-100">
-                        <span className="text-lg">📋</span>
-                        <div>
-                          <p className="text-xs font-semibold text-gray-700">Internal & Misc</p>
-                          <p className="text-xs text-amber-700 font-medium">📍 Counter No. 8</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Notes */}
                   {reportNote && (
