@@ -24,6 +24,8 @@ import {
   PieChart,
   Pie,
   Cell,
+  LineChart,
+  Line,
 } from "recharts";
 import {
   DollarSign,
@@ -75,6 +77,8 @@ const TotalBalanceKPIPage = () => {
   const [loading, setLoading] = useState(true);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [trendData, setTrendData] = useState<{ date: string; totalBalance: number; accident: number; traffic: number; rta: number; drivers: number }[]>([]);
+  const [trendLoading, setTrendLoading] = useState(true);
 
   // Fetch available dates first
   useEffect(() => {
