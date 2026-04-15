@@ -895,6 +895,94 @@ const TotalBalanceKPIPage = () => {
             </CardContent>
           </Card>
 
+          {/* Change Report */}
+          {changeReport && (
+            <Card className="bg-card border-border mb-6">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                    📊 Change Report
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-h-[36px] gap-2"
+                    disabled={exportingChangeReport}
+                    onClick={handleExportChangeReport}
+                  >
+                    <FileDown className="h-3.5 w-3.5" />
+                    {exportingChangeReport ? "Exporting..." : "Export to Excel"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Comparing {changeReport.prevDate} → {changeReport.currDate}
+                </p>
+              </CardHeader>
+              <CardContent>
+                {/* Overall summary */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+                  <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <ArrowUpRight className="w-4 h-4 text-red-500" />
+                      <span className="text-lg font-bold text-red-600 dark:text-red-400">{changeReport.increased}</span>
+                    </div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Balance Increased</p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <ArrowDownRight className="w-4 h-4 text-green-500" />
+                      <span className="text-lg font-bold text-green-600 dark:text-green-400">{changeReport.decreased}</span>
+                    </div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Balance Decreased</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3 text-center">
+                    <span className="text-lg font-bold text-foreground">{changeReport.unchanged}</span>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">No Change</p>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 text-center">
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{changeReport.newDrivers}</span>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">New Drivers</p>
+                  </div>
+                  <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3 text-center">
+                    <span className="text-lg font-bold text-amber-600 dark:text-amber-400">{changeReport.removedDrivers}</span>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Removed Drivers</p>
+                  </div>
+                </div>
+
+                {/* Per-category breakdown */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs sm:text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 px-2 text-muted-foreground font-medium">Category</th>
+                        <th className="text-center py-2 px-2 text-red-600 dark:text-red-400 font-medium">▲ Increased</th>
+                        <th className="text-center py-2 px-2 text-green-600 dark:text-green-400 font-medium">▼ Decreased</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { label: "Accident", up: changeReport.accidentUp, down: changeReport.accidentDown },
+                        { label: "Traffic Fines", up: changeReport.trafficUp, down: changeReport.trafficDown },
+                        { label: "SHJ RTA Fines", up: changeReport.rtaUp, down: changeReport.rtaDown },
+                        { label: "Internal & Misc", up: changeReport.internalUp, down: changeReport.internalDown },
+                        { label: "Total Balance", up: changeReport.increased, down: changeReport.decreased },
+                      ].map((row) => (
+                        <tr key={row.label} className="border-b border-border/50">
+                          <td className="py-2 px-2 text-foreground font-medium">{row.label}</td>
+                          <td className="py-2 px-2 text-center text-red-600 dark:text-red-400 font-bold">{row.up}</td>
+                          <td className="py-2 px-2 text-center text-green-600 dark:text-green-400 font-bold">{row.down}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {changeReportLoading && (
+            <Skeleton className="h-48 rounded-lg mb-6" />
+          )}
+
           {/* Insights */}
           <Card className="bg-card border-border">
             <CardHeader className="pb-2">
