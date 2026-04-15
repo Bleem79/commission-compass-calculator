@@ -268,7 +268,7 @@ const TotalBalanceKPIPage = () => {
     const calcRangeData = (recs: OutstandingRecord[]) =>
       FINE_RANGES.map((range) => {
         const inRange = recs.filter((r) => {
-          const ext = r.total_external_fines || 0;
+          const ext = Math.max(0, r.total_external_fines || 0);
           return ext >= range.min && ext <= range.max;
         });
         return {
