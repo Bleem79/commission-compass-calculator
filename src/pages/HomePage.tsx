@@ -25,7 +25,8 @@ import {
   Video,
   FileText,
   BookOpen,
-  DollarSign
+  DollarSign,
+  TrendingUp
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
@@ -284,6 +285,12 @@ const HomePage = () => {
         title: "Total Balance",
         gradient: "bg-gradient-to-br from-red-500 via-rose-500 to-orange-600",
         onClick: () => navigate("/total-outstanding"),
+      });
+      features.push({
+        icon: <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" />,
+        title: "Balance KPI",
+        gradient: "bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600",
+        onClick: () => navigate("/total-balance-kpi"),
       });
     }
   }

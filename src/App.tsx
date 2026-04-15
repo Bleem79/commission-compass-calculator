@@ -39,6 +39,7 @@ const VideoTutorialsPage = lazy(() => import("./pages/VideoTutorialsPage"));
 const PRDPage = lazy(() => import("./pages/PRDPage"));
 const SystemGuidePage = lazy(() => import("./pages/SystemGuidePage"));
 const TotalOutstandingPage = lazy(() => import("./pages/TotalOutstandingPage"));
+const TotalBalanceKPIPage = lazy(() => import("./pages/TotalBalanceKPIPage"));
 const Index = lazy(() => import("./pages/Index"));
 
 // Loading fallback component
@@ -135,6 +136,7 @@ const AppRoutes = () => {
         <Route path="/prd" element={<PRDPage />} />
         <Route path="/system-guide" element={<SystemGuidePage />} />
         <Route path="/total-outstanding" element={<TotalOutstandingPage />} />
+        <Route path="/total-balance-kpi" element={<TotalBalanceKPIPage />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
