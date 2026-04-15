@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useEffect, useMemo, lazy, Suspense } from "react";
+import React, { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  ListCheck, 
-  Calculator, 
-  Bell, 
-  Info, 
-  Percent, 
+import {
+  ListCheck,
+  Calculator,
+  Bell,
+  Info,
+  Percent,
   Wifi,
   MapPin,
   CalendarDays,
@@ -26,28 +26,29 @@ import {
   FileText,
   BookOpen,
   DollarSign,
-  TrendingUp
+  TrendingUp,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePagePermissions } from "@/contexts/PagePermissionsContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { QrCode } from "lucide-react";
 
-const DriverQRCodeDialog = lazy(() => import("@/components/driver-portal/DriverQRCodeDialog").then(m => ({ default: m.DriverQRCodeDialog })));
+const DriverQRCodeDialog = lazy(() => import("@/components/driver-portal/DriverQRCodeDialog").then((m) => ({ default: m.DriverQRCodeDialog })));
 
 // Lazy load heavy dialog components - only loaded when opened
-const AdminMessages = lazy(() => import("@/components/messages/AdminMessages").then(m => ({ default: m.AdminMessages })));
-const DriverIncomeAuthDialog = lazy(() => import("@/components/driver-income/DriverIncomeAuthDialog").then(m => ({ default: m.DriverIncomeAuthDialog })));
-const DriverSmsDialog = lazy(() => import("@/components/messages/DriverSmsDialog").then(m => ({ default: m.DriverSmsDialog })));
-const DriverPortalSettingsDialog = lazy(() => import("@/components/admin/DriverPortalSettingsDialog").then(m => ({ default: m.DriverPortalSettingsDialog })));
+const AdminMessages = lazy(() => import("@/components/messages/AdminMessages").then((m) => ({ default: m.AdminMessages })));
+const DriverIncomeAuthDialog = lazy(() => import("@/components/driver-income/DriverIncomeAuthDialog").then((m) => ({ default: m.DriverIncomeAuthDialog })));
+const DriverSmsDialog = lazy(() => import("@/components/messages/DriverSmsDialog").then((m) => ({ default: m.DriverSmsDialog })));
+const DriverPortalSettingsDialog = lazy(() => import("@/components/admin/DriverPortalSettingsDialog").then((m) => ({ default: m.DriverPortalSettingsDialog })));
 const InstallBanner = lazy(() => import("@/components/pwa/InstallBanner"));
 const NotificationPrompt = lazy(() => import("@/components/pwa/NotificationPrompt"));
 import NotificationBell from "@/components/shared/NotificationBell";
-
 
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -57,6 +58,10 @@ interface FeatureCardProps {
   className?: string;
   badge?: number;
 }
+
+type FeatureItem = FeatureCardProps & {
+  pageKey?: string;
+};
 
 const FeatureCard = ({ icon, title, gradient, onClick, className, badge }: FeatureCardProps) => (
   <button
@@ -71,33 +76,30 @@ const FeatureCard = ({ icon, title, gradient, onClick, className, badge }: Featu
       className
     )}
   >
-    {/* Badge */}
     {badge !== undefined && badge > 0 && (
       <span className="absolute top-2 right-2 z-20 min-w-[22px] h-[22px] px-1.5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold shadow-lg animate-pulse">
         {badge}
       </span>
     )}
-    {/* Shimmer effect */}
+
     <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-    
-    {/* Icon container */}
+
     <div className="relative z-10 p-2 sm:p-3 rounded-xl bg-white/20 backdrop-blur-sm group-hover:bg-white/30 transition-colors">
       {icon}
     </div>
-    
-    {/* Title */}
+
     <h3 className="relative z-10 text-xs sm:text-sm font-semibold text-center leading-tight max-w-full">
       {title}
     </h3>
-    
-    {/* Arrow indicator */}
+
     <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-2 transition-all duration-300 w-4 h-4 sm:w-5 sm:h-5" />
   </button>
 );
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { user, logout, isAuthenticated, isAdmin, isAdvanced, canAccessAdminPages } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin, canAccessAdminPages } = useAuth();
+  const { isPageBlocked, loading: permissionsLoading } = usePagePermissions();
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDriverIncomeDialogOpen, setIsDriverIncomeDialogOpen] = useState(false);
@@ -109,6 +111,8 @@ const HomePage = () => {
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const { driverInfo } = useDriverCredentials();
   const isDriver = !!driverInfo?.driverId;
+  const shouldApplyPagePermissions = user?.role === "user" || user?.role === "advanced";
+  const canAccessNotifications = !shouldApplyPagePermissions || !isPageBlocked("notifications");
 
   // Register push subscriptions for controllers (non-driver staff) so they receive request notifications
   usePushSubscriptionRegistration(user?.id, driverInfo?.driverId || null);
@@ -125,7 +129,6 @@ const HomePage = () => {
           .maybeSingle();
         const name = data?.controller || null;
         setControllerName(name);
-        // Fetch avatar for this controller
         if (name) {
           try {
             const { data: funcData } = await supabase.functions.invoke("create-portal-user", {
@@ -141,7 +144,7 @@ const HomePage = () => {
     fetchController();
   }, [driverInfo?.driverId]);
 
-  // Fetch pending driver request count for admin/advanced users
+  // Fetch pending driver request count for admin/advanced/users
   useEffect(() => {
     if (!canAccessAdminPages) return;
     const fetchPendingCount = async () => {
@@ -157,7 +160,6 @@ const HomePage = () => {
     };
     fetchPendingCount();
 
-    // Subscribe to realtime changes
     const channel = supabase
       .channel("driver_requests_count")
       .on("postgres_changes", { event: "*", schema: "public", table: "driver_requests" }, () => {
@@ -165,7 +167,9 @@ const HomePage = () => {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [canAccessAdminPages]);
 
   useEffect(() => {
@@ -176,7 +180,7 @@ const HomePage = () => {
 
   const handleLogout = useCallback(async () => {
     if (isLoggingOut) return;
-    
+
     setIsLoggingOut(true);
     try {
       await logout();
@@ -186,60 +190,68 @@ const HomePage = () => {
       toast({
         title: "Logout Error",
         description: "An unexpected error occurred. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
       setIsLoggingOut(false);
       window.location.href = "/login";
     }
   }, [logout, isLoggingOut]);
 
-  const features: Array<{ icon: React.ReactNode; title: string; gradient: string; onClick: () => void; badge?: number }> = [
+  const features: FeatureItem[] = [
     {
       icon: <Calculator className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Commission Calculator",
       gradient: "bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600",
+      pageKey: "dashboard",
       onClick: () => navigate("/dashboard"),
     },
     {
       icon: <ListCheck className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Commission Table",
       gradient: "bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500",
+      pageKey: "commission-table",
       onClick: () => navigate("/commission-table"),
     },
     {
       icon: <Percent className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "M-fuel %",
       gradient: "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600",
+      pageKey: "m-fuel",
       onClick: () => navigate("/m-fuel"),
     },
     {
       icon: <Wifi className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Hotspot",
       gradient: "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500",
+      pageKey: "hotspot",
       onClick: () => navigate("/hotspot"),
     },
     {
       icon: <Info className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Info",
       gradient: "bg-gradient-to-br from-pink-500 via-rose-500 to-red-500",
+      pageKey: "info",
       onClick: () => navigate("/info"),
     },
     {
       icon: <Bell className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Notifications",
       gradient: "bg-gradient-to-br from-fuchsia-500 via-purple-500 to-violet-600",
+      pageKey: "notifications",
       onClick: () => setIsMessagesOpen(true),
     },
     {
       icon: <MapPin className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "CNG Location",
       gradient: "bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600",
+      pageKey: "cng-location",
       onClick: () => navigate("/cng-location"),
     },
     {
       icon: <CalendarDays className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: (isAdmin || canAccessAdminPages) ? "Driver Income" : "Driver Main Portal",
+      title: isAdmin || canAccessAdminPages ? "Driver Income" : "Driver Main Portal",
       gradient: "bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600",
+      pageKey: "driver-income",
       onClick: () => {
         if (isAdmin || canAccessAdminPages) {
           navigate("/driver-income");
@@ -252,19 +264,21 @@ const HomePage = () => {
     },
   ];
 
-  const isFleetUser = user?.email?.toLowerCase() === 'fleet@amantaxi.com';
+  const isFleetUser = user?.email?.toLowerCase() === "fleet@amantaxi.com";
 
   if (canAccessAdminPages && !isFleetUser) {
     features.push({
       icon: <Users className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Driver Management",
       gradient: "bg-gradient-to-br from-slate-600 via-gray-600 to-zinc-700",
+      pageKey: "driver-management",
       onClick: () => navigate("/driver-management"),
     });
     features.push({
       icon: <Target className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Target Trips",
       gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
+      pageKey: "target-trips-upload",
       onClick: () => navigate("/target-trips-upload"),
     });
     if (isAdmin) {
@@ -272,35 +286,39 @@ const HomePage = () => {
         icon: <Ban className="w-6 h-6 sm:w-8 sm:h-8" />,
         title: "Drivers Absent Fine",
         gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-700",
+        pageKey: "driver-absent-fine",
         onClick: () => navigate("/driver-absent-fine"),
       });
       features.push({
         icon: <Upload className="w-6 h-6 sm:w-8 sm:h-8" />,
         title: "Booking Rejection",
         gradient: "bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-600",
+        pageKey: "warning-letters-upload",
         onClick: () => navigate("/warning-letters-upload"),
       });
       features.push({
         icon: <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" />,
         title: "Total Balance",
         gradient: "bg-gradient-to-br from-red-500 via-rose-500 to-orange-600",
+        pageKey: "total-outstanding",
         onClick: () => navigate("/total-outstanding"),
       });
       features.push({
         icon: <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" />,
         title: "Balance KPI",
         gradient: "bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600",
+        pageKey: "total-balance-kpi",
         onClick: () => navigate("/total-balance-kpi"),
       });
     }
   }
 
-  // Driver Requests - visible to all staff including fleet user
   if (canAccessAdminPages) {
     features.push({
       icon: <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Driver Requests",
       gradient: "bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700",
+      pageKey: "admin-requests",
       onClick: () => navigate("/admin-requests"),
       badge: pendingRequestCount,
     });
@@ -311,24 +329,28 @@ const HomePage = () => {
       icon: <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "SMS",
       gradient: "bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-600",
+      pageKey: "sms",
       onClick: () => setIsSmsDialogOpen(true),
     });
     features.push({
       icon: <Activity className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Activity Logs",
       gradient: "bg-gradient-to-br from-gray-600 via-slate-600 to-zinc-700",
+      pageKey: "driver-activity-logs",
       onClick: () => navigate("/driver-activity-logs"),
     });
     features.push({
       icon: <FileSpreadsheet className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Driver Master File",
       gradient: "bg-gradient-to-br from-blue-600 via-sky-600 to-cyan-700",
+      pageKey: "driver-master-file",
       onClick: () => navigate("/driver-master-file"),
     });
     features.push({
       icon: <ClipboardCheck className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Entry Pass",
       gradient: "bg-gradient-to-br from-teal-500 via-emerald-500 to-green-600",
+      pageKey: "admin-entry-pass",
       onClick: () => navigate("/admin-entry-pass"),
     });
     if (isAdmin) {
@@ -348,6 +370,7 @@ const HomePage = () => {
         icon: <Video className="w-6 h-6 sm:w-8 sm:h-8" />,
         title: "Video Tutorials",
         gradient: "bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600",
+        pageKey: "video-tutorials",
         onClick: () => navigate("/video-tutorials"),
       });
       features.push({
@@ -365,9 +388,20 @@ const HomePage = () => {
     }
   }
 
+  const visibleFeatures = shouldApplyPagePermissions
+    ? features.filter((feature) => !feature.pageKey || !isPageBlocked(feature.pageKey))
+    : features;
+
+  if (shouldApplyPagePermissions && permissionsLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
-      {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/30 rounded-full blur-3xl animate-pulse" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl animate-pulse delay-1000" />
@@ -376,42 +410,35 @@ const HomePage = () => {
 
       <div className="relative z-10 min-h-screen flex flex-col p-4 sm:p-6 lg:p-8">
         <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col">
-          
-          {/* Header */}
           <header className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
             <div className="flex items-center gap-3">
               <div className="p-2 sm:p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
-                <img 
-                  src="/lovable-uploads/aman-logo-footer.png" 
-                  alt="Aman Taxi" 
-                  className="h-6 sm:h-8 object-contain"
-                />
+                <img src="/lovable-uploads/aman-logo-footer.png" alt="Aman Taxi" className="h-6 sm:h-8 object-contain" />
               </div>
               <div>
                 <h1 className="text-lg sm:text-2xl font-bold text-white">Driver Portal</h1>
                 <p className="text-xs sm:text-sm text-white/60">Welcome back</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
-              <NotificationBell onClick={() => setIsMessagesOpen(true)} />
-              <button 
+              {canAccessNotifications && <NotificationBell onClick={() => setIsMessagesOpen(true)} />}
+              <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
                 className={cn(
-                "flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm font-medium transition-all duration-300",
-                "bg-white/10 backdrop-blur-sm border border-white/20 text-white",
-                "hover:bg-red-500/80 hover:border-red-400",
-                isLoggingOut && "opacity-50 cursor-not-allowed"
-              )}
-            >
+                  "flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm font-medium transition-all duration-300",
+                  "bg-white/10 backdrop-blur-sm border border-white/20 text-white",
+                  "hover:bg-red-500/80 hover:border-red-400",
+                  isLoggingOut && "opacity-50 cursor-not-allowed"
+                )}
+              >
                 <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+                <span className="hidden sm:inline">{isLoggingOut ? "Logging out..." : "Logout"}</span>
               </button>
             </div>
           </header>
 
-          {/* User Profile Card */}
           {user && (
             <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
               <div className="flex items-center gap-4">
@@ -425,25 +452,23 @@ const HomePage = () => {
                   </button>
                 ) : (
                   <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0">
-                    {(user.username || user.email || '?').charAt(0).toUpperCase()}
+                    {(user.username || user.email || "?").charAt(0).toUpperCase()}
                   </div>
                 )}
-              <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h2 className="text-white font-semibold text-base sm:text-lg truncate">
                       {driverInfo?.driverId || user.username || user.email}
                     </h2>
                   </div>
                   <p className="text-white/60 text-xs sm:text-sm truncate">
-                    {driverInfo?.driverName || (user.email?.endsWith('@driver.temp') ? '' : user.email)}
+                    {driverInfo?.driverName || (user.email?.endsWith("@driver.temp") ? "" : user.email)}
                   </p>
                 </div>
                 {controllerName && (
                   <div className="flex flex-col items-center gap-1 shrink-0">
                     <Avatar className="h-12 w-12 sm:h-14 sm:w-14 border-2 border-white/20">
-                      {controllerAvatarUrl ? (
-                        <AvatarImage src={controllerAvatarUrl} alt={controllerName} />
-                      ) : null}
+                      {controllerAvatarUrl ? <AvatarImage src={controllerAvatarUrl} alt={controllerName} /> : null}
                       <AvatarFallback className="text-lg bg-primary/20 text-primary">
                         {controllerName.charAt(0).toUpperCase()}
                       </AvatarFallback>
@@ -456,13 +481,12 @@ const HomePage = () => {
             </div>
           )}
 
-          {/* Features Grid */}
           <div className="flex-1">
             <h2 className="text-white/80 text-sm font-medium mb-4 uppercase tracking-wider">Quick Actions</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-              {features.map((feature, index) => (
+              {visibleFeatures.map((feature) => (
                 <FeatureCard
-                  key={index}
+                  key={feature.title}
                   icon={feature.icon}
                   title={feature.title}
                   gradient={feature.gradient}
@@ -473,45 +497,25 @@ const HomePage = () => {
             </div>
           </div>
 
-          {/* Footer */}
           <footer className="mt-8 sm:mt-12 pt-6 border-t border-white/10">
             <div className="flex flex-col items-center gap-3">
-              <img 
-                src="/lovable-uploads/aman-logo-footer.png" 
-                alt="Aman Taxi Sharjah" 
-                className="h-8 sm:h-10 object-contain opacity-70"
-              />
+              <img src="/lovable-uploads/aman-logo-footer.png" alt="Aman Taxi Sharjah" className="h-8 sm:h-10 object-contain opacity-70" />
               <p className="text-xs text-white/40">© {new Date().getFullYear()} All Rights Reserved</p>
             </div>
           </footer>
         </div>
       </div>
 
-      {/* Lazy-loaded Dialogs */}
       <Suspense fallback={null}>
-        {isMessagesOpen && (
-          <AdminMessages
-            isOpen={isMessagesOpen}
-            onClose={() => setIsMessagesOpen(false)}
-          />
+        {canAccessNotifications && isMessagesOpen && (
+          <AdminMessages isOpen={isMessagesOpen} onClose={() => setIsMessagesOpen(false)} />
         )}
         {isDriverIncomeDialogOpen && (
-          <DriverIncomeAuthDialog
-            isOpen={isDriverIncomeDialogOpen}
-            onClose={() => setIsDriverIncomeDialogOpen(false)}
-          />
+          <DriverIncomeAuthDialog isOpen={isDriverIncomeDialogOpen} onClose={() => setIsDriverIncomeDialogOpen(false)} />
         )}
-        {isSmsDialogOpen && (
-          <DriverSmsDialog
-            isOpen={isSmsDialogOpen}
-            onClose={() => setIsSmsDialogOpen(false)}
-          />
-        )}
+        {isSmsDialogOpen && <DriverSmsDialog isOpen={isSmsDialogOpen} onClose={() => setIsSmsDialogOpen(false)} />}
         {isPortalSettingsOpen && (
-          <DriverPortalSettingsDialog
-            open={isPortalSettingsOpen}
-            onOpenChange={setIsPortalSettingsOpen}
-          />
+          <DriverPortalSettingsDialog open={isPortalSettingsOpen} onOpenChange={setIsPortalSettingsOpen} />
         )}
         {isQRCodeOpen && driverInfo?.driverId && (
           <DriverQRCodeDialog
