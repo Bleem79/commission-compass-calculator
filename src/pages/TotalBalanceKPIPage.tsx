@@ -273,25 +273,6 @@ const TotalBalanceKPIPage = () => {
       const latestDate = availableDates[0];
       const prevDate = availableDates[1];
 
-      const fetchAllForDate = async (dateStr: string) => {
-        let all: OutstandingRecord[] = [];
-        let from = 0;
-        const pageSize = 1000;
-        let hasMore = true;
-        while (hasMore) {
-          const { data, error } = await supabase
-            .from("total_outstanding")
-            .select("*")
-            .gte("created_at", dateStr + "T00:00:00")
-            .lt("created_at", dateStr + "T23:59:59.999")
-            .range(from, from + pageSize - 1);
-          if (error) throw error;
-          if (data && data.length > 0) { all = [...all, ...data]; from += pageSize; hasMore = data.length === pageSize; }
-          else hasMore = false;
-        }
-        return all;
-      };
-
       const [latestRecs, prevRecs] = await Promise.all([fetchAllForDate(latestDate), fetchAllForDate(prevDate)]);
       const prevMap = new Map<string, OutstandingRecord>();
       prevRecs.forEach(r => prevMap.set(r.emp_cde, r));
