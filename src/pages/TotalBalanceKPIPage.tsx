@@ -291,7 +291,7 @@ const TotalBalanceKPIPage = () => {
       onRoadRanges, offRoadRanges, totalRanges,
       onRoadCount: onRoad.length, offRoadCount: offRoad.length,
     };
-  }, [records]);
+  }, [records, fleetFilter]);
 
   const drillDownDrivers = useMemo(() => {
     if (!drillDown || !records.length) return [];
