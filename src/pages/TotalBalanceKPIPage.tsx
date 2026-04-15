@@ -252,6 +252,18 @@ const TotalBalanceKPIPage = () => {
     };
   }, [records]);
 
+  const drillDownDrivers = useMemo(() => {
+    if (!drillDown || !records.length) return [];
+    const range = FINE_RANGES[drillDown.rangeIndex];
+    let filtered = records.filter((r) => {
+      const ext = r.total_external_fines || 0;
+      return ext >= range.min && ext < range.max;
+    });
+    if (drillDown.fleet === "onRoad") filtered = filtered.filter((r) => r.fleet_status === "OnRoad");
+    else if (drillDown.fleet === "offRoad") filtered = filtered.filter((r) => r.fleet_status === "Off Road");
+    return filtered.sort((a, b) => (b.total_outstanding || 0) - (a.total_outstanding || 0));
+  }, [drillDown, records]);
+
   if (adminLoading) {
     return (
       <PageLayout title="Total Balance KPI" icon={<TrendingUp className="w-6 h-6" />} backPath="/home">
