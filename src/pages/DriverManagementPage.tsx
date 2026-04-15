@@ -65,6 +65,7 @@ const DriverManagementPage = () => {
             <Button variant="outline" size="sm" onClick={() => setShowAddForm(!showAddForm)} className="text-xs sm:text-sm">
               <UserPlus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Add Driver</span><span className="sm:hidden">Add</span>
             </Button>
+            <OsrDriverUploadDialog onOsrChange={() => { fetchOsrDrivers(); fetchDrivers(); }} />
           </div>
         ) : undefined
       }
