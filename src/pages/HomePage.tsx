@@ -25,7 +25,8 @@ import {
   Video,
   FileText,
   BookOpen,
-  DollarSign
+  DollarSign,
+  TrendingUp
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
