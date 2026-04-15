@@ -266,7 +266,7 @@ const TotalBalanceKPIPage = () => {
 
   if (adminLoading) {
     return (
-      <PageLayout title="Total Balance KPI" icon={<TrendingUp className="w-6 h-6" />} backPath="/home">
+      <PageLayout title="Driver Outstanding KPI" icon={<TrendingUp className="w-6 h-6" />} backPath="/home">
         <div className="space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
@@ -287,7 +287,7 @@ const TotalBalanceKPIPage = () => {
 
   return (
     <PageLayout
-      title="Total Balance KPI"
+      title="Driver Outstanding KPI"
       icon={<TrendingUp className="w-6 h-6" />}
       backPath="/home"
     >
