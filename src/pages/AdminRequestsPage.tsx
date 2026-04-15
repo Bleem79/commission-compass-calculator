@@ -275,6 +275,17 @@ const AdminRequestsPage = () => {
       headerActions={
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={handleExportToExcel} variant="outline" size="sm" className="text-xs sm:text-sm"><FileSpreadsheet className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Export Excel</span></Button>
+          <Button onClick={handleExportDuplicates} variant="outline" size="sm" className="text-xs sm:text-sm" disabled={exportingDuplicates}>
+            <Copy className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{exportingDuplicates ? "Exporting..." : "Duplicates"}</span>
+            {duplicateCount > 0 && <Badge variant="destructive" className="ml-1 text-[10px] px-1.5 py-0">{duplicateCount}</Badge>}
+          </Button>
+          {isActualAdmin && duplicateCount > 0 && (
+            <Button onClick={() => setShowDeleteDuplicatesConfirm(true)} variant="outline" size="sm" className="text-xs sm:text-sm text-destructive border-destructive/50 hover:bg-destructive/10">
+              <Trash2 className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Delete Duplicates</span>
+            </Button>
+          )}
           <Button onClick={() => setShowCalendar(!showCalendar)} variant={showCalendar ? "default" : "outline"} size="sm" className="text-xs sm:text-sm"><CalendarDays className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Day Off Calendar</span></Button>
           <Button onClick={handleRefresh} variant="outline" size="sm" disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /></Button>
           {pushSupported && !pushGranted && <Button onClick={requestPermission} variant="outline" size="sm" className="text-xs sm:text-sm"><Bell className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Enable Notifications</span></Button>}
