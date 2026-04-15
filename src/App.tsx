@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { PagePermissionsProvider, usePagePermissions } from "./contexts/PagePermissionsContext";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { lazy, Suspense, useEffect, memo } from "react";
 import { Loader2 } from "lucide-react";
@@ -92,12 +93,26 @@ const ProtectedLayout = () => {
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen w-full">
-        <Outlet />
-      </div>
-    </SidebarProvider>
+    <PagePermissionsProvider>
+      <SidebarProvider>
+        <div className="min-h-screen w-full">
+          <Outlet />
+        </div>
+      </SidebarProvider>
+    </PagePermissionsProvider>
   );
+};
+
+// Guard component that checks page permissions
+const PageGuard = ({ pageKey, children }: { pageKey: string; children: React.ReactNode }) => {
+  const { isPageBlocked } = usePagePermissions();
+  const { isAdmin } = useAuth();
+
+  if (!isAdmin && isPageBlocked(pageKey)) {
+    return <Navigate to="/home" replace />;
+  }
+
+  return <>{children}</>;
 };
 
 const AppRoutes = () => {
