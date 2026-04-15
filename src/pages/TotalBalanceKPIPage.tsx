@@ -59,12 +59,12 @@ interface OutstandingRecord {
 const PIE_COLORS = ["#ef4444", "#f59e0b", "#6366f1", "#8b5cf6"];
 
 const FINE_RANGES = [
-  { label: "0.00", labelTo: "4,999.99", min: 0, max: 5000 },
-  { label: "5,000.00", labelTo: "6,999.99", min: 5000, max: 7000 },
-  { label: "7,000.00", labelTo: "9,999.99", min: 7000, max: 10000 },
-  { label: "10,000.00", labelTo: "14,999.99", min: 10000, max: 15000 },
-  { label: "15,000.00", labelTo: "19,999.99", min: 15000, max: 20000 },
-  { label: "20,000.00", labelTo: "24,999.99", min: 20000, max: 25000 },
+  { label: "0.00", labelTo: "4,999.99", min: 0, max: 4999.99 },
+  { label: "5,000.00", labelTo: "6,999.99", min: 5000, max: 6999.99 },
+  { label: "7,000.00", labelTo: "9,999.99", min: 7000, max: 9999.99 },
+  { label: "10,000.00", labelTo: "14,999.99", min: 10000, max: 14999.99 },
+  { label: "15,000.00", labelTo: "19,999.99", min: 15000, max: 19999.99 },
+  { label: "20,000.00", labelTo: "24,999.99", min: 20000, max: 24999.99 },
   { label: "25,000.00", labelTo: "Above", min: 25000, max: Infinity },
 ];
 
@@ -269,7 +269,7 @@ const TotalBalanceKPIPage = () => {
       FINE_RANGES.map((range) => {
         const inRange = recs.filter((r) => {
           const ext = r.total_external_fines || 0;
-          return ext >= range.min && ext < range.max;
+          return ext >= range.min && ext <= range.max;
         });
         return {
           count: inRange.length,
