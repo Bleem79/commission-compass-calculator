@@ -98,6 +98,53 @@ const TotalBalanceKPIPage = () => {
     if (isAdmin) fetchDates();
   }, [isAdmin]);
 
+  // Fetch trend data across all dates
+  useEffect(() => {
+    const fetchTrend = async () => {
+      if (!availableDates.length) return;
+      setTrendLoading(true);
+      try {
+        const trendResults: typeof trendData = [];
+        for (const dateStr of availableDates.slice().reverse()) {
+          let allRecs: { total_outstanding: number | null; accident: number | null; traffic_fines: number | null; shj_rta_fines: number | null; emp_cde: string }[] = [];
+          let from = 0;
+          const pageSize = 1000;
+          let hasMore = true;
+          while (hasMore) {
+            const { data, error } = await supabase
+              .from("total_outstanding")
+              .select("total_outstanding,accident,traffic_fines,shj_rta_fines,emp_cde")
+              .gte("created_at", dateStr + "T00:00:00")
+              .lt("created_at", dateStr + "T23:59:59.999")
+              .range(from, from + pageSize - 1);
+            if (error) throw error;
+            if (data && data.length > 0) {
+              allRecs = [...allRecs, ...data];
+              from += pageSize;
+              hasMore = data.length === pageSize;
+            } else {
+              hasMore = false;
+            }
+          }
+          trendResults.push({
+            date: format(new Date(dateStr + "T00:00:00"), "dd MMM"),
+            totalBalance: allRecs.reduce((s, r) => s + (r.total_outstanding || 0), 0),
+            accident: allRecs.reduce((s, r) => s + (r.accident || 0), 0),
+            traffic: allRecs.reduce((s, r) => s + (r.traffic_fines || 0), 0),
+            rta: allRecs.reduce((s, r) => s + (r.shj_rta_fines || 0), 0),
+            drivers: new Set(allRecs.map((r) => r.emp_cde)).size,
+          });
+        }
+        setTrendData(trendResults);
+      } catch (err) {
+        console.error("Error fetching trend data:", err);
+      } finally {
+        setTrendLoading(false);
+      }
+    };
+    fetchTrend();
+  }, [availableDates]);
+
   // Fetch records for selected date
   useEffect(() => {
     if (!selectedDate || !isAdmin) return;
