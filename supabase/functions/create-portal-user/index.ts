@@ -79,6 +79,47 @@ Deno.serve(async (req) => {
 
     const adminClient = await verifyAdmin(req);
 
+    // GET PAGE PERMISSIONS for a user
+    if (action === "get_permissions") {
+      const { user_id } = body;
+      if (!user_id) throw new Error("user_id required");
+      const { data, error } = await adminClient
+        .from("user_page_permissions")
+        .select("page_key")
+        .eq("user_id", user_id);
+      if (error) throw new Error(error.message);
+      return new Response(JSON.stringify({ blocked_pages: (data || []).map((r: any) => r.page_key) }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // SET PAGE PERMISSIONS - replace all blocked pages for a user
+    if (action === "set_permissions") {
+      const { user_id, blocked_pages } = body;
+      if (!user_id) throw new Error("user_id required");
+      if (!Array.isArray(blocked_pages)) throw new Error("blocked_pages must be an array");
+
+      // Delete existing
+      const { error: delError } = await adminClient
+        .from("user_page_permissions")
+        .delete()
+        .eq("user_id", user_id);
+      if (delError) throw new Error(delError.message);
+
+      // Insert new blocked pages
+      if (blocked_pages.length > 0) {
+        const rows = blocked_pages.map((pk: string) => ({ user_id, page_key: pk }));
+        const { error: insError } = await adminClient
+          .from("user_page_permissions")
+          .insert(rows);
+        if (insError) throw new Error(insError.message);
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
 
     // LIST USERS - fetch portal users with email/username from auth
     if (action === "list") {
