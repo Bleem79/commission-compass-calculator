@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Users, UserCheck, UserX, RefreshCw, CheckCircle2, XCircle, Download, Upload, Loader2, Trash2, KeyRound, Eye, EyeOff, ChevronLeft, ChevronRight, UserPlus, Dices, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,6 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ResetDriverPasswordDialog } from "@/components/admin/ResetDriverPasswordDialog";
 import { PageLayout } from "@/components/shared/PageLayout";
 import { useDriverCredentialsManagement } from "@/hooks/useDriverCredentialsManagement";
+import { OsrDriverUploadDialog } from "@/components/admin/OsrDriverUploadDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 const DriverManagementPage = () => {
   const {
@@ -24,6 +26,24 @@ const DriverManagementPage = () => {
     downloadTemplate, handleFileUpload, filteredDrivers, totalPages, paginatedDrivers,
     enabledCount, disabledCount,
   } = useDriverCredentialsManagement();
+
+  const [osrDriverIds, setOsrDriverIds] = useState<Set<string>>(new Set());
+
+  const fetchOsrDrivers = useCallback(async () => {
+    const { data } = await supabase
+      .from("osr_drivers")
+      .select("driver_id, status");
+    if (data) {
+      const osrSet = new Set(
+        data.filter((r: any) => r.status?.toUpperCase() === "OSR").map((r: any) => r.driver_id)
+      );
+      setOsrDriverIds(osrSet);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOsrDrivers();
+  }, [fetchOsrDrivers]);
 
   if (!canAccessAdminPages) return null;
 
@@ -45,6 +65,7 @@ const DriverManagementPage = () => {
             <Button variant="outline" size="sm" onClick={() => setShowAddForm(!showAddForm)} className="text-xs sm:text-sm">
               <UserPlus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Add Driver</span><span className="sm:hidden">Add</span>
             </Button>
+            <OsrDriverUploadDialog onOsrChange={() => { fetchOsrDrivers(); fetchDrivers(); }} />
           </div>
         ) : undefined
       }
@@ -149,9 +170,16 @@ const DriverManagementPage = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedDrivers.map((driver) => (
-                      <TableRow key={driver.id}>
-                        <TableCell className="font-medium">{driver.driver_id}</TableCell>
+                    {paginatedDrivers.map((driver) => {
+                      const isOsr = osrDriverIds.has(driver.driver_id);
+                      return (
+                      <TableRow key={driver.id} className={isOsr ? "bg-destructive/5" : ""}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {driver.driver_id}
+                            {isOsr && <Badge variant="destructive" className="text-[10px] px-1.5 py-0">OSR</Badge>}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-sm text-muted-foreground min-w-[80px]">
@@ -172,13 +200,14 @@ const DriverManagementPage = () => {
                         <TableCell className="text-muted-foreground">{driver.created_at ? new Date(driver.created_at).toLocaleDateString() : 'N/A'}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => setResetPasswordDriver(driver.driver_id)} title="Reset Password"><KeyRound className="h-4 w-4" /></Button>
-                            <span className="text-sm text-muted-foreground mr-2">{driver.status === 'enabled' ? 'Enabled' : 'Disabled'}</span>
-                            <Switch checked={driver.status === 'enabled'} onCheckedChange={() => toggleDriverStatus(driver)} disabled={updatingId === driver.id} />
+                            <Button variant="ghost" size="sm" onClick={() => setResetPasswordDriver(driver.driver_id)} title="Reset Password" disabled={isOsr}><KeyRound className="h-4 w-4" /></Button>
+                            <span className="text-sm text-muted-foreground mr-2">{isOsr ? 'OSR' : driver.status === 'enabled' ? 'Enabled' : 'Disabled'}</span>
+                            <Switch checked={driver.status === 'enabled'} onCheckedChange={() => toggleDriverStatus(driver)} disabled={updatingId === driver.id || isOsr} />
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
