@@ -66,6 +66,7 @@ const AdminRequestsPage = () => {
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
+  const [exportingDuplicates, setExportingDuplicates] = useState(false);
 
   const { requestTypes } = useRequestTypes();
   const { isSupported: pushSupported, isGranted: pushGranted, requestPermission } = usePushNotifications();
