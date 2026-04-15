@@ -499,6 +499,15 @@ const TotalBalanceKPIPage = () => {
             <Search className="h-4 w-4" />
           </Button>
         </div>
+        <Button
+          variant="outline"
+          className="min-h-[44px] gap-2"
+          disabled={exportingIncrease || availableDates.length < 2}
+          onClick={handleExportAllIncreaseDrivers}
+        >
+          <FileDown className="h-4 w-4" />
+          {exportingIncrease ? "Exporting..." : "Export All Increase"}
+        </Button>
       </div>
 
       {/* Search Result Card */}
