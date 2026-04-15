@@ -250,8 +250,8 @@ const TotalBalanceKPIPage = () => {
 
     const ranges = BAR_RANGES.map((r) => ({ ...r, count: 0 }));
     filtered.forEach((r) => {
-      const val = r.total_outstanding || 0;
-      const range = ranges.find((rng) => val >= rng.min && val < rng.max);
+      const val = Math.max(0, r.total_external_fines || 0);
+      const range = ranges.find((rng) => val >= rng.min && (rng.max === Infinity ? true : val < rng.max));
       if (range) range.count++;
     });
 
