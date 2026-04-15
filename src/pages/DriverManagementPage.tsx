@@ -11,6 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ResetDriverPasswordDialog } from "@/components/admin/ResetDriverPasswordDialog";
 import { PageLayout } from "@/components/shared/PageLayout";
 import { useDriverCredentialsManagement } from "@/hooks/useDriverCredentialsManagement";
+import { OsrDriverUploadDialog } from "@/components/admin/OsrDriverUploadDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 const DriverManagementPage = () => {
   const {
