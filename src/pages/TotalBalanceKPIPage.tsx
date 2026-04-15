@@ -103,6 +103,16 @@ const TotalBalanceKPIPage = () => {
   const [searchNotFound, setSearchNotFound] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [exportingIncrease, setExportingIncrease] = useState(false);
+  const [changeReport, setChangeReport] = useState<{
+    increased: number; decreased: number; unchanged: number; newDrivers: number; removedDrivers: number;
+    accidentUp: number; accidentDown: number;
+    trafficUp: number; trafficDown: number;
+    rtaUp: number; rtaDown: number;
+    internalUp: number; internalDown: number;
+    prevDate: string; currDate: string;
+  } | null>(null);
+  const [changeReportLoading, setChangeReportLoading] = useState(false);
+  const [exportingChangeReport, setExportingChangeReport] = useState(false);
 
   const handleSearch = async () => {
     const q = searchQuery.trim();
@@ -136,6 +146,123 @@ const TotalBalanceKPIPage = () => {
     }
   };
 
+  const fetchAllForDate = useCallback(async (dateStr: string) => {
+    let all: OutstandingRecord[] = [];
+    let from = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from("total_outstanding")
+        .select("*")
+        .gte("created_at", dateStr + "T00:00:00")
+        .lt("created_at", dateStr + "T23:59:59.999")
+        .range(from, from + pageSize - 1);
+      if (error) throw error;
+      if (data && data.length > 0) { all = [...all, ...data]; from += pageSize; hasMore = data.length === pageSize; }
+      else hasMore = false;
+    }
+    return all;
+  }, []);
+
+  // Compute change report when dates are available
+  useEffect(() => {
+    if (availableDates.length < 2) { setChangeReport(null); return; }
+    const compute = async () => {
+      setChangeReportLoading(true);
+      try {
+        const currDate = availableDates[0];
+        const prevDate = availableDates[1];
+        const [currRecs, prevRecs] = await Promise.all([fetchAllForDate(currDate), fetchAllForDate(prevDate)]);
+        const prevMap = new Map<string, OutstandingRecord>();
+        prevRecs.forEach(r => prevMap.set(r.emp_cde, r));
+        const currMap = new Map<string, OutstandingRecord>();
+        currRecs.forEach(r => currMap.set(r.emp_cde, r));
+
+        let increased = 0, decreased = 0, unchanged = 0;
+        let accidentUp = 0, accidentDown = 0, trafficUp = 0, trafficDown = 0;
+        let rtaUp = 0, rtaDown = 0, internalUp = 0, internalDown = 0;
+
+        currRecs.forEach(curr => {
+          const prev = prevMap.get(curr.emp_cde);
+          if (!prev) return;
+          const currBal = curr.total_outstanding || 0;
+          const prevBal = prev.total_outstanding || 0;
+          if (currBal > prevBal) increased++;
+          else if (currBal < prevBal) decreased++;
+          else unchanged++;
+
+          if ((curr.accident || 0) > (prev.accident || 0)) accidentUp++;
+          else if ((curr.accident || 0) < (prev.accident || 0)) accidentDown++;
+          if ((curr.traffic_fines || 0) > (prev.traffic_fines || 0)) trafficUp++;
+          else if ((curr.traffic_fines || 0) < (prev.traffic_fines || 0)) trafficDown++;
+          if ((curr.shj_rta_fines || 0) > (prev.shj_rta_fines || 0)) rtaUp++;
+          else if ((curr.shj_rta_fines || 0) < (prev.shj_rta_fines || 0)) rtaDown++;
+          const currInt = (curr.total_outstanding || 0) - (curr.total_external_fines || 0);
+          const prevInt = (prev.total_outstanding || 0) - (prev.total_external_fines || 0);
+          if (currInt > prevInt) internalUp++;
+          else if (currInt < prevInt) internalDown++;
+        });
+
+        const newDrivers = currRecs.filter(r => !prevMap.has(r.emp_cde)).length;
+        const removedDrivers = prevRecs.filter(r => !currMap.has(r.emp_cde)).length;
+
+        setChangeReport({ increased, decreased, unchanged, newDrivers, removedDrivers, accidentUp, accidentDown, trafficUp, trafficDown, rtaUp, rtaDown, internalUp, internalDown, prevDate, currDate });
+      } catch (err) {
+        console.error("Change report error:", err);
+      } finally { setChangeReportLoading(false); }
+    };
+    compute();
+  }, [availableDates, fetchAllForDate]);
+
+  const handleExportChangeReport = useCallback(async () => {
+    if (availableDates.length < 2) return;
+    setExportingChangeReport(true);
+    try {
+      const currDate = availableDates[0];
+      const prevDate = availableDates[1];
+      const [currRecs, prevRecs] = await Promise.all([fetchAllForDate(currDate), fetchAllForDate(prevDate)]);
+      const prevMap = new Map<string, OutstandingRecord>();
+      prevRecs.forEach(r => prevMap.set(r.emp_cde, r));
+
+      const rows: any[] = [];
+      currRecs.forEach(curr => {
+        const prev = prevMap.get(curr.emp_cde);
+        if (!prev) return;
+        const currBal = curr.total_outstanding || 0;
+        const prevBal = prev.total_outstanding || 0;
+        const diff = currBal - prevBal;
+        if (diff === 0) return;
+        rows.push({
+          "Driver ID": curr.emp_cde,
+          "Fleet Status": curr.fleet_status || "",
+          "Previous Balance": prevBal,
+          "Current Balance": currBal,
+          "Difference": diff,
+          "Direction": diff > 0 ? "Increase" : "Decrease",
+          "Prev Accident": prev.accident || 0,
+          "Curr Accident": curr.accident || 0,
+          "Prev Traffic": prev.traffic_fines || 0,
+          "Curr Traffic": curr.traffic_fines || 0,
+          "Prev SHJ RTA": prev.shj_rta_fines || 0,
+          "Curr SHJ RTA": curr.shj_rta_fines || 0,
+          "Previous Date": prevDate,
+          "Latest Date": currDate,
+        });
+      });
+      rows.sort((a, b) => b["Difference"] - a["Difference"]);
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws["!cols"] = Array(14).fill({ wch: 16 });
+      XLSX.utils.book_append_sheet(wb, ws, "Change Report");
+      XLSX.writeFile(wb, `driver_change_report_${currDate}.xlsx`);
+      toast.success(`Exported ${rows.length} drivers with balance changes`);
+    } catch (err) {
+      console.error("Export error:", err);
+      toast.error("Failed to export change report");
+    } finally { setExportingChangeReport(false); }
+  }, [availableDates, fetchAllForDate]);
+
   const handleExportAllIncreaseDrivers = useCallback(async () => {
     if (availableDates.length < 2) {
       toast.error("Need at least 2 upload dates to compare");
@@ -145,25 +272,6 @@ const TotalBalanceKPIPage = () => {
     try {
       const latestDate = availableDates[0];
       const prevDate = availableDates[1];
-
-      const fetchAllForDate = async (dateStr: string) => {
-        let all: OutstandingRecord[] = [];
-        let from = 0;
-        const pageSize = 1000;
-        let hasMore = true;
-        while (hasMore) {
-          const { data, error } = await supabase
-            .from("total_outstanding")
-            .select("*")
-            .gte("created_at", dateStr + "T00:00:00")
-            .lt("created_at", dateStr + "T23:59:59.999")
-            .range(from, from + pageSize - 1);
-          if (error) throw error;
-          if (data && data.length > 0) { all = [...all, ...data]; from += pageSize; hasMore = data.length === pageSize; }
-          else hasMore = false;
-        }
-        return all;
-      };
 
       const [latestRecs, prevRecs] = await Promise.all([fetchAllForDate(latestDate), fetchAllForDate(prevDate)]);
       const prevMap = new Map<string, OutstandingRecord>();
@@ -786,6 +894,94 @@ const TotalBalanceKPIPage = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Change Report */}
+          {changeReport && (
+            <Card className="bg-card border-border mb-6">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                    📊 Change Report
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-h-[36px] gap-2"
+                    disabled={exportingChangeReport}
+                    onClick={handleExportChangeReport}
+                  >
+                    <FileDown className="h-3.5 w-3.5" />
+                    {exportingChangeReport ? "Exporting..." : "Export to Excel"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Comparing {changeReport.prevDate} → {changeReport.currDate}
+                </p>
+              </CardHeader>
+              <CardContent>
+                {/* Overall summary */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+                  <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <ArrowUpRight className="w-4 h-4 text-red-500" />
+                      <span className="text-lg font-bold text-red-600 dark:text-red-400">{changeReport.increased}</span>
+                    </div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Balance Increased</p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <ArrowDownRight className="w-4 h-4 text-green-500" />
+                      <span className="text-lg font-bold text-green-600 dark:text-green-400">{changeReport.decreased}</span>
+                    </div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Balance Decreased</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3 text-center">
+                    <span className="text-lg font-bold text-foreground">{changeReport.unchanged}</span>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">No Change</p>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 text-center">
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{changeReport.newDrivers}</span>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">New Drivers</p>
+                  </div>
+                  <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3 text-center">
+                    <span className="text-lg font-bold text-amber-600 dark:text-amber-400">{changeReport.removedDrivers}</span>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Removed Drivers</p>
+                  </div>
+                </div>
+
+                {/* Per-category breakdown */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs sm:text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 px-2 text-muted-foreground font-medium">Category</th>
+                        <th className="text-center py-2 px-2 text-red-600 dark:text-red-400 font-medium">▲ Increased</th>
+                        <th className="text-center py-2 px-2 text-green-600 dark:text-green-400 font-medium">▼ Decreased</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { label: "Accident", up: changeReport.accidentUp, down: changeReport.accidentDown },
+                        { label: "Traffic Fines", up: changeReport.trafficUp, down: changeReport.trafficDown },
+                        { label: "SHJ RTA Fines", up: changeReport.rtaUp, down: changeReport.rtaDown },
+                        { label: "Internal & Misc", up: changeReport.internalUp, down: changeReport.internalDown },
+                        { label: "Total Balance", up: changeReport.increased, down: changeReport.decreased },
+                      ].map((row) => (
+                        <tr key={row.label} className="border-b border-border/50">
+                          <td className="py-2 px-2 text-foreground font-medium">{row.label}</td>
+                          <td className="py-2 px-2 text-center text-red-600 dark:text-red-400 font-bold">{row.up}</td>
+                          <td className="py-2 px-2 text-center text-green-600 dark:text-green-400 font-bold">{row.down}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {changeReportLoading && (
+            <Skeleton className="h-48 rounded-lg mb-6" />
+          )}
 
           {/* Insights */}
           <Card className="bg-card border-border">
