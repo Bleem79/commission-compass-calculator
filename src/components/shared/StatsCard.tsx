@@ -21,14 +21,14 @@ export const StatsCard = ({
 }: StatsCardProps) => {
   return (
     <Card className={cn("bg-card border-border", className)}>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <div className={cn("p-2 rounded-lg bg-gradient-to-br text-white", gradient)}>
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className={cn("p-2 rounded-lg bg-gradient-to-br text-white shrink-0", gradient)}>
             {icon}
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs sm:text-sm text-muted-foreground truncate">{label}</p>
-            <p className="text-base sm:text-2xl font-bold text-foreground truncate">{value}</p>
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm text-muted-foreground">{label}</p>
+            <p className="text-sm sm:text-2xl font-bold text-foreground break-all leading-tight">{value}</p>
           </div>
         </div>
       </CardContent>
