@@ -1,5 +1,5 @@
-import React from "react";
-import { UserPlus, Users, Shield, Eye, Loader2, RefreshCw, Camera, Bell, BellOff, BellRing, KeyRound, Dices } from "lucide-react";
+import React, { useState } from "react";
+import { UserPlus, Users, Shield, Eye, Loader2, RefreshCw, Camera, Bell, BellOff, BellRing, KeyRound, Dices, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { PageLayout } from "@/components/shared/PageLayout";
 import { usePortalUsers } from "@/hooks/usePortalUsers";
+import { PagePermissionsDialog } from "@/components/admin/PagePermissionsDialog";
 
 const RevenueControllerPortalPage = () => {
   const {
@@ -22,6 +23,8 @@ const RevenueControllerPortalPage = () => {
     handleToggleStatus, handleAvatarClick, handleAvatarUpload, generateRandomPassword,
     handleResetPassword,
   } = usePortalUsers();
+
+  const [permissionsUser, setPermissionsUser] = useState<{ id: string; username: string } | null>(null);
 
   const getRoleBadge = (userRole: string) => {
     if (userRole === "advanced") return <Badge className="bg-amber-500/20 text-amber-700 border-amber-300"><Shield className="w-3 h-3 mr-1" /> Advanced</Badge>;
@@ -154,6 +157,7 @@ const RevenueControllerPortalPage = () => {
                       <TableCell><Badge className={u.banned ? "bg-destructive/20 text-destructive border-destructive/30" : "bg-green-500/20 text-green-700 border-green-300"}>{u.banned ? "Disabled" : "Active"}</Badge></TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setPermissionsUser({ id: u.id, username: u.username })} title="Page access"><Lock className="w-3 h-3" /></Button>
                           <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setResetPasswordUserId(resetPasswordUserId === u.id ? null : u.id); setNewPassword(""); }}><KeyRound className="w-3 h-3" /> Reset</Button>
                           <Switch checked={!u.banned} onCheckedChange={() => handleToggleStatus(u.id, u.banned)} disabled={updatingUserId === u.id} />
                           {updatingUserId === u.id && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
@@ -176,6 +180,14 @@ const RevenueControllerPortalPage = () => {
           )}
         </CardContent>
       </Card>
+      {permissionsUser && (
+        <PagePermissionsDialog
+          open={!!permissionsUser}
+          onOpenChange={(open) => { if (!open) setPermissionsUser(null); }}
+          userId={permissionsUser.id}
+          username={permissionsUser.username}
+        />
+      )}
     </PageLayout>
   );
 };
