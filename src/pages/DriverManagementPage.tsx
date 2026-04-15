@@ -27,6 +27,24 @@ const DriverManagementPage = () => {
     enabledCount, disabledCount,
   } = useDriverCredentialsManagement();
 
+  const [osrDriverIds, setOsrDriverIds] = useState<Set<string>>(new Set());
+
+  const fetchOsrDrivers = useCallback(async () => {
+    const { data } = await supabase
+      .from("osr_drivers")
+      .select("driver_id, status");
+    if (data) {
+      const osrSet = new Set(
+        data.filter((r: any) => r.status?.toUpperCase() === "OSR").map((r: any) => r.driver_id)
+      );
+      setOsrDriverIds(osrSet);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOsrDrivers();
+  }, [fetchOsrDrivers]);
+
   if (!canAccessAdminPages) return null;
 
   return (
