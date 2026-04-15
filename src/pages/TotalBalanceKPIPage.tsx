@@ -411,55 +411,6 @@ const TotalBalanceKPIPage = () => {
             </CardContent>
           </Card>
 
-          {/* Top 10 Highest Balance Drivers */}
-          <Card className="bg-card border-border mb-6">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                <ArrowUpRight className="w-4 h-4 text-red-500" />
-                Top 10 Highest Balance Drivers
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">#</th>
-                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Emp Code</th>
-                      <th className="text-center py-2 px-2 text-muted-foreground font-medium">Status</th>
-                      <th className="text-right py-2 px-2 text-muted-foreground font-medium">Accident</th>
-                      <th className="text-right py-2 px-2 text-muted-foreground font-medium">Traffic</th>
-                      <th className="text-right py-2 px-2 text-muted-foreground font-medium">SHJ RTA</th>
-                      <th className="text-right py-2 px-2 text-muted-foreground font-medium">Total Balance</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.top10.map((r, i) => (
-                      <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
-                        <td className="py-2 px-2 text-muted-foreground">{i + 1}</td>
-                        <td className="py-2 px-2 font-medium text-foreground">{r.emp_cde}</td>
-                        <td className="py-2 px-2 text-center">
-                          <span className={cn(
-                            "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
-                            r.fleet_status === "OnRoad"
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
-                              : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
-                          )}>
-                            {r.fleet_status === "OnRoad" ? "On Road" : "Off Road"}
-                          </span>
-                        </td>
-                        <td className="py-2 px-2 text-right text-foreground">{fmtAed(r.accident || 0)}</td>
-                        <td className="py-2 px-2 text-right text-foreground">{fmtAed(r.traffic_fines || 0)}</td>
-                        <td className="py-2 px-2 text-right text-foreground">{fmtAed(r.shj_rta_fines || 0)}</td>
-                        <td className="py-2 px-2 text-right font-bold text-red-600">{fmtAed(r.total_outstanding || 0)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Insights */}
           <Card className="bg-card border-border">
             <CardHeader className="pb-2">
