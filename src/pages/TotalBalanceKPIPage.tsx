@@ -435,15 +435,6 @@ const TotalBalanceKPIPage = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-                <Car className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-foreground text-sm">Fleet Status</p>
-                  <p className="text-muted-foreground text-xs mt-1">
-                    {stats.onRoadCount} On Road ({((stats.onRoadCount / stats.totalDrivers) * 100).toFixed(0)}%) · {stats.offRoadCount} Off Road ({((stats.offRoadCount / stats.totalDrivers) * 100).toFixed(0)}%)
-                  </p>
-                </div>
-              </div>
               <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg">
                 <ArrowDownRight className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
                 <div>
