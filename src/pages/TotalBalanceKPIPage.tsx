@@ -251,11 +251,11 @@ const TotalBalanceKPIPage = () => {
       if (range) range.count++;
     });
 
-    const top10 = [...records]
+    const top10 = [...filtered]
       .sort((a, b) => (b.total_outstanding || 0) - (a.total_outstanding || 0))
       .slice(0, 10);
 
-    const zeroBalance = records.filter((r) => (r.total_outstanding || 0) === 0).length;
+    const zeroBalance = filtered.filter((r) => (r.total_outstanding || 0) === 0).length;
 
     const pieData = [
       { name: "Accident", value: totalAccident },
@@ -265,8 +265,8 @@ const TotalBalanceKPIPage = () => {
     ];
 
     // External fines breakdown by On Road / Off Road
-    const onRoad = records.filter((r) => r.fleet_status === "OnRoad");
-    const offRoad = records.filter((r) => r.fleet_status === "Off Road");
+    const onRoad = filtered.filter((r) => r.fleet_status === "OnRoad");
+    const offRoad = filtered.filter((r) => r.fleet_status === "Off Road");
 
     const calcRangeData = (recs: OutstandingRecord[]) =>
       FINE_RANGES.map((range) => {
