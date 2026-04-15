@@ -477,10 +477,10 @@ const TotalBalanceKPIPage = () => {
           </StatsGrid>
 
           <StatsGrid columns={2}>
-            <StatsCard icon={<Car className="w-5 h-5" />} label="Total Accident" value={`AED ${fmtAed(stats.totalAccident)}`} gradient="from-red-600 to-red-700" />
-            <StatsCard icon={<AlertTriangle className="w-5 h-5" />} label="Traffic Fines" value={`AED ${fmtAed(stats.totalTraffic)}`} gradient="from-yellow-500 to-amber-600" />
-            <StatsCard icon={<Building2 className="w-5 h-5" />} label="SHJ RTA Fines" value={`AED ${fmtAed(stats.totalRTA)}`} gradient="from-indigo-500 to-violet-600" />
-            <StatsCard icon={<DollarSign className="w-5 h-5" />} label="Internal & Misc" value={`AED ${fmtAed(stats.totalInternal > 0 ? stats.totalInternal : 0)}`} gradient="from-purple-500 to-fuchsia-600" />
+            <StatsCard icon={<Car className="w-5 h-5" />} label={`Total Accident (${stats.totalBalance > 0 ? ((stats.totalAccident / stats.totalBalance) * 100).toFixed(1) : 0}%)`} value={`AED ${fmtAed(stats.totalAccident)}`} gradient="from-red-600 to-red-700" />
+            <StatsCard icon={<AlertTriangle className="w-5 h-5" />} label={`Traffic Fines (${stats.totalBalance > 0 ? ((stats.totalTraffic / stats.totalBalance) * 100).toFixed(1) : 0}%)`} value={`AED ${fmtAed(stats.totalTraffic)}`} gradient="from-yellow-500 to-amber-600" />
+            <StatsCard icon={<Building2 className="w-5 h-5" />} label={`SHJ RTA Fines (${stats.totalBalance > 0 ? ((stats.totalRTA / stats.totalBalance) * 100).toFixed(1) : 0}%)`} value={`AED ${fmtAed(stats.totalRTA)}`} gradient="from-indigo-500 to-violet-600" />
+            <StatsCard icon={<DollarSign className="w-5 h-5" />} label={`Internal & Misc (${stats.totalBalance > 0 ? ((Math.max(0, stats.totalInternal) / stats.totalBalance) * 100).toFixed(1) : 0}%)`} value={`AED ${fmtAed(stats.totalInternal > 0 ? stats.totalInternal : 0)}`} gradient="from-purple-500 to-fuchsia-600" />
           </StatsGrid>
 
           {/* Charts Row */}
