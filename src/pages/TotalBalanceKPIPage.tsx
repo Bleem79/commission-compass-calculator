@@ -102,6 +102,7 @@ const TotalBalanceKPIPage = () => {
   const [searchResult, setSearchResult] = useState<OutstandingRecord | null>(null);
   const [searchNotFound, setSearchNotFound] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [exportingIncrease, setExportingIncrease] = useState(false);
 
   const handleSearch = async () => {
     const q = searchQuery.trim();
@@ -134,6 +135,97 @@ const TotalBalanceKPIPage = () => {
       setSearchLoading(false);
     }
   };
+
+  const handleExportAllIncreaseDrivers = useCallback(async () => {
+    if (availableDates.length < 2) {
+      toast.error("Need at least 2 upload dates to compare");
+      return;
+    }
+    setExportingIncrease(true);
+    try {
+      const latestDate = availableDates[0];
+      const prevDate = availableDates[1];
+
+      const fetchAllForDate = async (dateStr: string) => {
+        let all: OutstandingRecord[] = [];
+        let from = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from("total_outstanding")
+            .select("*")
+            .gte("created_at", dateStr + "T00:00:00")
+            .lt("created_at", dateStr + "T23:59:59.999")
+            .range(from, from + pageSize - 1);
+          if (error) throw error;
+          if (data && data.length > 0) { all = [...all, ...data]; from += pageSize; hasMore = data.length === pageSize; }
+          else hasMore = false;
+        }
+        return all;
+      };
+
+      const [latestRecs, prevRecs] = await Promise.all([fetchAllForDate(latestDate), fetchAllForDate(prevDate)]);
+      const prevMap = new Map<string, OutstandingRecord>();
+      prevRecs.forEach(r => prevMap.set(r.emp_cde, r));
+
+      const increased: { emp_cde: string; prev: OutstandingRecord; curr: OutstandingRecord }[] = [];
+      latestRecs.forEach(curr => {
+        const prev = prevMap.get(curr.emp_cde);
+        if (!prev) return;
+        const currInternal = (curr.total_outstanding || 0) - (curr.total_external_fines || 0);
+        const prevInternal = (prev.total_outstanding || 0) - (prev.total_external_fines || 0);
+        if (
+          (curr.accident || 0) > (prev.accident || 0) &&
+          (curr.traffic_fines || 0) > (prev.traffic_fines || 0) &&
+          (curr.shj_rta_fines || 0) > (prev.shj_rta_fines || 0) &&
+          currInternal > prevInternal
+        ) {
+          increased.push({ emp_cde: curr.emp_cde, prev, curr });
+        }
+      });
+
+      if (increased.length === 0) {
+        toast.info("No drivers found with increase in all categories");
+        setExportingIncrease(false);
+        return;
+      }
+
+      const exportData = increased.map(({ emp_cde, prev, curr }) => ({
+        "Driver ID": emp_cde,
+        "Prev Accident": prev.accident || 0,
+        "Curr Accident": curr.accident || 0,
+        "Diff Accident": (curr.accident || 0) - (prev.accident || 0),
+        "Prev Traffic": prev.traffic_fines || 0,
+        "Curr Traffic": curr.traffic_fines || 0,
+        "Diff Traffic": (curr.traffic_fines || 0) - (prev.traffic_fines || 0),
+        "Prev SHJ RTA": prev.shj_rta_fines || 0,
+        "Curr SHJ RTA": curr.shj_rta_fines || 0,
+        "Diff SHJ RTA": (curr.shj_rta_fines || 0) - (prev.shj_rta_fines || 0),
+        "Prev Internal": (prev.total_outstanding || 0) - (prev.total_external_fines || 0),
+        "Curr Internal": (curr.total_outstanding || 0) - (curr.total_external_fines || 0),
+        "Diff Internal": ((curr.total_outstanding || 0) - (curr.total_external_fines || 0)) - ((prev.total_outstanding || 0) - (prev.total_external_fines || 0)),
+        "Prev Total Balance": prev.total_outstanding || 0,
+        "Curr Total Balance": curr.total_outstanding || 0,
+        "Diff Total Balance": (curr.total_outstanding || 0) - (prev.total_outstanding || 0),
+        "Previous Date": prevDate,
+        "Latest Date": latestDate,
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      ws["!cols"] = Array(17).fill({ wch: 16 });
+      XLSX.utils.book_append_sheet(wb, ws, "All Category Increase");
+      XLSX.writeFile(wb, `drivers_all_category_increase_${latestDate}.xlsx`);
+      toast.success(`Exported ${increased.length} drivers with increase in all categories`);
+    } catch (err) {
+      console.error("Export error:", err);
+      toast.error("Failed to export data");
+    } finally {
+      setExportingIncrease(false);
+    }
+  }, [availableDates]);
+
 
   // Fetch available dates first
   useEffect(() => {
