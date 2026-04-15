@@ -509,15 +509,27 @@ const TotalBalanceKPIPage = () => {
                         <td className="py-1.5 px-2 text-foreground">{range.label}</td>
                         <td className="py-1.5 px-2 text-foreground border-r border-border">{range.labelTo}</td>
                         {/* On Road */}
-                        <td className="py-1.5 px-2 text-right font-medium text-foreground">{fmtNum(stats.onRoadRanges[i].count)}</td>
+                        <td className="py-1.5 px-2 text-right font-medium text-foreground">
+                          {stats.onRoadRanges[i].count > 0 ? (
+                            <button onClick={() => setDrillDown({ rangeIndex: i, fleet: "onRoad" })} className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-bold">{fmtNum(stats.onRoadRanges[i].count)}</button>
+                          ) : <span>0</span>}
+                        </td>
                         <td className="py-1.5 px-2 text-right text-blue-600 dark:text-blue-400">{fmtNum(stats.onRoadRanges[i].extFines)}</td>
                         <td className="py-1.5 px-2 text-right text-blue-600 dark:text-blue-400 border-r border-border">{fmtNum(stats.onRoadRanges[i].totalOut)}</td>
                         {/* Off Road */}
-                        <td className="py-1.5 px-2 text-right font-medium text-foreground">{fmtNum(stats.offRoadRanges[i].count)}</td>
+                        <td className="py-1.5 px-2 text-right font-medium text-foreground">
+                          {stats.offRoadRanges[i].count > 0 ? (
+                            <button onClick={() => setDrillDown({ rangeIndex: i, fleet: "offRoad" })} className="text-amber-600 dark:text-amber-400 hover:underline cursor-pointer font-bold">{fmtNum(stats.offRoadRanges[i].count)}</button>
+                          ) : <span>0</span>}
+                        </td>
                         <td className="py-1.5 px-2 text-right text-amber-600 dark:text-amber-400">{fmtNum(stats.offRoadRanges[i].extFines)}</td>
                         <td className="py-1.5 px-2 text-right text-amber-600 dark:text-amber-400 border-r border-border">{fmtNum(stats.offRoadRanges[i].totalOut)}</td>
                         {/* Total */}
-                        <td className="py-1.5 px-2 text-right font-bold text-foreground">{fmtNum(stats.totalRanges[i].count)}</td>
+                        <td className="py-1.5 px-2 text-right font-bold text-foreground">
+                          {stats.totalRanges[i].count > 0 ? (
+                            <button onClick={() => setDrillDown({ rangeIndex: i, fleet: "total" })} className="text-red-600 dark:text-red-400 hover:underline cursor-pointer font-bold">{fmtNum(stats.totalRanges[i].count)}</button>
+                          ) : <span>0</span>}
+                        </td>
                         <td className="py-1.5 px-2 text-right text-red-600 dark:text-red-400">{fmtNum(stats.totalRanges[i].extFines)}</td>
                         <td className="py-1.5 px-2 text-right text-red-600 dark:text-red-400">{fmtNum(stats.totalRanges[i].totalOut)}</td>
                       </tr>
