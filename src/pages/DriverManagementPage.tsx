@@ -128,17 +128,6 @@ const DriverManagementPage = () => {
             <div className="flex flex-wrap items-center gap-2">
               {isAdmin && (
                 <>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" disabled={isClearing || drivers.length === 0} className="text-destructive border-destructive/30 hover:bg-destructive/10">
-                        {isClearing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1" />} Clear All
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader><AlertDialogTitle>Clear All Driver Credentials?</AlertDialogTitle><AlertDialogDescription>This will permanently delete all {drivers.length} driver credential records.</AlertDialogDescription></AlertDialogHeader>
-                      <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={clearAllDriverCredentials} className="bg-destructive hover:bg-destructive/90">Yes, Clear All</AlertDialogAction></AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
                   <Button variant="outline" size="sm" onClick={() => bulkUpdateStatus('enabled')} disabled={bulkUpdating || drivers.length === 0 || enabledCount === drivers.length}><CheckCircle2 className="h-4 w-4 mr-1" />Enable All</Button>
                   <Button variant="outline" size="sm" onClick={() => bulkUpdateStatus('disabled')} disabled={bulkUpdating || drivers.length === 0 || disabledCount === drivers.length}><XCircle className="h-4 w-4 mr-1" />Disable All</Button>
                 </>
