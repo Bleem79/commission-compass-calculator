@@ -188,6 +188,56 @@ const AdminRequestsPage = () => {
     toast.success("Exported");
   }, [requests, requestTypes]);
 
+  const findDuplicates = useCallback(() => {
+    const seen = new Map<string, DriverRequest[]>();
+    requests.forEach((r) => {
+      const key = `${r.driver_id}|${r.request_type}|${r.subject}`;
+      if (!seen.has(key)) seen.set(key, []);
+      seen.get(key)!.push(r);
+    });
+    const duplicates: DriverRequest[] = [];
+    seen.forEach((group) => {
+      if (group.length > 1) {
+        // Keep the first (oldest by created_at), mark rest as duplicates
+        const sorted = group.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        duplicates.push(...sorted.slice(1));
+      }
+    });
+    return duplicates;
+  }, [requests]);
+
+  const handleExportDuplicates = useCallback(async () => {
+    setExportingDuplicates(true);
+    try {
+      const duplicates = findDuplicates();
+      if (duplicates.length === 0) { toast.info("No duplicate requests found"); return; }
+      const XLSX = await import("xlsx");
+      const getLabel = (value: string) => requestTypes.find((t: any) => t.value === value)?.label || value;
+      const exportData = duplicates.map((r) => ({ "Request No": r.request_no || "-", "Driver ID": r.driver_id, "Driver Name": r.driver_name || "-", "Request Type": getLabel(r.request_type), "Subject": r.subject, "Status": STATUS_OPTIONS.find(s => s.value === r.status)?.label || r.status, "Created At": formatDate(r.created_at) }));
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Duplicate Requests");
+      XLSX.writeFile(workbook, `Duplicate_Requests_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success(`Found ${duplicates.length} duplicate(s) — exported to Excel`);
+    } catch { toast.error("Failed to export duplicates"); } finally { setExportingDuplicates(false); }
+  }, [findDuplicates, requestTypes]);
+
+  const handleDeleteDuplicates = useCallback(async () => {
+    const duplicates = findDuplicates();
+    if (duplicates.length === 0) { toast.info("No duplicate requests found"); return; }
+    const ids = duplicates.map((r) => r.id);
+    try {
+      // Delete in batches of 50
+      for (let i = 0; i < ids.length; i += 50) {
+        const batch = ids.slice(i, i + 50);
+        const { error } = await supabase.from("driver_requests").delete().in("id", batch);
+        if (error) throw error;
+      }
+      setRequests((prev) => prev.filter((r) => !ids.includes(r.id)));
+      toast.success(`Deleted ${duplicates.length} duplicate request(s)`);
+    } catch { toast.error("Failed to delete duplicates"); }
+  }, [findDuplicates]);
+
   const getStatusBadge = (status: string) => {
     const opt = STATUS_OPTIONS.find((s) => s.value === status);
     const Icon = status === "pending" ? Clock : status === "approved" ? CheckCircle : status === "rejected" ? XCircle : status === "in_progress" ? Loader2 : AlertCircle;
