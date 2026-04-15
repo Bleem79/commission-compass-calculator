@@ -377,18 +377,7 @@ const TotalBalanceKPIPage = () => {
                 setSearchResult(null);
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  const q = searchQuery.trim().toLowerCase();
-                  if (!q) return;
-                  const found = records.find((r) => r.emp_cde.toLowerCase() === q);
-                  if (found) {
-                    setSearchResult(found);
-                    setSearchNotFound(false);
-                  } else {
-                    setSearchResult(null);
-                    setSearchNotFound(true);
-                  }
-                }
+                if (e.key === "Enter") handleSearch();
               }}
               className="pl-9 w-full sm:w-[200px] min-h-[44px]"
             />
@@ -397,18 +386,8 @@ const TotalBalanceKPIPage = () => {
             variant="outline"
             size="icon"
             className="min-h-[44px] min-w-[44px]"
-            onClick={() => {
-              const q = searchQuery.trim().toLowerCase();
-              if (!q) return;
-              const found = records.find((r) => r.emp_cde.toLowerCase() === q);
-              if (found) {
-                setSearchResult(found);
-                setSearchNotFound(false);
-              } else {
-                setSearchResult(null);
-                setSearchNotFound(true);
-              }
-            }}
+            disabled={searchLoading}
+            onClick={handleSearch}
           >
             <Search className="h-4 w-4" />
           </Button>
