@@ -590,6 +590,65 @@ const TotalBalanceKPIPage = () => {
           </Card>
         </>
       )}
+
+      {/* Drill-Down Dialog */}
+      <Dialog open={!!drillDown} onOpenChange={(open) => !open && setDrillDown(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold flex items-center gap-2">
+              {drillDown && (
+                <>
+                  <Users className="w-4 h-4" />
+                  {drillDown.fleet === "onRoad" ? "On Road" : drillDown.fleet === "offRoad" ? "Off Road" : "All"} Drivers
+                  <span className="text-muted-foreground font-normal">
+                    — External Fines {FINE_RANGES[drillDown.rangeIndex].label} to {FINE_RANGES[drillDown.rangeIndex].labelTo}
+                  </span>
+                  <span className="ml-auto text-sm text-muted-foreground">{drillDownDrivers.length} drivers</span>
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-auto flex-1">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-background z-10">
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 px-2 text-muted-foreground font-medium">#</th>
+                  <th className="text-left py-2 px-2 text-muted-foreground font-medium">Emp Code</th>
+                  <th className="text-center py-2 px-2 text-muted-foreground font-medium">Status</th>
+                  <th className="text-right py-2 px-2 text-muted-foreground font-medium">Accident</th>
+                  <th className="text-right py-2 px-2 text-muted-foreground font-medium">Traffic</th>
+                  <th className="text-right py-2 px-2 text-muted-foreground font-medium">SHJ RTA</th>
+                  <th className="text-right py-2 px-2 text-muted-foreground font-medium">Ext. Fines</th>
+                  <th className="text-right py-2 px-2 text-muted-foreground font-medium">Total Bal.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {drillDownDrivers.map((r, i) => (
+                  <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
+                    <td className="py-1.5 px-2 text-muted-foreground text-xs">{i + 1}</td>
+                    <td className="py-1.5 px-2 font-medium text-foreground">{r.emp_cde}</td>
+                    <td className="py-1.5 px-2 text-center">
+                      <span className={cn(
+                        "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                        r.fleet_status === "OnRoad"
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
+                          : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
+                      )}>
+                        {r.fleet_status === "OnRoad" ? "On Road" : "Off Road"}
+                      </span>
+                    </td>
+                    <td className="py-1.5 px-2 text-right text-foreground">{fmtAed(r.accident || 0)}</td>
+                    <td className="py-1.5 px-2 text-right text-foreground">{fmtAed(r.traffic_fines || 0)}</td>
+                    <td className="py-1.5 px-2 text-right text-foreground">{fmtAed(r.shj_rta_fines || 0)}</td>
+                    <td className="py-1.5 px-2 text-right text-foreground font-medium">{fmtAed(r.total_external_fines || 0)}</td>
+                    <td className="py-1.5 px-2 text-right font-bold text-red-600">{fmtAed(r.total_outstanding || 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   );
 };
