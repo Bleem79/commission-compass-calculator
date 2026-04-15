@@ -384,6 +384,71 @@ const TotalBalanceKPIPage = () => {
             </Card>
           </div>
 
+          {/* Trend Line Chart */}
+          {trendData.length > 1 && (
+            <Card className="bg-card border-border mb-6">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                  📈 Balance Trend Over Time
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Comparing totals across {trendData.length} upload dates
+                </p>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    totalBalance: { label: "Total Balance", color: "#ef4444" },
+                    traffic: { label: "Traffic Fines", color: "#f59e0b" },
+                    rta: { label: "SHJ RTA Fines", color: "#6366f1" },
+                    accident: { label: "Accident", color: "#ec4899" },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <LineChart data={trendData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
+                    <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} />
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          formatter={(value) =>
+                            `AED ${Number(value).toLocaleString("en-AE", { minimumFractionDigits: 0 })}`
+                          }
+                        />
+                      }
+                    />
+                    <Line type="monotone" dataKey="totalBalance" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 4 }} name="Total Balance" />
+                    <Line type="monotone" dataKey="traffic" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} name="Traffic Fines" />
+                    <Line type="monotone" dataKey="rta" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} name="SHJ RTA Fines" />
+                    <Line type="monotone" dataKey="accident" stroke="#ec4899" strokeWidth={2} dot={{ r: 3 }} name="Accident" />
+                  </LineChart>
+                </ChartContainer>
+                {/* Legend */}
+                <div className="flex flex-wrap gap-4 mt-3 justify-center">
+                  {[
+                    { label: "Total Balance", color: "#ef4444" },
+                    { label: "Traffic Fines", color: "#f59e0b" },
+                    { label: "SHJ RTA Fines", color: "#6366f1" },
+                    { label: "Accident", color: "#ec4899" },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-center gap-1.5 text-xs">
+                      <div className="w-3 h-0.5 rounded" style={{ backgroundColor: item.color }} />
+                      <span className="text-muted-foreground">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {trendData.length <= 1 && !trendLoading && (
+            <Card className="bg-card border-border mb-6">
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground text-sm">📈 Trend chart will appear when data from multiple dates is available.</p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* External Fines Breakdown Table - On Road / Off Road / Total */}
           <Card className="bg-card border-border mb-6">
             <CardHeader className="pb-2">
