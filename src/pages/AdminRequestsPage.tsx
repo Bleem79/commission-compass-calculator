@@ -255,6 +255,16 @@ const AdminRequestsPage = () => {
 
   const hasActiveFilters = searchQuery || statusFilter !== "all" || typeFilter !== "all" || controllerFilter !== "all";
   const clearAllFilters = useCallback(() => { setSearchQuery(""); setStatusFilter("all"); setTypeFilter("all"); setControllerFilter("all"); setSelectedCalendarDate(null); }, []);
+  const [showDeleteDuplicatesConfirm, setShowDeleteDuplicatesConfirm] = useState(false);
+  const [deletingDuplicates, setDeletingDuplicates] = useState(false);
+  const duplicateCount = useMemo(() => findDuplicates().length, [findDuplicates]);
+
+  const handleConfirmDeleteDuplicates = useCallback(async () => {
+    setDeletingDuplicates(true);
+    await handleDeleteDuplicates();
+    setDeletingDuplicates(false);
+    setShowDeleteDuplicatesConfirm(false);
+  }, [handleDeleteDuplicates]);
 
   if (!isAdmin) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
 
