@@ -505,7 +505,7 @@ const TotalBalanceKPIPage = () => {
     const range = FINE_RANGES[drillDown.rangeIndex];
     let filtered = records.filter((r) => {
       const ext = r.total_external_fines || 0;
-      return ext >= range.min && ext < range.max;
+      return ext >= range.min && ext <= range.max;
     });
     if (drillDown.fleet === "onRoad") filtered = filtered.filter((r) => r.fleet_status === "OnRoad");
     else if (drillDown.fleet === "offRoad") filtered = filtered.filter((r) => r.fleet_status === "Off Road");
