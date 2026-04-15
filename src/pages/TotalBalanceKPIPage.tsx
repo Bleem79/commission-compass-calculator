@@ -361,11 +361,16 @@ const TotalBalanceKPIPage = () => {
             />
           </PopoverContent>
         </Popover>
-        {selectedDate && (
-          <span className="text-sm text-muted-foreground">
-            {records.length} records
-          </span>
-        )}
+        <Select value={fleetFilter} onValueChange={(v) => setFleetFilter(v as "all" | "OnRoad" | "Off Road")}>
+          <SelectTrigger className="w-[140px] min-h-[44px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="OnRoad">On Road</SelectItem>
+            <SelectItem value="Off Road">Off Road</SelectItem>
+          </SelectContent>
+        </Select>
 
         {/* Driver Search */}
         <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
