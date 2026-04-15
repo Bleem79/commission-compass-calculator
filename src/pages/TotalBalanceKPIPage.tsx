@@ -339,14 +339,14 @@ const TotalBalanceKPIPage = () => {
       ) : (
         <>
           {/* Summary Stats */}
-          <StatsGrid columns={4}>
+          <StatsGrid columns={2}>
             <StatsCard icon={<DollarSign className="w-5 h-5" />} label="Total Balance" value={`AED ${fmtAed(stats.totalBalance)}`} gradient="from-red-500 to-rose-600" />
             <StatsCard icon={<Users className="w-5 h-5" />} label="Total Drivers" value={stats.totalDrivers} gradient="from-blue-500 to-indigo-600" />
             <StatsCard icon={<Wallet className="w-5 h-5" />} label="Avg per Driver" value={`AED ${fmtAed(stats.avgPerDriver)}`} gradient="from-amber-500 to-orange-600" />
             <StatsCard icon={<Shield className="w-5 h-5" />} label="Zero Balance" value={stats.zeroBalance} gradient="from-emerald-500 to-green-600" />
           </StatsGrid>
 
-          <StatsGrid columns={4}>
+          <StatsGrid columns={2}>
             <StatsCard icon={<Car className="w-5 h-5" />} label="Total Accident" value={`AED ${fmtAed(stats.totalAccident)}`} gradient="from-red-600 to-red-700" />
             <StatsCard icon={<AlertTriangle className="w-5 h-5" />} label="Traffic Fines" value={`AED ${fmtAed(stats.totalTraffic)}`} gradient="from-yellow-500 to-amber-600" />
             <StatsCard icon={<Building2 className="w-5 h-5" />} label="SHJ RTA Fines" value={`AED ${fmtAed(stats.totalRTA)}`} gradient="from-indigo-500 to-violet-600" />
@@ -360,9 +360,9 @@ const TotalBalanceKPIPage = () => {
                 <CardTitle className="text-base font-semibold text-foreground">Fine Category Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={pieChartConfig} className="h-[280px] w-full">
+                <ChartContainer config={pieChartConfig} className="h-[250px] sm:h-[280px] w-full">
                   <PieChart>
-                    <Pie data={stats.pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={3} dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                    <Pie data={stats.pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value" nameKey="name" label={({ percent }) => `${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
                       {stats.pieData.map((_, index) => <Cell key={index} fill={PIE_COLORS[index]} />)}
                     </Pie>
                     <ChartTooltip content={<ChartTooltipContent formatter={(value) => `AED ${Number(value).toLocaleString("en-AE", { minimumFractionDigits: 2 })}`} />} />
@@ -385,11 +385,11 @@ const TotalBalanceKPIPage = () => {
                 <CardTitle className="text-base font-semibold text-foreground">Driver Balance Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className="h-[280px] w-full">
+                <ChartContainer config={chartConfig} className="h-[250px] sm:h-[280px] w-full">
                   <BarChart data={stats.ranges}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                    <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+                    <XAxis dataKey="label" tick={{ fontSize: 9 }} className="fill-muted-foreground" interval={0} />
+                    <YAxis tick={{ fontSize: 9 }} className="fill-muted-foreground" width={35} />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar dataKey="count" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} name="Drivers" />
                   </BarChart>
@@ -417,12 +417,12 @@ const TotalBalanceKPIPage = () => {
                     rta: { label: "SHJ RTA Fines", color: "#6366f1" },
                     accident: { label: "Accident", color: "#ec4899" },
                   }}
-                  className="h-[300px] w-full"
+                  className="h-[250px] sm:h-[300px] w-full"
                 >
                   <LineChart data={trendData}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="date" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
-                    <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} />
+                    <XAxis dataKey="date" tick={{ fontSize: 9 }} className="fill-muted-foreground" interval={0} />
+                    <YAxis tick={{ fontSize: 9 }} className="fill-muted-foreground" tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} width={40} />
                     <ChartTooltip
                       content={
                         <ChartTooltipContent
@@ -593,7 +593,7 @@ const TotalBalanceKPIPage = () => {
 
       {/* Drill-Down Dialog */}
       <Dialog open={!!drillDown} onOpenChange={(open) => !open && setDrillDown(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-base font-semibold flex items-center gap-2">
               {drillDown && (

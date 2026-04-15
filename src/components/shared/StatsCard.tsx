@@ -26,9 +26,9 @@ export const StatsCard = ({
           <div className={cn("p-2 rounded-lg bg-gradient-to-br text-white", gradient)}>
             {icon}
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <p className="text-2xl font-bold text-foreground">{value}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">{label}</p>
+            <p className="text-base sm:text-2xl font-bold text-foreground truncate">{value}</p>
           </div>
         </div>
       </CardContent>
