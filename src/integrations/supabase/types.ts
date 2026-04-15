@@ -416,6 +416,30 @@ export type Database = {
         }
         Relationships: []
       }
+      osr_drivers: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          status: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          status?: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          status?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
