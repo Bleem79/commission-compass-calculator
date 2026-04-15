@@ -80,6 +80,7 @@ const TotalBalanceKPIPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [trendData, setTrendData] = useState<{ date: string; totalBalance: number; accident: number; traffic: number; rta: number; drivers: number }[]>([]);
   const [trendLoading, setTrendLoading] = useState(true);
+  const [drillDown, setDrillDown] = useState<{ rangeIndex: number; fleet: "onRoad" | "offRoad" | "total" } | null>(null);
 
   // Fetch available dates first
   useEffect(() => {
