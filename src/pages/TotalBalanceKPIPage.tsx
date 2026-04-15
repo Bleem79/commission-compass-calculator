@@ -146,6 +146,123 @@ const TotalBalanceKPIPage = () => {
     }
   };
 
+  const fetchAllForDate = useCallback(async (dateStr: string) => {
+    let all: OutstandingRecord[] = [];
+    let from = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from("total_outstanding")
+        .select("*")
+        .gte("created_at", dateStr + "T00:00:00")
+        .lt("created_at", dateStr + "T23:59:59.999")
+        .range(from, from + pageSize - 1);
+      if (error) throw error;
+      if (data && data.length > 0) { all = [...all, ...data]; from += pageSize; hasMore = data.length === pageSize; }
+      else hasMore = false;
+    }
+    return all;
+  }, []);
+
+  // Compute change report when dates are available
+  useEffect(() => {
+    if (availableDates.length < 2) { setChangeReport(null); return; }
+    const compute = async () => {
+      setChangeReportLoading(true);
+      try {
+        const currDate = availableDates[0];
+        const prevDate = availableDates[1];
+        const [currRecs, prevRecs] = await Promise.all([fetchAllForDate(currDate), fetchAllForDate(prevDate)]);
+        const prevMap = new Map<string, OutstandingRecord>();
+        prevRecs.forEach(r => prevMap.set(r.emp_cde, r));
+        const currMap = new Map<string, OutstandingRecord>();
+        currRecs.forEach(r => currMap.set(r.emp_cde, r));
+
+        let increased = 0, decreased = 0, unchanged = 0;
+        let accidentUp = 0, accidentDown = 0, trafficUp = 0, trafficDown = 0;
+        let rtaUp = 0, rtaDown = 0, internalUp = 0, internalDown = 0;
+
+        currRecs.forEach(curr => {
+          const prev = prevMap.get(curr.emp_cde);
+          if (!prev) return;
+          const currBal = curr.total_outstanding || 0;
+          const prevBal = prev.total_outstanding || 0;
+          if (currBal > prevBal) increased++;
+          else if (currBal < prevBal) decreased++;
+          else unchanged++;
+
+          if ((curr.accident || 0) > (prev.accident || 0)) accidentUp++;
+          else if ((curr.accident || 0) < (prev.accident || 0)) accidentDown++;
+          if ((curr.traffic_fines || 0) > (prev.traffic_fines || 0)) trafficUp++;
+          else if ((curr.traffic_fines || 0) < (prev.traffic_fines || 0)) trafficDown++;
+          if ((curr.shj_rta_fines || 0) > (prev.shj_rta_fines || 0)) rtaUp++;
+          else if ((curr.shj_rta_fines || 0) < (prev.shj_rta_fines || 0)) rtaDown++;
+          const currInt = (curr.total_outstanding || 0) - (curr.total_external_fines || 0);
+          const prevInt = (prev.total_outstanding || 0) - (prev.total_external_fines || 0);
+          if (currInt > prevInt) internalUp++;
+          else if (currInt < prevInt) internalDown++;
+        });
+
+        const newDrivers = currRecs.filter(r => !prevMap.has(r.emp_cde)).length;
+        const removedDrivers = prevRecs.filter(r => !currMap.has(r.emp_cde)).length;
+
+        setChangeReport({ increased, decreased, unchanged, newDrivers, removedDrivers, accidentUp, accidentDown, trafficUp, trafficDown, rtaUp, rtaDown, internalUp, internalDown, prevDate, currDate });
+      } catch (err) {
+        console.error("Change report error:", err);
+      } finally { setChangeReportLoading(false); }
+    };
+    compute();
+  }, [availableDates, fetchAllForDate]);
+
+  const handleExportChangeReport = useCallback(async () => {
+    if (availableDates.length < 2) return;
+    setExportingChangeReport(true);
+    try {
+      const currDate = availableDates[0];
+      const prevDate = availableDates[1];
+      const [currRecs, prevRecs] = await Promise.all([fetchAllForDate(currDate), fetchAllForDate(prevDate)]);
+      const prevMap = new Map<string, OutstandingRecord>();
+      prevRecs.forEach(r => prevMap.set(r.emp_cde, r));
+
+      const rows: any[] = [];
+      currRecs.forEach(curr => {
+        const prev = prevMap.get(curr.emp_cde);
+        if (!prev) return;
+        const currBal = curr.total_outstanding || 0;
+        const prevBal = prev.total_outstanding || 0;
+        const diff = currBal - prevBal;
+        if (diff === 0) return;
+        rows.push({
+          "Driver ID": curr.emp_cde,
+          "Fleet Status": curr.fleet_status || "",
+          "Previous Balance": prevBal,
+          "Current Balance": currBal,
+          "Difference": diff,
+          "Direction": diff > 0 ? "Increase" : "Decrease",
+          "Prev Accident": prev.accident || 0,
+          "Curr Accident": curr.accident || 0,
+          "Prev Traffic": prev.traffic_fines || 0,
+          "Curr Traffic": curr.traffic_fines || 0,
+          "Prev SHJ RTA": prev.shj_rta_fines || 0,
+          "Curr SHJ RTA": curr.shj_rta_fines || 0,
+          "Previous Date": prevDate,
+          "Latest Date": currDate,
+        });
+      });
+      rows.sort((a, b) => b["Difference"] - a["Difference"]);
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws["!cols"] = Array(14).fill({ wch: 16 });
+      XLSX.utils.book_append_sheet(wb, ws, "Change Report");
+      XLSX.writeFile(wb, `driver_change_report_${currDate}.xlsx`);
+      toast.success(`Exported ${rows.length} drivers with balance changes`);
+    } catch (err) {
+      console.error("Export error:", err);
+      toast.error("Failed to export change report");
+    } finally { setExportingChangeReport(false); }
+  }, [availableDates, fetchAllForDate]);
+
   const handleExportAllIncreaseDrivers = useCallback(async () => {
     if (availableDates.length < 2) {
       toast.error("Need at least 2 upload dates to compare");
