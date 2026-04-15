@@ -382,6 +382,19 @@ const AdminRequestsPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Delete Duplicates Confirmation */}
+      <AlertDialog open={showDeleteDuplicatesConfirm} onOpenChange={setShowDeleteDuplicatesConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Delete All Duplicates?</AlertDialogTitle><AlertDialogDescription>This will permanently delete {duplicateCount} duplicate request(s). Duplicates are identified by same Driver ID, Request Type, and Subject — the oldest entry is kept.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDeleteDuplicates} disabled={deletingDuplicates} className="bg-destructive hover:bg-destructive/90">
+              {deletingDuplicates ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}Delete {duplicateCount} Duplicates
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Manage Types Dialog */}
       {showTypesDialog && (
         <Suspense fallback={null}>
