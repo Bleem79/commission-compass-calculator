@@ -490,9 +490,9 @@ const TotalBalanceKPIPage = () => {
                 <CardTitle className="text-base font-semibold text-foreground">Fine Category Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={pieChartConfig} className="h-[250px] sm:h-[280px] w-full">
+                <ChartContainer config={pieChartConfig} className="h-[330px] sm:h-[370px] w-full">
                   <PieChart>
-                    <Pie data={stats.pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value" nameKey="name" label={({ percent }) => `${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
+                    <Pie data={stats.pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={3} dataKey="value" nameKey="name" label={({ percent }) => `${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={11}>
                       {stats.pieData.map((_, index) => <Cell key={index} fill={PIE_COLORS[index]} />)}
                     </Pie>
                     <ChartTooltip content={<ChartTooltipContent formatter={(value) => `AED ${Number(value).toLocaleString("en-AE", { minimumFractionDigits: 2 })}`} />} />
