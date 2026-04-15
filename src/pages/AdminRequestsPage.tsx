@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from
 import { useNavigate } from "react-router-dom";
 import { 
   MessageSquare, Loader2, Clock, CheckCircle, XCircle, 
-  Send, RefreshCw, AlertCircle, CalendarDays, FileSpreadsheet, Trash2, Bell
+  Send, RefreshCw, AlertCircle, CalendarDays, FileSpreadsheet, Trash2, Bell, Copy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
