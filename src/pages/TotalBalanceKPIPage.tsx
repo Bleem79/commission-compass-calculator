@@ -69,6 +69,16 @@ const FINE_RANGES = [
   { label: "25,000.00", labelTo: "Above", min: 25000, max: Infinity },
 ];
 
+const BAR_RANGES = [
+  { label: "0 - 5K", min: 0, max: 5000 },
+  { label: "5K - 7K", min: 5000, max: 7000 },
+  { label: "7K - 10K", min: 7000, max: 10000 },
+  { label: "10K - 15K", min: 10000, max: 15000 },
+  { label: "15K - 20K", min: 15000, max: 20000 },
+  { label: "20K - 25K", min: 20000, max: 25000 },
+  { label: "25K+", min: 25000, max: Infinity },
+];
+
 const fmtNum = (n: number) =>
   n.toLocaleString("en-AE", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
@@ -238,13 +248,7 @@ const TotalBalanceKPIPage = () => {
     const totalInternal = totalBalance - totalExternal;
     const avgPerDriver = totalBalance / totalDrivers;
 
-    const ranges = [
-      { label: "0 - 1K", min: 0, max: 1000, count: 0 },
-      { label: "1K - 5K", min: 1000, max: 5000, count: 0 },
-      { label: "5K - 10K", min: 5000, max: 10000, count: 0 },
-      { label: "10K - 20K", min: 10000, max: 20000, count: 0 },
-      { label: "20K+", min: 20000, max: Infinity, count: 0 },
-    ];
+    const ranges = BAR_RANGES.map((r) => ({ ...r, count: 0 }));
     filtered.forEach((r) => {
       const val = r.total_outstanding || 0;
       const range = ranges.find((rng) => val >= rng.min && val < rng.max);
@@ -690,7 +694,7 @@ const TotalBalanceKPIPage = () => {
                 <div>
                   <p className="font-medium text-foreground text-sm">High Balance Alert</p>
                   <p className="text-muted-foreground text-xs mt-1">
-                    {stats.ranges.find((r) => r.label === "20K+")?.count || 0} drivers have balance above AED 20,000.
+                    {stats.ranges.find((r) => r.label === "25K+")?.count || 0} drivers have balance above AED 25,000.
                   </p>
                 </div>
               </div>
