@@ -8,6 +8,7 @@ import { StatsCard, StatsGrid } from "@/components/shared/StatsCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -84,6 +85,7 @@ const TotalBalanceKPIPage = () => {
   const [trendLoading, setTrendLoading] = useState(true);
   const [drillDown, setDrillDown] = useState<{ rangeIndex: number; fleet: "onRoad" | "offRoad" | "total" } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [fleetFilter, setFleetFilter] = useState<"all" | "OnRoad" | "Off Road">("all");
   const [searchResult, setSearchResult] = useState<OutstandingRecord | null>(null);
   const [searchNotFound, setSearchNotFound] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -224,14 +226,15 @@ const TotalBalanceKPIPage = () => {
   }, [selectedDate, isAdmin]);
 
   const stats = useMemo(() => {
-    if (!records.length) return null;
+    const filtered = fleetFilter === "all" ? records : records.filter((r) => r.fleet_status === fleetFilter);
+    if (!filtered.length) return null;
 
-    const totalDrivers = new Set(records.map((r) => r.emp_cde)).size;
-    const totalBalance = records.reduce((s, r) => s + (r.total_outstanding || 0), 0);
-    const totalAccident = records.reduce((s, r) => s + (r.accident || 0), 0);
-    const totalTraffic = records.reduce((s, r) => s + (r.traffic_fines || 0), 0);
-    const totalRTA = records.reduce((s, r) => s + (r.shj_rta_fines || 0), 0);
-    const totalExternal = records.reduce((s, r) => s + (r.total_external_fines || 0), 0);
+    const totalDrivers = new Set(filtered.map((r) => r.emp_cde)).size;
+    const totalBalance = filtered.reduce((s, r) => s + (r.total_outstanding || 0), 0);
+    const totalAccident = filtered.reduce((s, r) => s + (r.accident || 0), 0);
+    const totalTraffic = filtered.reduce((s, r) => s + (r.traffic_fines || 0), 0);
+    const totalRTA = filtered.reduce((s, r) => s + (r.shj_rta_fines || 0), 0);
+    const totalExternal = filtered.reduce((s, r) => s + (r.total_external_fines || 0), 0);
     const totalInternal = totalBalance - totalExternal;
     const avgPerDriver = totalBalance / totalDrivers;
 
@@ -242,17 +245,17 @@ const TotalBalanceKPIPage = () => {
       { label: "10K - 20K", min: 10000, max: 20000, count: 0 },
       { label: "20K+", min: 20000, max: Infinity, count: 0 },
     ];
-    records.forEach((r) => {
+    filtered.forEach((r) => {
       const val = r.total_outstanding || 0;
       const range = ranges.find((rng) => val >= rng.min && val < rng.max);
       if (range) range.count++;
     });
 
-    const top10 = [...records]
+    const top10 = [...filtered]
       .sort((a, b) => (b.total_outstanding || 0) - (a.total_outstanding || 0))
       .slice(0, 10);
 
-    const zeroBalance = records.filter((r) => (r.total_outstanding || 0) === 0).length;
+    const zeroBalance = filtered.filter((r) => (r.total_outstanding || 0) === 0).length;
 
     const pieData = [
       { name: "Accident", value: totalAccident },
@@ -262,8 +265,8 @@ const TotalBalanceKPIPage = () => {
     ];
 
     // External fines breakdown by On Road / Off Road
-    const onRoad = records.filter((r) => r.fleet_status === "OnRoad");
-    const offRoad = records.filter((r) => r.fleet_status === "Off Road");
+    const onRoad = filtered.filter((r) => r.fleet_status === "OnRoad");
+    const offRoad = filtered.filter((r) => r.fleet_status === "Off Road");
 
     const calcRangeData = (recs: OutstandingRecord[]) =>
       FINE_RANGES.map((range) => {
@@ -288,7 +291,7 @@ const TotalBalanceKPIPage = () => {
       onRoadRanges, offRoadRanges, totalRanges,
       onRoadCount: onRoad.length, offRoadCount: offRoad.length,
     };
-  }, [records]);
+  }, [records, fleetFilter]);
 
   const drillDownDrivers = useMemo(() => {
     if (!drillDown || !records.length) return [];
@@ -358,11 +361,16 @@ const TotalBalanceKPIPage = () => {
             />
           </PopoverContent>
         </Popover>
-        {selectedDate && (
-          <span className="text-sm text-muted-foreground">
-            {records.length} records
-          </span>
-        )}
+        <Select value={fleetFilter} onValueChange={(v) => setFleetFilter(v as "all" | "OnRoad" | "Off Road")}>
+          <SelectTrigger className="w-[140px] min-h-[44px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="OnRoad">On Road</SelectItem>
+            <SelectItem value="Off Road">Off Road</SelectItem>
+          </SelectContent>
+        </Select>
 
         {/* Driver Search */}
         <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
