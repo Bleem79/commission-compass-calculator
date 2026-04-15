@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatsCard, StatsGrid } from "@/components/shared/StatsCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -40,6 +41,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   CalendarIcon,
+  Search,
 } from "lucide-react";
 
 interface OutstandingRecord {
@@ -81,6 +83,9 @@ const TotalBalanceKPIPage = () => {
   const [trendData, setTrendData] = useState<{ date: string; totalBalance: number; accident: number; traffic: number; rta: number; drivers: number }[]>([]);
   const [trendLoading, setTrendLoading] = useState(true);
   const [drillDown, setDrillDown] = useState<{ rangeIndex: number; fleet: "onRoad" | "offRoad" | "total" } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResult, setSearchResult] = useState<OutstandingRecord | null>(null);
+  const [searchNotFound, setSearchNotFound] = useState(false);
 
   // Fetch available dates first
   useEffect(() => {
@@ -291,14 +296,14 @@ const TotalBalanceKPIPage = () => {
       icon={<TrendingUp className="w-6 h-6" />}
       backPath="/home"
     >
-      {/* Date Picker */}
-      <div className="flex items-center gap-3 mb-6">
+      {/* Date Picker & Search */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               className={cn(
-                "w-[200px] justify-start text-left font-normal",
+                "w-[200px] justify-start text-left font-normal min-h-[44px]",
                 !selectedDate && "text-muted-foreground"
               )}
             >
@@ -325,7 +330,108 @@ const TotalBalanceKPIPage = () => {
             {records.length} records
           </span>
         )}
+
+        {/* Driver Search */}
+        <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-initial">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search Driver ID..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSearchNotFound(false);
+                setSearchResult(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const q = searchQuery.trim().toLowerCase();
+                  if (!q) return;
+                  const found = records.find((r) => r.emp_cde.toLowerCase() === q);
+                  if (found) {
+                    setSearchResult(found);
+                    setSearchNotFound(false);
+                  } else {
+                    setSearchResult(null);
+                    setSearchNotFound(true);
+                  }
+                }
+              }}
+              className="pl-9 w-full sm:w-[200px] min-h-[44px]"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            className="min-h-[44px] min-w-[44px]"
+            onClick={() => {
+              const q = searchQuery.trim().toLowerCase();
+              if (!q) return;
+              const found = records.find((r) => r.emp_cde.toLowerCase() === q);
+              if (found) {
+                setSearchResult(found);
+                setSearchNotFound(false);
+              } else {
+                setSearchResult(null);
+                setSearchNotFound(true);
+              }
+            }}
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
+
+      {/* Search Result Card */}
+      {searchResult && (
+        <Card className="bg-card border-border mb-6 border-primary/30">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                <Search className="w-4 h-4" />
+                Driver: {searchResult.emp_cde}
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => { setSearchResult(null); setSearchQuery(""); }}>
+                ✕
+              </Button>
+            </div>
+            <span className={cn(
+              "text-xs px-2 py-0.5 rounded-full font-medium w-fit",
+              searchResult.fleet_status === "OnRoad"
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
+                : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
+            )}>
+              {searchResult.fleet_status === "OnRoad" ? "On Road" : "Off Road"}
+            </span>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {[
+                { label: "Total Balance", value: fmtAed(searchResult.total_outstanding || 0), color: "text-red-600" },
+                { label: "Accident", value: fmtAed(searchResult.accident || 0) },
+                { label: "Traffic Fines", value: fmtAed(searchResult.traffic_fines || 0) },
+                { label: "SHJ RTA Fines", value: fmtAed(searchResult.shj_rta_fines || 0) },
+                { label: "External Fines", value: fmtAed(searchResult.total_external_fines || 0) },
+                { label: "Internal & Misc", value: fmtAed(Math.max(0, (searchResult.total_outstanding || 0) - (searchResult.total_external_fines || 0))) },
+              ].map((item) => (
+                <div key={item.label} className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-xs text-muted-foreground">{item.label}</p>
+                  <p className={cn("text-sm sm:text-base font-bold", item.color || "text-foreground")}>
+                    AED {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {searchNotFound && (
+        <Card className="bg-card border-border mb-6 border-destructive/30">
+          <CardContent className="py-4 text-center">
+            <p className="text-sm text-muted-foreground">No driver found with ID "<span className="font-medium text-foreground">{searchQuery}</span>" in selected date.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {loading ? (
         <div className="space-y-4">
