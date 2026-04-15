@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from
 import { useNavigate } from "react-router-dom";
 import { 
   MessageSquare, Loader2, Clock, CheckCircle, XCircle, 
-  Send, RefreshCw, AlertCircle, CalendarDays, FileSpreadsheet, Trash2, Bell
+  Send, RefreshCw, AlertCircle, CalendarDays, FileSpreadsheet, Trash2, Bell, Copy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -66,6 +66,7 @@ const AdminRequestsPage = () => {
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
+  const [exportingDuplicates, setExportingDuplicates] = useState(false);
 
   const { requestTypes } = useRequestTypes();
   const { isSupported: pushSupported, isGranted: pushGranted, requestPermission } = usePushNotifications();
@@ -187,6 +188,56 @@ const AdminRequestsPage = () => {
     toast.success("Exported");
   }, [requests, requestTypes]);
 
+  const findDuplicates = useCallback(() => {
+    const seen = new Map<string, DriverRequest[]>();
+    requests.forEach((r) => {
+      const key = `${r.driver_id}|${r.request_type}|${r.subject}`;
+      if (!seen.has(key)) seen.set(key, []);
+      seen.get(key)!.push(r);
+    });
+    const duplicates: DriverRequest[] = [];
+    seen.forEach((group) => {
+      if (group.length > 1) {
+        // Keep the first (oldest by created_at), mark rest as duplicates
+        const sorted = group.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        duplicates.push(...sorted.slice(1));
+      }
+    });
+    return duplicates;
+  }, [requests]);
+
+  const handleExportDuplicates = useCallback(async () => {
+    setExportingDuplicates(true);
+    try {
+      const duplicates = findDuplicates();
+      if (duplicates.length === 0) { toast.info("No duplicate requests found"); return; }
+      const XLSX = await import("xlsx");
+      const getLabel = (value: string) => requestTypes.find((t: any) => t.value === value)?.label || value;
+      const exportData = duplicates.map((r) => ({ "Request No": r.request_no || "-", "Driver ID": r.driver_id, "Driver Name": r.driver_name || "-", "Request Type": getLabel(r.request_type), "Subject": r.subject, "Status": STATUS_OPTIONS.find(s => s.value === r.status)?.label || r.status, "Created At": formatDate(r.created_at) }));
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Duplicate Requests");
+      XLSX.writeFile(workbook, `Duplicate_Requests_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success(`Found ${duplicates.length} duplicate(s) — exported to Excel`);
+    } catch { toast.error("Failed to export duplicates"); } finally { setExportingDuplicates(false); }
+  }, [findDuplicates, requestTypes]);
+
+  const handleDeleteDuplicates = useCallback(async () => {
+    const duplicates = findDuplicates();
+    if (duplicates.length === 0) { toast.info("No duplicate requests found"); return; }
+    const ids = duplicates.map((r) => r.id);
+    try {
+      // Delete in batches of 50
+      for (let i = 0; i < ids.length; i += 50) {
+        const batch = ids.slice(i, i + 50);
+        const { error } = await supabase.from("driver_requests").delete().in("id", batch);
+        if (error) throw error;
+      }
+      setRequests((prev) => prev.filter((r) => !ids.includes(r.id)));
+      toast.success(`Deleted ${duplicates.length} duplicate request(s)`);
+    } catch { toast.error("Failed to delete duplicates"); }
+  }, [findDuplicates]);
+
   const getStatusBadge = (status: string) => {
     const opt = STATUS_OPTIONS.find((s) => s.value === status);
     const Icon = status === "pending" ? Clock : status === "approved" ? CheckCircle : status === "rejected" ? XCircle : status === "in_progress" ? Loader2 : AlertCircle;
@@ -204,6 +255,16 @@ const AdminRequestsPage = () => {
 
   const hasActiveFilters = searchQuery || statusFilter !== "all" || typeFilter !== "all" || controllerFilter !== "all";
   const clearAllFilters = useCallback(() => { setSearchQuery(""); setStatusFilter("all"); setTypeFilter("all"); setControllerFilter("all"); setSelectedCalendarDate(null); }, []);
+  const [showDeleteDuplicatesConfirm, setShowDeleteDuplicatesConfirm] = useState(false);
+  const [deletingDuplicates, setDeletingDuplicates] = useState(false);
+  const duplicateCount = useMemo(() => findDuplicates().length, [findDuplicates]);
+
+  const handleConfirmDeleteDuplicates = useCallback(async () => {
+    setDeletingDuplicates(true);
+    await handleDeleteDuplicates();
+    setDeletingDuplicates(false);
+    setShowDeleteDuplicatesConfirm(false);
+  }, [handleDeleteDuplicates]);
 
   if (!isAdmin) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
 
@@ -214,6 +275,17 @@ const AdminRequestsPage = () => {
       headerActions={
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={handleExportToExcel} variant="outline" size="sm" className="text-xs sm:text-sm"><FileSpreadsheet className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Export Excel</span></Button>
+          <Button onClick={handleExportDuplicates} variant="outline" size="sm" className="text-xs sm:text-sm" disabled={exportingDuplicates}>
+            <Copy className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{exportingDuplicates ? "Exporting..." : "Duplicates"}</span>
+            {duplicateCount > 0 && <Badge variant="destructive" className="ml-1 text-[10px] px-1.5 py-0">{duplicateCount}</Badge>}
+          </Button>
+          {isActualAdmin && duplicateCount > 0 && (
+            <Button onClick={() => setShowDeleteDuplicatesConfirm(true)} variant="outline" size="sm" className="text-xs sm:text-sm text-destructive border-destructive/50 hover:bg-destructive/10">
+              <Trash2 className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Delete Duplicates</span>
+            </Button>
+          )}
           <Button onClick={() => setShowCalendar(!showCalendar)} variant={showCalendar ? "default" : "outline"} size="sm" className="text-xs sm:text-sm"><CalendarDays className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Day Off Calendar</span></Button>
           <Button onClick={handleRefresh} variant="outline" size="sm" disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /></Button>
           {pushSupported && !pushGranted && <Button onClick={requestPermission} variant="outline" size="sm" className="text-xs sm:text-sm"><Bell className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Enable Notifications</span></Button>}
@@ -305,6 +377,19 @@ const AdminRequestsPage = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteRequest} disabled={deleting} className="bg-destructive hover:bg-destructive/90">
               {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Duplicates Confirmation */}
+      <AlertDialog open={showDeleteDuplicatesConfirm} onOpenChange={setShowDeleteDuplicatesConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Delete All Duplicates?</AlertDialogTitle><AlertDialogDescription>This will permanently delete {duplicateCount} duplicate request(s). Duplicates are identified by same Driver ID, Request Type, and Subject — the oldest entry is kept.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDeleteDuplicates} disabled={deletingDuplicates} className="bg-destructive hover:bg-destructive/90">
+              {deletingDuplicates ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}Delete {duplicateCount} Duplicates
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
