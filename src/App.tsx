@@ -105,10 +105,25 @@ const ProtectedLayout = () => {
 
 // Guard component that checks page permissions
 const PageGuard = ({ pageKey, children }: { pageKey: string; children: React.ReactNode }) => {
-  const { isPageBlocked } = usePagePermissions();
-  const { isAdmin } = useAuth();
+  const { isPageBlocked, loading } = usePagePermissions();
+  const { isAdmin, user } = useAuth();
 
-  if (!isAdmin && isPageBlocked(pageKey)) {
+  // Admins bypass all page restrictions
+  if (isAdmin) return <>{children}</>;
+  
+  // Drivers/guests don't use page permissions
+  if (user?.role === 'driver' || user?.role === 'guest') return <>{children}</>;
+
+  // Wait for permissions to load before rendering
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (isPageBlocked(pageKey)) {
     return <Navigate to="/home" replace />;
   }
 
