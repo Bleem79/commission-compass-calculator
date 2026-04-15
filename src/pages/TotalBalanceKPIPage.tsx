@@ -86,6 +86,39 @@ const TotalBalanceKPIPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResult, setSearchResult] = useState<OutstandingRecord | null>(null);
   const [searchNotFound, setSearchNotFound] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  const handleSearch = async () => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    setSearchLoading(true);
+    try {
+      // Always fetch from latest upload date
+      const latestDate = availableDates[0];
+      if (!latestDate) { setSearchNotFound(true); setSearchLoading(false); return; }
+      const { data, error } = await supabase
+        .from("total_outstanding")
+        .select("*")
+        .ilike("emp_cde", q)
+        .gte("created_at", latestDate + "T00:00:00")
+        .lt("created_at", latestDate + "T23:59:59.999")
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        setSearchResult(data as OutstandingRecord);
+        setSearchNotFound(false);
+      } else {
+        setSearchResult(null);
+        setSearchNotFound(true);
+      }
+    } catch (err) {
+      console.error("Search error:", err);
+      setSearchNotFound(true);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
 
   // Fetch available dates first
   useEffect(() => {
