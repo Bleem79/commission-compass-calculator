@@ -694,7 +694,7 @@ const TotalBalanceKPIPage = () => {
                 <div>
                   <p className="font-medium text-foreground text-sm">High Balance Alert</p>
                   <p className="text-muted-foreground text-xs mt-1">
-                    {stats.ranges.find((r) => r.label === "25K+")?.count || 0} drivers have balance above AED 25,000.
+                    {stats.ranges.filter((r) => r.min >= 10000).reduce((sum, r) => sum + r.count, 0)} drivers have balance equal or above AED 10,000.
                   </p>
                 </div>
               </div>
