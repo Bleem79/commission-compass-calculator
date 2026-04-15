@@ -103,6 +103,16 @@ const TotalBalanceKPIPage = () => {
   const [searchNotFound, setSearchNotFound] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [exportingIncrease, setExportingIncrease] = useState(false);
+  const [changeReport, setChangeReport] = useState<{
+    increased: number; decreased: number; unchanged: number; newDrivers: number; removedDrivers: number;
+    accidentUp: number; accidentDown: number;
+    trafficUp: number; trafficDown: number;
+    rtaUp: number; rtaDown: number;
+    internalUp: number; internalDown: number;
+    prevDate: string; currDate: string;
+  } | null>(null);
+  const [changeReportLoading, setChangeReportLoading] = useState(false);
+  const [exportingChangeReport, setExportingChangeReport] = useState(false);
 
   const handleSearch = async () => {
     const q = searchQuery.trim();
