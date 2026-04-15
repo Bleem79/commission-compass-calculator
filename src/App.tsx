@@ -125,33 +125,33 @@ const AppRoutes = () => {
       {/* All protected routes share a single layout */}
       <Route element={<ProtectedLayout />}>
         <Route path="/home" element={<HomePage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/commission-table" element={<CommissionTable />} />
-        <Route path="/info" element={<InfoPage />} />
-        <Route path="/m-fuel" element={<MFuelPage />} />
-        <Route path="/hotspot" element={<HotspotPage />} />
-        <Route path="/cng-location" element={<CNGLocationPage />} />
-        <Route path="/driver-income" element={<DriverIncomePage />} />
-        <Route path="/driver-management" element={<DriverManagementPage />} />
-        <Route path="/driver-absent-fine" element={<DriverAbsentFinePage />} />
+        <Route path="/dashboard" element={<PageGuard pageKey="dashboard"><Dashboard /></PageGuard>} />
+        <Route path="/commission-table" element={<PageGuard pageKey="commission-table"><CommissionTable /></PageGuard>} />
+        <Route path="/info" element={<PageGuard pageKey="info"><InfoPage /></PageGuard>} />
+        <Route path="/m-fuel" element={<PageGuard pageKey="m-fuel"><MFuelPage /></PageGuard>} />
+        <Route path="/hotspot" element={<PageGuard pageKey="hotspot"><HotspotPage /></PageGuard>} />
+        <Route path="/cng-location" element={<PageGuard pageKey="cng-location"><CNGLocationPage /></PageGuard>} />
+        <Route path="/driver-income" element={<PageGuard pageKey="driver-income"><DriverIncomePage /></PageGuard>} />
+        <Route path="/driver-management" element={<PageGuard pageKey="driver-management"><DriverManagementPage /></PageGuard>} />
+        <Route path="/driver-absent-fine" element={<PageGuard pageKey="driver-absent-fine"><DriverAbsentFinePage /></PageGuard>} />
         <Route path="/driver-portal" element={<DriverPortalPage />} />
         <Route path="/driver-target-trips" element={<DriverTargetTripsPage />} />
         <Route path="/driver-absent-fine-view" element={<DriverAbsentFineViewPage />} />
         <Route path="/driver-request" element={<DriverRequestPage />} />
         <Route path="/driver-warning-letter" element={<DriverWarningLetterPage />} />
-        <Route path="/target-trips-upload" element={<TargetTripsUploadPage />} />
-        <Route path="/warning-letters-upload" element={<WarningLettersUploadPage />} />
-        <Route path="/admin-requests" element={<AdminRequestsPage />} />
-        <Route path="/driver-activity-logs" element={<DriverActivityLogsPage />} />
-        <Route path="/driver-master-file" element={<DriverMasterFilePage />} />
+        <Route path="/target-trips-upload" element={<PageGuard pageKey="target-trips-upload"><TargetTripsUploadPage /></PageGuard>} />
+        <Route path="/warning-letters-upload" element={<PageGuard pageKey="warning-letters-upload"><WarningLettersUploadPage /></PageGuard>} />
+        <Route path="/admin-requests" element={<PageGuard pageKey="admin-requests"><AdminRequestsPage /></PageGuard>} />
+        <Route path="/driver-activity-logs" element={<PageGuard pageKey="driver-activity-logs"><DriverActivityLogsPage /></PageGuard>} />
+        <Route path="/driver-master-file" element={<PageGuard pageKey="driver-master-file"><DriverMasterFilePage /></PageGuard>} />
         <Route path="/revenue-controller-portal" element={<RevenueControllerPortalPage />} />
         <Route path="/driver-entry-pass" element={<DriverEntryPassPage />} />
-        <Route path="/admin-entry-pass" element={<AdminEntryPassPage />} />
-        <Route path="/video-tutorials" element={<VideoTutorialsPage />} />
+        <Route path="/admin-entry-pass" element={<PageGuard pageKey="admin-entry-pass"><AdminEntryPassPage /></PageGuard>} />
+        <Route path="/video-tutorials" element={<PageGuard pageKey="video-tutorials"><VideoTutorialsPage /></PageGuard>} />
         <Route path="/prd" element={<PRDPage />} />
         <Route path="/system-guide" element={<SystemGuidePage />} />
-        <Route path="/total-outstanding" element={<TotalOutstandingPage />} />
-        <Route path="/total-balance-kpi" element={<TotalBalanceKPIPage />} />
+        <Route path="/total-outstanding" element={<PageGuard pageKey="total-outstanding"><TotalOutstandingPage /></PageGuard>} />
+        <Route path="/total-balance-kpi" element={<PageGuard pageKey="total-balance-kpi"><TotalBalanceKPIPage /></PageGuard>} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
