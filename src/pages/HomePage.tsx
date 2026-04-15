@@ -281,36 +281,34 @@ const HomePage = () => {
       pageKey: "target-trips-upload",
       onClick: () => navigate("/target-trips-upload"),
     });
-    if (isAdmin) {
-      features.push({
-        icon: <Ban className="w-6 h-6 sm:w-8 sm:h-8" />,
-        title: "Drivers Absent Fine",
-        gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-700",
-        pageKey: "driver-absent-fine",
-        onClick: () => navigate("/driver-absent-fine"),
-      });
-      features.push({
-        icon: <Upload className="w-6 h-6 sm:w-8 sm:h-8" />,
-        title: "Booking Rejection",
-        gradient: "bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-600",
-        pageKey: "warning-letters-upload",
-        onClick: () => navigate("/warning-letters-upload"),
-      });
-      features.push({
-        icon: <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" />,
-        title: "Total Balance",
-        gradient: "bg-gradient-to-br from-red-500 via-rose-500 to-orange-600",
-        pageKey: "total-outstanding",
-        onClick: () => navigate("/total-outstanding"),
-      });
-      features.push({
-        icon: <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" />,
-        title: "Balance KPI",
-        gradient: "bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600",
-        pageKey: "total-balance-kpi",
-        onClick: () => navigate("/total-balance-kpi"),
-      });
-    }
+    features.push({
+      icon: <Ban className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Drivers Absent Fine",
+      gradient: "bg-gradient-to-br from-red-600 via-rose-600 to-pink-700",
+      pageKey: "driver-absent-fine",
+      onClick: () => navigate("/driver-absent-fine"),
+    });
+    features.push({
+      icon: <Upload className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Booking Rejection",
+      gradient: "bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-600",
+      pageKey: "warning-letters-upload",
+      onClick: () => navigate("/warning-letters-upload"),
+    });
+    features.push({
+      icon: <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Total Balance",
+      gradient: "bg-gradient-to-br from-red-500 via-rose-500 to-orange-600",
+      pageKey: "total-outstanding",
+      onClick: () => navigate("/total-outstanding"),
+    });
+    features.push({
+      icon: <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Balance KPI",
+      gradient: "bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600",
+      pageKey: "total-balance-kpi",
+      onClick: () => navigate("/total-balance-kpi"),
+    });
   }
 
   if (canAccessAdminPages) {
@@ -353,6 +351,13 @@ const HomePage = () => {
       pageKey: "admin-entry-pass",
       onClick: () => navigate("/admin-entry-pass"),
     });
+    features.push({
+      icon: <Video className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Video Tutorials",
+      gradient: "bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600",
+      pageKey: "video-tutorials",
+      onClick: () => navigate("/video-tutorials"),
+    });
     if (isAdmin) {
       features.push({
         icon: <Settings2 className="w-6 h-6 sm:w-8 sm:h-8" />,
@@ -365,13 +370,6 @@ const HomePage = () => {
         title: "Revenue Controller Portal",
         gradient: "bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600",
         onClick: () => navigate("/revenue-controller-portal"),
-      });
-      features.push({
-        icon: <Video className="w-6 h-6 sm:w-8 sm:h-8" />,
-        title: "Video Tutorials",
-        gradient: "bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600",
-        pageKey: "video-tutorials",
-        onClick: () => navigate("/video-tutorials"),
       });
       features.push({
         icon: <FileText className="w-6 h-6 sm:w-8 sm:h-8" />,
