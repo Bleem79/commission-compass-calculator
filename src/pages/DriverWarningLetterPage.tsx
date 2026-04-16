@@ -158,40 +158,31 @@ const DriverWarningLetterPage = () => {
             <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Detailed Monthly Data</CardTitle></CardHeader>
             <CardContent className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left">
-                    <th className="p-2 font-semibold">Month</th>
-                    <th className="p-2 font-semibold text-center">Offer</th>
-                    <th className="p-2 font-semibold text-center">Accept</th>
-                    <th className="p-2 font-semibold text-center">Reject</th>
-                    <th className="p-2 font-semibold text-center">Accept %</th>
-                    <th className="p-2 font-semibold text-center">Reject %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {parsed.map((row, i) => {
-                    const aRate = row.offer > 0 ? ((row.accept / row.offer) * 100).toFixed(1) : "0.0";
-                    const rRate = row.offer > 0 ? ((row.reject / row.offer) * 100).toFixed(1) : "0.0";
-                    return (
-                      <tr key={i} className="border-b border-border hover:bg-muted/50">
-                        <td className="p-2 font-medium">{row.month}</td>
-                        <td className="p-2 text-center text-blue-600 font-semibold">{row.offer}</td>
-                        <td className="p-2 text-center text-green-600 font-semibold">{row.accept}</td>
-                        <td className="p-2 text-center text-red-600 font-semibold">{row.reject}</td>
-                        <td className="p-2 text-center"><span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">{aRate}%</span></td>
-                        <td className="p-2 text-center"><span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium">{rRate}%</span></td>
-                      </tr>
-                    );
-                  })}
-                  <tr className="bg-muted/70 font-bold">
-                    <td className="p-2">Total</td>
-                    <td className="p-2 text-center text-blue-700">{totals.offer}</td>
-                    <td className="p-2 text-center text-green-700">{totals.accept}</td>
-                    <td className="p-2 text-center text-red-700">{totals.reject}</td>
-                    <td className="p-2 text-center"><span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-200 text-green-800 text-xs">{acceptRate}%</span></td>
-                    <td className="p-2 text-center"><span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-200 text-red-800 text-xs">{rejectRate}%</span></td>
-                  </tr>
-                </tbody>
+                 <thead>
+                   <tr className="border-b border-border text-left">
+                     <th className="p-2 font-semibold">Month</th>
+                     <th className="p-2 font-semibold text-center">Accept %</th>
+                     <th className="p-2 font-semibold text-center">Reject %</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   {parsed.map((row, i) => {
+                     const aRate = row.offer > 0 ? ((row.accept / row.offer) * 100).toFixed(1) : "0.0";
+                     const rRate = row.offer > 0 ? ((row.reject / row.offer) * 100).toFixed(1) : "0.0";
+                     return (
+                       <tr key={i} className="border-b border-border hover:bg-muted/50">
+                         <td className="p-2 font-medium">{row.month}</td>
+                         <td className="p-2 text-center"><span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">{aRate}%</span></td>
+                         <td className="p-2 text-center"><span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium">{rRate}%</span></td>
+                       </tr>
+                     );
+                   })}
+                   <tr className="bg-muted/70 font-bold">
+                     <td className="p-2">Total</td>
+                     <td className="p-2 text-center"><span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-200 text-green-800 text-xs">{acceptRate}%</span></td>
+                     <td className="p-2 text-center"><span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-200 text-red-800 text-xs">{rejectRate}%</span></td>
+                   </tr>
+                 </tbody>
               </table>
             </CardContent>
           </Card>
