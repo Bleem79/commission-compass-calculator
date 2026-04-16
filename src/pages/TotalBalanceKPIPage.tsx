@@ -1010,7 +1010,7 @@ const TotalBalanceKPIPage = () => {
                 <div>
                   <p className="font-medium text-foreground text-sm">High Balance Alert</p>
                   <p className="text-muted-foreground text-xs mt-1">
-                    {stats.ranges.filter((r) => r.min >= 10000).reduce((sum, r) => sum + r.count, 0)} drivers have balance equal or above AED 10,000.
+                    {(fleetFilter === "all" ? records : records.filter((r) => r.fleet_status === fleetFilter)).filter((r) => (r.total_outstanding || 0) >= 10000).length} drivers have balance equal or above AED 10,000.
                   </p>
                 </div>
               </div>
