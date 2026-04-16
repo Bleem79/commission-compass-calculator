@@ -517,7 +517,7 @@ const TotalBalanceKPIPage = () => {
     if (!insightDrillDown || !records.length) return [];
     const filtered = fleetFilter === "all" ? records : records.filter((r) => r.fleet_status === fleetFilter);
     if (insightDrillDown === "highBalance") {
-      return filtered.filter((r) => (r.total_outstanding || 0) >= 10000).sort((a, b) => (b.total_outstanding || 0) - (a.total_outstanding || 0));
+      return filtered.filter((r) => Math.max(0, r.total_external_fines || 0) >= 10000).sort((a, b) => (b.total_outstanding || 0) - (a.total_outstanding || 0));
     }
     if (insightDrillDown === "zeroBalance") {
       return filtered.filter((r) => (r.total_outstanding || 0) === 0).sort((a, b) => a.emp_cde.localeCompare(b.emp_cde));
