@@ -513,6 +513,18 @@ const TotalBalanceKPIPage = () => {
     return filtered.sort((a, b) => (b.total_outstanding || 0) - (a.total_outstanding || 0));
   }, [drillDown, records]);
 
+  const insightDrivers = useMemo(() => {
+    if (!insightDrillDown || !records.length) return [];
+    const filtered = fleetFilter === "all" ? records : records.filter((r) => r.fleet_status === fleetFilter);
+    if (insightDrillDown === "highBalance") {
+      return filtered.filter((r) => (r.total_outstanding || 0) >= 10000).sort((a, b) => (b.total_outstanding || 0) - (a.total_outstanding || 0));
+    }
+    if (insightDrillDown === "zeroBalance") {
+      return filtered.filter((r) => (r.total_outstanding || 0) === 0).sort((a, b) => a.emp_cde.localeCompare(b.emp_cde));
+    }
+    return [];
+  }, [insightDrillDown, records, fleetFilter]);
+
   if (adminLoading) {
     return (
       <PageLayout title="Driver Outstanding KPI" icon={<TrendingUp className="w-6 h-6" />} backPath="/home">
