@@ -1107,7 +1107,7 @@ const TotalBalanceKPIPage = () => {
               {insightDrillDown === "highBalance" && (
                 <>
                   <AlertTriangle className="w-4 h-4 text-red-500" />
-                  High Balance Drivers (≥ AED 10,000)
+                  High Balance Drivers — External Fines ≥ AED 10,000
                 </>
               )}
               {insightDrillDown === "zeroBalance" && (
