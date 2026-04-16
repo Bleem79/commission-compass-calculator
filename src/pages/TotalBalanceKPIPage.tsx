@@ -113,6 +113,7 @@ const TotalBalanceKPIPage = () => {
   } | null>(null);
   const [changeReportLoading, setChangeReportLoading] = useState(false);
   const [exportingChangeReport, setExportingChangeReport] = useState(false);
+  const [insightDrillDown, setInsightDrillDown] = useState<"highBalance" | "zeroBalance" | null>(null);
 
   const handleSearch = async () => {
     const q = searchQuery.trim();
