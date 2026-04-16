@@ -113,6 +113,7 @@ const TotalBalanceKPIPage = () => {
   } | null>(null);
   const [changeReportLoading, setChangeReportLoading] = useState(false);
   const [exportingChangeReport, setExportingChangeReport] = useState(false);
+  const [insightDrillDown, setInsightDrillDown] = useState<"highBalance" | "zeroBalance" | null>(null);
 
   const handleSearch = async () => {
     const q = searchQuery.trim();
@@ -511,6 +512,18 @@ const TotalBalanceKPIPage = () => {
     else if (drillDown.fleet === "offRoad") filtered = filtered.filter((r) => r.fleet_status === "Off Road");
     return filtered.sort((a, b) => (b.total_outstanding || 0) - (a.total_outstanding || 0));
   }, [drillDown, records]);
+
+  const insightDrivers = useMemo(() => {
+    if (!insightDrillDown || !records.length) return [];
+    const filtered = fleetFilter === "all" ? records : records.filter((r) => r.fleet_status === fleetFilter);
+    if (insightDrillDown === "highBalance") {
+      return filtered.filter((r) => (r.total_outstanding || 0) >= 10000).sort((a, b) => (b.total_outstanding || 0) - (a.total_outstanding || 0));
+    }
+    if (insightDrillDown === "zeroBalance") {
+      return filtered.filter((r) => (r.total_outstanding || 0) === 0).sort((a, b) => a.emp_cde.localeCompare(b.emp_cde));
+    }
+    return [];
+  }, [insightDrillDown, records, fleetFilter]);
 
   if (adminLoading) {
     return (
@@ -989,7 +1002,10 @@ const TotalBalanceKPIPage = () => {
               <CardTitle className="text-base font-semibold text-foreground">💡 Key Insights</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/30 rounded-lg">
+              <div
+                className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/30 rounded-lg cursor-pointer hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
+                onClick={() => setInsightDrillDown("highBalance")}
+              >
                 <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium text-foreground text-sm">High Balance Alert</p>
@@ -1007,7 +1023,10 @@ const TotalBalanceKPIPage = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg">
+              <div
+                className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg cursor-pointer hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors"
+                onClick={() => setInsightDrillDown("zeroBalance")}
+              >
                 <ArrowDownRight className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium text-foreground text-sm">Clear Drivers</p>
@@ -1054,6 +1073,68 @@ const TotalBalanceKPIPage = () => {
               </thead>
               <tbody>
                 {drillDownDrivers.map((r, i) => (
+                  <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
+                    <td className="py-1.5 px-2 text-muted-foreground text-xs">{i + 1}</td>
+                    <td className="py-1.5 px-2 font-medium text-foreground">{r.emp_cde}</td>
+                    <td className="py-1.5 px-2 text-center">
+                      <span className={cn(
+                        "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                        r.fleet_status === "OnRoad"
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
+                          : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
+                      )}>
+                        {r.fleet_status === "OnRoad" ? "On Road" : "Off Road"}
+                      </span>
+                    </td>
+                    <td className="py-1.5 px-2 text-right text-foreground">{fmtAed(r.accident || 0)}</td>
+                    <td className="py-1.5 px-2 text-right text-foreground">{fmtAed(r.traffic_fines || 0)}</td>
+                    <td className="py-1.5 px-2 text-right text-foreground">{fmtAed(r.shj_rta_fines || 0)}</td>
+                    <td className="py-1.5 px-2 text-right text-foreground font-medium">{fmtAed(r.total_external_fines || 0)}</td>
+                    <td className="py-1.5 px-2 text-right font-bold text-red-600">{fmtAed(r.total_outstanding || 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Insight Drill-Down Dialog */}
+      <Dialog open={!!insightDrillDown} onOpenChange={(open) => !open && setInsightDrillDown(null)}>
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold flex items-center gap-2">
+              {insightDrillDown === "highBalance" && (
+                <>
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  High Balance Drivers (≥ AED 10,000)
+                </>
+              )}
+              {insightDrillDown === "zeroBalance" && (
+                <>
+                  <Shield className="w-4 h-4 text-green-500" />
+                  Clear Drivers (Zero Balance)
+                </>
+              )}
+              <span className="ml-auto text-sm text-muted-foreground">{insightDrivers.length} drivers</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-auto flex-1">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-background z-10">
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 px-2 text-muted-foreground font-medium">#</th>
+                  <th className="text-left py-2 px-2 text-muted-foreground font-medium">Emp Code</th>
+                  <th className="text-center py-2 px-2 text-muted-foreground font-medium">Status</th>
+                  <th className="text-right py-2 px-2 text-muted-foreground font-medium">Accident</th>
+                  <th className="text-right py-2 px-2 text-muted-foreground font-medium">Traffic</th>
+                  <th className="text-right py-2 px-2 text-muted-foreground font-medium">SHJ RTA</th>
+                  <th className="text-right py-2 px-2 text-muted-foreground font-medium">Ext. Fines</th>
+                  <th className="text-right py-2 px-2 text-muted-foreground font-medium">Total Bal.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {insightDrivers.map((r, i) => (
                   <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
                     <td className="py-1.5 px-2 text-muted-foreground text-xs">{i + 1}</td>
                     <td className="py-1.5 px-2 font-medium text-foreground">{r.emp_cde}</td>
