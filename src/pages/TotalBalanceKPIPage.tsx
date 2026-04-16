@@ -517,7 +517,7 @@ const TotalBalanceKPIPage = () => {
     if (!insightDrillDown || !records.length) return [];
     const filtered = fleetFilter === "all" ? records : records.filter((r) => r.fleet_status === fleetFilter);
     if (insightDrillDown === "highBalance") {
-      return filtered.filter((r) => (r.total_outstanding || 0) >= 10000).sort((a, b) => (b.total_outstanding || 0) - (a.total_outstanding || 0));
+      return filtered.filter((r) => Math.max(0, r.total_external_fines || 0) >= 10000).sort((a, b) => (b.total_outstanding || 0) - (a.total_outstanding || 0));
     }
     if (insightDrillDown === "zeroBalance") {
       return filtered.filter((r) => (r.total_outstanding || 0) === 0).sort((a, b) => a.emp_cde.localeCompare(b.emp_cde));
@@ -1010,7 +1010,7 @@ const TotalBalanceKPIPage = () => {
                 <div>
                   <p className="font-medium text-foreground text-sm">High Balance Alert</p>
                   <p className="text-muted-foreground text-xs mt-1">
-                    {(fleetFilter === "all" ? records : records.filter((r) => r.fleet_status === fleetFilter)).filter((r) => (r.total_outstanding || 0) >= 10000).length} drivers have balance equal or above AED 10,000.
+                    {stats.ranges.filter((r) => r.min >= 10000).reduce((sum, r) => sum + r.count, 0)} drivers have external fines equal or above AED 10,000.
                   </p>
                 </div>
               </div>
@@ -1107,7 +1107,7 @@ const TotalBalanceKPIPage = () => {
               {insightDrillDown === "highBalance" && (
                 <>
                   <AlertTriangle className="w-4 h-4 text-red-500" />
-                  High Balance Drivers (≥ AED 10,000)
+                  High Balance Drivers — External Fines ≥ AED 10,000
                 </>
               )}
               {insightDrillDown === "zeroBalance" && (
