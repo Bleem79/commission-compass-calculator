@@ -123,8 +123,8 @@ const DriverWarningLetterPage = () => {
           {/* Summary Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             <Card className="border-blue-200 bg-blue-50/80"><CardContent className="p-4 text-center"><p className="text-xs text-blue-600 font-medium">Total Offers</p><p className="text-2xl sm:text-3xl font-bold text-blue-700">{totals.offer}</p></CardContent></Card>
-            <Card className="border-green-200 bg-green-50/80"><CardContent className="p-4 text-center"><p className="text-xs text-green-600 font-medium">Accepted</p><p className="text-2xl sm:text-3xl font-bold text-green-700">{totals.accept}</p><p className="text-xs text-green-500 flex items-center justify-center gap-1 mt-1"><TrendingUp className="h-3 w-3" />{acceptRate}%</p></CardContent></Card>
-            <Card className="border-red-200 bg-red-50/80"><CardContent className="p-4 text-center"><p className="text-xs text-red-600 font-medium">Rejected</p><p className="text-2xl sm:text-3xl font-bold text-red-700">{totals.reject}</p><p className="text-xs text-red-500 flex items-center justify-center gap-1 mt-1"><TrendingDown className="h-3 w-3" />{rejectRate}%</p></CardContent></Card>
+            <Card className="border-green-200 bg-green-50/80"><CardContent className="p-4 text-center"><p className="text-xs text-green-600 font-medium">Accepted</p><p className="text-2xl sm:text-3xl font-bold text-green-700">{acceptRate}%</p></CardContent></Card>
+            <Card className="border-red-200 bg-red-50/80"><CardContent className="p-4 text-center"><p className="text-xs text-red-600 font-medium">Rejected</p><p className="text-2xl sm:text-3xl font-bold text-red-700">{rejectRate}%</p></CardContent></Card>
             <Card className="border-purple-200 bg-purple-50/80"><CardContent className="p-4 text-center"><p className="text-xs text-purple-600 font-medium">Months</p><p className="text-2xl sm:text-3xl font-bold text-purple-700">{parsed.length}</p></CardContent></Card>
           </div>
 
