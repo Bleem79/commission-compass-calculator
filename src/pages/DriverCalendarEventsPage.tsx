@@ -178,7 +178,13 @@ const DriverCalendarEventsPage = () => {
                         key={ev.id}
                         className="rounded-lg border border-border p-3 bg-background"
                       >
-                        <p className="font-medium text-foreground mb-2">{ev.event_name}</p>
+                        <p className="font-medium text-foreground mb-1">{ev.event_name}</p>
+                        {ev.address && (
+                          <p className="text-sm text-muted-foreground mb-2 flex items-start gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                            <span>{ev.address}</span>
+                          </p>
+                        )}
                         {ev.maps_link ? (
                           <a
                             href={ev.maps_link}
