@@ -339,8 +339,9 @@ const CalendarEventsUploadPage = () => {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Required columns: <strong>Date</strong>, <strong>Event Name</strong>,{" "}
-              <strong>Google Maps Link</strong>. Date format: <strong>DD/MM/YYYY</strong>.
+              Required columns: <strong>Date</strong>, <strong>Events Name</strong>,{" "}
+              <strong>Address</strong>, <strong>Location map</strong>. Date format:{" "}
+              <strong>DD/MM/YYYY</strong>.
             </p>
 
             {uploading && <Progress value={progress} />}
