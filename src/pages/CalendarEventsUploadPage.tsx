@@ -368,8 +368,9 @@ const CalendarEventsUploadPage = () => {
                   <thead className="bg-muted">
                     <tr>
                       <th className="text-left p-2">Date</th>
-                      <th className="text-left p-2">Event Name</th>
-                      <th className="text-left p-2">Google Maps Link</th>
+                      <th className="text-left p-2">Events Name</th>
+                      <th className="text-left p-2">Address</th>
+                      <th className="text-left p-2">Location map</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -379,6 +380,9 @@ const CalendarEventsUploadPage = () => {
                           {format(new Date(p.event_date + "T00:00:00"), "dd/MM/yyyy")}
                         </td>
                         <td className="p-2">{p.event_name}</td>
+                        <td className="p-2 truncate max-w-[200px]">
+                          {p.address || <span className="text-muted-foreground">—</span>}
+                        </td>
                         <td className="p-2 truncate max-w-[280px]">
                           {p.maps_link || <span className="text-muted-foreground">—</span>}
                         </td>
