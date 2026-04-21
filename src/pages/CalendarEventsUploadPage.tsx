@@ -111,9 +111,9 @@ const CalendarEventsUploadPage = () => {
 
   const downloadTemplate = () => {
     const ws = XLSX.utils.aoa_to_sheet([
-      ["Date", "Event Name", "Google Maps Link"],
-      ["25/12/2025", "Christmas Event", "https://maps.google.com/?q=Sharjah"],
-      ["01/01/2026", "New Year Gathering", "https://maps.app.goo.gl/example"],
+      ["Date", "Events Name", "Address", "Location map"],
+      ["25/12/2025", "Christmas Event", "Al Majaz Waterfront, Sharjah", "https://maps.google.com/?q=Sharjah"],
+      ["01/01/2026", "New Year Gathering", "Aman Taxi HQ, Industrial 13, Sharjah", "https://maps.app.goo.gl/example"],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Events");
