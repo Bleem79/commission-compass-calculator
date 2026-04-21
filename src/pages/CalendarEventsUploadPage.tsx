@@ -459,7 +459,7 @@ const CalendarEventsUploadPage = () => {
             ) : events.length === 0 ? (
               <EmptyState
                 title="No events yet"
-                description="Upload an Excel file with Date, Event Name, and Google Maps Link to get started."
+                description="Upload an Excel file with Date, Events Name, Address, and Location map to get started."
               />
             ) : (
               <div className="overflow-x-auto rounded-md border">
