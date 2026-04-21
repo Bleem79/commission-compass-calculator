@@ -149,17 +149,19 @@ const CalendarEventsUploadPage = () => {
       }
       const findKey = (target: string) => keys[lower.indexOf(target.toLowerCase())];
       const dateKey = findKey("Date");
-      const nameKey = findKey("Event Name");
-      const linkKey = findKey("Google Maps Link");
+      const nameKey = findKey("Events Name");
+      const addressKey = findKey("Address");
+      const linkKey = findKey("Location map");
 
       const skips: { row: number; reason: string }[] = [];
       const out: ParsedEvent[] = [];
       rows.forEach((r, idx) => {
         const rawDate = String(r[dateKey] ?? "").trim();
         const name = String(r[nameKey] ?? "").trim();
+        const address = String(r[addressKey] ?? "").trim();
         const link = String(r[linkKey] ?? "").trim();
         if (!rawDate || !name) {
-          skips.push({ row: idx + 2, reason: "Missing Date or Event Name" });
+          skips.push({ row: idx + 2, reason: "Missing Date or Events Name" });
           return;
         }
         const iso = parseDDMMYYYY(r[dateKey]);
@@ -167,7 +169,7 @@ const CalendarEventsUploadPage = () => {
           skips.push({ row: idx + 2, reason: `Invalid date "${rawDate}" (expected DD/MM/YYYY)` });
           return;
         }
-        out.push({ event_date: iso, event_name: name, maps_link: link || null, rawDate });
+        out.push({ event_date: iso, event_name: name, address: address || null, maps_link: link || null, rawDate });
       });
       setParsed(out);
       setSkipped(skips);
