@@ -27,6 +27,7 @@ import {
   BookOpen,
   DollarSign,
   TrendingUp,
+  CalendarRange,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePagePermissions } from "@/contexts/PagePermissionsContext";
