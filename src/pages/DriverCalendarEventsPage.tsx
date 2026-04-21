@@ -19,6 +19,7 @@ interface CalendarEvent {
   id: string;
   event_date: string;
   event_name: string;
+  address: string | null;
   maps_link: string | null;
 }
 
@@ -41,7 +42,7 @@ const DriverCalendarEventsPage = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("calendar_events")
-        .select("id, event_date, event_name, maps_link")
+        .select("id, event_date, event_name, address, maps_link")
         .order("event_date", { ascending: true });
       if (!mounted) return;
       if (!error) setEvents((data as CalendarEvent[]) || []);
