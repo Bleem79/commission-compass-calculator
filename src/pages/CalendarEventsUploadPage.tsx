@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface ParsedEvent {
   event_date: string; // ISO YYYY-MM-DD
   event_name: string;
+  address: string | null;
   maps_link: string | null;
   rawDate: string;
 }
@@ -33,6 +34,7 @@ interface EventRow {
   id: string;
   event_date: string;
   event_name: string;
+  address: string | null;
   maps_link: string | null;
   uploaded_filename: string | null;
   created_at: string;
@@ -46,7 +48,7 @@ interface HistoryRow {
   created_at: string;
 }
 
-const REQUIRED_COLS = ["Date", "Event Name", "Google Maps Link"] as const;
+const REQUIRED_COLS = ["Date", "Events Name", "Address", "Location map"] as const;
 
 const parseDDMMYYYY = (input: unknown): string | null => {
   if (input === null || input === undefined || input === "") return null;
@@ -109,9 +111,9 @@ const CalendarEventsUploadPage = () => {
 
   const downloadTemplate = () => {
     const ws = XLSX.utils.aoa_to_sheet([
-      ["Date", "Event Name", "Google Maps Link"],
-      ["25/12/2025", "Christmas Event", "https://maps.google.com/?q=Sharjah"],
-      ["01/01/2026", "New Year Gathering", "https://maps.app.goo.gl/example"],
+      ["Date", "Events Name", "Address", "Location map"],
+      ["25/12/2025", "Christmas Event", "Al Majaz Waterfront, Sharjah", "https://maps.google.com/?q=Sharjah"],
+      ["01/01/2026", "New Year Gathering", "Aman Taxi HQ, Industrial 13, Sharjah", "https://maps.app.goo.gl/example"],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Events");
@@ -147,17 +149,19 @@ const CalendarEventsUploadPage = () => {
       }
       const findKey = (target: string) => keys[lower.indexOf(target.toLowerCase())];
       const dateKey = findKey("Date");
-      const nameKey = findKey("Event Name");
-      const linkKey = findKey("Google Maps Link");
+      const nameKey = findKey("Events Name");
+      const addressKey = findKey("Address");
+      const linkKey = findKey("Location map");
 
       const skips: { row: number; reason: string }[] = [];
       const out: ParsedEvent[] = [];
       rows.forEach((r, idx) => {
         const rawDate = String(r[dateKey] ?? "").trim();
         const name = String(r[nameKey] ?? "").trim();
+        const address = String(r[addressKey] ?? "").trim();
         const link = String(r[linkKey] ?? "").trim();
         if (!rawDate || !name) {
-          skips.push({ row: idx + 2, reason: "Missing Date or Event Name" });
+          skips.push({ row: idx + 2, reason: "Missing Date or Events Name" });
           return;
         }
         const iso = parseDDMMYYYY(r[dateKey]);
@@ -165,7 +169,7 @@ const CalendarEventsUploadPage = () => {
           skips.push({ row: idx + 2, reason: `Invalid date "${rawDate}" (expected DD/MM/YYYY)` });
           return;
         }
-        out.push({ event_date: iso, event_name: name, maps_link: link || null, rawDate });
+        out.push({ event_date: iso, event_name: name, address: address || null, maps_link: link || null, rawDate });
       });
       setParsed(out);
       setSkipped(skips);
@@ -193,10 +197,11 @@ const CalendarEventsUploadPage = () => {
       const payload = parsed.map((p) => ({
         event_date: p.event_date,
         event_name: p.event_name,
+        address: p.address,
         maps_link: p.maps_link,
         uploaded_by: user.id,
         uploaded_filename: filename,
-      }));
+      })) as any;
       const chunkSize = 250;
       let inserted = 0;
       for (let i = 0; i < payload.length; i += chunkSize) {
@@ -334,8 +339,9 @@ const CalendarEventsUploadPage = () => {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Required columns: <strong>Date</strong>, <strong>Event Name</strong>,{" "}
-              <strong>Google Maps Link</strong>. Date format: <strong>DD/MM/YYYY</strong>.
+              Required columns: <strong>Date</strong>, <strong>Events Name</strong>,{" "}
+              <strong>Address</strong>, <strong>Location map</strong>. Date format:{" "}
+              <strong>DD/MM/YYYY</strong>.
             </p>
 
             {uploading && <Progress value={progress} />}
@@ -362,8 +368,9 @@ const CalendarEventsUploadPage = () => {
                   <thead className="bg-muted">
                     <tr>
                       <th className="text-left p-2">Date</th>
-                      <th className="text-left p-2">Event Name</th>
-                      <th className="text-left p-2">Google Maps Link</th>
+                      <th className="text-left p-2">Events Name</th>
+                      <th className="text-left p-2">Address</th>
+                      <th className="text-left p-2">Location map</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -373,6 +380,9 @@ const CalendarEventsUploadPage = () => {
                           {format(new Date(p.event_date + "T00:00:00"), "dd/MM/yyyy")}
                         </td>
                         <td className="p-2">{p.event_name}</td>
+                        <td className="p-2 truncate max-w-[200px]">
+                          {p.address || <span className="text-muted-foreground">—</span>}
+                        </td>
                         <td className="p-2 truncate max-w-[280px]">
                           {p.maps_link || <span className="text-muted-foreground">—</span>}
                         </td>
@@ -449,7 +459,7 @@ const CalendarEventsUploadPage = () => {
             ) : events.length === 0 ? (
               <EmptyState
                 title="No events yet"
-                description="Upload an Excel file with Date, Event Name, and Google Maps Link to get started."
+                description="Upload an Excel file with Date, Events Name, Address, and Location map to get started."
               />
             ) : (
               <div className="overflow-x-auto rounded-md border">
@@ -457,8 +467,9 @@ const CalendarEventsUploadPage = () => {
                   <thead className="bg-muted">
                     <tr>
                       <th className="text-left p-2">Date</th>
-                      <th className="text-left p-2">Event Name</th>
-                      <th className="text-left p-2">Google Maps Link</th>
+                      <th className="text-left p-2">Events Name</th>
+                      <th className="text-left p-2">Address</th>
+                      <th className="text-left p-2">Location map</th>
                       <th className="text-left p-2">File</th>
                     </tr>
                   </thead>
@@ -469,6 +480,9 @@ const CalendarEventsUploadPage = () => {
                           {format(new Date(e.event_date + "T00:00:00"), "dd/MM/yyyy")}
                         </td>
                         <td className="p-2">{e.event_name}</td>
+                        <td className="p-2 truncate max-w-[220px]">
+                          {e.address || <span className="text-muted-foreground">—</span>}
+                        </td>
                         <td className="p-2 truncate max-w-[320px]">
                           {e.maps_link ? (
                             <a
