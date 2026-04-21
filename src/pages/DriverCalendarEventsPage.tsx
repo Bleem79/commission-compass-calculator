@@ -148,30 +148,18 @@ const DriverCalendarEventsPage = () => {
               </CardContent>
             </Card>
 
-            {/* Selected day details */}
-            <Card className="bg-white/95 backdrop-blur-sm border-white/20">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">
-                    {selectedDate ? format(selectedDate, "EEEE, dd MMMM yyyy") : "Select a date"}
-                  </h2>
-                  {dayEvents.length > 0 && (
+            {/* Selected day details — only show when there are events */}
+            {!loading && dayEvents.length > 0 && (
+              <Card className="bg-white/95 backdrop-blur-sm border-white/20">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold">
+                      {selectedDate ? format(selectedDate, "EEEE, dd MMMM yyyy") : "Select a date"}
+                    </h2>
                     <Badge variant="secondary">
                       {dayEvents.length} event{dayEvents.length === 1 ? "" : "s"}
                     </Badge>
-                  )}
-                </div>
-
-                {loading ? (
-                  <p className="text-sm text-muted-foreground py-6 text-center">
-                    Loading events…
-                  </p>
-                ) : dayEvents.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <CalendarDays className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
-                    <p className="text-sm text-muted-foreground">No events on this date.</p>
                   </div>
-                ) : (
                   <ul className="space-y-3">
                     {dayEvents.map((ev) => (
                       <li
@@ -204,9 +192,9 @@ const DriverCalendarEventsPage = () => {
                       </li>
                     ))}
                   </ul>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Upcoming */}
