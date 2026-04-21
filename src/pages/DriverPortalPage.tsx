@@ -255,6 +255,13 @@ const DriverPortalPage = () => {
         window.location.href = url;
       },
     },
+    {
+      key: "calendar_events",
+      icon: <CalendarRange className="w-8 h-8 sm:w-10 sm:h-10" />,
+      title: "Calendar Events",
+      gradient: "bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-600",
+      onClick: () => navigate("/driver-calendar-events"),
+    },
   ];
 
   // Filter items based on settings (if settings loaded, filter; otherwise show all)
