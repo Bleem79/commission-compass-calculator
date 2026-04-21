@@ -27,6 +27,7 @@ import {
   BookOpen,
   DollarSign,
   TrendingUp,
+  CalendarRange,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePagePermissions } from "@/contexts/PagePermissionsContext";
@@ -357,6 +358,13 @@ const HomePage = () => {
       gradient: "bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600",
       pageKey: "video-tutorials",
       onClick: () => navigate("/video-tutorials"),
+    });
+    features.push({
+      icon: <CalendarRange className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Calendar Events",
+      gradient: "bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-600",
+      pageKey: "calendar-events-upload",
+      onClick: () => navigate("/calendar-events-upload"),
     });
     if (isAdmin) {
       features.push({

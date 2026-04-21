@@ -15,7 +15,8 @@ import {
   Droplets,
   ClipboardCheck,
   Video,
-  DollarSign
+  DollarSign,
+  CalendarRange
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -253,6 +254,13 @@ const DriverPortalPage = () => {
         toast.success(`Opening Oil Change Booking for Driver ${driverInfo.driverId}`);
         window.location.href = url;
       },
+    },
+    {
+      key: "calendar_events",
+      icon: <CalendarRange className="w-8 h-8 sm:w-10 sm:h-10" />,
+      title: "Calendar Events",
+      gradient: "bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-600",
+      onClick: () => navigate("/driver-calendar-events"),
     },
   ];
 

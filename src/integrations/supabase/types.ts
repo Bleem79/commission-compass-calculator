@@ -47,6 +47,63 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_events: {
+        Row: {
+          created_at: string
+          event_date: string
+          event_name: string
+          id: string
+          maps_link: string | null
+          uploaded_by: string
+          uploaded_filename: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_date: string
+          event_name: string
+          id?: string
+          maps_link?: string | null
+          uploaded_by: string
+          uploaded_filename?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_date?: string
+          event_name?: string
+          id?: string
+          maps_link?: string | null
+          uploaded_by?: string
+          uploaded_filename?: string | null
+        }
+        Relationships: []
+      }
+      calendar_events_upload_history: {
+        Row: {
+          action: string
+          created_at: string
+          filename: string | null
+          id: string
+          performed_by: string
+          record_count: number
+        }
+        Insert: {
+          action?: string
+          created_at?: string
+          filename?: string | null
+          id?: string
+          performed_by: string
+          record_count?: number
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          filename?: string | null
+          id?: string
+          performed_by?: string
+          record_count?: number
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           bucket_name: string
