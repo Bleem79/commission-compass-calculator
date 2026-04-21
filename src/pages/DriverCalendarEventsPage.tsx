@@ -209,11 +209,11 @@ const DriverCalendarEventsPage = () => {
                     return (
                       <li
                         key={ev.id}
-                        className="py-2 flex flex-wrap items-center justify-between gap-2 cursor-pointer hover:bg-muted/40 px-2 rounded"
+                        className="py-2 flex items-start justify-between gap-3 cursor-pointer hover:bg-muted/40 px-2 rounded"
                         onClick={() => setSelectedDate(d)}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="text-center w-12">
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                          <div className="text-center w-12 shrink-0">
                             <p className="text-xs text-muted-foreground uppercase">
                               {format(d, "MMM")}
                             </p>
@@ -221,12 +221,12 @@ const DriverCalendarEventsPage = () => {
                               {format(d, "dd")}
                             </p>
                           </div>
-                          <div>
-                            <p className="font-medium text-sm">{ev.event_name}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm break-words">{ev.event_name}</p>
                             {ev.address && (
                               <p className="text-xs text-muted-foreground mt-0.5 flex items-start gap-1">
                                 <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
-                                <span>{ev.address}</span>
+                                <span className="break-words">{ev.address}</span>
                               </p>
                             )}
                             {isToday && (
@@ -241,7 +241,7 @@ const DriverCalendarEventsPage = () => {
                             href={ev.maps_link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline shrink-0 mt-1"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <MapPin className="w-3.5 h-3.5" /> Map
