@@ -49,6 +49,7 @@ export type Database = {
       }
       calendar_events: {
         Row: {
+          address: string | null
           created_at: string
           event_date: string
           event_name: string
@@ -58,6 +59,7 @@ export type Database = {
           uploaded_filename: string | null
         }
         Insert: {
+          address?: string | null
           created_at?: string
           event_date: string
           event_name: string
@@ -67,6 +69,7 @@ export type Database = {
           uploaded_filename?: string | null
         }
         Update: {
+          address?: string | null
           created_at?: string
           event_date?: string
           event_name?: string
