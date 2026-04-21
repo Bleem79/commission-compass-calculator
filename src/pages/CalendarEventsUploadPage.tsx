@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface ParsedEvent {
   event_date: string; // ISO YYYY-MM-DD
   event_name: string;
+  address: string | null;
   maps_link: string | null;
   rawDate: string;
 }
@@ -33,6 +34,7 @@ interface EventRow {
   id: string;
   event_date: string;
   event_name: string;
+  address: string | null;
   maps_link: string | null;
   uploaded_filename: string | null;
   created_at: string;
@@ -46,7 +48,7 @@ interface HistoryRow {
   created_at: string;
 }
 
-const REQUIRED_COLS = ["Date", "Event Name", "Google Maps Link"] as const;
+const REQUIRED_COLS = ["Date", "Events Name", "Address", "Location map"] as const;
 
 const parseDDMMYYYY = (input: unknown): string | null => {
   if (input === null || input === undefined || input === "") return null;
