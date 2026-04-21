@@ -197,10 +197,11 @@ const CalendarEventsUploadPage = () => {
       const payload = parsed.map((p) => ({
         event_date: p.event_date,
         event_name: p.event_name,
+        address: p.address,
         maps_link: p.maps_link,
         uploaded_by: user.id,
         uploaded_filename: filename,
-      }));
+      })) as any;
       const chunkSize = 250;
       let inserted = 0;
       for (let i = 0; i < payload.length; i += chunkSize) {
