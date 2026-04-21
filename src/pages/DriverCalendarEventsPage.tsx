@@ -223,6 +223,12 @@ const DriverCalendarEventsPage = () => {
                           </div>
                           <div>
                             <p className="font-medium text-sm">{ev.event_name}</p>
+                            {ev.address && (
+                              <p className="text-xs text-muted-foreground mt-0.5 flex items-start gap-1">
+                                <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+                                <span>{ev.address}</span>
+                              </p>
+                            )}
                             {isToday && (
                               <Badge variant="default" className="text-[10px] mt-0.5">
                                 Today
