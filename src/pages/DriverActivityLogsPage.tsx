@@ -78,6 +78,8 @@ const DriverActivityLogsPage = () => {
     (activityFilter === "all" || log.activity_type === activityFilter)
   );
   const formatDate = (dateString: string) => format(new Date(dateString), "MMM dd, yyyy hh:mm:ss a");
+  const formatDateOnly = (dateString: string) => format(new Date(dateString), "MMM dd, yyyy");
+  const formatTimeOnly = (dateString: string) => format(new Date(dateString), "hh:mm:ss a");
   const getBrowserInfo = (userAgent: string | null) => {
     if (!userAgent) return "Unknown";
     if (userAgent.includes("Chrome")) return "Chrome";
@@ -131,7 +133,8 @@ const DriverActivityLogsPage = () => {
       const mapRow = (l: ActivityLog) => ({
         "Driver ID": l.driver_id,
         "Activity": l.activity_type === "login" ? "Login" : "Logout",
-        "Date & Time": formatDate(l.created_at),
+        "Date": formatDateOnly(l.created_at),
+        "Time": formatTimeOnly(l.created_at),
         "Browser": getBrowserInfo(l.user_agent),
       });
 
@@ -248,7 +251,7 @@ const DriverActivityLogsPage = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Driver ID</TableHead><TableHead>Activity</TableHead><TableHead>Date & Time</TableHead>
+                    <TableHead>Driver ID</TableHead><TableHead>Activity</TableHead><TableHead>Date</TableHead><TableHead>Time</TableHead>
                     <TableHead className="hidden md:table-cell">Browser</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -262,7 +265,8 @@ const DriverActivityLogsPage = () => {
                           {log.activity_type === "login" ? "Login" : "Logout"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{formatDate(log.created_at)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatDateOnly(log.created_at)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatTimeOnly(log.created_at)}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{getBrowserInfo(log.user_agent)}</TableCell>
                     </TableRow>
                   ))}
