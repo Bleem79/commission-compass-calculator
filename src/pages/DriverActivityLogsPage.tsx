@@ -180,20 +180,34 @@ const DriverActivityLogsPage = () => {
               </Button>
             </div>
 
-            <div className="border-t pt-3 mt-1">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Export to Excel (date range)</p>
+            <div className="border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg p-4 mt-2 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-8 w-8 rounded-full bg-emerald-600 flex items-center justify-center shrink-0">
+                  <Download className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-emerald-900">Export Activity Logs to Excel</p>
+                  <p className="text-xs text-emerald-700">Select a date range to download login & logout details</p>
+                </div>
+              </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
                 <div className="flex flex-col sm:flex-row gap-2 flex-1">
                   <div className="relative flex-1">
-                    <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input type="date" value={exportFrom} onChange={(e) => setExportFrom(e.target.value)} placeholder="From" className="pl-9" />
+                    <label className="text-[10px] font-semibold text-emerald-800 uppercase tracking-wide block mb-1">From Date</label>
+                    <Calendar className="absolute left-3 top-[34px] h-4 w-4 text-emerald-600" />
+                    <Input type="date" value={exportFrom} onChange={(e) => setExportFrom(e.target.value)} className="pl-9 border-emerald-300 bg-white focus-visible:ring-emerald-500" />
                   </div>
                   <div className="relative flex-1">
-                    <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input type="date" value={exportTo} onChange={(e) => setExportTo(e.target.value)} placeholder="To" className="pl-9" />
+                    <label className="text-[10px] font-semibold text-emerald-800 uppercase tracking-wide block mb-1">To Date</label>
+                    <Calendar className="absolute left-3 top-[34px] h-4 w-4 text-emerald-600" />
+                    <Input type="date" value={exportTo} onChange={(e) => setExportTo(e.target.value)} className="pl-9 border-emerald-300 bg-white focus-visible:ring-emerald-500" />
                   </div>
                 </div>
-                <Button onClick={handleExport} disabled={exporting} size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700">
+                <Button
+                  onClick={handleExport}
+                  disabled={exporting}
+                  className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-md hover:shadow-lg transition-all sm:self-end sm:mb-[1px] h-10 px-6"
+                >
                   <Download className={`h-4 w-4 ${exporting ? "animate-pulse" : ""}`} />
                   {exporting ? "Exporting..." : "Download Excel"}
                 </Button>
