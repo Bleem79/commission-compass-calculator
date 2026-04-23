@@ -37,6 +37,7 @@ const DriverActivityLogsPage = () => {
   const [exportFrom, setExportFrom] = useState("");
   const [exportTo, setExportTo] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [activityFilter, setActivityFilter] = useState<"all" | "login" | "logout">("all");
 
   useEffect(() => {
     if (!isAuthenticated) { navigate("/login"); return; }
@@ -72,7 +73,10 @@ const DriverActivityLogsPage = () => {
     finally { setLoading(false); }
   };
 
-  const filteredLogs = logs.filter(log => log.driver_id.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredLogs = logs.filter(log =>
+    log.driver_id.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (activityFilter === "all" || log.activity_type === activityFilter)
+  );
   const formatDate = (dateString: string) => format(new Date(dateString), "MMM dd, yyyy hh:mm:ss a");
   const getBrowserInfo = (userAgent: string | null) => {
     if (!userAgent) return "Unknown";
@@ -129,7 +133,6 @@ const DriverActivityLogsPage = () => {
         "Activity": l.activity_type === "login" ? "Login" : "Logout",
         "Date & Time": formatDate(l.created_at),
         "Browser": getBrowserInfo(l.user_agent),
-        "IP Address": l.ip_address || "N/A",
       });
 
       const wb = XLSX.utils.book_new();
