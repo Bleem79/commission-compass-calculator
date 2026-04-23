@@ -37,6 +37,7 @@ const DriverActivityLogsPage = () => {
   const [exportFrom, setExportFrom] = useState("");
   const [exportTo, setExportTo] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [activityFilter, setActivityFilter] = useState<"all" | "login" | "logout">("all");
 
   useEffect(() => {
     if (!isAuthenticated) { navigate("/login"); return; }
@@ -72,7 +73,10 @@ const DriverActivityLogsPage = () => {
     finally { setLoading(false); }
   };
 
-  const filteredLogs = logs.filter(log => log.driver_id.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredLogs = logs.filter(log =>
+    log.driver_id.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (activityFilter === "all" || log.activity_type === activityFilter)
+  );
   const formatDate = (dateString: string) => format(new Date(dateString), "MMM dd, yyyy hh:mm:ss a");
   const getBrowserInfo = (userAgent: string | null) => {
     if (!userAgent) return "Unknown";
@@ -129,7 +133,6 @@ const DriverActivityLogsPage = () => {
         "Activity": l.activity_type === "login" ? "Login" : "Logout",
         "Date & Time": formatDate(l.created_at),
         "Browser": getBrowserInfo(l.user_agent),
-        "IP Address": l.ip_address || "N/A",
       });
 
       const wb = XLSX.utils.book_new();
@@ -178,6 +181,15 @@ const DriverActivityLogsPage = () => {
               <Button onClick={() => setShowStats(!showStats)} variant={showStats ? "default" : "outline"} size="sm" className="gap-2">
                 <BarChart3 className="h-4 w-4" />{showStats ? "Hide Stats" : "Show Stats"}
               </Button>
+              <div className="flex items-center gap-1 ml-auto bg-muted rounded-md p-1">
+                <Button onClick={() => setActivityFilter("all")} size="sm" variant={activityFilter === "all" ? "default" : "ghost"} className="h-7 px-3 text-xs">All</Button>
+                <Button onClick={() => setActivityFilter("login")} size="sm" variant={activityFilter === "login" ? "default" : "ghost"} className={`h-7 px-3 text-xs gap-1 ${activityFilter === "login" ? "bg-green-600 hover:bg-green-700 text-white" : "text-green-700"}`}>
+                  <LogIn className="h-3 w-3" />Login
+                </Button>
+                <Button onClick={() => setActivityFilter("logout")} size="sm" variant={activityFilter === "logout" ? "default" : "ghost"} className={`h-7 px-3 text-xs gap-1 ${activityFilter === "logout" ? "bg-red-600 hover:bg-red-700 text-white" : "text-red-700"}`}>
+                  <LogOut className="h-3 w-3" />Logout
+                </Button>
+              </div>
             </div>
 
             <div className="border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg p-4 mt-2 shadow-sm">
@@ -237,7 +249,7 @@ const DriverActivityLogsPage = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Driver ID</TableHead><TableHead>Activity</TableHead><TableHead>Date & Time</TableHead>
-                    <TableHead className="hidden md:table-cell">Browser</TableHead><TableHead className="hidden lg:table-cell">IP Address</TableHead>
+                    <TableHead className="hidden md:table-cell">Browser</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -252,7 +264,6 @@ const DriverActivityLogsPage = () => {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{formatDate(log.created_at)}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{getBrowserInfo(log.user_agent)}</TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">{log.ip_address || "N/A"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
