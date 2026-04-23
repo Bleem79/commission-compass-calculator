@@ -12,6 +12,8 @@ import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import ActivityStatistics from "@/components/activity/ActivityStatistics";
 import { PageLayout } from "@/components/shared/PageLayout";
+import * as XLSX from "xlsx";
+import { Download } from "lucide-react";
 
 interface ActivityLog {
   id: string;
@@ -32,6 +34,9 @@ const DriverActivityLogsPage = () => {
   const [dateFilter, setDateFilter] = useState("");
   const [isLive, setIsLive] = useState(true);
   const [showStats, setShowStats] = useState(true);
+  const [exportFrom, setExportFrom] = useState("");
+  const [exportTo, setExportTo] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) { navigate("/login"); return; }
@@ -78,6 +83,71 @@ const DriverActivityLogsPage = () => {
     return "Other";
   };
 
+  const handleExport = async () => {
+    if (!exportFrom || !exportTo) {
+      toast({ title: "Select date range", description: "Please choose both From and To dates", variant: "destructive" });
+      return;
+    }
+    const start = new Date(exportFrom); start.setHours(0, 0, 0, 0);
+    const end = new Date(exportTo); end.setHours(23, 59, 59, 999);
+    if (start > end) {
+      toast({ title: "Invalid range", description: "From date must be before To date", variant: "destructive" });
+      return;
+    }
+    setExporting(true);
+    try {
+      // Paginate to bypass 1000-row limit
+      const all: ActivityLog[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("driver_activity_logs")
+          .select("*")
+          .not("driver_id", "in", '("Guest","Guest User")')
+          .gte("created_at", start.toISOString())
+          .lte("created_at", end.toISOString())
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const batch = (data as ActivityLog[]) || [];
+        all.push(...batch);
+        if (batch.length < pageSize) break;
+        from += pageSize;
+      }
+
+      if (all.length === 0) {
+        toast({ title: "No data", description: "No activity logs found in selected range" });
+        setExporting(false);
+        return;
+      }
+
+      const logins = all.filter(l => l.activity_type === "login");
+      const logouts = all.filter(l => l.activity_type === "logout");
+      const mapRow = (l: ActivityLog) => ({
+        "Driver ID": l.driver_id,
+        "Activity": l.activity_type === "login" ? "Login" : "Logout",
+        "Date & Time": formatDate(l.created_at),
+        "Browser": getBrowserInfo(l.user_agent),
+        "IP Address": l.ip_address || "N/A",
+      });
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(all.map(mapRow)), "All Activities");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(logins.map(mapRow)), "Logins");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(logouts.map(mapRow)), "Logouts");
+
+      const fname = `driver-activity-logs_${exportFrom}_to_${exportTo}.xlsx`;
+      XLSX.writeFile(wb, fname);
+      toast({ title: "Export complete", description: `${all.length} records exported (${logins.length} logins, ${logouts.length} logouts)` });
+    } catch (err: any) {
+      console.error("Export error:", err);
+      toast({ title: "Export failed", description: err.message || "Could not export logs", variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <PageLayout
       title="Driver Activity Logs"
@@ -108,6 +178,26 @@ const DriverActivityLogsPage = () => {
               <Button onClick={() => setShowStats(!showStats)} variant={showStats ? "default" : "outline"} size="sm" className="gap-2">
                 <BarChart3 className="h-4 w-4" />{showStats ? "Hide Stats" : "Show Stats"}
               </Button>
+            </div>
+
+            <div className="border-t pt-3 mt-1">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Export to Excel (date range)</p>
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                <div className="flex flex-col sm:flex-row gap-2 flex-1">
+                  <div className="relative flex-1">
+                    <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input type="date" value={exportFrom} onChange={(e) => setExportFrom(e.target.value)} placeholder="From" className="pl-9" />
+                  </div>
+                  <div className="relative flex-1">
+                    <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input type="date" value={exportTo} onChange={(e) => setExportTo(e.target.value)} placeholder="To" className="pl-9" />
+                  </div>
+                </div>
+                <Button onClick={handleExport} disabled={exporting} size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700">
+                  <Download className={`h-4 w-4 ${exporting ? "animate-pulse" : ""}`} />
+                  {exporting ? "Exporting..." : "Download Excel"}
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
