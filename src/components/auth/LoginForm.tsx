@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { User, Key, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { useActivityLogger } from "@/hooks/useActivityLogger";
+import { useActivityLogger, saveActivitySession } from "@/hooks/useActivityLogger";
 
 export const LoginForm = () => {
   const navigate = useNavigate();
@@ -71,6 +71,9 @@ export const LoginForm = () => {
           driverId = credData.driver_id;
         }
         
+        // Persist for reliable logout logging (covers session expiry / browser close)
+        saveActivitySession(data.user.id, driverId);
+
         await logActivity(data.user.id, driverId, "login");
         
         toast({

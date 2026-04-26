@@ -1,16 +1,106 @@
 
-import React, { createContext, useContext, useCallback } from "react";
+import React, { createContext, useContext, useCallback, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthContextType } from "@/types/auth";
 import { useAuthState } from "@/hooks/useAuthState";
-import { useActivityLogger } from "@/hooks/useActivityLogger";
+import {
+  useActivityLogger,
+  getActivitySession,
+  clearActivitySession,
+  saveActivitySession,
+} from "@/hooks/useActivityLogger";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, setUser, session, refreshSession } = useAuthState();
   const { logActivity } = useActivityLogger();
+
+  // Keep persisted activity session in sync with auth state, so logout can
+  // always be attributed to the correct driver even if `user` is cleared.
+  useEffect(() => {
+    if (session?.user && user) {
+      const driverId =
+        user.driverId ||
+        (user.email?.includes("@driver.temp")
+          ? user.email.split("@")[0]
+          : user.role === "guest"
+          ? "Guest"
+          : user.username);
+      if (driverId && driverId !== "Guest") {
+        saveActivitySession(session.user.id, driverId);
+      }
+    }
+  }, [session?.user?.id, user?.driverId, user?.username, user?.email, user?.role]);
+
+  // Listen for any SIGNED_OUT event (manual logout, session expiry, token refresh
+  // failure, sign-out from another tab) and record a logout entry exactly once.
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event) => {
+        if (event === "SIGNED_OUT") {
+          const info = getActivitySession();
+          if (info && info.driverId && info.driverId !== "Guest") {
+            // Fire and forget - dedup guard inside logActivity prevents
+            // double-logging when the explicit logout() also fired.
+            logActivity(info.userId, info.driverId, "logout").finally(() => {
+              clearActivitySession();
+            });
+          } else {
+            clearActivitySession();
+          }
+        }
+      }
+    );
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [logActivity]);
+
+  // Best-effort logout logging when the user closes the tab/browser.
+  // Uses sendBeacon so the request goes out even during page unload.
+  useEffect(() => {
+    const sendLogoutBeacon = () => {
+      const info = getActivitySession();
+      if (!info || !info.driverId || info.driverId === "Guest") return;
+      try {
+        const SUPABASE_URL = "https://iahpiswzhkshejncylvt.supabase.co";
+        const SUPABASE_KEY =
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhaHBpc3d6aGtzaGVqbmN5bHZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwNzgwNzMsImV4cCI6MjA2MDY1NDA3M30.KOrHbCrL8bDregbGgHFsyJ84FdH0_UL-YUJNSPEtARQ";
+        const accessToken = session?.access_token;
+        if (!accessToken) return;
+        const payload = JSON.stringify({
+          user_id: info.userId,
+          driver_id: info.driverId,
+          activity_type: "logout",
+          user_agent: navigator.userAgent,
+          ip_address: null,
+        });
+        const blob = new Blob([payload], {
+          type: "application/json",
+        });
+        // sendBeacon doesn't support custom headers, so we use fetch with keepalive.
+        fetch(`${SUPABASE_URL}/rest/v1/driver_activity_logs`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${accessToken}`,
+            Prefer: "return=minimal",
+          },
+          body: payload,
+          keepalive: true,
+        }).catch(() => {});
+      } catch {}
+    };
+
+    const handlePageHide = () => sendLogoutBeacon();
+    window.addEventListener("pagehide", handlePageHide);
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+    };
+  }, [session?.access_token]);
 
   const logout = useCallback(async (): Promise<boolean> => {
     try {
