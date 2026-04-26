@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useCallback, useEffect, useRef } from "react";
+import React, { createContext, useContext, useCallback, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthContextType } from "@/types/auth";
@@ -16,7 +16,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, setUser, session, refreshSession } = useAuthState();
   const { logActivity } = useActivityLogger();
-  const hasLoggedSessionRef = useRef<string | null>(null);
 
   // Keep persisted activity session in sync with auth state, so logout can
   // always be attributed to the correct driver even if `user` is cleared.
