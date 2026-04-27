@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { Award } from "lucide-react";
+import { Award, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { BadgeLeaderboardDialog } from "./BadgeLeaderboardDialog";
 
 // Convert various month inputs (Excel serial number, ISO date, plain text)
 // into a human-readable "Month-YYYY" string, e.g. "April-2026".
@@ -44,6 +45,7 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
   const [badgeImage, setBadgeImage] = useState<string | null>(null);
   const [badgeMonth, setBadgeMonth] = useState<string | null>(null);
   const [badgeType, setBadgeType] = useState<string | null>(null);
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -144,6 +146,21 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
                 {formatBadgeMonth(badgeMonth)}
               </p>
             )}
+            <button
+              type="button"
+              onClick={() => setLeaderboardOpen(true)}
+              className="
+                mt-2 inline-flex items-center gap-1.5 px-3 py-1
+                rounded-full text-[11px] font-bold uppercase tracking-wider
+                bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600
+                text-slate-900 hover:from-amber-400 hover:to-amber-500
+                shadow-[0_0_15px_rgba(251,191,36,0.35)]
+                transition
+              "
+            >
+              <Trophy className="h-3.5 w-3.5" />
+              Leaderboard
+            </button>
           </div>
 
           {/* Driver Name */}
@@ -173,5 +190,11 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
         </div>
       </DialogContent>
     </Dialog>
+
+    <BadgeLeaderboardDialog
+      isOpen={leaderboardOpen}
+      onClose={() => setLeaderboardOpen(false)}
+    />
+    </>
   );
 };
