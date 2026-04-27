@@ -218,6 +218,39 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_badge_catalog: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          image_path: string | null
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          image_path?: string | null
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          image_path?: string | null
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       driver_badges: {
         Row: {
           badge_type: string
