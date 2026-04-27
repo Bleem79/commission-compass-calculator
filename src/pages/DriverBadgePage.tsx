@@ -36,6 +36,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { supabase } from "@/integrations/supabase/client";
+import { BadgeCatalog } from "@/components/driver-badge/BadgeCatalog";
 
 interface BadgeRow {
   id: string;
@@ -315,6 +316,10 @@ const DriverBadgePage = () => {
         </div>
       }
     >
+      <div className="mb-6">
+        <BadgeCatalog />
+      </div>
+
       <Card>
         <CardHeader className="border-b">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
