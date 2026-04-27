@@ -27,6 +27,7 @@ const ALL_PAGES = [
   { key: "video-tutorials", label: "Video Tutorials" },
   { key: "total-outstanding", label: "Total Balance" },
   { key: "total-balance-kpi", label: "Total Balance KPI" },
+  { key: "driver-badge", label: "Driver Badge" },
 ];
 
 interface PagePermissionsDialogProps {

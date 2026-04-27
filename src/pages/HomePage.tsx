@@ -28,6 +28,7 @@ import {
   DollarSign,
   TrendingUp,
   CalendarRange,
+  Award,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePagePermissions } from "@/contexts/PagePermissionsContext";
@@ -365,6 +366,13 @@ const HomePage = () => {
       gradient: "bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-600",
       pageKey: "calendar-events-upload",
       onClick: () => navigate("/calendar-events-upload"),
+    });
+    features.push({
+      icon: <Award className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Driver Badge",
+      gradient: "bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-600",
+      pageKey: "driver-badge",
+      onClick: () => navigate("/driver-badge"),
     });
     if (isAdmin) {
       features.push({

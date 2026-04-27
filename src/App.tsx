@@ -43,6 +43,7 @@ const TotalOutstandingPage = lazy(() => import("./pages/TotalOutstandingPage"));
 const TotalBalanceKPIPage = lazy(() => import("./pages/TotalBalanceKPIPage"));
 const CalendarEventsUploadPage = lazy(() => import("./pages/CalendarEventsUploadPage"));
 const DriverCalendarEventsPage = lazy(() => import("./pages/DriverCalendarEventsPage"));
+const DriverBadgePage = lazy(() => import("./pages/DriverBadgePage"));
 const Index = lazy(() => import("./pages/Index"));
 
 // Loading fallback component
@@ -171,6 +172,7 @@ const AppRoutes = () => {
         <Route path="/total-balance-kpi" element={<PageGuard pageKey="total-balance-kpi"><TotalBalanceKPIPage /></PageGuard>} />
         <Route path="/calendar-events-upload" element={<PageGuard pageKey="calendar-events-upload"><CalendarEventsUploadPage /></PageGuard>} />
         <Route path="/driver-calendar-events" element={<DriverCalendarEventsPage />} />
+        <Route path="/driver-badge" element={<PageGuard pageKey="driver-badge"><DriverBadgePage /></PageGuard>} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
