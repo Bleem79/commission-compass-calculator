@@ -123,6 +123,7 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
                   src={badgeImage}
                   alt={badgeType ? `${badgeType} badge` : "Driver badge"}
                   className="w-full h-full object-contain"
+                  style={{ transform: "scale(1.2)", transformOrigin: "center" }}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center gap-2 text-slate-400">
@@ -141,7 +142,7 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
             <p className="text-2xl font-bold tracking-wider text-white">{driverId}</p>
             {badgeMonth && (
               <p className="text-sm font-semibold text-amber-300 tracking-wide pt-1">
-                {badgeMonth}
+                {formatBadgeMonth(badgeMonth)}
               </p>
             )}
           </div>
