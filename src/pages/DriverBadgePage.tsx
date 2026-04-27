@@ -329,14 +329,14 @@ const DriverBadgePage = () => {
                 <TableRow className="bg-amber-50/50">
                   <TableHead className="font-semibold">Driver ID No.</TableHead>
                   <TableHead className="font-semibold">Month</TableHead>
-                  <TableHead className="font-semibold">Type of Badge</TableHead>
+                  <TableHead className="font-semibold">Description</TableHead>
                   <TableHead className="font-semibold">Badge Image</TableHead>
                   <TableHead className="font-semibold text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map((row) => {
-                  const imgUrl = getImageUrl(row.image_path);
+                  const imgUrl = getCatalogImageForBadgeType(row.badge_type);
                   return (
                     <TableRow key={row.id}>
                       <TableCell className="font-mono font-medium">{row.driver_id}</TableCell>
@@ -360,37 +360,13 @@ const DriverBadgePage = () => {
                             />
                           </button>
                         ) : (
-                          <span className="text-xs text-muted-foreground italic">No image</span>
+                          <span className="text-xs text-muted-foreground italic">
+                            No matching catalog badge
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <input
-                            ref={(el) => (imageInputRefs.current[row.id] = el)}
-                            type="file"
-                            accept="image/jpeg,image/png,.jpg,.jpeg,.png"
-                            className="hidden"
-                            onChange={(e) => handleImageUpload(row, e)}
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => imageInputRefs.current[row.id]?.click()}
-                            className="border-blue-300 text-blue-700 hover:bg-blue-50"
-                          >
-                            <ImageIcon className="h-4 w-4" />
-                            {row.image_path ? "Replace" : "Upload"}
-                          </Button>
-                          {row.image_path && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDeleteImage(row)}
-                              className="border-orange-300 text-orange-700 hover:bg-orange-50"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button size="sm" variant="outline" className="border-red-300 text-red-700 hover:bg-red-50">
