@@ -4,6 +4,34 @@ import { format } from "date-fns";
 import { Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+// Convert various month inputs (Excel serial number, ISO date, plain text)
+// into a human-readable "Month-YYYY" string, e.g. "April-2026".
+const formatBadgeMonth = (raw: string | null | undefined): string | null => {
+  if (raw == null) return null;
+  const value = String(raw).trim();
+  if (!value) return null;
+
+  // Excel serial date (e.g. "46113" => 2026-04-01)
+  if (/^\d{4,6}$/.test(value)) {
+    const serial = Number(value);
+    // Excel epoch starts at 1899-12-30 (accounting for the 1900 leap-year bug)
+    const ms = Math.round((serial - 25569) * 86400 * 1000);
+    const d = new Date(ms);
+    if (!isNaN(d.getTime())) {
+      return format(d, "MMMM-yyyy");
+    }
+  }
+
+  // ISO / parseable date string
+  const parsed = new Date(value);
+  if (!isNaN(parsed.getTime()) && /[-/]/.test(value)) {
+    return format(parsed, "MMMM-yyyy");
+  }
+
+  // Already a readable label — return as-is
+  return value;
+};
+
 interface DriverQRCodeDialogProps {
   isOpen: boolean;
   onClose: () => void;
