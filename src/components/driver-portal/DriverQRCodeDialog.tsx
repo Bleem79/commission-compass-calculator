@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { QRCodeCanvas } from "qrcode.react";
 import { format } from "date-fns";
+import { Award } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DriverQRCodeDialogProps {
   isOpen: boolean;
@@ -12,12 +13,69 @@ interface DriverQRCodeDialogProps {
 
 export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: DriverQRCodeDialogProps) => {
   const [now, setNow] = useState(new Date());
+  const [badgeImage, setBadgeImage] = useState<string | null>(null);
+  const [badgeMonth, setBadgeMonth] = useState<string | null>(null);
+  const [badgeType, setBadgeType] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !driverId) return;
+    let cancelled = false;
+
+    const loadBadge = async () => {
+      // Latest badge record for this driver
+      const { data: badges } = await supabase
+        .from("driver_badges")
+        .select("month, badge_type")
+        .eq("driver_id", driverId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (cancelled) return;
+
+      const latest = badges && badges[0];
+      if (!latest) {
+        setBadgeImage(null);
+        setBadgeMonth(null);
+        setBadgeType(null);
+        return;
+      }
+      setBadgeMonth(latest.month);
+      setBadgeType(latest.badge_type);
+
+      // Match catalog by title or description (case-insensitive)
+      const { data: catalog } = await supabase
+        .from("driver_badge_catalog")
+        .select("title, description, image_path");
+
+      if (cancelled) return;
+
+      const key = (latest.badge_type || "").trim().toLowerCase();
+      const match = (catalog || []).find(
+        (c) =>
+          (c.title || "").trim().toLowerCase() === key ||
+          (c.description || "").trim().toLowerCase() === key,
+      );
+      if (match?.image_path) {
+        const { data } = supabase.storage
+          .from("driver-badges")
+          .getPublicUrl(match.image_path);
+        setBadgeImage(data.publicUrl);
+      } else {
+        setBadgeImage(null);
+      }
+    };
+
+    loadBadge();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, driverId]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -29,17 +87,23 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-4">
-          {/* QR Code container */}
+          {/* Badge image container */}
           <div className="p-1 rounded-2xl bg-gradient-to-br from-primary via-orange-400 to-amber-500 shadow-[0_0_30px_rgba(249,115,22,0.25)]">
-            <div className="bg-white rounded-xl p-4 flex items-center justify-center">
-              <QRCodeCanvas
-                value={driverId}
-                size={180}
-                level="L"
-                bgColor="#ffffff"
-                fgColor="#000000"
-                includeMargin={true}
-              />
+            <div className="bg-white rounded-xl p-4 flex items-center justify-center w-[212px] h-[212px]">
+              {badgeImage ? (
+                <img
+                  src={badgeImage}
+                  alt={badgeType ? `${badgeType} badge` : "Driver badge"}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-2 text-slate-400">
+                  <Award className="h-12 w-12" />
+                  <span className="text-xs font-medium text-center px-2">
+                    No badge assigned yet
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -47,6 +111,11 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
           <div className="text-center space-y-1">
             <p className="text-xs uppercase tracking-widest text-white/50">Driver ID</p>
             <p className="text-2xl font-bold tracking-wider text-white">{driverId}</p>
+            {badgeMonth && (
+              <p className="text-sm font-semibold text-amber-300 tracking-wide pt-1">
+                {badgeMonth}
+              </p>
+            )}
           </div>
 
           {/* Driver Name */}
