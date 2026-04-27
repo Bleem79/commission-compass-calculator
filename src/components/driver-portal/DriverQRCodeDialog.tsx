@@ -117,13 +117,13 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
         <div className="flex flex-col items-center gap-4">
           {/* Badge image container */}
           <div className="p-1 rounded-2xl bg-gradient-to-br from-primary via-orange-400 to-amber-500 shadow-[0_0_30px_rgba(249,115,22,0.25)]">
-            <div className="bg-white rounded-xl p-4 flex items-center justify-center w-[212px] h-[212px]">
+            <div className="bg-white rounded-xl p-2 flex items-center justify-center w-[260px] h-[260px]">
               {badgeImage ? (
                 <img
                   src={badgeImage}
                   alt={badgeType ? `${badgeType} badge` : "Driver badge"}
-                  className="w-full h-full object-contain"
-                  style={{ transform: "scale(1.2)", transformOrigin: "center" }}
+                  className="object-contain"
+                  style={{ width: "80%", height: "80%" }}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center gap-2 text-slate-400">
