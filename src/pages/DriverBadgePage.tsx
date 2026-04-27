@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { Award, Upload, Trash2, Download, Image as ImageIcon, X, Search } from "lucide-react";
+import { Award, Upload, Trash2, Download, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,12 @@ interface BadgeRow {
   created_at: string;
 }
 
+interface CatalogLookup {
+  title: string;
+  description: string;
+  image_path: string | null;
+}
+
 const REQUIRED_COLS = ["Driver ID No.", "Month", "Type of Badge"] as const;
 const BUCKET = "driver-badges";
 
@@ -55,24 +61,34 @@ const DriverBadgePage = () => {
   const { loading: adminLoading, isAdmin } = useAdminCheck();
 
   const [rows, setRows] = useState<BadgeRow[]>([]);
+  const [catalog, setCatalog] = useState<CatalogLookup[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const fetchRows = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("driver_badges")
-      .select("id, driver_id, month, badge_type, image_path, created_at")
-      .order("created_at", { ascending: false });
-    if (error) {
-      toast.error("Failed to load badges", { description: error.message });
+    const [rowsRes, catRes] = await Promise.all([
+      supabase
+        .from("driver_badges")
+        .select("id, driver_id, month, badge_type, image_path, created_at")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("driver_badge_catalog")
+        .select("title, description, image_path"),
+    ]);
+    if (rowsRes.error) {
+      toast.error("Failed to load badges", { description: rowsRes.error.message });
     } else {
-      setRows((data as BadgeRow[]) || []);
+      setRows((rowsRes.data as BadgeRow[]) || []);
+    }
+    if (catRes.error) {
+      toast.error("Failed to load catalog", { description: catRes.error.message });
+    } else {
+      setCatalog((catRes.data as CatalogLookup[]) || []);
     }
     setLoading(false);
   };
@@ -80,6 +96,22 @@ const DriverBadgePage = () => {
   useEffect(() => {
     if (isAdmin) fetchRows();
   }, [isAdmin]);
+
+  const catalogIndex = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const c of catalog) {
+      if (c.title) map.set(c.title.trim().toLowerCase(), c.image_path);
+      if (c.description) map.set(c.description.trim().toLowerCase(), c.image_path);
+    }
+    return map;
+  }, [catalog]);
+
+  const getCatalogImageForBadgeType = (badgeType: string): string | null => {
+    const path = catalogIndex.get(badgeType.trim().toLowerCase());
+    if (!path) return null;
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+    return data.publicUrl;
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -187,64 +219,6 @@ const DriverBadgePage = () => {
     } catch (err: any) {
       toast.error("Delete failed", { description: err.message });
     }
-  };
-
-  const handleImageUpload = async (
-    row: BadgeRow,
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!/\.(jpe?g|png)$/i.test(file.name)) {
-      toast.error("Only JPG or PNG files are allowed.");
-      return;
-    }
-    try {
-      // Remove old image if present
-      if (row.image_path) {
-        await supabase.storage.from(BUCKET).remove([row.image_path]);
-      }
-      const ext = file.name.split(".").pop();
-      const path = `${row.id}_${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, file, { upsert: true, contentType: file.type });
-      if (upErr) throw upErr;
-      const { error: dbErr } = await supabase
-        .from("driver_badges")
-        .update({ image_path: path })
-        .eq("id", row.id);
-      if (dbErr) throw dbErr;
-      toast.success("Badge image uploaded.");
-      await fetchRows();
-    } catch (err: any) {
-      toast.error("Image upload failed", { description: err.message });
-    } finally {
-      const input = imageInputRefs.current[row.id];
-      if (input) input.value = "";
-    }
-  };
-
-  const handleDeleteImage = async (row: BadgeRow) => {
-    if (!row.image_path) return;
-    try {
-      await supabase.storage.from(BUCKET).remove([row.image_path]);
-      const { error } = await supabase
-        .from("driver_badges")
-        .update({ image_path: null })
-        .eq("id", row.id);
-      if (error) throw error;
-      toast.success("Badge image removed.");
-      await fetchRows();
-    } catch (err: any) {
-      toast.error("Failed to remove image", { description: err.message });
-    }
-  };
-
-  const getImageUrl = (path: string | null) => {
-    if (!path) return null;
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-    return data.publicUrl;
   };
 
   if (adminLoading) {
