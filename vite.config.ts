@@ -58,7 +58,7 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       devOptions: {
-        enabled: true,
+        enabled: false,
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
