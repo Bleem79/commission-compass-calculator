@@ -508,10 +508,23 @@ const HomePage = () => {
                 {driverInfo?.driverId ? (
                   <button
                     onClick={() => setIsQRCodeOpen(true)}
-                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white transition-colors hover:opacity-90 active:scale-95 shrink-0"
-                    title="Show QR Code"
+                    className={cn(
+                      "w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center text-white transition-colors hover:opacity-90 active:scale-95 shrink-0 overflow-hidden",
+                      badgeImageUrl
+                        ? "bg-white/10 p-1"
+                        : "bg-gradient-to-br from-primary to-orange-500"
+                    )}
+                    title="Show Driver ID Card"
                   >
-                    <QrCode className="w-8 h-8 sm:w-9 sm:h-9" />
+                    {badgeImageUrl ? (
+                      <img
+                        src={badgeImageUrl}
+                        alt="Driver Badge"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <QrCode className="w-8 h-8 sm:w-9 sm:h-9" />
+                    )}
                   </button>
                 ) : (
                   <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0">
