@@ -113,29 +113,27 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
       <DialogContent className="max-w-[340px] sm:max-w-[380px] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-white/20 text-white">
         <DialogHeader>
           <DialogTitle className="text-center text-white text-lg font-bold tracking-wide">
-            Driver ID Card
+            {driverName || "Driver"}
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-4">
-          {/* Badge image container */}
-          <div className="p-1 rounded-2xl bg-gradient-to-br from-primary via-orange-400 to-amber-500 shadow-[0_0_30px_rgba(249,115,22,0.25)]">
-            <div className="bg-white rounded-xl p-1 flex items-center justify-center w-[280px] h-[280px] overflow-hidden">
-              {badgeImage ? (
-                <img
-                  src={badgeImage}
-                  alt={badgeType ? `${badgeType} badge` : "Driver badge"}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center gap-2 text-slate-400">
-                  <Award className="h-12 w-12" />
-                  <span className="text-xs font-medium text-center px-2">
-                    No badge assigned yet
-                  </span>
-                </div>
-              )}
-            </div>
+          {/* Badge image (no white background) */}
+          <div className="flex items-center justify-center w-[280px] h-[280px]">
+            {badgeImage ? (
+              <img
+                src={badgeImage}
+                alt={badgeType ? `${badgeType} badge` : "Driver badge"}
+                className="w-full h-full object-contain drop-shadow-[0_0_25px_rgba(249,115,22,0.35)]"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-2 text-white/60">
+                <Award className="h-12 w-12" />
+                <span className="text-xs font-medium text-center px-2">
+                  No badge assigned yet
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Driver ID */}
