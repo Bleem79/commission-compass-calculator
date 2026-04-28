@@ -113,7 +113,7 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
       <DialogContent className="max-w-[340px] sm:max-w-[380px] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-white/20 text-white px-4 sm:px-6 overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-center text-white text-lg font-bold tracking-wide">
-            Driver ID Card
+            {formatBadgeMonth(badgeMonth) || "Driver ID Card"}
           </DialogTitle>
         </DialogHeader>
 
@@ -158,11 +158,6 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
           <div className="text-center space-y-1">
             <p className="text-xs uppercase tracking-widest text-white/50">Driver ID</p>
             <p className="text-2xl font-bold tracking-wider text-white">{driverId}</p>
-            {badgeMonth && (
-              <p className="text-sm font-semibold text-amber-300 tracking-wide pt-1">
-                {formatBadgeMonth(badgeMonth)}
-              </p>
-            )}
             <button
               type="button"
               onClick={() => setLeaderboardOpen(true)}
