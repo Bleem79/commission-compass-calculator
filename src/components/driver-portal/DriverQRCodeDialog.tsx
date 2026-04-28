@@ -110,21 +110,21 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
   return (
     <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[340px] sm:max-w-[380px] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-white/20 text-white">
+      <DialogContent className="max-w-[340px] sm:max-w-[380px] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-white/20 text-white px-4 sm:px-6 overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-center text-white text-lg font-bold tracking-wide">
             Driver ID Card
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4 w-full">
           {/* Badge image (no white background) */}
           {badgeImage ? (
-            <div className="flex items-center justify-center w-[392px] h-[392px] max-w-[calc(100%+3rem)] -mx-6">
+            <div className="flex items-center justify-center w-full -mx-4 sm:-mx-6 px-0">
               <img
                 src={badgeImage}
                 alt={badgeType ? `${badgeType} badge` : "Driver badge"}
-                className="w-full h-full object-contain drop-shadow-[0_0_25px_rgba(249,115,22,0.35)]"
+                className="w-full max-w-[392px] h-auto object-contain drop-shadow-[0_0_25px_rgba(249,115,22,0.35)]"
               />
             </div>
           ) : (
