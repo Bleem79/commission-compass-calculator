@@ -92,21 +92,6 @@ export const BadgeLeaderboardDialog = ({ isOpen, onClose }: BadgeLeaderboardDial
           </DialogTitle>
         </DialogHeader>
 
-        {/* Column header */}
-        <div className="grid grid-cols-12 px-3 py-2 text-[10px] tracking-widest font-bold uppercase text-amber-200/80 border-b border-amber-700/20 bg-slate-900/60">
-          <div className="col-span-2 flex items-center justify-center gap-1">
-            <Trophy className="h-3 w-3" /> Rank
-          </div>
-          <div className="col-span-2 flex items-center justify-center gap-1">
-            <Calendar className="h-3 w-3" /> Duration
-          </div>
-          <div className="col-span-4">Title Name</div>
-          <div className="col-span-2 text-center">Description</div>
-          <div className="col-span-2 flex items-center justify-center gap-1">
-            <Award className="h-3 w-3" /> Badge
-          </div>
-        </div>
-
         {/* Body */}
         <div className="max-h-[65vh] overflow-y-auto divide-y divide-white/5">
           {loading ? (
@@ -125,48 +110,44 @@ export const BadgeLeaderboardDialog = ({ isOpen, onClose }: BadgeLeaderboardDial
               return (
                 <div
                   key={item.id}
-                  className="grid grid-cols-12 items-center px-3 py-3 hover:bg-white/5 transition"
+                  className="flex items-center gap-3 px-3 py-3 hover:bg-white/5 transition"
                 >
                   {/* Rank medallion */}
-                  <div className="col-span-2 flex justify-center">
-                    <div
-                      className={`
-                        h-9 w-9 rounded-full flex items-center justify-center
-                        bg-gradient-to-b from-slate-700 to-slate-900
-                        ring-2 ${c.ring} shadow-[0_0_10px_rgba(0,0,0,0.5)]
-                        text-sm font-black text-white
-                      `}
-                    >
-                      {rank}
+                  <div
+                    className={`
+                      shrink-0 h-9 w-9 rounded-full flex items-center justify-center
+                      bg-gradient-to-b from-slate-700 to-slate-900
+                      ring-2 ${c.ring} shadow-[0_0_10px_rgba(0,0,0,0.5)]
+                      text-sm font-black text-white
+                    `}
+                  >
+                    {rank}
+                  </div>
+
+                  {/* Middle: text content */}
+                  <div className="flex-1 min-w-0 flex flex-col gap-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`
+                          text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded
+                          ${c.chipBg} ${c.chipText} border border-white/10
+                          inline-flex items-center gap-1 whitespace-nowrap
+                        `}
+                      >
+                        <Calendar className="h-2.5 w-2.5" />
+                        {rank}-MONTH
+                      </span>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${c.descText} truncate`}>
+                        {item.description}
+                      </span>
+                    </div>
+                    <div className="font-extrabold uppercase text-sm tracking-wide text-white truncate">
+                      {item.title}
                     </div>
                   </div>
 
-                  {/* Duration chip */}
-                  <div className="col-span-2 flex justify-center">
-                    <span
-                      className={`
-                        text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded
-                        ${c.chipBg} ${c.chipText} border border-white/10
-                        flex items-center gap-1 whitespace-nowrap
-                      `}
-                    >
-                      <Calendar className="h-3 w-3" />
-                      {rank}-MONTH
-                    </span>
-                  </div>
-
-                  {/* Title */}
-                  <div className="col-span-4 font-extrabold uppercase text-sm tracking-wide text-white truncate pr-2">
-                    {item.title}
-                  </div>
-
-                  {/* Description */}
-                  <div className={`col-span-2 text-center font-bold uppercase text-xs tracking-wider truncate ${c.descText}`}>
-                    {item.description}
-                  </div>
-
-                  {/* Badge */}
-                  <div className="col-span-2 flex justify-center">
+                  {/* Badge image */}
+                  <div className="shrink-0">
                     {imgUrl ? (
                       <div
                         className={`h-12 w-12 rounded-md overflow-hidden ring-2 ${c.ring} bg-white/5 flex items-center justify-center`}
