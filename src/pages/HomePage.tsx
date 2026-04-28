@@ -111,6 +111,7 @@ const HomePage = () => {
   const [controllerAvatarUrl, setControllerAvatarUrl] = useState<string | null>(null);
   const [isQRCodeOpen, setIsQRCodeOpen] = useState(false);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
+  const [badgeImageUrl, setBadgeImageUrl] = useState<string | null>(null);
   const { driverInfo } = useDriverCredentials();
   const isDriver = !!driverInfo?.driverId;
   const shouldApplyPagePermissions = user?.role === "user" || user?.role === "advanced";
@@ -144,6 +145,54 @@ const HomePage = () => {
       }
     };
     fetchController();
+  }, [driverInfo?.driverId]);
+
+  // Fetch driver's latest badge image to display in the avatar slot
+  useEffect(() => {
+    let cancelled = false;
+    const loadBadge = async () => {
+      if (!driverInfo?.driverId) {
+        setBadgeImageUrl(null);
+        return;
+      }
+      try {
+        const { data: badges } = await supabase
+          .from("driver_badges")
+          .select("badge_type")
+          .eq("driver_id", driverInfo.driverId)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (cancelled) return;
+        const latest = badges && badges[0];
+        if (!latest) {
+          setBadgeImageUrl(null);
+          return;
+        }
+        const { data: catalog } = await supabase
+          .from("driver_badge_catalog")
+          .select("title, description, image_path");
+        if (cancelled) return;
+        const key = (latest.badge_type || "").trim().toLowerCase();
+        const match = (catalog || []).find(
+          (c) =>
+            (c.title || "").trim().toLowerCase() === key ||
+            (c.description || "").trim().toLowerCase() === key,
+        );
+        if (match?.image_path) {
+          const { data } = supabase.storage.from("driver-badges").getPublicUrl(match.image_path);
+          setBadgeImageUrl(data.publicUrl);
+        } else {
+          setBadgeImageUrl(null);
+        }
+      } catch (err) {
+        console.error("Error fetching badge:", err);
+        setBadgeImageUrl(null);
+      }
+    };
+    loadBadge();
+    return () => {
+      cancelled = true;
+    };
   }, [driverInfo?.driverId]);
 
   // Fetch pending driver request count for admin/advanced/users
