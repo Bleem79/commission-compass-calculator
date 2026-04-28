@@ -119,22 +119,22 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
 
         <div className="flex flex-col items-center gap-4">
           {/* Badge image (no white background) */}
-          <div className="flex items-center justify-center w-[392px] h-[392px] max-w-full -mx-6">
-            {badgeImage ? (
+          {badgeImage ? (
+            <div className="flex items-center justify-center w-[392px] h-[392px] max-w-[calc(100%+3rem)] -mx-6">
               <img
                 src={badgeImage}
                 alt={badgeType ? `${badgeType} badge` : "Driver badge"}
                 className="w-full h-full object-contain drop-shadow-[0_0_25px_rgba(249,115,22,0.35)]"
               />
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-2 text-white/60">
-                <Award className="h-12 w-12" />
-                <span className="text-xs font-medium text-center px-2">
-                  No badge assigned yet
-                </span>
-              </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2 text-white/60 w-full py-8">
+              <Award className="h-16 w-16" />
+              <span className="text-xs font-medium text-center px-2">
+                No badge assigned yet
+              </span>
+            </div>
+          )}
 
           {/* Driver Name */}
           <div className="text-center space-y-1">
