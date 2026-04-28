@@ -119,7 +119,7 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
 
         <div className="flex flex-col items-center gap-4">
           {/* Badge image (no white background) */}
-          <div className="flex items-center justify-center w-[280px] h-[280px]">
+          <div className="flex items-center justify-center w-[392px] h-[392px] max-w-full -mx-6">
             {badgeImage ? (
               <img
                 src={badgeImage}
@@ -135,6 +135,26 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
               </div>
             )}
           </div>
+
+          {/* Driver Name */}
+          {driverName && (
+            <div className="text-center space-y-1">
+              <p className="text-xs uppercase tracking-widest text-white/50">Full Name</p>
+              <p
+                className="font-semibold text-white/90 break-words max-w-full px-2"
+                style={{
+                  fontSize:
+                    driverName.length > 25
+                      ? "0.875rem"
+                      : driverName.length > 18
+                      ? "1rem"
+                      : "1.125rem",
+                }}
+              >
+                {driverName}
+              </p>
+            </div>
+          )}
 
           {/* Driver ID */}
           <div className="text-center space-y-1">
@@ -161,14 +181,6 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
               Leaderboard
             </button>
           </div>
-
-          {/* Driver Name */}
-          {driverName && (
-            <div className="text-center space-y-1">
-              <p className="text-xs uppercase tracking-widest text-white/50">Full Name</p>
-              <p className="text-lg font-semibold text-white/90 break-words max-w-full px-2" style={{ fontSize: driverName && driverName.length > 25 ? '0.875rem' : driverName && driverName.length > 18 ? '1rem' : '1.125rem' }}>{driverName}</p>
-            </div>
-          )}
 
           {/* Current Date & Time */}
           <div className="text-center space-y-0.5">
