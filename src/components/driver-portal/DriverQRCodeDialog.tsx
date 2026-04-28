@@ -113,7 +113,7 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
       <DialogContent className="max-w-[340px] sm:max-w-[380px] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-white/20 text-white">
         <DialogHeader>
           <DialogTitle className="text-center text-white text-lg font-bold tracking-wide">
-            {driverName || "Driver"}
+            Driver ID Card
           </DialogTitle>
         </DialogHeader>
 
@@ -137,24 +137,22 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
           </div>
 
           {/* Driver Name */}
-          {driverName && (
-            <div className="text-center space-y-1">
-              <p className="text-xs uppercase tracking-widest text-white/50">Full Name</p>
-              <p
-                className="font-semibold text-white/90 break-words max-w-full px-2"
-                style={{
-                  fontSize:
-                    driverName.length > 25
-                      ? "0.875rem"
-                      : driverName.length > 18
-                      ? "1rem"
-                      : "1.125rem",
-                }}
-              >
-                {driverName}
-              </p>
-            </div>
-          )}
+          <div className="text-center space-y-1">
+            <p className="text-xs uppercase tracking-widest text-white/50">Full Name</p>
+            <p
+              className="font-semibold text-white/90 break-words max-w-full px-2"
+              style={{
+                fontSize:
+                  driverName && driverName.length > 25
+                    ? "0.875rem"
+                    : driverName && driverName.length > 18
+                    ? "1rem"
+                    : "1.125rem",
+              }}
+            >
+              {driverName || "—"}
+            </p>
+          </div>
 
           {/* Driver ID */}
           <div className="text-center space-y-1">
