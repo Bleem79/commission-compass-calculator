@@ -60,15 +60,34 @@ const DriverActivityLogsPage = () => {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      let query = supabase.from("driver_activity_logs").select("*").not("driver_id", "in", '("Guest","Guest User")').order("created_at", { ascending: false }).limit(500);
+      // Paginate to bypass Supabase's 1000-row default limit
+      const all: ActivityLog[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      let startISO: string | null = null;
+      let endISO: string | null = null;
       if (dateFilter) {
-        const startOfDay = new Date(dateFilter); startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(dateFilter); endOfDay.setHours(23, 59, 59, 999);
-        query = query.gte("created_at", startOfDay.toISOString()).lte("created_at", endOfDay.toISOString());
+        const s = new Date(dateFilter); s.setHours(0, 0, 0, 0);
+        const e = new Date(dateFilter); e.setHours(23, 59, 59, 999);
+        startISO = s.toISOString();
+        endISO = e.toISOString();
       }
-      const { data, error } = await query;
-      if (error) { toast({ title: "Error", description: "Failed to fetch activity logs", variant: "destructive" }); return; }
-      setLogs((data as ActivityLog[]) || []);
+      while (true) {
+        let q = supabase
+          .from("driver_activity_logs")
+          .select("*")
+          .not("driver_id", "in", '("Guest","Guest User")')
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (startISO && endISO) q = q.gte("created_at", startISO).lte("created_at", endISO);
+        const { data, error } = await q;
+        if (error) { toast({ title: "Error", description: "Failed to fetch activity logs", variant: "destructive" }); return; }
+        const batch = (data as ActivityLog[]) || [];
+        all.push(...batch);
+        if (batch.length < pageSize) break;
+        from += pageSize;
+      }
+      setLogs(all);
     } catch (error) { console.error("Error:", error); }
     finally { setLoading(false); }
   };
