@@ -93,7 +93,7 @@ const DriverActivityLogsPage = () => {
   };
 
   const filteredLogs = logs.filter(log =>
-    log.driver_id.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (log.driver_id?.toLowerCase() ?? "").includes(searchTerm.toLowerCase().trim()) &&
     (activityFilter === "all" || log.activity_type === activityFilter)
   );
   const formatDate = (dateString: string) => format(new Date(dateString), "MMM dd, yyyy hh:mm:ss a");
