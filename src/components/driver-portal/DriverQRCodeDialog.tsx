@@ -198,6 +198,7 @@ export const DriverQRCodeDialog = ({ isOpen, onClose, driverId, driverName }: Dr
     <BadgeLeaderboardDialog
       isOpen={leaderboardOpen}
       onClose={() => setLeaderboardOpen(false)}
+      driverId={driverId}
     />
     </>
   );
