@@ -43,7 +43,7 @@ const DriverActivityLogsPage = () => {
     if (!isAuthenticated) { navigate("/login"); return; }
     if (!canAccessAdminPages) { navigate("/home"); return; }
     fetchLogs();
-  }, [isAuthenticated, canAccessAdminPages, navigate, dateFilter]);
+  }, [isAuthenticated, canAccessAdminPages, navigate, dateFilter, searchTerm]);
 
   useEffect(() => {
     if (!canAccessAdminPages || !isLive) return;
@@ -66,7 +66,10 @@ const DriverActivityLogsPage = () => {
       let from = 0;
       let startISO: string | null = null;
       let endISO: string | null = null;
-      if (dateFilter) {
+      const hasSearch = searchTerm.trim().length > 0;
+      // When searching by Driver ID, ignore the date filter so all of that driver's
+      // activities are returned across all dates.
+      if (dateFilter && !hasSearch) {
         const s = new Date(dateFilter); s.setHours(0, 0, 0, 0);
         const e = new Date(dateFilter); e.setHours(23, 59, 59, 999);
         startISO = s.toISOString();
@@ -80,6 +83,7 @@ const DriverActivityLogsPage = () => {
           .order("created_at", { ascending: false })
           .range(from, from + pageSize - 1);
         if (startISO && endISO) q = q.gte("created_at", startISO).lte("created_at", endISO);
+        if (hasSearch) q = q.ilike("driver_id", `%${searchTerm.trim()}%`);
         const { data, error } = await q;
         if (error) { toast({ title: "Error", description: "Failed to fetch activity logs", variant: "destructive" }); return; }
         const batch = (data as ActivityLog[]) || [];
@@ -93,7 +97,7 @@ const DriverActivityLogsPage = () => {
   };
 
   const filteredLogs = logs.filter(log =>
-    log.driver_id.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (log.driver_id?.toLowerCase() ?? "").includes(searchTerm.toLowerCase().trim()) &&
     (activityFilter === "all" || log.activity_type === activityFilter)
   );
   const formatDate = (dateString: string) => format(new Date(dateString), "MMM dd, yyyy hh:mm:ss a");
