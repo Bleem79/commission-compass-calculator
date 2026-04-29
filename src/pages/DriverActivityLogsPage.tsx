@@ -43,7 +43,7 @@ const DriverActivityLogsPage = () => {
     if (!isAuthenticated) { navigate("/login"); return; }
     if (!canAccessAdminPages) { navigate("/home"); return; }
     fetchLogs();
-  }, [isAuthenticated, canAccessAdminPages, navigate]);
+  }, [isAuthenticated, canAccessAdminPages, navigate, dateFilter]);
 
   useEffect(() => {
     if (!canAccessAdminPages || !isLive) return;
