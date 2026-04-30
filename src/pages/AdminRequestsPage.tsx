@@ -385,7 +385,7 @@ const AdminRequestsPage = () => {
       {/* Delete Duplicates Confirmation */}
       <AlertDialog open={showDeleteDuplicatesConfirm} onOpenChange={setShowDeleteDuplicatesConfirm}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Delete All Duplicates?</AlertDialogTitle><AlertDialogDescription>This will permanently delete {duplicateCount} duplicate request(s). Duplicates are identified by same Driver ID, Request Type, and Subject — the oldest entry is kept.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Delete All Duplicates?</AlertDialogTitle><AlertDialogDescription>This will permanently delete {duplicateCount} duplicate request(s). Duplicates are identified by same Driver ID, Request Type, and Subject — the newest entry is kept.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDeleteDuplicates} disabled={deletingDuplicates} className="bg-destructive hover:bg-destructive/90">
