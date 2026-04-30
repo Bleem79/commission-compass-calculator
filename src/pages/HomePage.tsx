@@ -265,7 +265,7 @@ const HomePage = () => {
     },
     {
       icon: <Percent className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: "M-fuel %",
+      title: "Monthly Fuel %",
       gradient: "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600",
       pageKey: "m-fuel",
       onClick: () => navigate("/m-fuel"),
