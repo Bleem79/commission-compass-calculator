@@ -198,8 +198,8 @@ const AdminRequestsPage = () => {
     const duplicates: DriverRequest[] = [];
     seen.forEach((group) => {
       if (group.length > 1) {
-        // Keep the first (oldest by created_at), mark rest as duplicates
-        const sorted = group.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        // Keep the newest by created_at, mark older ones as duplicates
+        const sorted = group.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         duplicates.push(...sorted.slice(1));
       }
     });
@@ -385,7 +385,7 @@ const AdminRequestsPage = () => {
       {/* Delete Duplicates Confirmation */}
       <AlertDialog open={showDeleteDuplicatesConfirm} onOpenChange={setShowDeleteDuplicatesConfirm}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Delete All Duplicates?</AlertDialogTitle><AlertDialogDescription>This will permanently delete {duplicateCount} duplicate request(s). Duplicates are identified by same Driver ID, Request Type, and Subject — the oldest entry is kept.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Delete All Duplicates?</AlertDialogTitle><AlertDialogDescription>This will permanently delete {duplicateCount} duplicate request(s). Duplicates are identified by same Driver ID, Request Type, and Subject — the newest entry is kept.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDeleteDuplicates} disabled={deletingDuplicates} className="bg-destructive hover:bg-destructive/90">
