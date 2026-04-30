@@ -278,13 +278,6 @@ const HomePage = () => {
       onClick: () => navigate("/hotspot"),
     },
     {
-      icon: <Info className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: "Info",
-      gradient: "bg-gradient-to-br from-pink-500 via-rose-500 to-red-500",
-      pageKey: "info",
-      onClick: () => navigate("/info"),
-    },
-    {
       icon: <Bell className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Notifications",
       gradient: "bg-gradient-to-br from-fuchsia-500 via-purple-500 to-violet-600",
