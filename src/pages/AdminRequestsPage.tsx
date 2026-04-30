@@ -198,8 +198,8 @@ const AdminRequestsPage = () => {
     const duplicates: DriverRequest[] = [];
     seen.forEach((group) => {
       if (group.length > 1) {
-        // Keep the first (oldest by created_at), mark rest as duplicates
-        const sorted = group.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        // Keep the newest by created_at, mark older ones as duplicates
+        const sorted = group.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         duplicates.push(...sorted.slice(1));
       }
     });
