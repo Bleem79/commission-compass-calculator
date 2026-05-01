@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Video, Plus, Trash2, Play, Loader2, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,6 +39,26 @@ const VideoTutorialsPage = () => {
   const [videoUrl, setVideoUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [playingVideo, setPlayingVideo] = useState<VideoTutorial | null>(null);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showControlsTemporarily = () => {
+    setControlsVisible(true);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => setControlsVisible(false), 2500);
+  };
+
+  useEffect(() => {
+    if (playingVideo) {
+      showControlsTemporarily();
+    } else {
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      setControlsVisible(true);
+    }
+    return () => {
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
+  }, [playingVideo]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -175,8 +195,17 @@ const VideoTutorialsPage = () => {
 
       {/* In-app video player dialog */}
       {playingVideo && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
-          <div className="flex items-center justify-between p-3 sm:p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex flex-col"
+          onMouseMove={showControlsTemporarily}
+          onTouchStart={showControlsTemporarily}
+          onClick={showControlsTemporarily}
+        >
+          <div
+            className={`absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-3 sm:p-4 bg-gradient-to-b from-black/70 to-transparent transition-opacity duration-300 ${
+              controlsVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+          >
             <h2 className="text-white text-sm sm:text-base font-medium truncate flex-1 mr-3">
               {playingVideo.title}
             </h2>
@@ -189,11 +218,11 @@ const VideoTutorialsPage = () => {
               <X className="h-6 w-6" />
             </Button>
           </div>
-          <div className="flex-1 flex items-center justify-center px-2 pb-4">
+          <div className="flex-1 flex items-center justify-center px-2">
             <iframe
               src={toEmbedUrl(playingVideo.video_url) || ""}
               className="w-full h-full max-w-4xl rounded-lg"
-              style={{ aspectRatio: "16/9", maxHeight: "80vh" }}
+              style={{ aspectRatio: "16/9", maxHeight: "95vh" }}
               allow="autoplay; encrypted-media; fullscreen"
               allowFullScreen
               sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
