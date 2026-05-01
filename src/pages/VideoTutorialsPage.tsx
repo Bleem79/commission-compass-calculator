@@ -201,14 +201,6 @@ const VideoTutorialsPage = () => {
       {/* In-app video player dialog */}
       {playingVideo && (
         <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
-          {/* Transparent overlay above the iframe to capture taps and reveal controls.
-              Disabled (pointer-events:none) while controls are visible so the iframe is interactive. */}
-          <div
-            className={`absolute inset-0 z-20 ${controlsVisible ? "pointer-events-none" : ""}`}
-            onClick={showControlsTemporarily}
-            onTouchStart={showControlsTemporarily}
-            onMouseMove={showControlsTemporarily}
-          />
           <div
             className={`absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-3 sm:p-4 bg-gradient-to-b from-black/70 to-transparent transition-opacity duration-300 ${
               controlsVisible ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -226,6 +218,13 @@ const VideoTutorialsPage = () => {
               <X className="h-6 w-6" />
             </Button>
           </div>
+          {/* Thin tap zone at the very top edge to re-reveal controls without blocking the video */}
+          <div
+            className="absolute top-0 left-0 right-0 h-12 z-20"
+            onClick={showControlsTemporarily}
+            onTouchStart={showControlsTemporarily}
+            onMouseMove={showControlsTemporarily}
+          />
           <div className="flex-1 flex items-center justify-center px-2">
             <iframe
               src={toEmbedUrl(playingVideo.video_url) || ""}
