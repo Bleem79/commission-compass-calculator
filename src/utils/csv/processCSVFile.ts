@@ -59,14 +59,22 @@ export const processCSVFile = async (file: File): Promise<Array<{ password: stri
             }
             
             // Basic validation
-            if (password.length < 6) {
-              throw new Error(`Password too short in row ${index + 2} (minimum 6 characters)`);
+            if (password.length < 6 || password.length > 128) {
+              throw new Error(`Invalid password length in row ${index + 2} (6-128 characters)`);
             }
-            
-            if (driverId.length === 0) {
-              throw new Error(`Empty driver ID in row ${index + 2}`);
+
+            // Driver ID: alphanumeric, dash, underscore, dot — 1 to 50 chars
+            const driverIdRegex = /^[a-zA-Z0-9_.\-]{1,50}$/;
+            if (!driverIdRegex.test(driverId)) {
+              throw new Error(`Invalid driver ID format in row ${index + 2} (allowed: letters, numbers, _ - .)`);
             }
-            
+
+            // CSV-injection guard: refuse cells starting with =, +, @, - to prevent
+            // formula injection if these values are later re-exported.
+            if (/^[=+@\-]/.test(password) || /^[=+@\-]/.test(driverId)) {
+              throw new Error(`Row ${index + 2} contains a value starting with a formula character (=, +, @, -)`);
+            }
+
             return { password, driverId, status };
           });
         
