@@ -69,10 +69,10 @@ export const processCSVFile = async (file: File): Promise<Array<{ password: stri
               throw new Error(`Invalid driver ID format in row ${index + 2} (allowed: letters, numbers, _ - .)`);
             }
 
-            // CSV-injection guard: refuse cells starting with =, +, @, - to prevent
+            // CSV-injection guard: refuse cells starting with =, +, @ to prevent
             // formula injection if these values are later re-exported.
-            if (/^[=+@\-]/.test(password) || /^[=+@\-]/.test(driverId)) {
-              throw new Error(`Row ${index + 2} contains a value starting with a formula character (=, +, @, -)`);
+            if (/^[=+@]/.test(password) || /^[=+@]/.test(driverId)) {
+              throw new Error(`Row ${index + 2} contains a value starting with a formula character (=, +, @)`);
             }
 
             return { password, driverId, status };
