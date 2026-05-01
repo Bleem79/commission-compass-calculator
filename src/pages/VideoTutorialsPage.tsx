@@ -42,15 +42,20 @@ const VideoTutorialsPage = () => {
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showControlsTemporarily = () => {
-    setControlsVisible(true);
+  const scheduleHide = () => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     hideTimerRef.current = setTimeout(() => setControlsVisible(false), 2500);
   };
 
+  const showControlsTemporarily = () => {
+    setControlsVisible(true);
+    scheduleHide();
+  };
+
   useEffect(() => {
     if (playingVideo) {
-      showControlsTemporarily();
+      setControlsVisible(true);
+      scheduleHide();
     } else {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       setControlsVisible(true);
@@ -195,14 +200,17 @@ const VideoTutorialsPage = () => {
 
       {/* In-app video player dialog */}
       {playingVideo && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex flex-col"
-          onMouseMove={showControlsTemporarily}
-          onTouchStart={showControlsTemporarily}
-          onClick={showControlsTemporarily}
-        >
+        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
+          {/* Transparent overlay above the iframe to capture taps and reveal controls.
+              Disabled (pointer-events:none) while controls are visible so the iframe is interactive. */}
           <div
-            className={`absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-3 sm:p-4 bg-gradient-to-b from-black/70 to-transparent transition-opacity duration-300 ${
+            className={`absolute inset-0 z-20 ${controlsVisible ? "pointer-events-none" : ""}`}
+            onClick={showControlsTemporarily}
+            onTouchStart={showControlsTemporarily}
+            onMouseMove={showControlsTemporarily}
+          />
+          <div
+            className={`absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-3 sm:p-4 bg-gradient-to-b from-black/70 to-transparent transition-opacity duration-300 ${
               controlsVisible ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
           >
