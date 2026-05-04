@@ -87,7 +87,7 @@ const DriverRequestPage = () => {
       return;
     }
 
-    if (requestType === "single_to_double") {
+    if (requestType === "single_shift_to_double_shift") {
       if (!sharjahLocation) {
         toast.error("Please select a Sharjah location");
         return;
@@ -106,7 +106,7 @@ const DriverRequestPage = () => {
     if (requestType === "day_off" && selectedDate) {
       subject = `Day Off Request - ${format(selectedDate, "dd MMM yyyy")}`;
       description = `Requesting day off on ${format(selectedDate, "EEEE, dd MMMM yyyy")}`;
-    } else if (requestType === "single_to_double") {
+    } else if (requestType === "single_shift_to_double_shift") {
       subject = `${requestLabel} - ${sharjahLocation}`;
       description = `Sharjah Location: ${sharjahLocation}\nLandmark: ${landmark.trim()}`;
     } else {
