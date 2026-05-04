@@ -25,6 +25,8 @@ const DriverRequestPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [requestType, setRequestType] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [sharjahLocation, setSharjahLocation] = useState("");
+  const [landmark, setLandmark] = useState("");
 
   const dayOffValidation = useDayOffValidation({
     driverId: driverInfo?.driverId || null,
@@ -85,17 +87,32 @@ const DriverRequestPage = () => {
       return;
     }
 
+    if (requestType === "single_to_double") {
+      if (!sharjahLocation) {
+        toast.error("Please select a Sharjah location");
+        return;
+      }
+      if (!landmark.trim()) {
+        toast.error("Please enter a landmark / place");
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     const requestLabel = REQUEST_TYPES.find((t) => t.value === requestType)?.label || requestType;
-    const subject =
-      requestType === "day_off" && selectedDate
-        ? `Day Off Request - ${format(selectedDate, "dd MMM yyyy")}`
-        : requestLabel;
-    const description =
-      requestType === "day_off" && selectedDate
-        ? `Requesting day off on ${format(selectedDate, "EEEE, dd MMMM yyyy")}`
-        : `Request for ${requestLabel}`;
+    let subject: string;
+    let description: string;
+    if (requestType === "day_off" && selectedDate) {
+      subject = `Day Off Request - ${format(selectedDate, "dd MMM yyyy")}`;
+      description = `Requesting day off on ${format(selectedDate, "EEEE, dd MMMM yyyy")}`;
+    } else if (requestType === "single_to_double") {
+      subject = `${requestLabel} - ${sharjahLocation}`;
+      description = `Sharjah Location: ${sharjahLocation}\nLandmark: ${landmark.trim()}`;
+    } else {
+      subject = requestLabel;
+      description = `Request for ${requestLabel}`;
+    }
 
     try {
       const requestNo = `REQ-${driverInfo.driverId}-${Date.now()}`;
@@ -139,6 +156,8 @@ const DriverRequestPage = () => {
       setRequests([data, ...requests]);
       setRequestType("");
       setSelectedDate(undefined);
+      setSharjahLocation("");
+      setLandmark("");
       setShowForm(false);
 
       if (shouldAutoApprove && selectedDate) {
@@ -226,6 +245,8 @@ const DriverRequestPage = () => {
             setShowForm(false);
             setRequestType("");
             setSelectedDate(undefined);
+            setSharjahLocation("");
+            setLandmark("");
           }}
           submitting={submitting}
           availableSlots={dayOffValidation.availableSlots}
@@ -234,6 +255,10 @@ const DriverRequestPage = () => {
           cycleRequestCount={dayOffValidation.cycleRequestCount}
           cycleRange={dayOffValidation.cycleRange}
           canSubmit={dayOffValidation.canSubmit}
+          sharjahLocation={sharjahLocation}
+          onSharjahLocationChange={setSharjahLocation}
+          landmark={landmark}
+          onLandmarkChange={setLandmark}
         />
       )}
 

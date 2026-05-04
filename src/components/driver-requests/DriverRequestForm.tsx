@@ -6,11 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { MAX_DAY_OFF_PER_CYCLE } from "@/constants/requestTypes";
 import { getMinDayOffDate } from "@/hooks/useDayOffValidation";
 import { useRequestTypes } from "@/hooks/useRequestTypes";
+import { useSharjahLocations } from "@/hooks/useSharjahLocations";
 
 interface DriverRequestFormProps {
   requestType: string;
@@ -26,6 +28,10 @@ interface DriverRequestFormProps {
   cycleRequestCount: number;
   cycleRange: { start: Date; end: Date } | null;
   canSubmit: boolean;
+  sharjahLocation: string;
+  onSharjahLocationChange: (value: string) => void;
+  landmark: string;
+  onLandmarkChange: (value: string) => void;
 }
 
 export const DriverRequestForm = ({
@@ -42,11 +48,19 @@ export const DriverRequestForm = ({
   cycleRequestCount,
   cycleRange,
   canSubmit,
+  sharjahLocation,
+  onSharjahLocationChange,
+  landmark,
+  onLandmarkChange,
 }: DriverRequestFormProps) => {
   const tomorrow = getMinDayOffDate();
   const remainingCycleRequests = MAX_DAY_OFF_PER_CYCLE - cycleRequestCount;
 
   const { requestTypes: availableTypes } = useRequestTypes();
+  const { locations: sharjahLocations, loading: loadingLocations } = useSharjahLocations();
+
+  const isSingleToDouble = requestType === "single_to_double";
+  const singleToDoubleValid = !isSingleToDouble || (!!sharjahLocation && !!landmark.trim());
 
   return (
     <Card className="mb-6 bg-card border-border shadow-lg">
@@ -147,6 +161,43 @@ export const DriverRequestForm = ({
             </div>
           )}
 
+          {isSingleToDouble && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label>Sharjah Location <span className="text-destructive">*</span></Label>
+                <Select value={sharjahLocation} onValueChange={onSharjahLocationChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingLocations ? "Loading..." : "Select your Sharjah location"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sharjahLocations.length === 0 && !loadingLocations ? (
+                      <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                        No locations available yet
+                      </div>
+                    ) : (
+                      sharjahLocations.map((loc) => (
+                        <SelectItem key={loc.id} value={loc.name}>{loc.name}</SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {sharjahLocation && (
+                <div className="space-y-2">
+                  <Label htmlFor="landmark">Landmark / Place <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="landmark"
+                    value={landmark}
+                    onChange={(e) => onLandmarkChange(e.target.value)}
+                    placeholder="e.g. Near Sahara Centre, Behind ADNOC..."
+                    maxLength={200}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-2 pt-2">
             <Button
               type="button"
@@ -160,7 +211,12 @@ export const DriverRequestForm = ({
             <Button
               type="submit"
               className="flex-1 bg-primary hover:bg-primary/90"
-              disabled={submitting || !requestType || (requestType === "day_off" && !canSubmit)}
+              disabled={
+                submitting ||
+                !requestType ||
+                (requestType === "day_off" && !canSubmit) ||
+                !singleToDoubleValid
+              }
             >
               {submitting ? (
                 <>
