@@ -59,7 +59,7 @@ export const DriverRequestForm = ({
   const { requestTypes: availableTypes } = useRequestTypes();
   const { locations: sharjahLocations, loading: loadingLocations } = useSharjahLocations();
 
-  const isSingleToDouble = requestType === "single_to_double";
+  const isSingleToDouble = requestType === "single_shift_to_double_shift";
   const singleToDoubleValid = !isSingleToDouble || (!!sharjahLocation && !!landmark.trim());
 
   return (
