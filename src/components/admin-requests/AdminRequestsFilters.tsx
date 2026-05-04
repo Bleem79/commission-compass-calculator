@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, Filter, X, Settings } from "lucide-react";
+import { Search, Filter, X, Settings, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,13 +25,14 @@ interface AdminRequestsFiltersProps {
   onControllerChange: (v: string) => void;
   onClearAll: () => void;
   onManageTypes: () => void;
+  onManageSharjahLocations: () => void;
   hasActiveFilters: boolean;
 }
 
 export const AdminRequestsFilters = ({
   searchQuery, statusFilter, typeFilter, controllerFilter,
   controllerList, onSearchChange, onStatusChange, onTypeChange,
-  onControllerChange, onClearAll, onManageTypes, hasActiveFilters,
+  onControllerChange, onClearAll, onManageTypes, onManageSharjahLocations, hasActiveFilters,
 }: AdminRequestsFiltersProps) => {
   const { requestTypes } = useRequestTypes();
 
@@ -97,6 +98,10 @@ export const AdminRequestsFilters = ({
           <Button variant="outline" onClick={onManageTypes}>
             <Settings className="h-4 w-4 mr-2" />
             Manage Types
+          </Button>
+          <Button variant="outline" onClick={onManageSharjahLocations}>
+            <MapPin className="h-4 w-4 mr-2 text-orange-600" />
+            Sharjah Locations
           </Button>
         </div>
         {hasActiveFilters && (

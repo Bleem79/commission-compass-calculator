@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 
 const DayOffCalendar = lazy(() => import("@/components/admin-requests/DayOffCalendar").then(m => ({ default: m.DayOffCalendar })));
 const ManageTypesDialog = lazy(() => import("@/components/admin-requests/ManageTypesDialog").then(m => ({ default: m.ManageTypesDialog })));
+const ManageSharjahLocationsDialog = lazy(() => import("@/components/admin-requests/ManageSharjahLocationsDialog").then(m => ({ default: m.ManageSharjahLocationsDialog })));
 
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending", color: "bg-yellow-500" },
@@ -61,6 +62,7 @@ const AdminRequestsPage = () => {
   const [editDescription, setEditDescription] = useState("");
   const [fleetRemarks, setFleetRemarks] = useState("");
   const [showTypesDialog, setShowTypesDialog] = useState(false);
+  const [showSharjahDialog, setShowSharjahDialog] = useState(false);
   const [deleteConfirmRequest, setDeleteConfirmRequest] = useState<DriverRequest | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -309,6 +311,7 @@ const AdminRequestsPage = () => {
         controllerList={controllerList}
         hasActiveFilters={!!hasActiveFilters} onClearAll={clearAllFilters}
         onManageTypes={() => setShowTypesDialog(true)}
+        onManageSharjahLocations={() => setShowSharjahDialog(true)}
       />
 
       {loading ? (
@@ -399,6 +402,13 @@ const AdminRequestsPage = () => {
       {showTypesDialog && (
         <Suspense fallback={null}>
           <ManageTypesDialog open={showTypesDialog} onOpenChange={setShowTypesDialog} />
+        </Suspense>
+      )}
+
+      {/* Manage Sharjah Locations Dialog */}
+      {showSharjahDialog && (
+        <Suspense fallback={null}>
+          <ManageSharjahLocationsDialog open={showSharjahDialog} onOpenChange={setShowSharjahDialog} />
         </Suspense>
       )}
     </PageLayout>
