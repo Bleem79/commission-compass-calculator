@@ -509,6 +509,21 @@ export type Database = {
         }
         Relationships: []
       }
+      entry_pass_sequences: {
+        Row: {
+          last_seq: number
+          year: string
+        }
+        Insert: {
+          last_seq?: number
+          year: string
+        }
+        Update: {
+          last_seq?: number
+          year?: string
+        }
+        Relationships: []
+      }
       entry_passes: {
         Row: {
           created_at: string
