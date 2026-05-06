@@ -1,0 +1,6 @@
+CREATE POLICY "Advanced can insert calendar events" ON public.calendar_events FOR INSERT WITH CHECK (has_role(auth.uid(), 'advanced'::app_role) OR has_role(auth.uid(), 'user'::app_role));
+CREATE POLICY "Advanced can update calendar events" ON public.calendar_events FOR UPDATE USING (has_role(auth.uid(), 'advanced'::app_role) OR has_role(auth.uid(), 'user'::app_role));
+CREATE POLICY "Advanced can delete calendar events" ON public.calendar_events FOR DELETE USING (has_role(auth.uid(), 'advanced'::app_role) OR has_role(auth.uid(), 'user'::app_role));
+CREATE POLICY "Advanced can view upload history" ON public.calendar_events_upload_history FOR SELECT USING (has_role(auth.uid(), 'advanced'::app_role) OR has_role(auth.uid(), 'user'::app_role));
+CREATE POLICY "Advanced can insert upload history" ON public.calendar_events_upload_history FOR INSERT WITH CHECK (has_role(auth.uid(), 'advanced'::app_role) OR has_role(auth.uid(), 'user'::app_role));
+CREATE POLICY "Advanced can delete upload history" ON public.calendar_events_upload_history FOR DELETE USING (has_role(auth.uid(), 'advanced'::app_role) OR has_role(auth.uid(), 'user'::app_role));
