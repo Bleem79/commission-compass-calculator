@@ -84,7 +84,8 @@ const parseDDMMYYYY = (input: unknown): string | null => {
 };
 
 const CalendarEventsUploadPage = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isAdvanced } = useAuth();
+  const canAccess = isAdmin || isAdvanced;
   const [events, setEvents] = useState<EventRow[]>([]);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -277,12 +278,12 @@ const CalendarEventsUploadPage = () => {
     return Array.from(set.entries());
   }, [events]);
 
-  if (!isAdmin) {
+  if (!canAccess) {
     return (
       <PageLayout title="Calendar Events" icon={<CalendarDays className="w-6 h-6" />}>
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
-            Admin access required.
+            Access required.
           </CardContent>
         </Card>
       </PageLayout>
