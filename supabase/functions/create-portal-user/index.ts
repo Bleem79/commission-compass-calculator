@@ -176,17 +176,23 @@ Deno.serve(async (req) => {
       if (!user_id) throw new Error("user_id required");
 
       if (disable) {
-        // Ban the user (set banned_until far future)
+        // Ban the user (Supabase max ban_duration is 87600h ~ 10 years)
         const { error } = await adminClient.auth.admin.updateUserById(user_id, {
-          ban_duration: "876000h", // ~100 years
+          ban_duration: "87600h",
         });
-        if (error) throw new Error(error.message);
+        if (error) {
+          console.error("toggle_status disable error:", error);
+          throw new Error(error.message);
+        }
       } else {
         // Unban
         const { error } = await adminClient.auth.admin.updateUserById(user_id, {
           ban_duration: "none",
         });
-        if (error) throw new Error(error.message);
+        if (error) {
+          console.error("toggle_status enable error:", error);
+          throw new Error(error.message);
+        }
       }
 
       return new Response(JSON.stringify({ success: true }), {
