@@ -249,11 +249,11 @@ const AdminRequestsPage = () => {
   const getRequestTypeLabel = (value: string) => requestTypes.find((t: any) => t.value === value)?.label || value;
 
   const stats = useMemo(() => ({
-    total: requests.length, pending: requests.filter((r) => r.status === "pending").length,
-    inProgress: requests.filter((r) => r.status === "in_progress").length,
-    resolved: requests.filter((r) => r.status === "approved" || r.status === "rejected").length,
-    dayOff: requests.filter((r) => r.request_type === "day_off").length,
-  }), [requests]);
+    total: filteredRequests.length, pending: filteredRequests.filter((r) => r.status === "pending").length,
+    inProgress: filteredRequests.filter((r) => r.status === "in_progress").length,
+    resolved: filteredRequests.filter((r) => r.status === "approved" || r.status === "rejected").length,
+    dayOff: filteredRequests.filter((r) => r.request_type === "day_off").length,
+  }), [filteredRequests]);
 
   const hasActiveFilters = searchQuery || statusFilter !== "all" || typeFilter !== "all" || controllerFilter !== "all";
   const clearAllFilters = useCallback(() => { setSearchQuery(""); setStatusFilter("all"); setTypeFilter("all"); setControllerFilter("all"); setSelectedCalendarDate(null); }, []);
