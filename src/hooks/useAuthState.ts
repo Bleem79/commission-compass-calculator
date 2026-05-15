@@ -129,7 +129,8 @@ export const useAuthState = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [checkUserRole]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return { user, setUser, session, refreshSession };
 };
