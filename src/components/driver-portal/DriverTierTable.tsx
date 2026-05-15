@@ -45,6 +45,23 @@ const DriverTierTable = ({ driverId }: DriverTierTableProps) => {
   const [targetTrip, setTargetTrip] = useState<TargetTrip | null>(null);
   const [driverIncome, setDriverIncome] = useState<DriverIncome | null>(null);
   const [loading, setLoading] = useState(true);
+  const [remoteConfig, setRemoteConfig] = useState<{ numberOfDays?: number; tiers?: Record<string, { "24H": number; "12H": number }> } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('target_trips_settings' as any)
+          .select('config')
+          .eq('id', 'default')
+          .maybeSingle();
+        if (data && (data as any).config) {
+          setRemoteConfig((data as any).config);
+          localStorage.setItem('targetTripsConfig', JSON.stringify((data as any).config));
+        }
+      } catch (e) { console.error("Failed to load tier config:", e); }
+    })();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -88,10 +105,16 @@ const DriverTierTable = ({ driverId }: DriverTierTableProps) => {
   // Determine shift type: check if shift contains "1" for 24H, "2" for 12H
   const shiftType = driverIncome?.shift?.startsWith("1") ? "1" : driverIncome?.shift?.startsWith("2") ? "2" : "1";
   const shiftLabel = shiftType === "2" ? "12H" : "24H";
-  const incentives = shiftType === "2" ? INCENTIVES_12H : INCENTIVES_24H;
+  const tierNames = ["Base", "Base+1", "Base+2", "Base+3", "Base+4", "Base+5"];
+  const incentives = tierNames.map((name, i) => {
+    const remote = remoteConfig?.tiers?.[name];
+    if (remote) return shiftType === "2" ? remote["12H"] : remote["24H"];
+    return shiftType === "2" ? INCENTIVES_12H[i] : INCENTIVES_24H[i];
+  });
 
-  // Get days from the Target Trips Configuration saved by admin
+  // Get days from the Target Trips Configuration saved by admin (DB-backed)
   const daysInMonth = useMemo(() => {
+    if (remoteConfig?.numberOfDays && remoteConfig.numberOfDays > 0) return remoteConfig.numberOfDays;
     try {
       const savedConfig = localStorage.getItem('targetTripsConfig');
       if (savedConfig) {
@@ -100,7 +123,7 @@ const DriverTierTable = ({ driverId }: DriverTierTableProps) => {
       }
     } catch (e) {}
     return 31;
-  }, []);
+  }, [remoteConfig]);
 
   // target_trips IS already the avg trips per day
   const baseAvgTripsPerDay = useMemo(() => {

@@ -84,6 +84,11 @@ export const useTargetTripsData = () => {
   const handleSaveConfig = async () => {
     setIsSavingConfig(true);
     try {
+      const { error } = await supabase
+        .from('target_trips_settings' as any)
+        .upsert({ id: 'default', config: targetConfig as any, updated_by: user?.id, updated_at: new Date().toISOString() } as any, { onConflict: 'id' });
+      if (error) throw error;
+      // Keep a local cache for fast load; remove the legacy key
       localStorage.setItem('targetTripsConfig', JSON.stringify(targetConfig));
       setInitialConfig(JSON.parse(JSON.stringify(targetConfig)));
       toast.success("Configuration saved successfully");
@@ -93,13 +98,28 @@ export const useTargetTripsData = () => {
   };
 
   useEffect(() => {
-    const savedConfig = localStorage.getItem('targetTripsConfig');
-    if (savedConfig) {
+    (async () => {
       try {
-        const parsed = JSON.parse(savedConfig);
-        setTargetConfig(parsed); setInitialConfig(parsed);
-      } catch (e) { console.error("Failed to parse saved config:", e); }
-    }
+        const { data, error } = await supabase
+          .from('target_trips_settings' as any)
+          .select('config')
+          .eq('id', 'default')
+          .maybeSingle();
+        if (!error && data && (data as any).config) {
+          const parsed = (data as any).config as TargetTripsConfig;
+          setTargetConfig(parsed); setInitialConfig(parsed);
+          localStorage.setItem('targetTripsConfig', JSON.stringify(parsed));
+          return;
+        }
+      } catch (e) { console.error("Failed to load config from DB:", e); }
+      const savedConfig = localStorage.getItem('targetTripsConfig');
+      if (savedConfig) {
+        try {
+          const parsed = JSON.parse(savedConfig);
+          setTargetConfig(parsed); setInitialConfig(parsed);
+        } catch (e) { console.error("Failed to parse saved config:", e); }
+      }
+    })();
   }, []);
 
   const updateTierValue = (tier: string, shift: "24H" | "12H", value: number) => {

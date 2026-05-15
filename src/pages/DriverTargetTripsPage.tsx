@@ -74,10 +74,24 @@ const DriverTargetTripsPage = () => {
   const [config, setConfig] = useState<TargetTripsConfig>(DEFAULT_CONFIG);
 
   useEffect(() => {
-    const savedConfig = localStorage.getItem('targetTripsConfig');
-    if (savedConfig) {
-      try { setConfig(JSON.parse(savedConfig)); } catch (e) { console.error("Failed to parse saved config:", e); }
-    }
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('target_trips_settings' as any)
+          .select('config')
+          .eq('id', 'default')
+          .maybeSingle();
+        if (!error && data && (data as any).config) {
+          setConfig((data as any).config as TargetTripsConfig);
+          localStorage.setItem('targetTripsConfig', JSON.stringify((data as any).config));
+          return;
+        }
+      } catch (e) { console.error("Failed to load config from DB:", e); }
+      const savedConfig = localStorage.getItem('targetTripsConfig');
+      if (savedConfig) {
+        try { setConfig(JSON.parse(savedConfig)); } catch (e) { console.error("Failed to parse saved config:", e); }
+      }
+    })();
   }, []);
 
   useEffect(() => {
