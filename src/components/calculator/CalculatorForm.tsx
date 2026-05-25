@@ -98,7 +98,7 @@ export const CalculatorForm = ({
           type="number"
           id="totalIncome"
           placeholder="Enter total income"
-          className="bg-input"
+          className="bg-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           value={totalIncome !== undefined ? totalIncome.toString() : ''}
           onChange={(e) => onTotalIncomeChange(Number(e.target.value))}
         />
@@ -113,7 +113,7 @@ export const CalculatorForm = ({
           type="number"
           id="workingDays"
           placeholder="Enter working days"
-          className="bg-input"
+          className="bg-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           value={workingDays !== undefined ? workingDays.toString() : ''}
           onChange={(e) => onWorkingDaysChange(Number(e.target.value))}
         />
