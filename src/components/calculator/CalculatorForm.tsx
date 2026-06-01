@@ -100,6 +100,7 @@ export const CalculatorForm = ({
           placeholder="Enter total income"
           className="bg-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           value={totalIncome !== undefined ? totalIncome.toString() : ''}
+          onWheel={(e) => e.currentTarget.blur()}
           onChange={(e) => onTotalIncomeChange(Number(e.target.value))}
         />
       </div>
@@ -115,6 +116,7 @@ export const CalculatorForm = ({
           placeholder="Enter working days"
           className="bg-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           value={workingDays !== undefined ? workingDays.toString() : ''}
+          onWheel={(e) => e.currentTarget.blur()}
           onChange={(e) => onWorkingDaysChange(Number(e.target.value))}
         />
       </div>
