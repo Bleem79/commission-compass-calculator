@@ -581,6 +581,48 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_collections: {
+        Row: {
+          amount: number
+          checkout_url: string | null
+          created_at: string
+          currency: string
+          driver_id: string
+          driver_name: string | null
+          id: string
+          status: string
+          stripe_session_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          checkout_url?: string | null
+          created_at?: string
+          currency?: string
+          driver_id: string
+          driver_name?: string | null
+          id?: string
+          status?: string
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          checkout_url?: string | null
+          created_at?: string
+          currency?: string
+          driver_id?: string
+          driver_name?: string | null
+          id?: string
+          status?: string
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
