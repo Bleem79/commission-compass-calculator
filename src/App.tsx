@@ -167,6 +167,7 @@ const AppRoutes = () => {
         <Route path="/revenue-controller-portal" element={<RevenueControllerPortalPage />} />
         <Route path="/driver-entry-pass" element={<DriverEntryPassPage />} />
         <Route path="/driver-collect-payment" element={<DriverCollectPaymentPage />} />
+        <Route path="/admin-collect-payment" element={<AdminCollectPaymentPage />} />
         <Route path="/admin-entry-pass" element={<PageGuard pageKey="admin-entry-pass"><AdminEntryPassPage /></PageGuard>} />
         <Route path="/video-tutorials" element={<PageGuard pageKey="video-tutorials"><VideoTutorialsPage /></PageGuard>} />
         <Route path="/prd" element={<PRDPage />} />
