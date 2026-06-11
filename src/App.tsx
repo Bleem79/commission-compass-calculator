@@ -36,6 +36,7 @@ const DriverMasterFilePage = lazy(() => import("./pages/DriverMasterFilePage"));
 const RevenueControllerPortalPage = lazy(() => import("./pages/RevenueControllerPortalPage"));
 const DriverEntryPassPage = lazy(() => import("./pages/DriverEntryPassPage"));
 const DriverCollectPaymentPage = lazy(() => import("./pages/DriverCollectPaymentPage"));
+const AdminCollectPaymentPage = lazy(() => import("./pages/AdminCollectPaymentPage"));
 const AdminEntryPassPage = lazy(() => import("./pages/AdminEntryPassPage"));
 const VideoTutorialsPage = lazy(() => import("./pages/VideoTutorialsPage"));
 const PRDPage = lazy(() => import("./pages/PRDPage"));
