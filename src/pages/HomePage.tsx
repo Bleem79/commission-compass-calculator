@@ -369,7 +369,7 @@ const HomePage = () => {
       icon: <CreditCard className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Collect Payment",
       gradient: "bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-600",
-      onClick: () => navigate("/driver-collect-payment"),
+      onClick: () => navigate("/admin-collect-payment"),
     });
   }
 
