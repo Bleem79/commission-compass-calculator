@@ -74,7 +74,7 @@ const FeatureCard = ({ icon, title, gradient, onClick, className, badge }: Featu
       "hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]",
       "flex flex-col items-center justify-center gap-2 sm:gap-3",
       "min-h-[100px] sm:min-h-[140px]",
-      "backdrop-blur-sm border border-white/20",
+      "border border-white/20",
       gradient,
       className
     )}
@@ -87,7 +87,7 @@ const FeatureCard = ({ icon, title, gradient, onClick, className, badge }: Featu
 
     <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-    <div className="relative z-10 p-2 sm:p-3 rounded-xl bg-white/20 backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+    <div className="relative z-10 p-2 sm:p-3 rounded-xl bg-white/20 group-hover:bg-white/30 transition-colors">
       {icon}
     </div>
 
