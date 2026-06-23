@@ -28,12 +28,32 @@ export const OsrDriverUploadDialog = ({ onOsrChange }: { onOsrChange?: () => voi
 
   const fetchRecords = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("osr_drivers")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (!error && data) setRecords(data);
-    setLoading(false);
+    try {
+      const PAGE = 1000;
+      let all: OsrRecord[] = [];
+      let from = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("osr_drivers")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          all = [...all, ...data];
+          from += PAGE;
+          hasMore = data.length === PAGE;
+        } else {
+          hasMore = false;
+        }
+      }
+      setRecords(all);
+    } catch {
+      // keep previous records on error
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOpen = (isOpen: boolean) => {
