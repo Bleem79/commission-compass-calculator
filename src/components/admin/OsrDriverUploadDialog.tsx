@@ -224,6 +224,7 @@ export const OsrDriverUploadDialog = ({ onOsrChange }: { onOsrChange?: () => voi
                     <TableHead>Driver ID</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Uploaded At</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -235,6 +236,22 @@ export const OsrDriverUploadDialog = ({ onOsrChange }: { onOsrChange?: () => voi
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {new Date(r.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEnableDriver(r)}
+                          disabled={enablingId === r.id}
+                          className="text-green-600 border-green-600/30 hover:bg-green-600/10"
+                        >
+                          {enablingId === r.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                          )}
+                          Enable
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
