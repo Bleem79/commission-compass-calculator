@@ -129,6 +129,35 @@ export const OsrDriverUploadDialog = ({ onOsrChange }: { onOsrChange?: () => voi
     setIsClearing(false);
   };
 
+  const handleEnableDriver = async (record: OsrRecord) => {
+    setEnablingId(record.id);
+    try {
+      // Re-enable the driver's login credentials
+      const { error: credError } = await supabase
+        .from("driver_credentials")
+        .update({ status: "enabled" })
+        .eq("driver_id", record.driver_id);
+      if (credError) throw credError;
+
+      // Remove the OSR record so the driver is no longer flagged
+      const { error: osrError } = await supabase
+        .from("osr_drivers")
+        .delete()
+        .eq("id", record.id);
+      if (osrError) throw osrError;
+
+      setRecords((prev) => prev.filter((r) => r.id !== record.id));
+      toast.success(`Driver ${record.driver_id} enabled`, {
+        description: "Login re-enabled and OSR flag removed",
+      });
+      onOsrChange?.();
+    } catch (err: any) {
+      toast.error("Failed to enable driver", { description: err.message });
+    } finally {
+      setEnablingId(null);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
