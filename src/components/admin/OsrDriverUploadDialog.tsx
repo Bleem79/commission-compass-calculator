@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Info, Upload, Loader2, Trash2, RefreshCw } from "lucide-react";
+import { Info, Upload, Loader2, Trash2, RefreshCw, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ export const OsrDriverUploadDialog = ({ onOsrChange }: { onOsrChange?: () => voi
   const [loading, setLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [enablingId, setEnablingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchRecords = async () => {
@@ -128,6 +129,35 @@ export const OsrDriverUploadDialog = ({ onOsrChange }: { onOsrChange?: () => voi
     setIsClearing(false);
   };
 
+  const handleEnableDriver = async (record: OsrRecord) => {
+    setEnablingId(record.id);
+    try {
+      // Re-enable the driver's login credentials
+      const { error: credError } = await supabase
+        .from("driver_credentials")
+        .update({ status: "enabled" })
+        .eq("driver_id", record.driver_id);
+      if (credError) throw credError;
+
+      // Remove the OSR record so the driver is no longer flagged
+      const { error: osrError } = await supabase
+        .from("osr_drivers")
+        .delete()
+        .eq("id", record.id);
+      if (osrError) throw osrError;
+
+      setRecords((prev) => prev.filter((r) => r.id !== record.id));
+      toast.success(`Driver ${record.driver_id} enabled`, {
+        description: "Login re-enabled and OSR flag removed",
+      });
+      onOsrChange?.();
+    } catch (err: any) {
+      toast.error("Failed to enable driver", { description: err.message });
+    } finally {
+      setEnablingId(null);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
@@ -194,6 +224,7 @@ export const OsrDriverUploadDialog = ({ onOsrChange }: { onOsrChange?: () => voi
                     <TableHead>Driver ID</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Uploaded At</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -205,6 +236,22 @@ export const OsrDriverUploadDialog = ({ onOsrChange }: { onOsrChange?: () => voi
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {new Date(r.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEnableDriver(r)}
+                          disabled={enablingId === r.id}
+                          className="text-green-600 border-green-600/30 hover:bg-green-600/10"
+                        >
+                          {enablingId === r.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                          )}
+                          Enable
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
