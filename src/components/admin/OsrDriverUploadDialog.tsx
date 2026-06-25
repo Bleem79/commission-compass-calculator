@@ -8,6 +8,7 @@ import { Info, Upload, Loader2, Trash2, RefreshCw, CheckCircle2 } from "lucide-r
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import * as XLSX from "xlsx";
 
 interface OsrRecord {
@@ -24,6 +25,7 @@ export const OsrDriverUploadDialog = ({ onOsrChange }: { onOsrChange?: () => voi
   const [isUploading, setIsUploading] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [enablingId, setEnablingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchRecords = async () => {
@@ -60,6 +62,10 @@ export const OsrDriverUploadDialog = ({ onOsrChange }: { onOsrChange?: () => voi
     setOpen(isOpen);
     if (isOpen) fetchRecords();
   };
+
+  const filteredRecords = records.filter((r) =>
+    r.driver_id.toLowerCase().includes(search.trim().toLowerCase())
+  );
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -229,6 +235,13 @@ export const OsrDriverUploadDialog = ({ onOsrChange }: { onOsrChange?: () => voi
             Upload an Excel/CSV file with columns: <strong>Driver Id</strong>, <strong>Status</strong>. Drivers with "OSR" status will be auto-disabled.
           </p>
 
+          <Input
+            placeholder="Search by Driver ID..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-xs"
+          />
+
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
@@ -236,6 +249,8 @@ export const OsrDriverUploadDialog = ({ onOsrChange }: { onOsrChange?: () => voi
             </div>
           ) : records.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">No OSR records found</div>
+          ) : filteredRecords.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No drivers match "{search}"</div>
           ) : (
             <div className="overflow-x-auto max-h-[400px] overflow-y-auto border rounded-md">
               <Table>
@@ -248,7 +263,7 @@ export const OsrDriverUploadDialog = ({ onOsrChange }: { onOsrChange?: () => voi
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {records.map((r) => (
+                  {filteredRecords.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell className="font-medium">{r.driver_id}</TableCell>
                       <TableCell>
