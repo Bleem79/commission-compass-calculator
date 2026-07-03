@@ -312,6 +312,7 @@ const AdminRequestsPage = () => {
         hasActiveFilters={!!hasActiveFilters} onClearAll={clearAllFilters}
         onManageTypes={() => setShowTypesDialog(true)}
         onManageSharjahLocations={() => setShowSharjahDialog(true)}
+        showControllerFilter={isActualAdmin}
       />
 
       {loading ? (

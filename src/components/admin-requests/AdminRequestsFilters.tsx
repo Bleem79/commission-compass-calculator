@@ -27,12 +27,14 @@ interface AdminRequestsFiltersProps {
   onManageTypes: () => void;
   onManageSharjahLocations: () => void;
   hasActiveFilters: boolean;
+  showControllerFilter?: boolean;
 }
 
 export const AdminRequestsFilters = ({
   searchQuery, statusFilter, typeFilter, controllerFilter,
   controllerList, onSearchChange, onStatusChange, onTypeChange,
   onControllerChange, onClearAll, onManageTypes, onManageSharjahLocations, hasActiveFilters,
+  showControllerFilter = true,
 }: AdminRequestsFiltersProps) => {
   const { requestTypes } = useRequestTypes();
 
@@ -83,18 +85,20 @@ export const AdminRequestsFilters = ({
               ))}
             </SelectContent>
           </Select>
-          <Select value={controllerFilter} onValueChange={onControllerChange}>
-            <SelectTrigger className="w-full md:w-[200px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Controller" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Controllers</SelectItem>
-              {controllerList.map((name) => (
-                <SelectItem key={name} value={name}>{name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {showControllerFilter && (
+            <Select value={controllerFilter} onValueChange={onControllerChange}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Controller" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Controllers</SelectItem>
+                {controllerList.map((name) => (
+                  <SelectItem key={name} value={name}>{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button variant="outline" onClick={onManageTypes}>
             <Settings className="h-4 w-4 mr-2" />
             Manage Types
