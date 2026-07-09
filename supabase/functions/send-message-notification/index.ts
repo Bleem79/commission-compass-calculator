@@ -85,11 +85,11 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const invalidIds: string[] = [];
-    const BATCH_SIZE = 10;
+    const BATCH_SIZE = 50;
     let successCount = 0;
     let totalProcessed = 0;
 
-    // Process in batches of 10 concurrently
+    // Process in batches concurrently
     for (let i = 0; i < subscriptions.length; i += BATCH_SIZE) {
       const batch = subscriptions.slice(i, i + BATCH_SIZE);
       const results = await Promise.allSettled(

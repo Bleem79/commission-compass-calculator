@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.send-entry-pass-notification]
 verify_jwt = false
+
+[functions.send-message-notification]
+verify_jwt = false
