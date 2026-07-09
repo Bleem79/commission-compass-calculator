@@ -27,6 +27,7 @@ const RevenueControllerPortalPage = () => {
   const [permissionsUser, setPermissionsUser] = useState<{ id: string; username: string } | null>(null);
 
   const getRoleBadge = (userRole: string) => {
+    if (userRole === "admin") return <Badge className="bg-destructive/20 text-destructive border-destructive/30"><Shield className="w-3 h-3 mr-1" /> Admin</Badge>;
     if (userRole === "advanced") return <Badge className="bg-amber-500/20 text-amber-700 border-amber-300"><Shield className="w-3 h-3 mr-1" /> Advanced</Badge>;
     return <Badge className="bg-primary/20 text-primary border-primary/30"><Eye className="w-3 h-3 mr-1" /> User</Badge>;
   };
@@ -149,6 +150,7 @@ const RevenueControllerPortalPage = () => {
                         <Select value={u.role} onValueChange={(newRole) => handleRoleChange(u.id, newRole)} disabled={updatingUserId === u.id}>
                           <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="admin"><div className="flex items-center gap-1"><Shield className="w-3 h-3" /> Admin</div></SelectItem>
                             <SelectItem value="advanced"><div className="flex items-center gap-1"><Shield className="w-3 h-3" /> Advanced</div></SelectItem>
                             <SelectItem value="user"><div className="flex items-center gap-1"><Eye className="w-3 h-3" /> User</div></SelectItem>
                           </SelectContent>
