@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
     if (action === "change_role") {
       const { user_id, new_role } = body;
       if (!user_id || !new_role) throw new Error("user_id and new_role required");
-      if (!["user", "advanced"].includes(new_role)) throw new Error("Invalid role");
+      if (!["user", "advanced", "admin"].includes(new_role)) throw new Error("Invalid role");
 
       const { error } = await adminClient
         .from("user_roles")
