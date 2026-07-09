@@ -80,10 +80,13 @@ export const AdminMessages = ({
       const { data, error } = await supabase
         .from('admin_messages')
         .select('*')
-        .order('created_at', { ascending: false });
+        .not('content', 'ilike', '[PRIVATE TO:%')
+        .order('created_at', { ascending: false })
+        .limit(500);
       
       if (error) throw error;
-      // Filter out private messages - they should only appear in the driver's private messages view
+      // Server already excludes private messages ([PRIVATE TO: ...]) so they only
+      // appear in the driver's private messages view. Keep a safety filter too.
       const filtered = (data as Message[]).filter(
         (msg) => !msg.content.startsWith('[PRIVATE TO:')
       );
