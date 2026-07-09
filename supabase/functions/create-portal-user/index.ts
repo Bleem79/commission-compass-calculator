@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
       const { data: roles, error } = await adminClient
         .from("user_roles")
         .select("user_id, role")
-        .in("role", ["user", "advanced"]);
+        .in("role", ["user", "advanced", "admin"]);
 
       if (error) throw new Error(error.message);
 
