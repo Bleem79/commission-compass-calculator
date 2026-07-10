@@ -372,6 +372,15 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
             )}
           </div>
 
+          {/* Active driver count */}
+          <p className="text-xs text-muted-foreground">
+            {isLoading
+              ? "Loading active drivers..."
+              : searchQuery
+                ? `${filteredDrivers.length} of ${drivers.length} active drivers`
+                : `${drivers.length} active drivers`}
+          </p>
+
           {/* Driver List */}
           <ScrollArea className="h-[280px] border rounded-lg">
             {isLoading ? (
