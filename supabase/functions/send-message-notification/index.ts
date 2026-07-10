@@ -36,17 +36,67 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    let query = supabase.from("push_subscriptions").select("*");
-    
+    let subscriptions: any[] = [];
+
     if (type === "private" && driverIds && driverIds.length > 0) {
-      query = query.in("driver_id", driverIds);
-    }
+      // Resolve driver IDs to their linked user_ids so we can also reach
+      // devices whose push_subscriptions row is missing a driver_id.
+      const userIds = new Set<string>();
+      const QUERY_CHUNK = 200;
+      for (let i = 0; i < driverIds.length; i += QUERY_CHUNK) {
+        const chunk = driverIds.slice(i, i + QUERY_CHUNK);
+        const { data: creds, error: credErr } = await supabase
+          .from("driver_credentials")
+          .select("user_id")
+          .in("driver_id", chunk);
+        if (credErr) {
+          console.error("Error resolving driver credentials:", credErr);
+        } else {
+          creds?.forEach((c: any) => c.user_id && userIds.add(c.user_id));
+        }
+      }
 
-    const { data: subscriptions, error: subError } = await query;
+      // Fetch subscriptions matching either the driver_id or the resolved user_id.
+      const seen = new Set<string>();
+      const collect = (rows: any[] | null) => {
+        rows?.forEach((r) => {
+          if (!seen.has(r.id)) {
+            seen.add(r.id);
+            subscriptions.push(r);
+          }
+        });
+      };
 
-    if (subError) {
-      console.error("Error fetching subscriptions:", subError);
-      throw subError;
+      for (let i = 0; i < driverIds.length; i += QUERY_CHUNK) {
+        const chunk = driverIds.slice(i, i + QUERY_CHUNK);
+        const { data, error } = await supabase
+          .from("push_subscriptions")
+          .select("*")
+          .in("driver_id", chunk);
+        if (error) console.error("Error fetching subs by driver_id:", error);
+        else collect(data);
+      }
+
+      const userIdArr = Array.from(userIds);
+      for (let i = 0; i < userIdArr.length; i += QUERY_CHUNK) {
+        const chunk = userIdArr.slice(i, i + QUERY_CHUNK);
+        const { data, error } = await supabase
+          .from("push_subscriptions")
+          .select("*")
+          .in("user_id", chunk);
+        if (error) console.error("Error fetching subs by user_id:", error);
+        else collect(data);
+      }
+    } else {
+      // Broadcast: every registered device.
+      const { data, error: subError } = await supabase
+        .from("push_subscriptions")
+        .select("*");
+      if (subError) {
+        console.error("Error fetching subscriptions:", subError);
+        throw subError;
+      }
+      subscriptions = data || [];
     }
 
     if (!subscriptions || subscriptions.length === 0) {
