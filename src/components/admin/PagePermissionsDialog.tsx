@@ -28,6 +28,8 @@ const ALL_PAGES = [
   { key: "total-outstanding", label: "Total Balance" },
   { key: "total-balance-kpi", label: "Total Balance KPI" },
   { key: "driver-badge", label: "Driver Badge" },
+  { key: "admin-collect-payment", label: "Collect Payment" },
+  { key: "calendar-events-upload", label: "Calendar Events Upload" },
 ];
 
 interface PagePermissionsDialogProps {
