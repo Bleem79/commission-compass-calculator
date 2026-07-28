@@ -27,6 +27,7 @@ const DriverSurveyPage = () => {
   const [selected, setSelected] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [records, setRecords] = useState<SurveyRecord[]>([]);
+  const [loadingRecords, setLoadingRecords] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) navigate("/login", { replace: true });
@@ -39,6 +40,7 @@ const DriverSurveyPage = () => {
       .order("created_at", { ascending: false })
       .limit(20);
     if (!error) setRecords((data as SurveyRecord[]) || []);
+    setLoadingRecords(false);
   }, []);
 
   useEffect(() => {
@@ -63,7 +65,14 @@ const DriverSurveyPage = () => {
         question: QUESTION,
         answer: selected,
       });
-      if (error) throw error;
+      if (error) {
+        if ((error as any).code === "23505") {
+          toast.error("You have already submitted this survey.");
+          await fetchRecords();
+          return;
+        }
+        throw error;
+      }
 
       toast.success("Survey submitted. Thank you!");
       setSelected(null);
@@ -75,6 +84,8 @@ const DriverSurveyPage = () => {
     }
   };
 
+  const alreadySubmitted = !loadingRecords && records.some((r) => r.question === QUESTION);
+
   return (
     <PageLayout
       title="Survey"
@@ -85,6 +96,17 @@ const DriverSurveyPage = () => {
       variant="dark"
       gradient="from-slate-900 via-purple-900 to-slate-900"
     >
+      {alreadySubmitted ? (
+        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-6 flex flex-col items-center text-center gap-3">
+          <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+          <h2 className="text-lg font-semibold text-white">Survey already submitted</h2>
+          <p className="text-sm text-white/60">
+            You answered "{records[0]?.answer}" on{" "}
+            {records[0] && format(new Date(records[0].created_at), "dd MMM yyyy • hh:mm a")}.
+          </p>
+          <p className="text-xs text-white/40">Each driver can submit this survey only once.</p>
+        </div>
+      ) : (
       <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 sm:p-6 mb-6 space-y-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-white/50 mb-1">Question</p>
@@ -122,6 +144,7 @@ const DriverSurveyPage = () => {
           {submitting ? "Submitting..." : "Submit"}
         </Button>
       </div>
+      )}
 
       {records.length > 0 && (
         <div className="space-y-3">
