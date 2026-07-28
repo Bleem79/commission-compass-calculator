@@ -264,11 +264,11 @@ const DriverPortalPage = () => {
       onClick: () => navigate("/driver-calendar-events"),
     },
     {
-      key: "collect_payment",
-      icon: <CreditCard className="w-8 h-8 sm:w-10 sm:h-10" />,
-      title: "Collect Payment",
+      key: "survey",
+      icon: <ClipboardList className="w-8 h-8 sm:w-10 sm:h-10" />,
+      title: "Survey",
       gradient: "bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-600",
-      onClick: () => navigate("/driver-collect-payment"),
+      onClick: () => navigate("/driver-survey"),
     },
   ];
 

@@ -86,7 +86,7 @@ export const DriverPortalSettingsDialog = ({ open, onOpenChange }: DriverPortalS
     oil_change_booking: "🛢️",
     entry_pass: "🎫",
     video_tutorials: "🎬",
-    collect_payment: "💳",
+    survey: "📋",
   };
 
   return (
