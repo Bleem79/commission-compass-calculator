@@ -35,8 +35,8 @@ const DriverActivityLogsPage = lazy(() => import("./pages/DriverActivityLogsPage
 const DriverMasterFilePage = lazy(() => import("./pages/DriverMasterFilePage"));
 const RevenueControllerPortalPage = lazy(() => import("./pages/RevenueControllerPortalPage"));
 const DriverEntryPassPage = lazy(() => import("./pages/DriverEntryPassPage"));
-const DriverCollectPaymentPage = lazy(() => import("./pages/DriverCollectPaymentPage"));
-const AdminCollectPaymentPage = lazy(() => import("./pages/AdminCollectPaymentPage"));
+const DriverSurveyPage = lazy(() => import("./pages/DriverSurveyPage"));
+const AdminSurveyPage = lazy(() => import("./pages/AdminSurveyPage"));
 const AdminEntryPassPage = lazy(() => import("./pages/AdminEntryPassPage"));
 const VideoTutorialsPage = lazy(() => import("./pages/VideoTutorialsPage"));
 const PRDPage = lazy(() => import("./pages/PRDPage"));
@@ -166,8 +166,8 @@ const AppRoutes = () => {
         <Route path="/driver-master-file" element={<PageGuard pageKey="driver-master-file"><DriverMasterFilePage /></PageGuard>} />
         <Route path="/revenue-controller-portal" element={<RevenueControllerPortalPage />} />
         <Route path="/driver-entry-pass" element={<DriverEntryPassPage />} />
-        <Route path="/driver-collect-payment" element={<DriverCollectPaymentPage />} />
-        <Route path="/admin-collect-payment" element={<PageGuard pageKey="admin-collect-payment"><AdminCollectPaymentPage /></PageGuard>} />
+        <Route path="/driver-survey" element={<DriverSurveyPage />} />
+        <Route path="/admin-survey" element={<PageGuard pageKey="admin-survey"><AdminSurveyPage /></PageGuard>} />
         <Route path="/admin-entry-pass" element={<PageGuard pageKey="admin-entry-pass"><AdminEntryPassPage /></PageGuard>} />
         <Route path="/video-tutorials" element={<PageGuard pageKey="video-tutorials"><VideoTutorialsPage /></PageGuard>} />
         <Route path="/prd" element={<PRDPage />} />

@@ -30,7 +30,7 @@ import {
   CalendarRange,
   Award,
 } from "lucide-react";
-import { CreditCard } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePagePermissions } from "@/contexts/PagePermissionsContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
@@ -366,10 +366,11 @@ const HomePage = () => {
       badge: pendingRequestCount,
     });
     features.push({
-      icon: <CreditCard className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: "Collect Payment",
+      icon: <ClipboardList className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Survey",
+      pageKey: "admin-survey",
       gradient: "bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-600",
-      onClick: () => navigate("/admin-collect-payment"),
+      onClick: () => navigate("/admin-survey"),
     });
   }
 
