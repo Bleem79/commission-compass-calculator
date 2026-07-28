@@ -509,6 +509,36 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_surveys: {
+        Row: {
+          answer: string
+          created_at: string
+          driver_id: string | null
+          driver_name: string | null
+          id: string
+          question: string
+          user_id: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          driver_id?: string | null
+          driver_name?: string | null
+          id?: string
+          question?: string
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          driver_id?: string | null
+          driver_name?: string | null
+          id?: string
+          question?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       entry_pass_sequences: {
         Row: {
           last_seq: number
