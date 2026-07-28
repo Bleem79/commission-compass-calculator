@@ -30,7 +30,7 @@ import {
   CalendarRange,
   Award,
 } from "lucide-react";
-import { CreditCard } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePagePermissions } from "@/contexts/PagePermissionsContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
