@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
-import { ClipboardList, Search, Download, RefreshCw, Loader2, X, ListChecks } from "lucide-react";
+import { ClipboardList, Search, Download, RefreshCw, Loader2, X, ListChecks, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +27,20 @@ const AdminSurveyPage = () => {
   const [dateFilter, setDateFilter] = useState("");
   const [page, setPage] = useState(1);
   const [questionsOpen, setQuestionsOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (rec: SurveyRecord) => {
+    if (!confirm(`Delete the survey answer of ${rec.driver_id || "this driver"}?`)) return;
+    setDeletingId(rec.id);
+    const { error } = await supabase.from("driver_surveys").delete().eq("id", rec.id);
+    setDeletingId(null);
+    if (error) {
+      toast.error(error.message || "Failed to delete submission.");
+      return;
+    }
+    setRecords((prev) => prev.filter((r) => r.id !== rec.id));
+    toast.success("Survey answer deleted.");
+  };
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
@@ -211,6 +225,7 @@ const AdminSurveyPage = () => {
                   <th className="text-left font-medium px-4 py-3">Question</th>
                   <th className="text-left font-medium px-4 py-3">Answer</th>
                   <th className="text-left font-medium px-4 py-3">Date &amp; Time</th>
+                  <th className="text-right font-medium px-4 py-3">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -222,6 +237,21 @@ const AdminSurveyPage = () => {
                     <td className="px-4 py-3 text-white font-semibold">{r.answer}</td>
                     <td className="px-4 py-3 text-white/70">
                       {format(new Date(r.created_at), "dd MMM yyyy • hh:mm a")}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={deletingId === r.id}
+                        onClick={() => handleDelete(r)}
+                        className="text-red-300 hover:text-red-200 hover:bg-red-500/20"
+                      >
+                        {deletingId === r.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </Button>
                     </td>
                   </tr>
                 ))}
