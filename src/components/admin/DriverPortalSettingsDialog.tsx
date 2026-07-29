@@ -87,6 +87,7 @@ export const DriverPortalSettingsDialog = ({ open, onOpenChange }: DriverPortalS
     entry_pass: "🎫",
     video_tutorials: "🎬",
     survey: "📋",
+    sms: "📱",
   };
 
   return (
