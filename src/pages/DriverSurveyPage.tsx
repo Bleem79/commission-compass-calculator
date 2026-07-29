@@ -72,6 +72,10 @@ const DriverSurveyPage = () => {
   }, []);
 
   const handleSubmit = async (q: SurveyQuestion) => {
+    if (records.length > 0) {
+      toast.error("You have already submitted the survey.");
+      return;
+    }
     const answer = selected[q.id];
     if (!answer) {
       toast.error("Please select one option.");
