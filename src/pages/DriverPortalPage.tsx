@@ -306,7 +306,11 @@ const DriverPortalPage = () => {
             </Button>
             
             <div className="flex items-center gap-2">
-              <NotificationBell onClick={() => { markAllAsRead(); setShowMessages(true); }} />
+              <NotificationBell
+                driverId={driverInfo?.driverId}
+                count={unreadCount}
+                onClick={() => { markAllAsRead(); setShowMessages(true); }}
+              />
               <Button 
                 variant="ghost" 
                 size="icon" 
