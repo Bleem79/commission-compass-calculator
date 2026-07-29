@@ -3,28 +3,45 @@ import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { toast } from "@/hooks/use-toast";
 
 interface NotificationBellProps {
   className?: string;
   onClick?: () => void;
+  /** When set, only messages broadcast to everyone or private to this driver will alert */
+  driverId?: string | null;
+  /** Unread message count to show on the badge */
+  count?: number;
 }
 
-const NotificationBell = ({ className, onClick }: NotificationBellProps) => {
+const NotificationBell = ({ className, onClick, driverId, count = 0 }: NotificationBellProps) => {
   const [isRinging, setIsRinging] = useState(false);
   const [hasNew, setHasNew] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { playNotificationSound } = usePushNotifications();
+  const { playNotificationSound, sendNotification, isGranted } = usePushNotifications();
 
-  const triggerRing = useCallback(() => {
+  const triggerRing = useCallback((message?: string) => {
     setIsRinging(true);
     setHasNew(true);
     playNotificationSound();
+
+    if (message) {
+      toast({ title: "New message from Admin", description: message.slice(0, 120) });
+      if (isGranted) {
+        sendNotification({
+          title: "New message from Admin",
+          body: message.slice(0, 160),
+          tag: "admin-message",
+          silent: true,
+        });
+      }
+    }
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       setIsRinging(false);
     }, 3000);
-  }, [playNotificationSound]);
+  }, [playNotificationSound, sendNotification, isGranted]);
 
   useEffect(() => {
     // Listen for new admin messages
@@ -33,7 +50,20 @@ const NotificationBell = ({ className, onClick }: NotificationBellProps) => {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "admin_messages" },
-        () => triggerRing()
+        (payload) => {
+          const row = payload.new as { content?: string; is_admin?: boolean };
+          const content = row?.content || "";
+          if (row?.is_admin === false) return;
+
+          const privateMatch = content.match(/^\[PRIVATE TO: ([^\]]+)\]\s*/);
+          if (privateMatch) {
+            // Only alert the targeted driver
+            if (!driverId || privateMatch[1].trim() !== driverId) return;
+            triggerRing(content.replace(privateMatch[0], ""));
+            return;
+          }
+          triggerRing(content);
+        }
       )
       .subscribe();
 
@@ -63,7 +93,7 @@ const NotificationBell = ({ className, onClick }: NotificationBellProps) => {
       supabase.removeChannel(resChannel);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [triggerRing]);
+  }, [triggerRing, driverId]);
 
   const handleClick = () => {
     setHasNew(false);
@@ -87,9 +117,14 @@ const NotificationBell = ({ className, onClick }: NotificationBellProps) => {
         )}
       />
 
-      {/* Pulsing dot for new notifications */}
-      {hasNew && (
+      {/* Unread count / pulsing dot for new notifications */}
+      {count > 0 ? (
+        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold animate-pulse shadow-lg shadow-red-500/50">
+          {count > 99 ? "99+" : count}
+        </span>
+      ) : hasNew ? (
         <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-lg shadow-red-500/50" />
+      ) : null}
       )}
     </button>
   );
