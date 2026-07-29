@@ -72,6 +72,10 @@ const DriverSurveyPage = () => {
   }, []);
 
   const handleSubmit = async (q: SurveyQuestion) => {
+    if (records.length > 0) {
+      toast.error("You have already submitted the survey.");
+      return;
+    }
     const answer = selected[q.id];
     if (!answer) {
       toast.error("Please select one option.");
@@ -127,26 +131,18 @@ const DriverSurveyPage = () => {
         <div className="bg-white/10 border border-white/20 rounded-2xl p-6 mb-6 text-center text-white/60 text-sm">
           No survey is available right now.
         </div>
+      ) : records.length > 0 ? (
+        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-6 flex flex-col items-center text-center gap-2">
+          <CheckCircle2 className="w-9 h-9 text-emerald-400" />
+          <h2 className="text-base font-semibold text-white">Survey already submitted</h2>
+          <p className="text-sm text-white/60">
+            You answered "{records[0].answer}" on{" "}
+            {format(new Date(records[0].created_at), "dd MMM yyyy • hh:mm a")}.
+          </p>
+          <p className="text-xs text-white/40">Each driver can submit the survey only once.</p>
+        </div>
       ) : (
-        questions.map((q) => {
-          const existing = records.find((r) => r.question === q.question);
-          if (existing) {
-            return (
-              <div
-                key={q.id}
-                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-4 flex flex-col items-center text-center gap-2"
-              >
-                <CheckCircle2 className="w-9 h-9 text-emerald-400" />
-                <h2 className="text-base font-semibold text-white">{q.question}</h2>
-                <p className="text-sm text-white/60">
-                  You answered "{existing.answer}" on{" "}
-                  {format(new Date(existing.created_at), "dd MMM yyyy • hh:mm a")}.
-                </p>
-                <p className="text-xs text-white/40">Each driver can submit this survey only once.</p>
-              </div>
-            );
-          }
-          return (
+        questions.map((q) => (
             <div
               key={q.id}
               className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 sm:p-6 mb-4 space-y-4"
@@ -187,8 +183,7 @@ const DriverSurveyPage = () => {
                 {submitting === q.id ? "Submitting..." : "Submit"}
               </Button>
             </div>
-          );
-        })
+        ))
       )}
 
       {records.length > 0 && (
