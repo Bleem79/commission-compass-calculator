@@ -31,6 +31,7 @@ import { useDriverCredentials } from "@/hooks/useDriverCredentials";
 import { supabase } from "@/integrations/supabase/client";
 import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 import NotificationBell from "@/components/shared/NotificationBell";
+import { usePrivateMessageAlert } from "@/hooks/usePrivateMessageAlert";
 
 interface PortalSetting {
   feature_key: string;
@@ -43,9 +44,10 @@ interface PortalCardProps {
   gradient: string;
   onClick: () => void;
   badge?: number;
+  alert?: boolean;
 }
 
-const PortalCard = ({ icon, title, gradient, onClick, badge }: PortalCardProps) => (
+const PortalCard = ({ icon, title, gradient, onClick, badge, alert }: PortalCardProps) => (
   <button
     onClick={onClick}
     className={cn(
@@ -54,6 +56,7 @@ const PortalCard = ({ icon, title, gradient, onClick, badge }: PortalCardProps) 
       "flex flex-col items-center justify-center gap-4",
       "min-h-[160px] sm:min-h-[180px]",
       "backdrop-blur-sm border border-white/20",
+      alert && "ring-2 ring-red-400 ring-offset-2 ring-offset-transparent animate-pulse",
       gradient
     )}
   >
@@ -69,7 +72,7 @@ const PortalCard = ({ icon, title, gradient, onClick, badge }: PortalCardProps) 
     
     {/* Icon container */}
     <div className="relative z-10 p-4 rounded-2xl bg-white/20 backdrop-blur-sm group-hover:bg-white/30 transition-colors">
-      {icon}
+      <div className={cn(alert && "animate-bell-ring")}>{icon}</div>
     </div>
     
     {/* Title */}
@@ -88,6 +91,7 @@ const DriverPortalPage = () => {
   const { isAuthenticated, user } = useAuth();
   const { unreadCount, markAllAsRead } = useUnreadMessages();
   const { driverInfo, loading: driverLoading } = useDriverCredentials();
+  const { hasNewMessage, clearAlert } = usePrivateMessageAlert(driverInfo?.driverId);
   const [portalSettings, setPortalSettings] = useState<Record<string, boolean>>({});
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [controllerName, setControllerName] = useState<string | null>(null);
@@ -208,9 +212,11 @@ const DriverPortalPage = () => {
       gradient: "bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-600",
       onClick: () => {
         markAllAsRead();
+        clearAlert();
         setShowMessages(true);
       },
       badge: unreadCount,
+      alert: hasNewMessage,
     },
     {
       key: "entry_pass",
@@ -309,7 +315,7 @@ const DriverPortalPage = () => {
               <NotificationBell
                 driverId={driverInfo?.driverId}
                 count={unreadCount}
-                onClick={() => { markAllAsRead(); setShowMessages(true); }}
+                onClick={() => { markAllAsRead(); clearAlert(); setShowMessages(true); }}
               />
               <Button 
                 variant="ghost" 
@@ -369,6 +375,7 @@ const DriverPortalPage = () => {
                   gradient={item.gradient}
                   onClick={item.onClick}
                   badge={'badge' in item ? item.badge : undefined}
+                  alert={'alert' in item ? (item as { alert?: boolean }).alert : undefined}
                 />
               ))}
             </div>
