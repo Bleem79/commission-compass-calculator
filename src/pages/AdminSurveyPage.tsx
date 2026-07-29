@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
-import { ClipboardList, Search, Download, RefreshCw, Loader2, X } from "lucide-react";
+import { ClipboardList, Search, Download, RefreshCw, Loader2, X, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PageLayout } from "@/components/shared/PageLayout";
+import { ManageSurveyQuestionsDialog } from "@/components/admin/ManageSurveyQuestionsDialog";
 
 interface SurveyRecord {
   id: string;
@@ -25,6 +26,7 @@ const AdminSurveyPage = () => {
   const [driverQuery, setDriverQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [questionsOpen, setQuestionsOpen] = useState(false);
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
@@ -166,6 +168,13 @@ const AdminSurveyPage = () => {
         <div className="flex gap-2">
           <Button
             variant="outline"
+            onClick={() => setQuestionsOpen(true)}
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+          >
+            <ListChecks className="w-4 h-4 mr-2" /> Survey Questions
+          </Button>
+          <Button
+            variant="outline"
             onClick={fetchRecords}
             className="bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
@@ -179,6 +188,8 @@ const AdminSurveyPage = () => {
           </Button>
         </div>
       </div>
+
+      <ManageSurveyQuestionsDialog open={questionsOpen} onOpenChange={setQuestionsOpen} />
 
       {loading ? (
         <div className="flex items-center justify-center py-16 text-white/60">
