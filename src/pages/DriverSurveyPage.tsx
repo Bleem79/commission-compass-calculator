@@ -9,9 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PageLayout } from "@/components/shared/PageLayout";
 
-const QUESTION = "Cashier Timings";
-const OPTIONS = ["06:00 AM - 06:00 PM", "04:00 AM - 04:00 PM"];
-
 interface SurveyRecord {
   id: string;
   question: string;
@@ -19,13 +16,21 @@ interface SurveyRecord {
   created_at: string;
 }
 
+interface SurveyQuestion {
+  id: string;
+  question: string;
+  options: string[];
+}
+
 const DriverSurveyPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const { driverInfo, loading: driverLoading } = useDriverCredentials();
 
-  const [selected, setSelected] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const [selected, setSelected] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState<string | null>(null);
   const [records, setRecords] = useState<SurveyRecord[]>([]);
   const [loadingRecords, setLoadingRecords] = useState(true);
 
@@ -47,12 +52,32 @@ const DriverSurveyPage = () => {
     fetchRecords();
   }, [fetchRecords]);
 
-  const handleSubmit = async () => {
-    if (!selected) {
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase
+        .from("survey_questions")
+        .select("id, question, options")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+      setQuestions(
+        (data || []).map((q: any) => ({
+          id: q.id,
+          question: q.question,
+          options: Array.isArray(q.options) ? q.options : [],
+        }))
+      );
+      setLoadingQuestions(false);
+    };
+    load();
+  }, []);
+
+  const handleSubmit = async (q: SurveyQuestion) => {
+    const answer = selected[q.id];
+    if (!answer) {
       toast.error("Please select one option.");
       return;
     }
-    setSubmitting(true);
+    setSubmitting(q.id);
     try {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id || user?.id;
@@ -62,8 +87,8 @@ const DriverSurveyPage = () => {
         user_id: userId,
         driver_id: driverInfo?.driverId || null,
         driver_name: driverInfo?.driverName || null,
-        question: QUESTION,
-        answer: selected,
+        question: q.question,
+        answer,
       });
       if (error) {
         if ((error as any).code === "23505") {
@@ -75,16 +100,14 @@ const DriverSurveyPage = () => {
       }
 
       toast.success("Survey submitted. Thank you!");
-      setSelected(null);
+      setSelected((prev) => ({ ...prev, [q.id]: "" }));
       await fetchRecords();
     } catch (err: any) {
       toast.error(err.message || "Failed to submit survey.");
     } finally {
-      setSubmitting(false);
+      setSubmitting(null);
     }
   };
-
-  const alreadySubmitted = !loadingRecords && records.some((r) => r.question === QUESTION);
 
   return (
     <PageLayout
@@ -96,54 +119,76 @@ const DriverSurveyPage = () => {
       variant="dark"
       gradient="from-slate-900 via-purple-900 to-slate-900"
     >
-      {alreadySubmitted ? (
-        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-6 flex flex-col items-center text-center gap-3">
-          <CheckCircle2 className="w-10 h-10 text-emerald-400" />
-          <h2 className="text-lg font-semibold text-white">Survey already submitted</h2>
-          <p className="text-sm text-white/60">
-            You answered "{records[0]?.answer}" on{" "}
-            {records[0] && format(new Date(records[0].created_at), "dd MMM yyyy • hh:mm a")}.
-          </p>
-          <p className="text-xs text-white/40">Each driver can submit this survey only once.</p>
+      {loadingQuestions || loadingRecords ? (
+        <div className="flex items-center justify-center py-12 text-white/60">
+          <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading survey...
+        </div>
+      ) : questions.length === 0 ? (
+        <div className="bg-white/10 border border-white/20 rounded-2xl p-6 mb-6 text-center text-white/60 text-sm">
+          No survey is available right now.
         </div>
       ) : (
-      <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 sm:p-6 mb-6 space-y-4">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-white/50 mb-1">Question</p>
-          <h2 className="text-lg font-semibold text-white">{QUESTION}</h2>
-          <p className="text-xs text-white/50 mt-1">Select only one option.</p>
-        </div>
-
-        <div className="space-y-3">
-          {OPTIONS.map((opt) => {
-            const active = selected === opt;
+        questions.map((q) => {
+          const existing = records.find((r) => r.question === q.question);
+          if (existing) {
             return (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => setSelected(opt)}
-                className={`w-full flex items-center justify-between rounded-xl px-4 py-4 border transition-colors text-left ${
-                  active
-                    ? "bg-violet-500/25 border-violet-400 text-white"
-                    : "bg-white/5 border-white/15 text-white/80 hover:bg-white/10"
-                }`}
+              <div
+                key={q.id}
+                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-4 flex flex-col items-center text-center gap-2"
               >
-                <span className="font-medium">{opt}</span>
-                {active && <CheckCircle2 className="w-5 h-5 text-violet-300" />}
-              </button>
+                <CheckCircle2 className="w-9 h-9 text-emerald-400" />
+                <h2 className="text-base font-semibold text-white">{q.question}</h2>
+                <p className="text-sm text-white/60">
+                  You answered "{existing.answer}" on{" "}
+                  {format(new Date(existing.created_at), "dd MMM yyyy • hh:mm a")}.
+                </p>
+                <p className="text-xs text-white/40">Each driver can submit this survey only once.</p>
+              </div>
             );
-          })}
-        </div>
+          }
+          return (
+            <div
+              key={q.id}
+              className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 sm:p-6 mb-4 space-y-4"
+            >
+              <div>
+                <p className="text-xs uppercase tracking-widest text-white/50 mb-1">Question</p>
+                <h2 className="text-lg font-semibold text-white">{q.question}</h2>
+                <p className="text-xs text-white/50 mt-1">Select only one option.</p>
+              </div>
 
-        <Button
-          onClick={handleSubmit}
-          disabled={!selected || submitting || driverLoading}
-          className="w-full bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-600 hover:to-indigo-700 text-white font-semibold"
-        >
-          {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          {submitting ? "Submitting..." : "Submit"}
-        </Button>
-      </div>
+              <div className="space-y-3">
+                {q.options.map((opt) => {
+                  const active = selected[q.id] === opt;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setSelected((prev) => ({ ...prev, [q.id]: opt }))}
+                      className={`w-full flex items-center justify-between rounded-xl px-4 py-4 border transition-colors text-left ${
+                        active
+                          ? "bg-violet-500/25 border-violet-400 text-white"
+                          : "bg-white/5 border-white/15 text-white/80 hover:bg-white/10"
+                      }`}
+                    >
+                      <span className="font-medium">{opt}</span>
+                      {active && <CheckCircle2 className="w-5 h-5 text-violet-300" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <Button
+                onClick={() => handleSubmit(q)}
+                disabled={!selected[q.id] || submitting === q.id || driverLoading}
+                className="w-full bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-600 hover:to-indigo-700 text-white font-semibold"
+              >
+                {submitting === q.id && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {submitting === q.id ? "Submitting..." : "Submit"}
+              </Button>
+            </div>
+          );
+        })
       )}
 
       {records.length > 0 && (
