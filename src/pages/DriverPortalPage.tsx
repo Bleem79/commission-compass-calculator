@@ -43,9 +43,10 @@ interface PortalCardProps {
   gradient: string;
   onClick: () => void;
   badge?: number;
+  alert?: boolean;
 }
 
-const PortalCard = ({ icon, title, gradient, onClick, badge }: PortalCardProps) => (
+const PortalCard = ({ icon, title, gradient, onClick, badge, alert }: PortalCardProps) => (
   <button
     onClick={onClick}
     className={cn(
@@ -54,6 +55,7 @@ const PortalCard = ({ icon, title, gradient, onClick, badge }: PortalCardProps) 
       "flex flex-col items-center justify-center gap-4",
       "min-h-[160px] sm:min-h-[180px]",
       "backdrop-blur-sm border border-white/20",
+      alert && "ring-2 ring-red-400 ring-offset-2 ring-offset-transparent animate-pulse",
       gradient
     )}
   >
@@ -69,7 +71,7 @@ const PortalCard = ({ icon, title, gradient, onClick, badge }: PortalCardProps) 
     
     {/* Icon container */}
     <div className="relative z-10 p-4 rounded-2xl bg-white/20 backdrop-blur-sm group-hover:bg-white/30 transition-colors">
-      {icon}
+      <div className={cn(alert && "animate-bell-ring")}>{icon}</div>
     </div>
     
     {/* Title */}
