@@ -125,7 +125,6 @@ const NotificationBell = ({ className, onClick, driverId, count = 0 }: Notificat
       ) : hasNew ? (
         <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-lg shadow-red-500/50" />
       ) : null}
-      )}
     </button>
   );
 };
