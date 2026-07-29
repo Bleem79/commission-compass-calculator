@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
-import { ClipboardList, Search, Download, RefreshCw, Loader2, X, ListChecks, Trash2 } from "lucide-react";
+import { ClipboardList, Search, Download, RefreshCw, Loader2, X, ListChecks, Trash2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PageLayout } from "@/components/shared/PageLayout";
 import { ManageSurveyQuestionsDialog } from "@/components/admin/ManageSurveyQuestionsDialog";
+import { SurveyAnalyticsDialog } from "@/components/admin/SurveyAnalyticsDialog";
 
 interface SurveyRecord {
   id: string;
@@ -27,6 +28,7 @@ const AdminSurveyPage = () => {
   const [dateFilter, setDateFilter] = useState("");
   const [page, setPage] = useState(1);
   const [questionsOpen, setQuestionsOpen] = useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (rec: SurveyRecord) => {
@@ -181,6 +183,12 @@ const AdminSurveyPage = () => {
         )}
         <div className="flex gap-2">
           <Button
+            onClick={() => setAnalyticsOpen(true)}
+            className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold"
+          >
+            <BarChart3 className="w-4 h-4 mr-2" /> View Analysis
+          </Button>
+          <Button
             variant="outline"
             onClick={() => setQuestionsOpen(true)}
             className="bg-white/10 border-white/20 text-white hover:bg-white/20"
@@ -204,6 +212,7 @@ const AdminSurveyPage = () => {
       </div>
 
       <ManageSurveyQuestionsDialog open={questionsOpen} onOpenChange={setQuestionsOpen} />
+      <SurveyAnalyticsDialog open={analyticsOpen} onOpenChange={setAnalyticsOpen} records={filtered} />
 
       {loading ? (
         <div className="flex items-center justify-center py-16 text-white/60">
