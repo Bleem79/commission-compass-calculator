@@ -31,6 +31,7 @@ import { useDriverCredentials } from "@/hooks/useDriverCredentials";
 import { supabase } from "@/integrations/supabase/client";
 import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 import NotificationBell from "@/components/shared/NotificationBell";
+import { usePrivateMessageAlert } from "@/hooks/usePrivateMessageAlert";
 
 interface PortalSetting {
   feature_key: string;
@@ -90,6 +91,7 @@ const DriverPortalPage = () => {
   const { isAuthenticated, user } = useAuth();
   const { unreadCount, markAllAsRead } = useUnreadMessages();
   const { driverInfo, loading: driverLoading } = useDriverCredentials();
+  const { hasNewMessage, clearAlert } = usePrivateMessageAlert(driverInfo?.driverId);
   const [portalSettings, setPortalSettings] = useState<Record<string, boolean>>({});
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [controllerName, setControllerName] = useState<string | null>(null);
@@ -210,9 +212,11 @@ const DriverPortalPage = () => {
       gradient: "bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-600",
       onClick: () => {
         markAllAsRead();
+        clearAlert();
         setShowMessages(true);
       },
       badge: unreadCount,
+      alert: hasNewMessage,
     },
     {
       key: "entry_pass",
@@ -311,7 +315,7 @@ const DriverPortalPage = () => {
               <NotificationBell
                 driverId={driverInfo?.driverId}
                 count={unreadCount}
-                onClick={() => { markAllAsRead(); setShowMessages(true); }}
+                onClick={() => { markAllAsRead(); clearAlert(); setShowMessages(true); }}
               />
               <Button 
                 variant="ghost" 
@@ -371,6 +375,7 @@ const DriverPortalPage = () => {
                   gradient={item.gradient}
                   onClick={item.onClick}
                   badge={'badge' in item ? item.badge : undefined}
+                  alert={'alert' in item ? (item as { alert?: boolean }).alert : undefined}
                 />
               ))}
             </div>
