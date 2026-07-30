@@ -93,10 +93,28 @@ const AdminRequestsPage = () => {
     checkAdminRole();
   }, [user?.id, user?.email, navigate]);
 
+  const fetchAllRequests = useCallback(async () => {
+    let all: DriverRequest[] = [];
+    let start = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("driver_requests")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .range(start, start + 999);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data as DriverRequest[]);
+      if (data.length < 1000) break;
+      start += 1000;
+    }
+    return all;
+  }, []);
+
   const fetchRequests = useCallback(async () => {
     if (!isAdmin) return;
     try {
-      const reqResult = await supabase.from("driver_requests").select("*").order("created_at", { ascending: false });
+      const allRequests = await fetchAllRequests();
       let allMasterData: { driver_id: string; controller: string | null }[] = [];
       let from = 0;
       while (true) {
@@ -106,14 +124,13 @@ const AdminRequestsPage = () => {
         if (page.length < 1000) break;
         from += 1000;
       }
-      if (reqResult.error) throw reqResult.error;
-      setRequests(reqResult.data || []);
+      setRequests(allRequests);
       const cMap: Record<string, string> = {};
       allMasterData.forEach((d) => { if (d.controller) cMap[d.driver_id] = d.controller; });
       setControllerMap(cMap);
     } catch { toast.error("Failed to load requests"); }
     finally { setLoading(false); }
-  }, [isAdmin]);
+  }, [isAdmin, fetchAllRequests]);
 
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
@@ -132,9 +149,9 @@ const AdminRequestsPage = () => {
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);
-    try { const { data, error } = await supabase.from("driver_requests").select("*").order("created_at", { ascending: false }); if (error) throw error; setRequests(data || []); toast.success("Refreshed"); }
+    try { const all = await fetchAllRequests(); setRequests(all); toast.success("Refreshed"); }
     catch { toast.error("Failed to refresh"); } finally { setLoading(false); }
-  }, []);
+  }, [fetchAllRequests]);
 
   const openResponseDialog = useCallback((request: DriverRequest) => {
     setSelectedRequest(request); setResponseText(request.admin_response || ""); setNewStatus(request.status); setEditSubject(request.subject); setEditDescription(request.description); setFleetRemarks(request.fleet_remarks || "");
