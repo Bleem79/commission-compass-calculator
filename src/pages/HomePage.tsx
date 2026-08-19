@@ -30,6 +30,7 @@ import {
   CalendarRange,
   Award,
 } from "lucide-react";
+import { Car } from "lucide-react";
 import { ClipboardList } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePagePermissions } from "@/contexts/PagePermissionsContext";
