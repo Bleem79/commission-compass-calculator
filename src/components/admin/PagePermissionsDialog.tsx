@@ -29,6 +29,7 @@ const ALL_PAGES = [
   { key: "total-balance-kpi", label: "Total Balance KPI" },
   { key: "driver-badge", label: "Driver Badge" },
   { key: "admin-survey", label: "Survey" },
+  { key: "admin-yango", label: "Yango" },
   { key: "calendar-events-upload", label: "Calendar Events Upload" },
 ];
 

@@ -88,6 +88,7 @@ export const DriverPortalSettingsDialog = ({ open, onOpenChange }: DriverPortalS
     video_tutorials: "🎬",
     survey: "📋",
     sms: "📱",
+    yango: "🚕",
   };
 
   return (
