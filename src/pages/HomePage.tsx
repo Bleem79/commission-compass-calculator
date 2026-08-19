@@ -30,6 +30,7 @@ import {
   CalendarRange,
   Award,
 } from "lucide-react";
+import { Car } from "lucide-react";
 import { ClipboardList } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePagePermissions } from "@/contexts/PagePermissionsContext";
@@ -371,6 +372,13 @@ const HomePage = () => {
       pageKey: "admin-survey",
       gradient: "bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-600",
       onClick: () => navigate("/admin-survey"),
+    });
+    features.push({
+      icon: <Car className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Yango",
+      pageKey: "admin-yango",
+      gradient: "bg-gradient-to-br from-amber-500 via-orange-500 to-red-600",
+      onClick: () => navigate("/admin-yango"),
     });
   }
 

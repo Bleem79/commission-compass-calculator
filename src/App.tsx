@@ -57,6 +57,8 @@ const RevenueControllerPortalPage = lazyRetry(() => import("./pages/RevenueContr
 const DriverEntryPassPage = lazyRetry(() => import("./pages/DriverEntryPassPage"));
 const DriverSurveyPage = lazyRetry(() => import("./pages/DriverSurveyPage"));
 const AdminSurveyPage = lazyRetry(() => import("./pages/AdminSurveyPage"));
+const DriverYangoPage = lazyRetry(() => import("./pages/DriverYangoPage"));
+const AdminYangoPage = lazyRetry(() => import("./pages/AdminYangoPage"));
 const AdminEntryPassPage = lazyRetry(() => import("./pages/AdminEntryPassPage"));
 const VideoTutorialsPage = lazyRetry(() => import("./pages/VideoTutorialsPage"));
 const PRDPage = lazyRetry(() => import("./pages/PRDPage"));
@@ -188,6 +190,8 @@ const AppRoutes = () => {
         <Route path="/driver-entry-pass" element={<DriverEntryPassPage />} />
         <Route path="/driver-survey" element={<DriverSurveyPage />} />
         <Route path="/admin-survey" element={<PageGuard pageKey="admin-survey"><AdminSurveyPage /></PageGuard>} />
+        <Route path="/driver-yango" element={<DriverYangoPage />} />
+        <Route path="/admin-yango" element={<PageGuard pageKey="admin-yango"><AdminYangoPage /></PageGuard>} />
         <Route path="/admin-entry-pass" element={<PageGuard pageKey="admin-entry-pass"><AdminEntryPassPage /></PageGuard>} />
         <Route path="/video-tutorials" element={<PageGuard pageKey="video-tutorials"><VideoTutorialsPage /></PageGuard>} />
         <Route path="/prd" element={<PRDPage />} />

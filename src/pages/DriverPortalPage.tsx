@@ -17,7 +17,8 @@ import {
   Video,
   DollarSign,
   CalendarRange,
-  ClipboardList
+  ClipboardList,
+  Car
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -275,6 +276,13 @@ const DriverPortalPage = () => {
       title: "Survey",
       gradient: "bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-600",
       onClick: () => navigate("/driver-survey"),
+    },
+    {
+      key: "yango",
+      icon: <Car className="w-8 h-8 sm:w-10 sm:h-10" />,
+      title: "Yango",
+      gradient: "bg-gradient-to-br from-amber-500 via-orange-500 to-red-600",
+      onClick: () => navigate("/driver-yango"),
     },
   ];
 
