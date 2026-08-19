@@ -115,6 +115,9 @@ const DriverYangoPage = () => {
       gradient="from-slate-900 via-purple-900 to-slate-900"
     >
       <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/10 border border-amber-400/30 rounded-2xl p-5 mb-5 text-center">
+        <p className="text-sm sm:text-base font-semibold text-amber-300 mb-1">
+          YANGO is launching soon!
+        </p>
         <h2 className="text-base sm:text-lg font-bold text-white leading-snug">
           To Work with YANGO you have your own Smart Phone and DATA
         </h2>
