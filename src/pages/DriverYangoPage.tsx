@@ -11,10 +11,13 @@ import { PageLayout } from "@/components/shared/PageLayout";
 
 interface YangoRecord {
   id: string;
+  driver_id: string | null;
+  driver_name: string | null;
   phone_type: string;
   has_data: string;
   created_at: string;
 }
+
 
 const PHONE_TYPES = ["Android", "iPhone"];
 const DATA_OPTIONS = ["Yes", "No"];
@@ -37,13 +40,14 @@ const DriverYangoPage = () => {
   const fetchRecord = useCallback(async () => {
     const { data } = await supabase
       .from("yango_responses")
-      .select("id, phone_type, has_data, created_at")
+      .select("id, driver_id, driver_name, phone_type, has_data, created_at")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     setRecord((data as YangoRecord) || null);
     setLoading(false);
   }, []);
+
 
   useEffect(() => {
     fetchRecord();
@@ -58,18 +62,24 @@ const DriverYangoPage = () => {
       toast.error("Please answer if you have monthly data.");
       return;
     }
+    if (!driverInfo?.driverId) {
+      toast.error("Driver ID is still loading. Please wait a moment.");
+      return;
+    }
     setSubmitting(true);
     try {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id || user?.id;
       if (!userId) throw new Error("Not authenticated.");
 
+      const submittedAt = new Date().toISOString();
       const { error } = await supabase.from("yango_responses").insert({
         user_id: userId,
-        driver_id: driverInfo?.driverId || null,
-        driver_name: driverInfo?.driverName || null,
+        driver_id: driverInfo.driverId,
+        driver_name: driverInfo.driverName || null,
         phone_type: phoneType,
         has_data: hasData,
+        created_at: submittedAt,
       });
       if (error) {
         if ((error as any).code === "23505") {
@@ -79,7 +89,12 @@ const DriverYangoPage = () => {
         }
         throw error;
       }
-      toast.success("Submitted. Thank you!");
+      toast.success(
+        `Submitted. Driver ID: ${driverInfo.driverId} at ${format(
+          new Date(submittedAt),
+          "dd MMM yyyy • hh:mm a"
+        )}`
+      );
       await fetchRecord();
     } catch (err: any) {
       toast.error(err.message || "Failed to submit.");
@@ -87,6 +102,7 @@ const DriverYangoPage = () => {
       setSubmitting(false);
     }
   };
+
 
   return (
     <PageLayout
@@ -115,10 +131,14 @@ const DriverYangoPage = () => {
           <p className="text-sm text-white/70">
             {record.phone_type} • Monthly Data: {record.has_data}
           </p>
+          <p className="text-sm text-white/80 font-medium">
+            Driver ID: {record.driver_id || "—"}
+          </p>
           <p className="text-xs text-white/40">
             {format(new Date(record.created_at), "dd MMM yyyy • hh:mm a")}
           </p>
         </div>
+
       ) : (
         <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 sm:p-6 space-y-5">
           <div>
