@@ -9,6 +9,24 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { lazy, Suspense, useEffect, memo } from "react";
 import { Loader2 } from "lucide-react";
 
+// Retry dynamic imports; if a chunk is stale (after a new deploy), reload once to get fresh assets.
+const lazyRetry = <T extends { default: React.ComponentType<any> }>(
+  importer: () => Promise<T>
+) =>
+  lazy(async () => {
+    try {
+      return await importer();
+    } catch (err) {
+      const key = "chunk-reload-attempted";
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
+        window.location.reload();
+        return new Promise<T>(() => {});
+      }
+      throw err;
+    }
+  });
+
 // Lazy load all page components for code splitting
 const Login = lazyRetry(() => import("./pages/Login"));
 const Dashboard = lazyRetry(() => import("./pages/Dashboard"));
