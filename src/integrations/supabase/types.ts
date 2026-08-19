@@ -1002,7 +1002,7 @@ export type Database = {
           driver_name: string | null
           has_data: string
           id: string
-          mobile_no: string
+          mobile_no: string | null
           phone_type: string
           user_id: string
         }
@@ -1012,7 +1012,7 @@ export type Database = {
           driver_name?: string | null
           has_data: string
           id?: string
-          mobile_no: string
+          mobile_no?: string | null
           phone_type: string
           user_id: string
         }
@@ -1022,7 +1022,7 @@ export type Database = {
           driver_name?: string | null
           has_data?: string
           id?: string
-          mobile_no?: string
+          mobile_no?: string | null
           phone_type?: string
           user_id?: string
         }
