@@ -15,7 +15,9 @@ const lazyRetry = <T extends { default: React.ComponentType<any> }>(
 ) =>
   lazy(async () => {
     try {
-      return await importer();
+      const mod = await importer();
+      sessionStorage.removeItem("chunk-reload-attempted");
+      return mod;
     } catch (err) {
       const key = "chunk-reload-attempted";
       if (!sessionStorage.getItem(key)) {
