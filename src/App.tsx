@@ -9,44 +9,64 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { lazy, Suspense, useEffect, memo } from "react";
 import { Loader2 } from "lucide-react";
 
+// Retry dynamic imports; if a chunk is stale (after a new deploy), reload once to get fresh assets.
+const lazyRetry = <T extends { default: React.ComponentType<any> }>(
+  importer: () => Promise<T>
+) =>
+  lazy(async () => {
+    try {
+      const mod = await importer();
+      sessionStorage.removeItem("chunk-reload-attempted");
+      return mod;
+    } catch (err) {
+      const key = "chunk-reload-attempted";
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
+        window.location.reload();
+        return new Promise<T>(() => {});
+      }
+      throw err;
+    }
+  });
+
 // Lazy load all page components for code splitting
-const Login = lazy(() => import("./pages/Login"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const HomePage = lazy(() => import("./pages/HomePage"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const CommissionTable = lazy(() => import("./pages/CommissionTable"));
-const InfoPage = lazy(() => import("./pages/InfoPage"));
-const MFuelPage = lazy(() => import("./pages/MFuelPage"));
-const HotspotPage = lazy(() => import("./pages/HotspotPage"));
-const CNGLocationPage = lazy(() => import("./pages/CNGLocationPage"));
-const DriverIncomePage = lazy(() => import("./pages/DriverIncomePage"));
-const DriverManagementPage = lazy(() => import("./pages/DriverManagementPage"));
-const DriverAbsentFinePage = lazy(() => import("./pages/DriverAbsentFinePage"));
-const DriverPortalPage = lazy(() => import("./pages/DriverPortalPage"));
-const DriverTargetTripsPage = lazy(() => import("./pages/DriverTargetTripsPage"));
-const DriverAbsentFineViewPage = lazy(() => import("./pages/DriverAbsentFineViewPage"));
-const DriverRequestPage = lazy(() => import("./pages/DriverRequestPage"));
-const DriverWarningLetterPage = lazy(() => import("./pages/DriverWarningLetterPage"));
-const TargetTripsUploadPage = lazy(() => import("./pages/TargetTripsUploadPage"));
-const WarningLettersUploadPage = lazy(() => import("./pages/WarningLettersUploadPage"));
-const AdminRequestsPage = lazy(() => import("./pages/AdminRequestsPage"));
-const InstallPage = lazy(() => import("./pages/InstallPage"));
-const DriverActivityLogsPage = lazy(() => import("./pages/DriverActivityLogsPage"));
-const DriverMasterFilePage = lazy(() => import("./pages/DriverMasterFilePage"));
-const RevenueControllerPortalPage = lazy(() => import("./pages/RevenueControllerPortalPage"));
-const DriverEntryPassPage = lazy(() => import("./pages/DriverEntryPassPage"));
-const DriverSurveyPage = lazy(() => import("./pages/DriverSurveyPage"));
-const AdminSurveyPage = lazy(() => import("./pages/AdminSurveyPage"));
-const AdminEntryPassPage = lazy(() => import("./pages/AdminEntryPassPage"));
-const VideoTutorialsPage = lazy(() => import("./pages/VideoTutorialsPage"));
-const PRDPage = lazy(() => import("./pages/PRDPage"));
-const SystemGuidePage = lazy(() => import("./pages/SystemGuidePage"));
-const TotalOutstandingPage = lazy(() => import("./pages/TotalOutstandingPage"));
-const TotalBalanceKPIPage = lazy(() => import("./pages/TotalBalanceKPIPage"));
-const CalendarEventsUploadPage = lazy(() => import("./pages/CalendarEventsUploadPage"));
-const DriverCalendarEventsPage = lazy(() => import("./pages/DriverCalendarEventsPage"));
-const DriverBadgePage = lazy(() => import("./pages/DriverBadgePage"));
-const Index = lazy(() => import("./pages/Index"));
+const Login = lazyRetry(() => import("./pages/Login"));
+const Dashboard = lazyRetry(() => import("./pages/Dashboard"));
+const HomePage = lazyRetry(() => import("./pages/HomePage"));
+const NotFound = lazyRetry(() => import("./pages/NotFound"));
+const CommissionTable = lazyRetry(() => import("./pages/CommissionTable"));
+const InfoPage = lazyRetry(() => import("./pages/InfoPage"));
+const MFuelPage = lazyRetry(() => import("./pages/MFuelPage"));
+const HotspotPage = lazyRetry(() => import("./pages/HotspotPage"));
+const CNGLocationPage = lazyRetry(() => import("./pages/CNGLocationPage"));
+const DriverIncomePage = lazyRetry(() => import("./pages/DriverIncomePage"));
+const DriverManagementPage = lazyRetry(() => import("./pages/DriverManagementPage"));
+const DriverAbsentFinePage = lazyRetry(() => import("./pages/DriverAbsentFinePage"));
+const DriverPortalPage = lazyRetry(() => import("./pages/DriverPortalPage"));
+const DriverTargetTripsPage = lazyRetry(() => import("./pages/DriverTargetTripsPage"));
+const DriverAbsentFineViewPage = lazyRetry(() => import("./pages/DriverAbsentFineViewPage"));
+const DriverRequestPage = lazyRetry(() => import("./pages/DriverRequestPage"));
+const DriverWarningLetterPage = lazyRetry(() => import("./pages/DriverWarningLetterPage"));
+const TargetTripsUploadPage = lazyRetry(() => import("./pages/TargetTripsUploadPage"));
+const WarningLettersUploadPage = lazyRetry(() => import("./pages/WarningLettersUploadPage"));
+const AdminRequestsPage = lazyRetry(() => import("./pages/AdminRequestsPage"));
+const InstallPage = lazyRetry(() => import("./pages/InstallPage"));
+const DriverActivityLogsPage = lazyRetry(() => import("./pages/DriverActivityLogsPage"));
+const DriverMasterFilePage = lazyRetry(() => import("./pages/DriverMasterFilePage"));
+const RevenueControllerPortalPage = lazyRetry(() => import("./pages/RevenueControllerPortalPage"));
+const DriverEntryPassPage = lazyRetry(() => import("./pages/DriverEntryPassPage"));
+const DriverSurveyPage = lazyRetry(() => import("./pages/DriverSurveyPage"));
+const AdminSurveyPage = lazyRetry(() => import("./pages/AdminSurveyPage"));
+const AdminEntryPassPage = lazyRetry(() => import("./pages/AdminEntryPassPage"));
+const VideoTutorialsPage = lazyRetry(() => import("./pages/VideoTutorialsPage"));
+const PRDPage = lazyRetry(() => import("./pages/PRDPage"));
+const SystemGuidePage = lazyRetry(() => import("./pages/SystemGuidePage"));
+const TotalOutstandingPage = lazyRetry(() => import("./pages/TotalOutstandingPage"));
+const TotalBalanceKPIPage = lazyRetry(() => import("./pages/TotalBalanceKPIPage"));
+const CalendarEventsUploadPage = lazyRetry(() => import("./pages/CalendarEventsUploadPage"));
+const DriverCalendarEventsPage = lazyRetry(() => import("./pages/DriverCalendarEventsPage"));
+const DriverBadgePage = lazyRetry(() => import("./pages/DriverBadgePage"));
+const Index = lazyRetry(() => import("./pages/Index"));
 
 // Loading fallback component
 const PageLoader = memo(() => (
