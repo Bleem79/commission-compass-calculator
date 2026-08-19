@@ -131,10 +131,14 @@ const DriverYangoPage = () => {
           <p className="text-sm text-white/70">
             {record.phone_type} • Monthly Data: {record.has_data}
           </p>
+          <p className="text-sm text-white/80 font-medium">
+            Driver ID: {record.driver_id || "—"}
+          </p>
           <p className="text-xs text-white/40">
             {format(new Date(record.created_at), "dd MMM yyyy • hh:mm a")}
           </p>
         </div>
+
       ) : (
         <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 sm:p-6 space-y-5">
           <div>
