@@ -11,10 +11,13 @@ import { PageLayout } from "@/components/shared/PageLayout";
 
 interface YangoRecord {
   id: string;
+  driver_id: string | null;
+  driver_name: string | null;
   phone_type: string;
   has_data: string;
   created_at: string;
 }
+
 
 const PHONE_TYPES = ["Android", "iPhone"];
 const DATA_OPTIONS = ["Yes", "No"];
