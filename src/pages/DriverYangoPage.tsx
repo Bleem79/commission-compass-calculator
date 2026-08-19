@@ -119,7 +119,7 @@ const DriverYangoPage = () => {
           YANGO is launching soon!
         </p>
         <h2 className="text-base sm:text-lg font-bold text-white leading-snug">
-          To Work with YANGO you have your own Smart Phone and DATA
+          Requirements: Must have your own smartphone and DATA
         </h2>
       </div>
 
