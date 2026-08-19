@@ -1,0 +1,1 @@
+ALTER TABLE public.yango_responses ALTER COLUMN mobile_no DROP NOT NULL;
