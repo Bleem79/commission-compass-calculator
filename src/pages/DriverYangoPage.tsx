@@ -62,18 +62,24 @@ const DriverYangoPage = () => {
       toast.error("Please answer if you have monthly data.");
       return;
     }
+    if (!driverInfo?.driverId) {
+      toast.error("Driver ID is still loading. Please wait a moment.");
+      return;
+    }
     setSubmitting(true);
     try {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id || user?.id;
       if (!userId) throw new Error("Not authenticated.");
 
+      const submittedAt = new Date().toISOString();
       const { error } = await supabase.from("yango_responses").insert({
         user_id: userId,
-        driver_id: driverInfo?.driverId || null,
-        driver_name: driverInfo?.driverName || null,
+        driver_id: driverInfo.driverId,
+        driver_name: driverInfo.driverName || null,
         phone_type: phoneType,
         has_data: hasData,
+        created_at: submittedAt,
       });
       if (error) {
         if ((error as any).code === "23505") {
@@ -83,7 +89,12 @@ const DriverYangoPage = () => {
         }
         throw error;
       }
-      toast.success("Submitted. Thank you!");
+      toast.success(
+        `Submitted. Driver ID: ${driverInfo.driverId} at ${format(
+          new Date(submittedAt),
+          "dd MMM yyyy • hh:mm a"
+        )}`
+      );
       await fetchRecord();
     } catch (err: any) {
       toast.error(err.message || "Failed to submit.");
@@ -91,6 +102,7 @@ const DriverYangoPage = () => {
       setSubmitting(false);
     }
   };
+
 
   return (
     <PageLayout
