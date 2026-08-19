@@ -12,7 +12,6 @@ interface YangoRecord {
   id: string;
   driver_id: string | null;
   driver_name: string | null;
-  mobile_no: string;
   phone_type: string;
   has_data: string;
   created_at: string;
@@ -37,7 +36,7 @@ const AdminYangoPage = () => {
       while (true) {
         const { data, error } = await supabase
           .from("yango_responses")
-          .select("id, driver_id, driver_name, mobile_no, phone_type, has_data, created_at")
+          .select("id, driver_id, driver_name, phone_type, has_data, created_at")
           .order("created_at", { ascending: false })
           .range(from, from + batch - 1);
         if (error) throw error;
@@ -78,8 +77,7 @@ const AdminYangoPage = () => {
       const matchesDriver =
         !q ||
         (r.driver_id || "").toLowerCase().includes(q) ||
-        (r.driver_name || "").toLowerCase().includes(q) ||
-        r.mobile_no.toLowerCase().includes(q);
+        (r.driver_name || "").toLowerCase().includes(q);
       const matchesDate =
         !dateFilter || format(new Date(r.created_at), "yyyy-MM-dd") === dateFilter;
       return matchesDriver && matchesDate;
@@ -105,14 +103,13 @@ const AdminYangoPage = () => {
     const rows = filtered.map((r) => ({
       "Driver ID": r.driver_id || "",
       "Driver Name": r.driver_name || "",
-      "Mobile No": r.mobile_no,
       "Smartphone": r.phone_type,
       "Monthly Data": r.has_data,
       Date: format(new Date(r.created_at), "dd MMM yyyy"),
       Time: format(new Date(r.created_at), "hh:mm a"),
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
-    ws["!cols"] = [{ wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
+    ws["!cols"] = [{ wch: 14 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Yango");
     XLSX.writeFile(wb, `yango-submissions-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
@@ -145,7 +142,7 @@ const AdminYangoPage = () => {
 
       <div className="bg-white/10 border border-white/20 rounded-2xl p-4 mb-5 flex flex-col sm:flex-row gap-3 sm:items-end">
         <div className="flex-1">
-          <label className="text-xs text-white/60 mb-1.5 block">Search Driver ID / Name / Mobile</label>
+          <label className="text-xs text-white/60 mb-1.5 block">Search Driver ID / Name</label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
             <Input
@@ -211,7 +208,6 @@ const AdminYangoPage = () => {
                 <tr className="text-white/60 text-xs uppercase tracking-wider border-b border-white/10">
                   <th className="text-left font-medium px-4 py-3">Driver ID</th>
                   <th className="text-left font-medium px-4 py-3">Driver Name</th>
-                  <th className="text-left font-medium px-4 py-3">Mobile No</th>
                   <th className="text-left font-medium px-4 py-3">Smartphone</th>
                   <th className="text-left font-medium px-4 py-3">Monthly Data</th>
                   <th className="text-left font-medium px-4 py-3">Date &amp; Time</th>
@@ -223,7 +219,6 @@ const AdminYangoPage = () => {
                   <tr key={r.id} className="border-b border-white/5 hover:bg-white/5">
                     <td className="px-4 py-3 text-white font-medium">{r.driver_id || "—"}</td>
                     <td className="px-4 py-3 text-white/80">{r.driver_name || "—"}</td>
-                    <td className="px-4 py-3 text-white/80">{r.mobile_no}</td>
                     <td className="px-4 py-3 text-white/80">{r.phone_type}</td>
                     <td className="px-4 py-3 text-white font-semibold">{r.has_data}</td>
                     <td className="px-4 py-3 text-white/70">
