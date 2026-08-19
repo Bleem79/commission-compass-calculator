@@ -40,13 +40,14 @@ const DriverYangoPage = () => {
   const fetchRecord = useCallback(async () => {
     const { data } = await supabase
       .from("yango_responses")
-      .select("id, phone_type, has_data, created_at")
+      .select("id, driver_id, driver_name, phone_type, has_data, created_at")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     setRecord((data as YangoRecord) || null);
     setLoading(false);
   }, []);
+
 
   useEffect(() => {
     fetchRecord();
