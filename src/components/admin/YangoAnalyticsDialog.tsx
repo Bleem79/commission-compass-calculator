@@ -241,22 +241,6 @@ export const YangoAnalyticsDialog = ({ open, onOpenChange, records }: Props) => 
               </div>
             </Section>
 
-            <Section title="Legacy Combination">
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.combo} margin={{ left: 8, right: 16, bottom: 30 }}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                    <XAxis dataKey="name" fontSize={10} interval={0} angle={-15} textAnchor="end" height={50} />
-                    <YAxis allowDecimals={false} fontSize={11} />
-                    <Tooltip />
-                    <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                      {stats.combo.map((_, i) => <Cell key={i} fill={COLORS[(i + 1) % COLORS.length]} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Section>
-
             <Section title="Submissions Over Time">
               <p className="text-xs text-muted-foreground -mt-2">
                 {stats.peak && <>Peak day: <span className="font-medium text-foreground">{stats.peak.day}</span> ({stats.peak.count})</>}
