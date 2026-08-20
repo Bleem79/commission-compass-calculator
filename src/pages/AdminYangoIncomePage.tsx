@@ -197,10 +197,10 @@ const AdminYangoIncomePage = () => {
             <Button variant="outline" onClick={exportExcel} disabled={!rows.length}>
               <Download className="h-4 w-4 mr-2" />Export
             </Button>
-            {isAdmin && rows.length > 0 && (
+            {isAdmin && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="ml-auto">
+                  <Button variant="destructive" disabled={!rows.length} className="ml-auto">
                     <Trash2 className="h-4 w-4 mr-2" />Delete All
                   </Button>
                 </AlertDialogTrigger>
