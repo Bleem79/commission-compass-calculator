@@ -169,6 +169,15 @@ const AdminYangoIncomePage = () => {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  const stats = {
+    totalTrips: filtered.reduce((sum, r) => sum + (r.no_of_trips ?? 0), 0),
+    cashIncome: filtered.reduce((sum, r) => sum + (r.cash_income ?? 0), 0),
+    cashlessIncome: filtered.reduce((sum, r) => sum + (r.cashless_income ?? 0), 0),
+    totalIncome: filtered.reduce((sum, r) => sum + (r.total_income ?? 0), 0),
+    driverIncome: filtered.reduce((sum, r) => sum + (r.driver_income ?? 0), 0),
+    totalDrivers: new Set(filtered.map((r) => r.driver_id)).size,
+  };
+
   useEffect(() => { setPage(1); }, [search]);
 
   return (
