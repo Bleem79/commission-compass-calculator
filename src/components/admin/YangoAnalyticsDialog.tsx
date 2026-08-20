@@ -125,14 +125,13 @@ export const YangoAnalyticsDialog = ({ open, onOpenChange, records }: Props) => 
           body * { visibility: hidden !important; }
           [data-yango-report], [data-yango-report] * { visibility: visible !important; }
           [data-yango-report] {
-            position: static !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
             width: 190mm !important; max-width: 190mm !important;
-            margin: 0 auto !important;
-            transform: none !important; box-shadow: none !important; border: none !important;
-            padding: 0 !important;
-          }
-          [data-yango-report] > div {
-            align-items: center !important;
+            box-shadow: none !important; border: none !important;
+            padding: 0 !important; margin: 0 !important;
           }
         }`}</style>
         <DialogHeader>
