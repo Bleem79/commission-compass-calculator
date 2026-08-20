@@ -52,20 +52,38 @@ const AdminYangoPage = () => {
         from += batch;
       }
       const ids = Array.from(new Set(all.map((r) => r.driver_id).filter(Boolean))) as string[];
-      const info = new Map<string, { mobile_no: string | null; nationality: string | null }>();
+      const info = new Map<string, { mobile_no: string | null; nationality: string | null; driver_name: string | null }>();
       for (let i = 0; i < ids.length; i += 300) {
         const { data } = await supabase
           .from("yango_driver_list")
-          .select("driver_id, mobile_no, nationality")
+          .select("driver_id, mobile_no, nationality, driver_name")
           .in("driver_id", ids.slice(i, i + 300));
         (data || []).forEach((d: any) => {
-          if (!info.has(d.driver_id)) info.set(d.driver_id, { mobile_no: d.mobile_no, nationality: d.nationality });
+          if (!info.has(d.driver_id))
+            info.set(d.driver_id, { mobile_no: d.mobile_no, nationality: d.nationality, driver_name: d.driver_name });
+        });
+      }
+      const nameFallback = new Map<string, string>();
+      const missing = ids.filter((id) => !(info.get(id)?.driver_name));
+      for (let i = 0; i < missing.length; i += 300) {
+        const { data } = await supabase
+          .from("driver_master_file")
+          .select("driver_id, driver_name")
+          .in("driver_id", missing.slice(i, i + 300));
+        (data || []).forEach((d: any) => {
+          if (d.driver_name && !nameFallback.has(d.driver_id)) nameFallback.set(d.driver_id, d.driver_name);
         });
       }
       setRecords(
         all.map((r) => {
           const d = r.driver_id ? info.get(r.driver_id) : undefined;
-          return { ...r, mobile_no: r.mobile_no || d?.mobile_no || null, nationality: d?.nationality || null };
+          return {
+            ...r,
+            driver_name:
+              r.driver_name || d?.driver_name || (r.driver_id ? nameFallback.get(r.driver_id) : null) || null,
+            mobile_no: r.mobile_no || d?.mobile_no || null,
+            nationality: d?.nationality || null,
+          };
         }),
       );
     } catch (err) {
