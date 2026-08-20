@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, X, ListChecks } from "lucide-react";
+import { Loader2, Plus, Trash2, X, ListChecks, Archive } from "lucide-react";
 
 export interface SurveyQuestion {
   id: string;
@@ -87,6 +87,27 @@ export const ManageSurveyQuestionsDialog = ({ open, onOpenChange, onChanged }: P
     onChanged?.();
   };
 
+  const handleCloseSurvey = async () => {
+    const activeIds = questions.filter((q) => q.is_active).map((q) => q.id);
+    if (activeIds.length === 0) return toast.error("There is no open survey to close.");
+    if (
+      !confirm(
+        "Close the current survey? Drivers will no longer see it, previous submissions are kept, and you can then create a new survey question."
+      )
+    )
+      return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("survey_questions")
+      .update({ is_active: false })
+      .in("id", activeIds);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Survey closed. Add a new question to start a new survey.");
+    await fetchQuestions();
+    onChanged?.();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
@@ -98,6 +119,12 @@ export const ManageSurveyQuestionsDialog = ({ open, onOpenChange, onChanged }: P
             Create survey questions and their selectable options. Only active questions are shown to drivers.
           </DialogDescription>
         </DialogHeader>
+
+        {questions.some((q) => q.is_active) && (
+          <Button variant="outline" onClick={handleCloseSurvey} disabled={saving} className="w-full">
+            <Archive className="h-4 w-4 mr-2" /> Close Current Survey
+          </Button>
+        )}
 
         <div className="space-y-3">
           {loading ? (
