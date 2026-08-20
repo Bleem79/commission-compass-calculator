@@ -233,12 +233,24 @@ const AdminSurveyPage = () => {
         </div>
       </div>
 
-      <ManageSurveyQuestionsDialog open={questionsOpen} onOpenChange={setQuestionsOpen} />
+      <ManageSurveyQuestionsDialog
+        open={questionsOpen}
+        onOpenChange={setQuestionsOpen}
+        onChanged={() => {
+          fetchRecords();
+          fetchActiveQuestions();
+        }}
+      />
       <SurveyAnalyticsDialog open={analyticsOpen} onOpenChange={setAnalyticsOpen} records={filtered} />
 
-      {loading ? (
+      {loading || loadingActive ? (
         <div className="flex items-center justify-center py-16 text-white/60">
           <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading submissions...
+        </div>
+      ) : activeQuestions.length === 0 ? (
+        <div className="flex flex-col items-center justify-center text-white/40 gap-3 py-16">
+          <ClipboardList className="w-12 h-12" />
+          <p className="text-sm">No active survey. Results are hidden while the survey is closed.</p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-white/40 gap-3 py-16">
