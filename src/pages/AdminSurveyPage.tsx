@@ -30,6 +30,8 @@ const AdminSurveyPage = () => {
   const [questionsOpen, setQuestionsOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [activeQuestions, setActiveQuestions] = useState<string[]>([]);
+  const [loadingActive, setLoadingActive] = useState(true);
 
   const handleDelete = async (rec: SurveyRecord) => {
     if (!confirm(`Delete the survey answer of ${rec.driver_id || "this driver"}?`)) return;
@@ -71,22 +73,39 @@ const AdminSurveyPage = () => {
     }
   }, []);
 
+  const fetchActiveQuestions = useCallback(async () => {
+    setLoadingActive(true);
+    const { data, error } = await supabase
+      .from("survey_questions")
+      .select("question")
+      .eq("is_active", true);
+    if (error) {
+      console.error("Error fetching active questions:", error);
+      toast.error("Failed to load active survey questions.");
+    } else {
+      setActiveQuestions((data || []).map((q: any) => q.question));
+    }
+    setLoadingActive(false);
+  }, []);
+
   useEffect(() => {
     fetchRecords();
-  }, [fetchRecords]);
+    fetchActiveQuestions();
+  }, [fetchRecords, fetchActiveQuestions]);
 
   const filtered = useMemo(() => {
     const q = driverQuery.trim().toLowerCase();
     return records.filter((r) => {
+      const isActiveQuestion = activeQuestions.includes(r.question);
       const matchesDriver =
         !q ||
         (r.driver_id || "").toLowerCase().includes(q) ||
         (r.driver_name || "").toLowerCase().includes(q);
       const matchesDate =
         !dateFilter || format(new Date(r.created_at), "yyyy-MM-dd") === dateFilter;
-      return matchesDriver && matchesDate;
+      return isActiveQuestion && matchesDriver && matchesDate;
     });
-  }, [records, driverQuery, dateFilter]);
+  }, [records, driverQuery, dateFilter, activeQuestions]);
 
   useEffect(() => {
     setPage(1);
@@ -197,7 +216,10 @@ const AdminSurveyPage = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={fetchRecords}
+            onClick={() => {
+              fetchRecords();
+              fetchActiveQuestions();
+            }}
             className="bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
             <RefreshCw className="w-4 h-4" />
@@ -211,12 +233,24 @@ const AdminSurveyPage = () => {
         </div>
       </div>
 
-      <ManageSurveyQuestionsDialog open={questionsOpen} onOpenChange={setQuestionsOpen} />
+      <ManageSurveyQuestionsDialog
+        open={questionsOpen}
+        onOpenChange={setQuestionsOpen}
+        onChanged={() => {
+          fetchRecords();
+          fetchActiveQuestions();
+        }}
+      />
       <SurveyAnalyticsDialog open={analyticsOpen} onOpenChange={setAnalyticsOpen} records={filtered} />
 
-      {loading ? (
+      {loading || loadingActive ? (
         <div className="flex items-center justify-center py-16 text-white/60">
           <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading submissions...
+        </div>
+      ) : activeQuestions.length === 0 ? (
+        <div className="flex flex-col items-center justify-center text-white/40 gap-3 py-16">
+          <ClipboardList className="w-12 h-12" />
+          <p className="text-sm">No active survey. Results are hidden while the survey is closed.</p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-white/40 gap-3 py-16">
