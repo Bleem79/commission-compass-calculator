@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
-import { Car, Search, Download, RefreshCw, Loader2, X, Trash2, BarChart3 } from "lucide-react";
+import { Car, Search, Download, RefreshCw, Loader2, X, Trash2, BarChart3, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PageLayout } from "@/components/shared/PageLayout";
 import { YangoAnalyticsDialog } from "@/components/admin/YangoAnalyticsDialog";
+import { YangoDriverListDialog } from "@/components/admin/YangoDriverListDialog";
 
 interface YangoRecord {
   id: string;
@@ -28,6 +29,7 @@ const AdminYangoPage = () => {
   const [page, setPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showDriverList, setShowDriverList] = useState(false);
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
@@ -191,6 +193,12 @@ const AdminYangoPage = () => {
             <BarChart3 className="w-4 h-4 mr-2" /> View Analysis
           </Button>
           <Button
+            onClick={() => setShowDriverList(true)}
+            className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold"
+          >
+            <FileSpreadsheet className="w-4 h-4 mr-2" /> Upload Driver List
+          </Button>
+          <Button
             onClick={handleExport}
             className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold"
           >
@@ -200,6 +208,7 @@ const AdminYangoPage = () => {
       </div>
 
       <YangoAnalyticsDialog open={showAnalytics} onOpenChange={setShowAnalytics} records={filtered} />
+      <YangoDriverListDialog open={showDriverList} onOpenChange={setShowDriverList} />
 
       {loading ? (
         <div className="flex items-center justify-center py-16 text-white/60">
