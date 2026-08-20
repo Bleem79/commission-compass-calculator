@@ -995,6 +995,48 @@ export type Database = {
         }
         Relationships: []
       }
+      yango_driver_list: {
+        Row: {
+          created_at: string
+          driver_id: string
+          driver_name: string | null
+          gender: string | null
+          hr_status: string | null
+          id: string
+          mobile_no: string | null
+          nationality: string | null
+          s_no: number | null
+          status: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          driver_name?: string | null
+          gender?: string | null
+          hr_status?: string | null
+          id?: string
+          mobile_no?: string | null
+          nationality?: string | null
+          s_no?: number | null
+          status?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          driver_name?: string | null
+          gender?: string | null
+          hr_status?: string | null
+          id?: string
+          mobile_no?: string | null
+          nationality?: string | null
+          s_no?: number | null
+          status?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       yango_responses: {
         Row: {
           created_at: string
