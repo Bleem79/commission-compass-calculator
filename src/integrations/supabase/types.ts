@@ -1037,6 +1037,51 @@ export type Database = {
         }
         Relationships: []
       }
+      yango_income: {
+        Row: {
+          cash_income: number | null
+          cashless_income: number | null
+          created_at: string
+          driver_id: string
+          driver_income: number | null
+          id: string
+          income_date: string | null
+          no_of_trips: number | null
+          shift: string | null
+          total_income: number | null
+          uploaded_by: string | null
+          vehicle_no: string | null
+        }
+        Insert: {
+          cash_income?: number | null
+          cashless_income?: number | null
+          created_at?: string
+          driver_id: string
+          driver_income?: number | null
+          id?: string
+          income_date?: string | null
+          no_of_trips?: number | null
+          shift?: string | null
+          total_income?: number | null
+          uploaded_by?: string | null
+          vehicle_no?: string | null
+        }
+        Update: {
+          cash_income?: number | null
+          cashless_income?: number | null
+          created_at?: string
+          driver_id?: string
+          driver_income?: number | null
+          id?: string
+          income_date?: string | null
+          no_of_trips?: number | null
+          shift?: string | null
+          total_income?: number | null
+          uploaded_by?: string | null
+          vehicle_no?: string | null
+        }
+        Relationships: []
+      }
       yango_responses: {
         Row: {
           created_at: string
