@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Car } from "lucide-react";
 import { ClipboardList } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePagePermissions } from "@/contexts/PagePermissionsContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
@@ -379,6 +380,13 @@ const HomePage = () => {
       pageKey: "admin-yango",
       gradient: "bg-gradient-to-br from-amber-500 via-orange-500 to-red-600",
       onClick: () => navigate("/admin-yango"),
+    });
+    features.push({
+      icon: <Wallet className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Yango Income",
+      pageKey: "admin-yango-income",
+      gradient: "bg-gradient-to-br from-yellow-500 via-amber-600 to-orange-700",
+      onClick: () => navigate("/admin-yango-income"),
     });
   }
 
