@@ -380,6 +380,13 @@ const HomePage = () => {
       gradient: "bg-gradient-to-br from-amber-500 via-orange-500 to-red-600",
       onClick: () => navigate("/admin-yango"),
     });
+    features.push({
+      icon: <Wallet className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Yango Income",
+      pageKey: "admin-yango-income",
+      gradient: "bg-gradient-to-br from-yellow-500 via-amber-600 to-orange-700",
+      onClick: () => navigate("/admin-yango-income"),
+    });
   }
 
   if (canAccessAdminPages && !isFleetUser) {
