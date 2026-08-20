@@ -308,6 +308,7 @@ const AdminYangoPage = () => {
                   <th className="text-left font-medium px-4 py-3">Driver Name</th>
                   <th className="text-left font-medium px-4 py-3">Contact No</th>
                   <th className="text-left font-medium px-4 py-3">Nationality</th>
+                  <th className="text-left font-medium px-4 py-3">HR Status</th>
                   <th className="text-left font-medium px-4 py-3">Smartphone</th>
                   <th className="text-left font-medium px-4 py-3">Monthly Data</th>
                   <th className="text-left font-medium px-4 py-3">Date &amp; Time</th>
@@ -321,6 +322,7 @@ const AdminYangoPage = () => {
                     <td className="px-4 py-3 text-white/80">{r.driver_name || "—"}</td>
                     <td className="px-4 py-3 text-white/80">{r.mobile_no || "—"}</td>
                     <td className="px-4 py-3 text-white/80">{r.nationality || "—"}</td>
+                    <td className="px-4 py-3 text-white/80">{r.hr_status || "—"}</td>
                     <td className="px-4 py-3 text-white/80">{r.phone_type}</td>
                     <td className="px-4 py-3 text-white font-semibold">{r.has_data}</td>
                     <td className="px-4 py-3 text-white/70">
