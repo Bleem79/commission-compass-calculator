@@ -10,6 +10,9 @@ import { Button } from "@/components/ui/button";
 
 export interface YangoAnalyticsRecord {
   driver_id: string | null;
+  driver_name?: string | null;
+  mobile_no?: string | null;
+  nationality?: string | null;
   phone_type: string;
   has_data: string;
   created_at: string;
@@ -37,10 +40,13 @@ export const YangoAnalyticsDialog = ({ open, onOpenChange, records }: Props) => 
     const data = new Map<string, number>();
     const combo = new Map<string, number>();
     const byDay = new Map<string, number>();
+    const nationality = new Map<string, number>();
 
     records.forEach((r) => {
       phone.set(r.phone_type, (phone.get(r.phone_type) || 0) + 1);
       data.set(r.has_data, (data.get(r.has_data) || 0) + 1);
+      const nat = (r.nationality || "").trim() || "Unknown";
+      nationality.set(nat, (nationality.get(nat) || 0) + 1);
       const key = `${r.phone_type} · Data: ${r.has_data}`;
       combo.set(key, (combo.get(key) || 0) + 1);
       const d = format(new Date(r.created_at), "yyyy-MM-dd");
@@ -70,6 +76,7 @@ export const YangoAnalyticsDialog = ({ open, onOpenChange, records }: Props) => 
       phone: toChart(phone),
       data: toChart(data),
       combo: toChart(combo),
+      nationality: toChart(nationality),
       trend,
       cumulative,
       avgPerDay: total / days,
