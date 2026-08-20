@@ -238,6 +238,51 @@ const AdminYangoIncomePage = () => {
         </CardContent>
       </Card>
 
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+            <Route className="h-5 w-5 text-primary mb-2" />
+            <p className="text-xs text-muted-foreground">Total No. of Trips</p>
+            <p className="text-lg font-bold">{stats.totalTrips.toLocaleString("en-US")}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+            <Banknote className="h-5 w-5 text-emerald-600 mb-2" />
+            <p className="text-xs text-muted-foreground">Cash Income</p>
+            <p className="text-lg font-bold">{fmt(stats.cashIncome)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+            <CreditCard className="h-5 w-5 text-blue-600 mb-2" />
+            <p className="text-xs text-muted-foreground">Cashless Income</p>
+            <p className="text-lg font-bold">{fmt(stats.cashlessIncome)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+            <Wallet className="h-5 w-5 text-amber-600 mb-2" />
+            <p className="text-xs text-muted-foreground">Total Income</p>
+            <p className="text-lg font-bold">{fmt(stats.totalIncome)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+            <Coins className="h-5 w-5 text-purple-600 mb-2" />
+            <p className="text-xs text-muted-foreground">Total Driver Income</p>
+            <p className="text-lg font-bold">{fmt(stats.driverIncome)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+            <Users className="h-5 w-5 text-cyan-600 mb-2" />
+            <p className="text-xs text-muted-foreground">Total No. of Drivers</p>
+            <p className="text-lg font-bold">{stats.totalDrivers.toLocaleString("en-US")}</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm">
