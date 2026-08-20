@@ -371,6 +371,99 @@ const SystemGuidePage = () => {
             "The app works offline for previously loaded pages",
           ]} />
         </GuideSection>
+
+        {/* Yango */}
+        <GuideSection icon={<Car className="h-5 w-5 text-yellow-400" />} title="16. Yango Programme">
+          <p>Collects driver readiness for the Yango launch: contact number, smartphone type, and mobile data availability.</p>
+          <div className="space-y-3 mt-2">
+            <div>
+              <h4 className="text-white font-medium text-sm">Driver side</h4>
+              <StepList steps={[
+                'Open the "Yango" card from the Driver Portal',
+                "Update your contact number (pre-filled from the uploaded driver list)",
+                "Select smartphone type: Android or iPhone",
+                "Answer whether you have monthly DATA (Yes / No)",
+                "Click Submit — one submission per driver",
+              ]} />
+            </div>
+            <Separator className="bg-white/10" />
+            <div>
+              <h4 className="text-white font-medium text-sm">Admin side</h4>
+              <StepList steps={[
+                'Navigate to "Yango" from the Home Page',
+                "Review submissions with Driver ID, Name, Contact No, Nationality, HR Status, Smartphone, Data, and Date",
+                'Click "Upload Driver List" to import the Excel file (S.No, Driver Id, Drvr Name, Gender, Nationality, Mobile No, Status, HR Status)',
+                "Missing names, contact numbers, nationality and HR status are backfilled from the uploaded list",
+                'Click "View Analysis" for smartphone, data and nationality breakdown charts (printable A4)',
+                "Export everything — including an Analysis sheet — to Excel",
+              ]} />
+            </div>
+          </div>
+          <Tip>Use "Delete All" on the driver list dialog before re-uploading a fresh HR export.</Tip>
+        </GuideSection>
+
+        {/* Survey */}
+        <GuideSection icon={<ListChecks className="h-5 w-5 text-lime-400" />} title="17. Driver Survey">
+          <StepList steps={[
+            'Drivers open "Survey" from the Driver Portal',
+            "Select one option for the active question (e.g. Cashier timings 06:00AM–06:00PM or 04:00AM–04:00PM)",
+            "Click Submit — only one submission is allowed per driver",
+            'Admins open "Survey" from the Home Page to see Driver ID, answer, date and time',
+            'Use "Manage Questions" to add or deactivate survey questions',
+            "View analytics charts or export all submissions to CSV",
+          ]} />
+          <Warning>Survey results are visible to admins only.</Warning>
+        </GuideSection>
+
+        {/* Badges */}
+        <GuideSection icon={<Award className="h-5 w-5 text-amber-400" />} title="18. Driver Badges & Leaderboard">
+          <StepList steps={[
+            "Drivers see their current monthly badge on the Home Page and Driver Portal",
+            "Open the Badge Catalog to view all achievable badges and their criteria",
+            'Open the Leaderboard, then click "My Badge History" for month-by-month achievements',
+            "Each entry shows the month (e.g. April 2026) and the badge earned",
+          ]} />
+        </GuideSection>
+
+        {/* Total Balance */}
+        <GuideSection icon={<Wallet className="h-5 w-5 text-emerald-400" />} title="19. Total Balance & Monthly Fuel %">
+          <StepList steps={[
+            'Navigate to "Total Balance" for the outstanding balance KPI by driver and location',
+            "The change row highlights increases in red and decreases in green",
+            'Use "Monthly Fuel %" for the fuel document library',
+          ]} />
+        </GuideSection>
+
+        {/* Messaging */}
+        <GuideSection icon={<Send className="h-5 w-5 text-pink-400" />} title="20. Messaging & SMS">
+          <StepList steps={[
+            'Open "Messages" from the Home Page to post a broadcast to all drivers',
+            "Use the SMS dialog to select individual drivers — all active driver IDs are listed",
+            "Private messages are delivered to a single driver's portal only",
+            "Drivers hear a chime, feel a vibration and see a bell badge when a new message arrives",
+          ]} />
+          <Tip>Broadcast history stays visible on the admin Messages page; private messages are filtered out of that list.</Tip>
+        </GuideSection>
+
+        {/* Calendar Events */}
+        <GuideSection icon={<CalendarDays className="h-5 w-5 text-cyan-400" />} title="21. Calendar Events">
+          <StepList steps={[
+            'Navigate to "Calendar Events Upload" (admin only)',
+            "Upload the event file with dates and descriptions",
+            "Drivers view the schedule from the Calendar Events card in their portal",
+          ]} />
+        </GuideSection>
+
+        {/* Page Permissions */}
+        <GuideSection icon={<Lock className="h-5 w-5 text-red-400" />} title="22. Page Permissions">
+          <StepList steps={[
+            'Click "Page Permissions" on the Home Page (admin only)',
+            "Choose a role and toggle which pages that role can open",
+            "Every route — including Survey, Yango and Calendar Events Upload — can be controlled here",
+            "Changes apply immediately on the next page load",
+          ]} />
+          <Warning>Revenue controllers only see driver requests for drivers assigned to them in the Driver Master File.</Warning>
+        </GuideSection>
       </div>
     </PageLayout>
   );
