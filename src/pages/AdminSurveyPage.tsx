@@ -30,6 +30,8 @@ const AdminSurveyPage = () => {
   const [questionsOpen, setQuestionsOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [activeQuestions, setActiveQuestions] = useState<string[]>([]);
+  const [loadingActive, setLoadingActive] = useState(true);
 
   const handleDelete = async (rec: SurveyRecord) => {
     if (!confirm(`Delete the survey answer of ${rec.driver_id || "this driver"}?`)) return;
