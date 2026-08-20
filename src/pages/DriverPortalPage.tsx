@@ -380,6 +380,29 @@ const DriverPortalPage = () => {
           </div>
 
           {/* Portal Cards Grid */}
+          {unreadCount > 0 && (
+            <button
+              onClick={openMessages}
+              className="mb-6 w-full flex items-center gap-3 rounded-xl border border-red-400/40 bg-red-500/15 backdrop-blur-sm px-4 py-3 text-left transition-colors hover:bg-red-500/25"
+            >
+              <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/30">
+                <Mail className="h-5 w-5 text-white animate-bell-ring" />
+                <span className="absolute inset-0 rounded-full bg-red-400/40 animate-ping" />
+              </span>
+              <span className="flex-1">
+                <span className="block text-sm font-semibold text-white">
+                  {unreadCount === 1
+                    ? "You have 1 unread message"
+                    : `You have ${unreadCount} unread messages`}
+                </span>
+                <span className="block text-xs text-white/70">
+                  Tap here to read your private messages from Admin.
+                </span>
+              </span>
+              <ChevronRight className="h-5 w-5 text-white/70" />
+            </button>
+          )}
+
           <div className="flex-1">
             <div className="grid grid-cols-2 gap-4 sm:gap-6">
               {portalItems.map((item, index) => (
