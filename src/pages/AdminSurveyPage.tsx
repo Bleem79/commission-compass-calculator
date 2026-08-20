@@ -96,15 +96,16 @@ const AdminSurveyPage = () => {
   const filtered = useMemo(() => {
     const q = driverQuery.trim().toLowerCase();
     return records.filter((r) => {
+      const isActiveQuestion = activeQuestions.includes(r.question);
       const matchesDriver =
         !q ||
         (r.driver_id || "").toLowerCase().includes(q) ||
         (r.driver_name || "").toLowerCase().includes(q);
       const matchesDate =
         !dateFilter || format(new Date(r.created_at), "yyyy-MM-dd") === dateFilter;
-      return matchesDriver && matchesDate;
+      return isActiveQuestion && matchesDriver && matchesDate;
     });
-  }, [records, driverQuery, dateFilter]);
+  }, [records, driverQuery, dateFilter, activeQuestions]);
 
   useEffect(() => {
     setPage(1);
