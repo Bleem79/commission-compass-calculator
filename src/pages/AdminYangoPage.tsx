@@ -155,13 +155,14 @@ const AdminYangoPage = () => {
       "Driver Name": r.driver_name || "",
       "Contact No": r.mobile_no || "",
       Nationality: r.nationality || "",
+      "HR Status": r.hr_status || "",
       "Smartphone": r.phone_type,
       "Monthly Data": r.has_data,
       Date: format(new Date(r.created_at), "dd MMM yyyy"),
       Time: format(new Date(r.created_at), "hh:mm a"),
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
-    ws["!cols"] = [{ wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
+    ws["!cols"] = [{ wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Yango");
 
@@ -186,6 +187,9 @@ const AdminYangoPage = () => {
       { Metric: "", Value: "" },
       { Metric: "Nationality", Value: "Count" },
       ...tally((r) => (r.nationality || "").trim()).map(([k, v]) => ({ Metric: k, Value: v })),
+      { Metric: "", Value: "" },
+      { Metric: "HR Status", Value: "Count" },
+      ...tally((r) => (r.hr_status || "").trim()).map(([k, v]) => ({ Metric: k, Value: v })),
     ];
     const ws2 = XLSX.utils.json_to_sheet(summary);
     ws2["!cols"] = [{ wch: 28 }, { wch: 12 }];
