@@ -154,6 +154,33 @@ const AdminYangoPage = () => {
     ws["!cols"] = [{ wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Yango");
+
+    const tally = (getKey: (r: typeof filtered[number]) => string) => {
+      const m = new Map<string, number>();
+      filtered.forEach((r) => {
+        const k = getKey(r) || "Unknown";
+        m.set(k, (m.get(k) || 0) + 1);
+      });
+      return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+    };
+    const summary: Record<string, string | number>[] = [
+      { Metric: "Total Submissions", Value: filtered.length },
+      { Metric: "Unique Drivers", Value: new Set(filtered.map((r) => r.driver_id || "—")).size },
+      { Metric: "With Monthly Data", Value: filtered.filter((r) => r.has_data === "Yes").length },
+      { Metric: "", Value: "" },
+      { Metric: "Smartphone Type", Value: "Count" },
+      ...tally((r) => r.phone_type).map(([k, v]) => ({ Metric: k, Value: v })),
+      { Metric: "", Value: "" },
+      { Metric: "Monthly Data", Value: "Count" },
+      ...tally((r) => r.has_data).map(([k, v]) => ({ Metric: k, Value: v })),
+      { Metric: "", Value: "" },
+      { Metric: "Nationality", Value: "Count" },
+      ...tally((r) => (r.nationality || "").trim()).map(([k, v]) => ({ Metric: k, Value: v })),
+    ];
+    const ws2 = XLSX.utils.json_to_sheet(summary);
+    ws2["!cols"] = [{ wch: 28 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, ws2, "Analysis");
+
     XLSX.writeFile(wb, `yango-submissions-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
     toast.success("Exported to Excel.");
   };
