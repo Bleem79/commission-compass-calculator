@@ -109,7 +109,10 @@ export const YangoAnalyticsDialog = ({ open, onOpenChange, records }: Props) => 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[210mm] max-w-[210mm] max-h-[90vh] overflow-y-auto p-[12mm] print:max-h-none print:overflow-visible">
+      <DialogContent
+        data-yango-report
+        className="w-[210mm] max-w-[210mm] max-h-[90vh] overflow-y-auto p-[12mm] print:max-h-none print:overflow-visible"
+      >
         <style>{`@media print {
           @page { size: A4 portrait; margin: 10mm; }
           body * { visibility: hidden !important; }
@@ -128,6 +131,11 @@ export const YangoAnalyticsDialog = ({ open, onOpenChange, records }: Props) => 
           <DialogDescription>
             Graphical and statistical breakdown of the current (filtered) Yango submissions.
           </DialogDescription>
+          <div className="pt-2 print:hidden">
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              <Printer className="h-4 w-4 mr-2" /> Print Preview
+            </Button>
+          </div>
         </DialogHeader>
 
         {stats.total === 0 ? (
