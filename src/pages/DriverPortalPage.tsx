@@ -33,6 +33,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 import NotificationBell from "@/components/shared/NotificationBell";
 import { usePrivateMessageAlert } from "@/hooks/usePrivateMessageAlert";
+import { useUnreadMessageReminder } from "@/hooks/useUnreadMessageReminder";
 
 interface PortalSetting {
   feature_key: string;
@@ -93,6 +94,12 @@ const DriverPortalPage = () => {
   const { unreadCount, markAllAsRead } = useUnreadMessages();
   const { driverInfo, loading: driverLoading } = useDriverCredentials();
   const { hasNewMessage, clearAlert } = usePrivateMessageAlert(driverInfo?.driverId);
+  const openMessages = React.useCallback(() => {
+    markAllAsRead();
+    clearAlert();
+    setShowMessages(true);
+  }, [markAllAsRead, clearAlert]);
+  useUnreadMessageReminder(unreadCount, openMessages, !showMessages);
   const [portalSettings, setPortalSettings] = useState<Record<string, boolean>>({});
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [controllerName, setControllerName] = useState<string | null>(null);
