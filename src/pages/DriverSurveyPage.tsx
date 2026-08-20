@@ -72,7 +72,7 @@ const DriverSurveyPage = () => {
   }, []);
 
   const handleSubmit = async (q: SurveyQuestion) => {
-    if (records.length > 0) {
+    if (records.some((r) => r.question === q.question)) {
       toast.error("You have already submitted the survey.");
       return;
     }
