@@ -216,7 +216,10 @@ const AdminSurveyPage = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={fetchRecords}
+            onClick={() => {
+              fetchRecords();
+              fetchActiveQuestions();
+            }}
             className="bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
             <RefreshCw className="w-4 h-4" />
