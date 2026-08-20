@@ -108,7 +108,8 @@ export const YangoAnalyticsDialog = ({ open, onOpenChange, records }: Props) => 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[88vh] overflow-y-auto">
+      <DialogContent className="w-[210mm] max-w-[210mm] max-h-[90vh] overflow-y-auto p-[12mm] print:max-h-none print:overflow-visible">
+        <style>{`@media print { @page { size: A4 portrait; margin: 10mm; } }`}</style>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" /> Yango Analysis
