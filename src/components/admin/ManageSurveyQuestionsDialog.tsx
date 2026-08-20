@@ -156,11 +156,16 @@ export const ManageSurveyQuestionsDialog = ({ open, onOpenChange, onChanged }: P
         </div>
 
         <div className="rounded-lg border p-3 space-y-3">
-          <p className="text-sm font-semibold">Add New Question</p>
+          <div>
+            <p className="text-sm font-semibold">Create New Survey</p>
+            <p className="text-xs text-muted-foreground">
+              Enter the new survey question and its options. It goes live for drivers as soon as you publish it.
+            </p>
+          </div>
           <Input
             value={newQuestion}
             onChange={(e) => setNewQuestion(e.target.value)}
-            placeholder="e.g. Cashier Timings"
+            placeholder="New survey question (e.g. Cashier Timings)"
           />
           <div className="space-y-2">
             {newOptions.map((opt, idx) => (
@@ -188,7 +193,7 @@ export const ManageSurveyQuestionsDialog = ({ open, onOpenChange, onChanged }: P
             </Button>
           </div>
           <Button onClick={handleAdd} disabled={saving} className="w-full">
-            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Save Question
+            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Publish New Survey
           </Button>
         </div>
       </DialogContent>
