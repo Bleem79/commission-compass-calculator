@@ -5,7 +5,8 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, Legend, LineChart, Line,
 } from "recharts";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export interface YangoAnalyticsRecord {
   driver_id: string | null;
@@ -109,7 +110,17 @@ export const YangoAnalyticsDialog = ({ open, onOpenChange, records }: Props) => 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[210mm] max-w-[210mm] max-h-[90vh] overflow-y-auto p-[12mm] print:max-h-none print:overflow-visible">
-        <style>{`@media print { @page { size: A4 portrait; margin: 10mm; } }`}</style>
+        <style>{`@media print {
+          @page { size: A4 portrait; margin: 10mm; }
+          body * { visibility: hidden !important; }
+          [data-yango-report], [data-yango-report] * { visibility: visible !important; }
+          [data-yango-report] {
+            position: absolute !important; left: 0 !important; top: 0 !important;
+            width: 190mm !important; max-width: 190mm !important;
+            transform: none !important; box-shadow: none !important; border: none !important;
+            padding: 0 !important; margin: 0 !important;
+          }
+        }`}</style>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" /> Yango Analysis
