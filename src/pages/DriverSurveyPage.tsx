@@ -131,7 +131,7 @@ const DriverSurveyPage = () => {
         <div className="bg-white/10 border border-white/20 rounded-2xl p-6 mb-6 text-center text-white/60 text-sm">
           No survey is available right now.
         </div>
-      ) : records.length > 0 ? (
+      ) : questions.every((q) => records.some((r) => r.question === q.question)) ? (
         <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-6 flex flex-col items-center text-center gap-2">
           <CheckCircle2 className="w-9 h-9 text-emerald-400" />
           <h2 className="text-base font-semibold text-white">Survey already submitted</h2>
@@ -142,7 +142,9 @@ const DriverSurveyPage = () => {
           <p className="text-xs text-white/40">Each driver can submit the survey only once.</p>
         </div>
       ) : (
-        questions.map((q) => (
+        questions
+          .filter((q) => !records.some((r) => r.question === q.question))
+          .map((q) => (
             <div
               key={q.id}
               className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 sm:p-6 mb-4 space-y-4"
