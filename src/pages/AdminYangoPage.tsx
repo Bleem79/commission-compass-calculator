@@ -15,6 +15,7 @@ interface YangoRecord {
   driver_id: string | null;
   driver_name: string | null;
   mobile_no: string | null;
+  nationality?: string | null;
   phone_type: string;
   has_data: string;
   created_at: string;
@@ -50,7 +51,23 @@ const AdminYangoPage = () => {
         if (rows.length < batch) break;
         from += batch;
       }
-      setRecords(all);
+      const ids = Array.from(new Set(all.map((r) => r.driver_id).filter(Boolean))) as string[];
+      const info = new Map<string, { mobile_no: string | null; nationality: string | null }>();
+      for (let i = 0; i < ids.length; i += 300) {
+        const { data } = await supabase
+          .from("yango_driver_list")
+          .select("driver_id, mobile_no, nationality")
+          .in("driver_id", ids.slice(i, i + 300));
+        (data || []).forEach((d: any) => {
+          if (!info.has(d.driver_id)) info.set(d.driver_id, { mobile_no: d.mobile_no, nationality: d.nationality });
+        });
+      }
+      setRecords(
+        all.map((r) => {
+          const d = r.driver_id ? info.get(r.driver_id) : undefined;
+          return { ...r, mobile_no: r.mobile_no || d?.mobile_no || null, nationality: d?.nationality || null };
+        }),
+      );
     } catch (err) {
       console.error("Error fetching Yango responses:", err);
       toast.error("Failed to load Yango submissions.");
@@ -109,13 +126,14 @@ const AdminYangoPage = () => {
       "Driver ID": r.driver_id || "",
       "Driver Name": r.driver_name || "",
       "Contact No": r.mobile_no || "",
+      Nationality: r.nationality || "",
       "Smartphone": r.phone_type,
       "Monthly Data": r.has_data,
       Date: format(new Date(r.created_at), "dd MMM yyyy"),
       Time: format(new Date(r.created_at), "hh:mm a"),
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
-    ws["!cols"] = [{ wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
+    ws["!cols"] = [{ wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Yango");
     XLSX.writeFile(wb, `yango-submissions-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
@@ -230,6 +248,7 @@ const AdminYangoPage = () => {
                   <th className="text-left font-medium px-4 py-3">Driver ID</th>
                   <th className="text-left font-medium px-4 py-3">Driver Name</th>
                   <th className="text-left font-medium px-4 py-3">Contact No</th>
+                  <th className="text-left font-medium px-4 py-3">Nationality</th>
                   <th className="text-left font-medium px-4 py-3">Smartphone</th>
                   <th className="text-left font-medium px-4 py-3">Monthly Data</th>
                   <th className="text-left font-medium px-4 py-3">Date &amp; Time</th>
@@ -242,6 +261,7 @@ const AdminYangoPage = () => {
                     <td className="px-4 py-3 text-white font-medium">{r.driver_id || "—"}</td>
                     <td className="px-4 py-3 text-white/80">{r.driver_name || "—"}</td>
                     <td className="px-4 py-3 text-white/80">{r.mobile_no || "—"}</td>
+                    <td className="px-4 py-3 text-white/80">{r.nationality || "—"}</td>
                     <td className="px-4 py-3 text-white/80">{r.phone_type}</td>
                     <td className="px-4 py-3 text-white font-semibold">{r.has_data}</td>
                     <td className="px-4 py-3 text-white/70">
