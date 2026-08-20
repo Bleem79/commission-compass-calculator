@@ -170,7 +170,7 @@ const DriverYangoPage = () => {
       ) : (
         <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 sm:p-6 space-y-5">
           <div>
-            <label className="text-sm text-white/70 mb-2 block">1. Your contact number</label>
+            <label className="text-sm text-white/70 mb-2 block">1. Update your contact number</label>
             <Input
               inputMode="tel"
               value={mobileNo}
