@@ -16,6 +16,7 @@ interface YangoRecord {
   driver_name: string | null;
   mobile_no: string | null;
   nationality?: string | null;
+  hr_status?: string | null;
   phone_type: string;
   has_data: string;
   created_at: string;
@@ -52,15 +53,23 @@ const AdminYangoPage = () => {
         from += batch;
       }
       const ids = Array.from(new Set(all.map((r) => r.driver_id).filter(Boolean))) as string[];
-      const info = new Map<string, { mobile_no: string | null; nationality: string | null; driver_name: string | null }>();
+      const info = new Map<
+        string,
+        { mobile_no: string | null; nationality: string | null; driver_name: string | null; hr_status: string | null }
+      >();
       for (let i = 0; i < ids.length; i += 300) {
         const { data } = await supabase
           .from("yango_driver_list")
-          .select("driver_id, mobile_no, nationality, driver_name")
+          .select("driver_id, mobile_no, nationality, driver_name, hr_status")
           .in("driver_id", ids.slice(i, i + 300));
         (data || []).forEach((d: any) => {
           if (!info.has(d.driver_id))
-            info.set(d.driver_id, { mobile_no: d.mobile_no, nationality: d.nationality, driver_name: d.driver_name });
+            info.set(d.driver_id, {
+              mobile_no: d.mobile_no,
+              nationality: d.nationality,
+              driver_name: d.driver_name,
+              hr_status: d.hr_status,
+            });
         });
       }
       const nameFallback = new Map<string, string>();
@@ -83,6 +92,7 @@ const AdminYangoPage = () => {
               r.driver_name || d?.driver_name || (r.driver_id ? nameFallback.get(r.driver_id) : null) || null,
             mobile_no: r.mobile_no || d?.mobile_no || null,
             nationality: d?.nationality || null,
+            hr_status: d?.hr_status || null,
           };
         }),
       );
@@ -145,13 +155,14 @@ const AdminYangoPage = () => {
       "Driver Name": r.driver_name || "",
       "Contact No": r.mobile_no || "",
       Nationality: r.nationality || "",
+      "HR Status": r.hr_status || "",
       "Smartphone": r.phone_type,
       "Monthly Data": r.has_data,
       Date: format(new Date(r.created_at), "dd MMM yyyy"),
       Time: format(new Date(r.created_at), "hh:mm a"),
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
-    ws["!cols"] = [{ wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
+    ws["!cols"] = [{ wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Yango");
 
@@ -176,6 +187,9 @@ const AdminYangoPage = () => {
       { Metric: "", Value: "" },
       { Metric: "Nationality", Value: "Count" },
       ...tally((r) => (r.nationality || "").trim()).map(([k, v]) => ({ Metric: k, Value: v })),
+      { Metric: "", Value: "" },
+      { Metric: "HR Status", Value: "Count" },
+      ...tally((r) => (r.hr_status || "").trim()).map(([k, v]) => ({ Metric: k, Value: v })),
     ];
     const ws2 = XLSX.utils.json_to_sheet(summary);
     ws2["!cols"] = [{ wch: 28 }, { wch: 12 }];
@@ -294,6 +308,7 @@ const AdminYangoPage = () => {
                   <th className="text-left font-medium px-4 py-3">Driver Name</th>
                   <th className="text-left font-medium px-4 py-3">Contact No</th>
                   <th className="text-left font-medium px-4 py-3">Nationality</th>
+                  <th className="text-left font-medium px-4 py-3">HR Status</th>
                   <th className="text-left font-medium px-4 py-3">Smartphone</th>
                   <th className="text-left font-medium px-4 py-3">Monthly Data</th>
                   <th className="text-left font-medium px-4 py-3">Date &amp; Time</th>
@@ -307,6 +322,7 @@ const AdminYangoPage = () => {
                     <td className="px-4 py-3 text-white/80">{r.driver_name || "—"}</td>
                     <td className="px-4 py-3 text-white/80">{r.mobile_no || "—"}</td>
                     <td className="px-4 py-3 text-white/80">{r.nationality || "—"}</td>
+                    <td className="px-4 py-3 text-white/80">{r.hr_status || "—"}</td>
                     <td className="px-4 py-3 text-white/80">{r.phone_type}</td>
                     <td className="px-4 py-3 text-white font-semibold">{r.has_data}</td>
                     <td className="px-4 py-3 text-white/70">
