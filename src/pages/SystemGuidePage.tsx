@@ -10,7 +10,8 @@ import {
   BookOpen, Users, Upload, MessageSquare, ClipboardCheck, Target,
   Ban, FileSpreadsheet, ShieldCheck, Settings2, Bell, Printer,
   LogIn, Home, Calculator, MapPin, Info, Smartphone, Video,
-  ChevronRight, AlertTriangle, CheckCircle2, ArrowRight
+  ChevronRight, AlertTriangle, CheckCircle2, ArrowRight,
+  Car, ListChecks, Award, Wallet, CalendarDays, Lock, Send
 } from "lucide-react";
 
 const GuideSection = ({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
@@ -111,6 +112,12 @@ const SystemGuidePage = () => {
               { page: "Revenue Controller Portal", desc: "Staff account management" },
               { page: "Entry Pass", desc: "Driver entry pass management" },
               { page: "Activity Logs", desc: "Login/logout tracking" },
+              { page: "Yango", desc: "Yango readiness survey and driver list" },
+              { page: "Survey", desc: "Cashier timing survey submissions" },
+              { page: "Driver Badges", desc: "Monthly badge achievements and leaderboard" },
+              { page: "Total Balance", desc: "Driver outstanding balance KPI" },
+              { page: "Calendar Events", desc: "Event schedule shared with drivers" },
+              { page: "Video Tutorials", desc: "In-app tutorial video library" },
             ].map(({ page, desc }) => (
               <div key={page} className="flex items-start gap-2 bg-white/5 rounded-lg p-2">
                 <ChevronRight className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
