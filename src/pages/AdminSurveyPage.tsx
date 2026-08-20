@@ -73,9 +73,25 @@ const AdminSurveyPage = () => {
     }
   }, []);
 
+  const fetchActiveQuestions = useCallback(async () => {
+    setLoadingActive(true);
+    const { data, error } = await supabase
+      .from("survey_questions")
+      .select("question")
+      .eq("is_active", true);
+    if (error) {
+      console.error("Error fetching active questions:", error);
+      toast.error("Failed to load active survey questions.");
+    } else {
+      setActiveQuestions((data || []).map((q: any) => q.question));
+    }
+    setLoadingActive(false);
+  }, []);
+
   useEffect(() => {
     fetchRecords();
-  }, [fetchRecords]);
+    fetchActiveQuestions();
+  }, [fetchRecords, fetchActiveQuestions]);
 
   const filtered = useMemo(() => {
     const q = driverQuery.trim().toLowerCase();
