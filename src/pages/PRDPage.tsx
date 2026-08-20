@@ -171,6 +171,36 @@ const PRDPage = () => {
               <h4 className="text-white font-medium">Document Management</h4>
               <p>Upload and share documents across Info, M-Fuel, and Hotspot categories. Guests can view; admins manage.</p>
             </div>
+            <Separator className="bg-white/10" />
+            <div>
+              <h4 className="text-white font-medium">Yango Programme</h4>
+              <p>Driver readiness capture for the Yango launch: contact number (pre-filled from the uploaded HR driver list), smartphone type (Android/iPhone) and monthly data availability. Admin dashboard backfills name, contact, nationality and HR status, offers nationality/smartphone/data analytics with printable A4 reports, and a full Excel export including an Analysis sheet.</p>
+            </div>
+            <Separator className="bg-white/10" />
+            <div>
+              <h4 className="text-white font-medium">Driver Survey</h4>
+              <p>Dynamic single-choice surveys (e.g. cashier timing preference). One submission per driver, captured with Driver ID, date and time. Admin-only results with analytics charts and CSV export.</p>
+            </div>
+            <Separator className="bg-white/10" />
+            <div>
+              <h4 className="text-white font-medium">Driver Badges & Leaderboard</h4>
+              <p>Monthly badge achievements (Safe Driver, Consistent Driver, Elite Driver, etc.) with a badge catalog, fleet leaderboard, and per-driver badge history by month.</p>
+            </div>
+            <Separator className="bg-white/10" />
+            <div>
+              <h4 className="text-white font-medium">Total Balance KPI</h4>
+              <p>Outstanding balance tracking per driver and location, with period-over-period change indicators (red increase / green decrease).</p>
+            </div>
+            <Separator className="bg-white/10" />
+            <div>
+              <h4 className="text-white font-medium">Messaging & SMS</h4>
+              <p>Admin broadcasts and private driver messages with push notifications, in-app chime, vibration and unread bell badge. Bulk SMS targeting all active driver IDs.</p>
+            </div>
+            <Separator className="bg-white/10" />
+            <div>
+              <h4 className="text-white font-medium">Calendar Events</h4>
+              <p>Admin-uploaded event schedule surfaced to drivers in their portal.</p>
+            </div>
           </div>
         </Section>
 
@@ -179,11 +209,13 @@ const PRDPage = () => {
           <ul className="list-disc list-inside space-y-2">
             <li>Portal Settings: Toggle driver portal features on/off dynamically</li>
             <li>Revenue Controller Portal: Create/manage staff accounts, assign roles, upload avatars, reset passwords</li>
+            <li>Page Permissions: Per-role control of every route in the app</li>
             <li>Driver Master File: Central driver registry with controller assignments</li>
             <li>Activity Logs: Track login/logout activity across all users</li>
             <li>SMS Messaging: Send messages to drivers</li>
             <li>Video Tutorials: Upload and manage tutorial videos for drivers</li>
-            <li>Bulk Operations: CSV upload for credentials, income, target trips, warning letters</li>
+            <li>OSR Driver management: Bulk upload, search by Driver ID, enable/disable driver credentials</li>
+            <li>Bulk Operations: CSV/Excel upload for credentials, income, target trips, warning letters, Yango driver list, calendar events</li>
           </ul>
         </Section>
 
@@ -220,7 +252,10 @@ const PRDPage = () => {
               "target_trips", "driver_requests", "driver_request_types", "driver_absent_fines",
               "warning_letters", "entry_passes", "admin_messages", "documents",
               "driver_activity_logs", "driver_portal_settings", "driver_income_settings",
-              "push_subscriptions", "uploaded_files", "video_tutorials"
+              "push_subscriptions", "uploaded_files", "video_tutorials",
+              "entry_pass_sequences", "sharjah_locations", "target_trips_settings",
+              "survey_questions", "driver_surveys", "yango_responses", "yango_driver_list",
+              "driver_badges", "page_permissions", "calendar_events"
             ].map(table => (
               <Badge key={table} variant="outline" className="border-white/20 text-white/70 text-xs justify-center py-1">
                 {table}
@@ -238,6 +273,7 @@ const PRDPage = () => {
             <li>Entry pass status update notifications</li>
             <li>Admin message notifications</li>
             <li>Request reminder notifications</li>
+            <li>Private message alerts with chime, vibration and unread bell badge</li>
           </ul>
         </Section>
 
