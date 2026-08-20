@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
-import { Wallet, Upload, Download, Trash2, Loader2, Search } from "lucide-react";
+import { Wallet, Upload, Download, Trash2, Loader2, Search, Route, Banknote, CreditCard, Coins, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -169,6 +169,15 @@ const AdminYangoIncomePage = () => {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  const stats = {
+    totalTrips: filtered.reduce((sum, r) => sum + (r.no_of_trips ?? 0), 0),
+    cashIncome: filtered.reduce((sum, r) => sum + (r.cash_income ?? 0), 0),
+    cashlessIncome: filtered.reduce((sum, r) => sum + (r.cashless_income ?? 0), 0),
+    totalIncome: filtered.reduce((sum, r) => sum + (r.total_income ?? 0), 0),
+    driverIncome: filtered.reduce((sum, r) => sum + (r.driver_income ?? 0), 0),
+    totalDrivers: new Set(filtered.map((r) => r.driver_id)).size,
+  };
+
   useEffect(() => { setPage(1); }, [search]);
 
   return (
@@ -228,6 +237,51 @@ const AdminYangoIncomePage = () => {
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+            <Route className="h-5 w-5 text-primary mb-2" />
+            <p className="text-xs text-muted-foreground">Total No. of Trips</p>
+            <p className="text-lg font-bold">{stats.totalTrips.toLocaleString("en-US")}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+            <Banknote className="h-5 w-5 text-emerald-600 mb-2" />
+            <p className="text-xs text-muted-foreground">Cash Income</p>
+            <p className="text-lg font-bold">{fmt(stats.cashIncome)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+            <CreditCard className="h-5 w-5 text-blue-600 mb-2" />
+            <p className="text-xs text-muted-foreground">Cashless Income</p>
+            <p className="text-lg font-bold">{fmt(stats.cashlessIncome)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+            <Wallet className="h-5 w-5 text-amber-600 mb-2" />
+            <p className="text-xs text-muted-foreground">Total Income</p>
+            <p className="text-lg font-bold">{fmt(stats.totalIncome)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+            <Coins className="h-5 w-5 text-purple-600 mb-2" />
+            <p className="text-xs text-muted-foreground">Total Driver Income</p>
+            <p className="text-lg font-bold">{fmt(stats.driverIncome)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+            <Users className="h-5 w-5 text-cyan-600 mb-2" />
+            <p className="text-xs text-muted-foreground">Total No. of Drivers</p>
+            <p className="text-lg font-bold">{stats.totalDrivers.toLocaleString("en-US")}</p>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
