@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
-import { Car, Search, Download, RefreshCw, Loader2, X, Trash2 } from "lucide-react";
+import { Car, Search, Download, RefreshCw, Loader2, X, Trash2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PageLayout } from "@/components/shared/PageLayout";
+import { YangoAnalyticsDialog } from "@/components/admin/YangoAnalyticsDialog";
 
 interface YangoRecord {
   id: string;
@@ -26,6 +27,7 @@ const AdminYangoPage = () => {
   const [dateFilter, setDateFilter] = useState("");
   const [page, setPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
@@ -183,6 +185,12 @@ const AdminYangoPage = () => {
             <RefreshCw className="w-4 h-4" />
           </Button>
           <Button
+            onClick={() => setShowAnalytics(true)}
+            className="bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-600 hover:to-fuchsia-700 text-white font-semibold"
+          >
+            <BarChart3 className="w-4 h-4 mr-2" /> View Analysis
+          </Button>
+          <Button
             onClick={handleExport}
             className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold"
           >
@@ -190,6 +198,8 @@ const AdminYangoPage = () => {
           </Button>
         </div>
       </div>
+
+      <YangoAnalyticsDialog open={showAnalytics} onOpenChange={setShowAnalytics} records={filtered} />
 
       {loading ? (
         <div className="flex items-center justify-center py-16 text-white/60">
