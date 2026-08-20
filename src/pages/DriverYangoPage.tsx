@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { Car, Loader2, CheckCircle2, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +17,7 @@ interface YangoRecord {
   phone_type: string;
   has_data: string;
   created_at: string;
+  mobile_no?: string | null;
 }
 
 
@@ -29,6 +31,7 @@ const DriverYangoPage = () => {
 
   const [phoneType, setPhoneType] = useState("");
   const [hasData, setHasData] = useState("");
+  const [mobileNo, setMobileNo] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [record, setRecord] = useState<YangoRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +43,7 @@ const DriverYangoPage = () => {
   const fetchRecord = useCallback(async () => {
     const { data } = await supabase
       .from("yango_responses")
-      .select("id, driver_id, driver_name, phone_type, has_data, created_at")
+      .select("id, driver_id, driver_name, phone_type, has_data, created_at, mobile_no")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -53,7 +56,27 @@ const DriverYangoPage = () => {
     fetchRecord();
   }, [fetchRecord]);
 
+  useEffect(() => {
+    const loadMobile = async () => {
+      if (!driverInfo?.driverId) return;
+      const { data } = await supabase
+        .from("yango_driver_list")
+        .select("mobile_no")
+        .eq("driver_id", driverInfo.driverId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.mobile_no) setMobileNo(String(data.mobile_no));
+    };
+    loadMobile();
+  }, [driverInfo?.driverId]);
+
   const handleSubmit = async () => {
+    const cleanedMobile = mobileNo.replace(/[^\d+]/g, "");
+    if (cleanedMobile.replace(/\D/g, "").length < 9) {
+      toast.error("Please enter a valid contact number.");
+      return;
+    }
     if (!phoneType) {
       toast.error("Please select your type of smartphone.");
       return;
@@ -77,6 +100,7 @@ const DriverYangoPage = () => {
         user_id: userId,
         driver_id: driverInfo.driverId,
         driver_name: driverInfo.driverName || null,
+        mobile_no: cleanedMobile,
         phone_type: phoneType,
         has_data: hasData,
         created_at: submittedAt,
@@ -134,6 +158,7 @@ const DriverYangoPage = () => {
           <p className="text-sm text-white/70">
             {record.phone_type} • Monthly Data: {record.has_data}
           </p>
+          <p className="text-sm text-white/70">Contact: {record.mobile_no || "—"}</p>
           <p className="text-sm text-white/80 font-medium">
             Driver ID: {record.driver_id || "—"}
           </p>
@@ -145,7 +170,21 @@ const DriverYangoPage = () => {
       ) : (
         <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 sm:p-6 space-y-5">
           <div>
-            <label className="text-sm text-white/70 mb-2 block">1. Select type of smartphone</label>
+            <label className="text-sm text-white/70 mb-2 block">1. Your contact number</label>
+            <Input
+              inputMode="tel"
+              value={mobileNo}
+              onChange={(e) => setMobileNo(e.target.value)}
+              placeholder="e.g. 971501234567"
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+            />
+            <p className="text-xs text-white/40 mt-1.5">
+              Update it if the number shown is not correct.
+            </p>
+          </div>
+
+          <div>
+            <label className="text-sm text-white/70 mb-2 block">2. Select type of smartphone</label>
             <div className="grid grid-cols-2 gap-3">
               {PHONE_TYPES.map((opt) => (
                 <button
@@ -166,7 +205,7 @@ const DriverYangoPage = () => {
           </div>
 
           <div>
-            <label className="text-sm text-white/70 mb-2 block">2. Do you have monthly DATA?</label>
+            <label className="text-sm text-white/70 mb-2 block">3. Do you have monthly DATA?</label>
             <div className="grid grid-cols-2 gap-3">
               {DATA_OPTIONS.map((opt) => (
                 <button
