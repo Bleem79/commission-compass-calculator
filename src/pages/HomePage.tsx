@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Car } from "lucide-react";
 import { ClipboardList } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePagePermissions } from "@/contexts/PagePermissionsContext";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";

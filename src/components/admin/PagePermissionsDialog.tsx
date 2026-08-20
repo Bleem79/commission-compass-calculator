@@ -30,6 +30,7 @@ const ALL_PAGES = [
   { key: "driver-badge", label: "Driver Badge" },
   { key: "admin-survey", label: "Survey" },
   { key: "admin-yango", label: "Yango" },
+  { key: "admin-yango-income", label: "Yango Income" },
   { key: "calendar-events-upload", label: "Calendar Events Upload" },
 ];
 
