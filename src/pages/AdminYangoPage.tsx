@@ -224,7 +224,7 @@ const AdminYangoPage = () => {
         ))}
       </div>
 
-      <div className="bg-white/10 border border-white/20 rounded-2xl p-4 mb-5 flex flex-col sm:flex-row gap-3 sm:items-end">
+      <div className="bg-white/10 border border-white/20 rounded-2xl p-3 sm:p-4 mb-5 flex flex-col sm:flex-row gap-3 sm:items-end">
         <div className="flex-1">
           <label className="text-xs text-white/60 mb-1.5 block">Search Driver ID / Name</label>
           <div className="relative">
