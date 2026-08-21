@@ -283,8 +283,45 @@ const AdminYangoIncomePage = () => {
         </Card>
       </div>
 
-      <Card>
+      {/* Mobile card list */}
+      <div className="sm:hidden space-y-3">
+        {loading ? (
+          <p className="p-6 text-center text-muted-foreground text-sm">Loading...</p>
+        ) : current.length === 0 ? (
+          <p className="p-6 text-center text-muted-foreground text-sm">No records found</p>
+        ) : (
+          current.map((r) => (
+            <Card key={r.id}>
+              <CardContent className="p-4">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="font-semibold break-words">{r.driver_id}</p>
+                  <span className="text-xs text-muted-foreground shrink-0">{r.income_date ?? "-"}</span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                  {[
+                    ["Shift", r.shift ?? "-"],
+                    ["No. of Trips", r.no_of_trips ?? "-"],
+                    ["Cash Income", fmt(r.cash_income)],
+                    ["Cashless Income", fmt(r.cashless_income)],
+                    ["Total Income", fmt(r.total_income)],
+                    ["Driver Income", fmt(r.driver_income)],
+                    ["Vehicle No", r.vehicle_no ?? "-"],
+                  ].map(([label, value]) => (
+                    <div key={label as string} className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+                      <p className="break-words">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      <Card className="hidden sm:block">
         <CardContent className="p-0 overflow-x-auto">
+
           <table className="w-full text-sm">
             <thead className="bg-muted">
               <tr className="text-left">
