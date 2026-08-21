@@ -300,7 +300,51 @@ const AdminYangoPage = () => {
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-2xl border border-white/20 bg-white/5">
+          {/* Mobile card list */}
+          <div className="sm:hidden space-y-3">
+            {paged.map((r) => (
+              <div key={r.id} className="rounded-2xl border border-white/20 bg-white/5 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-white font-semibold break-words">{r.driver_id || "—"}</p>
+                    <p className="text-white/70 text-sm break-words">{r.driver_name || "—"}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Delete submission"
+                    disabled={deletingId === r.id}
+                    onClick={() => handleDelete(r)}
+                    className="min-h-11 min-w-11 shrink-0 text-red-300 hover:text-red-200 hover:bg-red-500/20"
+                  >
+                    {deletingId === r.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                  {[
+                    ["Contact No", r.mobile_no || "—"],
+                    ["Nationality", r.nationality || "—"],
+                    ["HR Status", r.hr_status || "—"],
+                    ["Smartphone", r.phone_type],
+                    ["Monthly Data", r.has_data],
+                    ["Date & Time", format(new Date(r.created_at), "dd MMM yyyy • hh:mm a")],
+                  ].map(([label, value]) => (
+                    <div key={label as string} className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-wider text-white/40">{label}</p>
+                      <p className="text-white/85 break-words">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden sm:block overflow-x-auto rounded-2xl border border-white/20 bg-white/5">
+
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-white/60 text-xs uppercase tracking-wider border-b border-white/10">
