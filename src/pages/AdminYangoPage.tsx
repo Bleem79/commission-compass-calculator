@@ -414,7 +414,8 @@ const AdminYangoPage = () => {
                   size="sm"
                   disabled={page === totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  className="min-h-11 sm:min-h-0 bg-white/10 border-white/20 text-white hover:bg-white/20"
+
                 >
                   Next
                 </Button>
