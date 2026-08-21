@@ -1,60 +1,31 @@
-## Collect Payment (QR + Stripe) — Plan
+# Mobile-first cleanup, starting with Admin Yango
 
-A new page for drivers where they type an amount (AED), tap one button to generate a QR code that opens a Stripe payment page, and the customer scans it to pay. Each generated QR is saved as a history record, and its status flips to **Paid** automatically once the customer completes payment.
+Goal: pages open and work correctly on phones. Desktop stays pixel-identical — all changes are inside mobile-only breakpoints (`sm:` and below) or non-visual performance work.
 
-### User flow
-```text
-Driver Portal ─▶ "Collect Payment" card
-        │
-        ▼
- Enter amount (AED)   ← date & time captured automatically
-        │
- [Generate QR Code]   ← button hidden until a valid amount is entered
-        │
-        ▼
- QR code shown  +  Total amount, date & time below
-        │
- Customer scans QR ─▶ opens Stripe checkout ─▶ pays
-        │
-        ▼
- Record marked "Paid" (auto, via Stripe webhook)
-```
+## Phase 1 — Admin Yango (do now)
 
-### What gets built
+The submissions page renders a 9-column table with fixed `px-4` cells inside a horizontal scroller. On a phone this means the user must scroll sideways to read one record, and the delete button sits off-screen.
 
-**1. New page `/driver-collect-payment`**
-- Reachable from a new card in the Driver Portal (drivers only).
-- Amount input in AED; live date/time display (auto, read-only).
-- "Generate QR Code" button only appears once a valid amount (> 0) is entered.
-- On generate: calls an edge function, then renders the QR code (using the existing `qrcode.react` library already in the project) encoding the Stripe checkout URL, with the total amount, date, and time shown below it.
-- A "Submitted Collections" history list below (amount, date/time, Pending/Paid badge), styled like the existing Entry Pass page.
+- Add a mobile card list (below `sm`) showing each submission as a stacked card: Driver ID + name as the heading, then Contact / Nationality / HR Status / Smartphone / Monthly Data / Date-Time as label-value rows, with the delete button as a full-height 44x44 tap target.
+- Keep the existing table exactly as-is, shown from `sm` upward.
+- Stat cards: keep 2-up on mobile but reduce number size so long counts don't wrap.
+- Filter bar: full-width search + date on mobile, clear button becomes full width.
+- Pagination controls get 44px min height on mobile.
+- Loading: the page currently blocks on sequential 1000-row batches plus lookup queries. Run the `yango_driver_list` and `driver_master_file` lookup chunks in parallel instead of sequentially so the page paints faster on mobile data.
+- Same mobile card treatment for the Yango Driver List dialog table and Yango Income table, since they share the wide-table problem.
 
-**2. Database — new table `payment_collections`**
-- Columns: `id`, `driver_id`, `driver_name`, `amount` (numeric), `currency` (default `AED`), `status` (`pending`/`paid`, default `pending`), `stripe_session_id`, `checkout_url`, `created_at`.
-- RLS: drivers see/insert only their own rows; service role full access (for the webhook). Standard GRANTs included.
+## Phase 2 — remaining worst offenders (separate turns, after you confirm Phase 1 looks right)
 
-**3. Edge function `create-payment-collection`**
-- Validates the authenticated driver and the amount.
-- Creates a Stripe Checkout Session (mode `payment`, dynamic AED line item built from the entered amount).
-- Inserts a `payment_collections` row (status `pending`) and returns the checkout URL to encode in the QR.
+In order: Home, Driver Portal, Total Balance KPI, Total Outstanding, Admin Requests. Same recipe per page:
 
-**4. Edge function `stripe-payment-webhook`**
-- Public endpoint (no JWT) that verifies the Stripe signature and, on `checkout.session.completed`, updates the matching record to `paid`.
+1. Wide tables get a mobile card view.
+2. Dialogs get `max-h-[85vh] overflow-y-auto` so content is reachable on short screens.
+3. Icon-only action buttons get 44x44 minimum touch targets.
+4. Horizontal overflow audited so no page scrolls sideways.
 
-### Stripe setup — what you need to do
-Because this project is on an external Supabase (not Lovable Cloud), the no-account seamless Stripe option isn't available, so we use your own Stripe account:
-1. Create a free account at https://dashboard.stripe.com/register.
-2. Copy your **Secret key** (starts with `sk_test_...` for testing, `sk_live_...` for real payments) from Developers → API keys.
-3. After the webhook function is deployed, add a webhook endpoint in Stripe (Developers → Webhooks) pointing to the function URL, subscribe to `checkout.session.completed`, and copy its **Signing secret** (`whsec_...`).
+## Technical notes
 
-I'll request these as secrets (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) at the right step and give you the exact webhook URL to paste into Stripe.
-
-### Technical notes
-- QR encodes Stripe's hosted checkout `session.url`, so no custom payment page is needed — scanning opens Stripe directly.
-- AED amounts are sent to Stripe in fils (amount × 100).
-- The webhook function will have `verify_jwt = false` in `supabase/config.toml`.
-- Reuses existing patterns: `PageLayout`, `useDriverCredentials`, `qrcode.react`, sonner toasts.
-
-### Out of scope (unless you want it)
-- Admin dashboard/reporting across all drivers' collections.
-- Refunds or partial payments.
+- No database, RLS, or business-logic changes. Filtering, export, delete and analytics behaviour stay identical.
+- Mobile card markup is added alongside the table with `sm:hidden` / `hidden sm:block`, so desktop DOM output is unchanged.
+- Existing `useIsMobile` hook is not used for this; CSS breakpoints avoid a render flash.
+- Only file touched in Phase 1: `AdminYangoPage.tsx`, `YangoDriverListDialog.tsx`, `AdminYangoIncomePage.tsx`.
