@@ -216,9 +216,10 @@ const AdminYangoPage = () => {
           ["iPhone", iphoneCount],
           ["With Monthly Data", withData],
         ].map(([label, value]) => (
-          <div key={label as string} className="bg-white/10 border border-white/20 rounded-xl p-4">
-            <p className="text-xs uppercase tracking-widest text-white/50">{label}</p>
-            <p className="text-2xl font-bold text-white">{value}</p>
+          <div key={label as string} className="bg-white/10 border border-white/20 rounded-xl p-3 sm:p-4">
+            <p className="text-[10px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-white/50">{label}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white">{value}</p>
+
           </div>
         ))}
       </div>
