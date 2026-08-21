@@ -233,7 +233,37 @@ export const YangoDriverListDialog = ({
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border">
+            {/* Mobile card list */}
+            <div className="sm:hidden space-y-3">
+              {paged.map((r, i) => (
+                <div key={r.id} className="rounded-lg border p-3">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="font-semibold break-words">{r.driver_id}</p>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      #{r.s_no ?? (page - 1) * PAGE_SIZE + i + 1}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground break-words">{r.driver_name || "—"}</p>
+                  <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                    {[
+                      ["Gender", r.gender || "—"],
+                      ["Nationality", r.nationality || "—"],
+                      ["Mobile No", r.mobile_no || "—"],
+                      ["Status", r.status || "—"],
+                      ["HR Status", r.hr_status || "—"],
+                    ].map(([label, value]) => (
+                      <div key={label as string} className="min-w-0">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+                        <p className="break-words">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden sm:block overflow-x-auto rounded-lg border">
+
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr className="text-xs uppercase tracking-wider text-muted-foreground">
