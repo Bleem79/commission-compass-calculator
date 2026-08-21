@@ -365,8 +365,9 @@ const AdminYangoIncomePage = () => {
             Page {page} of {totalPages} ({filtered.length} records)
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-            <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>Next</Button>
+            <Button variant="outline" size="sm" className="min-h-11 sm:min-h-0" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
+            <Button variant="outline" size="sm" className="min-h-11 sm:min-h-0" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>Next</Button>
+
           </div>
         </div>
       )}
