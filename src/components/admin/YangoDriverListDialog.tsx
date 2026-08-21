@@ -175,7 +175,7 @@ export const YangoDriverListDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Yango — Driver List Upload</DialogTitle>
         </DialogHeader>
