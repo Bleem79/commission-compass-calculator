@@ -253,38 +253,40 @@ const AdminYangoPage = () => {
               setDriverQuery("");
               setDateFilter("");
             }}
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            className="w-full sm:w-auto min-h-11 sm:min-h-0 bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
             <X className="w-4 h-4 mr-1" /> Clear
           </Button>
         )}
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex">
           <Button
             variant="outline"
+            aria-label="Refresh submissions"
             onClick={fetchRecords}
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            className="min-h-11 sm:min-h-0 bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
           <Button
             onClick={() => setShowAnalytics(true)}
-            className="bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-600 hover:to-fuchsia-700 text-white font-semibold"
+            className="min-h-11 sm:min-h-0 bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-600 hover:to-fuchsia-700 text-white font-semibold"
           >
             <BarChart3 className="w-4 h-4 mr-2" /> View Analysis
           </Button>
           <Button
             onClick={() => setShowDriverList(true)}
-            className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold"
+            className="min-h-11 sm:min-h-0 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold"
           >
             <FileSpreadsheet className="w-4 h-4 mr-2" /> Upload Driver List
           </Button>
           <Button
             onClick={handleExport}
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold"
+            className="min-h-11 sm:min-h-0 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold"
           >
             <Download className="w-4 h-4 mr-2" /> Export Excel
           </Button>
         </div>
+
       </div>
 
       <YangoAnalyticsDialog open={showAnalytics} onOpenChange={setShowAnalytics} records={filtered} />
