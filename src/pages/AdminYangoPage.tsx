@@ -57,11 +57,17 @@ const AdminYangoPage = () => {
         string,
         { mobile_no: string | null; nationality: string | null; driver_name: string | null; hr_status: string | null }
       >();
-      for (let i = 0; i < ids.length; i += 300) {
-        const { data } = await supabase
-          .from("yango_driver_list")
-          .select("driver_id, mobile_no, nationality, driver_name, hr_status")
-          .in("driver_id", ids.slice(i, i + 300));
+      const listChunks: string[][] = [];
+      for (let i = 0; i < ids.length; i += 300) listChunks.push(ids.slice(i, i + 300));
+      const listResults = await Promise.all(
+        listChunks.map((chunk) =>
+          supabase
+            .from("yango_driver_list")
+            .select("driver_id, mobile_no, nationality, driver_name, hr_status")
+            .in("driver_id", chunk),
+        ),
+      );
+      listResults.forEach(({ data }) => {
         (data || []).forEach((d: any) => {
           if (!info.has(d.driver_id))
             info.set(d.driver_id, {
@@ -71,18 +77,22 @@ const AdminYangoPage = () => {
               hr_status: d.hr_status,
             });
         });
-      }
+      });
       const nameFallback = new Map<string, string>();
       const missing = ids.filter((id) => !(info.get(id)?.driver_name));
-      for (let i = 0; i < missing.length; i += 300) {
-        const { data } = await supabase
-          .from("driver_master_file")
-          .select("driver_id, driver_name")
-          .in("driver_id", missing.slice(i, i + 300));
+      const missingChunks: string[][] = [];
+      for (let i = 0; i < missing.length; i += 300) missingChunks.push(missing.slice(i, i + 300));
+      const fallbackResults = await Promise.all(
+        missingChunks.map((chunk) =>
+          supabase.from("driver_master_file").select("driver_id, driver_name").in("driver_id", chunk),
+        ),
+      );
+      fallbackResults.forEach(({ data }) => {
         (data || []).forEach((d: any) => {
           if (d.driver_name && !nameFallback.has(d.driver_id)) nameFallback.set(d.driver_id, d.driver_name);
         });
-      }
+      });
+
       setRecords(
         all.map((r) => {
           const d = r.driver_id ? info.get(r.driver_id) : undefined;
@@ -216,14 +226,15 @@ const AdminYangoPage = () => {
           ["iPhone", iphoneCount],
           ["With Monthly Data", withData],
         ].map(([label, value]) => (
-          <div key={label as string} className="bg-white/10 border border-white/20 rounded-xl p-4">
-            <p className="text-xs uppercase tracking-widest text-white/50">{label}</p>
-            <p className="text-2xl font-bold text-white">{value}</p>
+          <div key={label as string} className="bg-white/10 border border-white/20 rounded-xl p-3 sm:p-4">
+            <p className="text-[10px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-white/50">{label}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white">{value}</p>
+
           </div>
         ))}
       </div>
 
-      <div className="bg-white/10 border border-white/20 rounded-2xl p-4 mb-5 flex flex-col sm:flex-row gap-3 sm:items-end">
+      <div className="bg-white/10 border border-white/20 rounded-2xl p-3 sm:p-4 mb-5 flex flex-col sm:flex-row gap-3 sm:items-end">
         <div className="flex-1">
           <label className="text-xs text-white/60 mb-1.5 block">Search Driver ID / Name</label>
           <div className="relative">
@@ -252,38 +263,40 @@ const AdminYangoPage = () => {
               setDriverQuery("");
               setDateFilter("");
             }}
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            className="w-full sm:w-auto min-h-11 sm:min-h-0 bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
             <X className="w-4 h-4 mr-1" /> Clear
           </Button>
         )}
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex">
           <Button
             variant="outline"
+            aria-label="Refresh submissions"
             onClick={fetchRecords}
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            className="min-h-11 sm:min-h-0 bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
           <Button
             onClick={() => setShowAnalytics(true)}
-            className="bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-600 hover:to-fuchsia-700 text-white font-semibold"
+            className="min-h-11 sm:min-h-0 bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-600 hover:to-fuchsia-700 text-white font-semibold"
           >
             <BarChart3 className="w-4 h-4 mr-2" /> View Analysis
           </Button>
           <Button
             onClick={() => setShowDriverList(true)}
-            className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold"
+            className="min-h-11 sm:min-h-0 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold"
           >
             <FileSpreadsheet className="w-4 h-4 mr-2" /> Upload Driver List
           </Button>
           <Button
             onClick={handleExport}
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold"
+            className="min-h-11 sm:min-h-0 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold"
           >
             <Download className="w-4 h-4 mr-2" /> Export Excel
           </Button>
         </div>
+
       </div>
 
       <YangoAnalyticsDialog open={showAnalytics} onOpenChange={setShowAnalytics} records={filtered} />
@@ -300,7 +313,51 @@ const AdminYangoPage = () => {
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-2xl border border-white/20 bg-white/5">
+          {/* Mobile card list */}
+          <div className="sm:hidden space-y-3">
+            {paged.map((r) => (
+              <div key={r.id} className="rounded-2xl border border-white/20 bg-white/5 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-white font-semibold break-words">{r.driver_id || "—"}</p>
+                    <p className="text-white/70 text-sm break-words">{r.driver_name || "—"}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Delete submission"
+                    disabled={deletingId === r.id}
+                    onClick={() => handleDelete(r)}
+                    className="min-h-11 min-w-11 shrink-0 text-red-300 hover:text-red-200 hover:bg-red-500/20"
+                  >
+                    {deletingId === r.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                  {[
+                    ["Contact No", r.mobile_no || "—"],
+                    ["Nationality", r.nationality || "—"],
+                    ["HR Status", r.hr_status || "—"],
+                    ["Smartphone", r.phone_type],
+                    ["Monthly Data", r.has_data],
+                    ["Date & Time", format(new Date(r.created_at), "dd MMM yyyy • hh:mm a")],
+                  ].map(([label, value]) => (
+                    <div key={label as string} className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-wider text-white/40">{label}</p>
+                      <p className="text-white/85 break-words">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden sm:block overflow-x-auto rounded-2xl border border-white/20 bg-white/5">
+
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-white/60 text-xs uppercase tracking-wider border-b border-white/10">
@@ -360,7 +417,8 @@ const AdminYangoPage = () => {
                   size="sm"
                   disabled={page === 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  className="min-h-11 sm:min-h-0 bg-white/10 border-white/20 text-white hover:bg-white/20"
+
                 >
                   Previous
                 </Button>
@@ -369,7 +427,8 @@ const AdminYangoPage = () => {
                   size="sm"
                   disabled={page === totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  className="min-h-11 sm:min-h-0 bg-white/10 border-white/20 text-white hover:bg-white/20"
+
                 >
                   Next
                 </Button>
