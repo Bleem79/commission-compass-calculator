@@ -87,7 +87,7 @@ export const RequestResponseDialog = ({
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                {STATUS_OPTIONS.map((status) => (
+                {STATUS_OPTIONS.filter((status) => status.value !== "pending").map((status) => (
                   <SelectItem key={status.value} value={status.value}>
                     {status.label}
                   </SelectItem>
