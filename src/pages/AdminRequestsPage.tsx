@@ -33,7 +33,6 @@ const ManageSharjahLocationsDialog = lazy(() => import("@/components/admin-reque
 
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending", color: "bg-yellow-500" },
-  { value: "in_progress", label: "In Progress", color: "bg-blue-500" },
   { value: "approved", label: "Approved", color: "bg-green-500" },
   { value: "rejected", label: "Rejected", color: "bg-red-500" },
 ];
