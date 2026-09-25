@@ -370,7 +370,7 @@ const AdminRequestsPage = () => {
                   <div><Label>Update Status</Label>
                     <Select value={newStatus} onValueChange={setNewStatus}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+                      <SelectContent>{STATUS_OPTIONS.filter((s) => s.value !== "pending").map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div><Label>Admin Response</Label><Textarea value={responseText} onChange={(e) => setResponseText(e.target.value)} placeholder="Type your response..." rows={3} /></div>
