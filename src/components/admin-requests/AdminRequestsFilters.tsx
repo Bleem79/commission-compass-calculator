@@ -8,7 +8,6 @@ import { useRequestTypes } from "@/hooks/useRequestTypes";
 
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
-  { value: "in_progress", label: "In Progress" },
   { value: "approved", label: "Approved" },
   { value: "rejected", label: "Rejected" },
 ];
