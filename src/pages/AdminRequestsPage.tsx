@@ -152,8 +152,12 @@ const AdminRequestsPage = () => {
     catch { toast.error("Failed to refresh"); } finally { setLoading(false); }
   }, [fetchAllRequests]);
 
+  const [statusHistory, setStatusHistory] = useState<any[]>([]);
   const openResponseDialog = useCallback((request: DriverRequest) => {
     setSelectedRequest(request); setResponseText(request.admin_response || ""); setNewStatus(request.status); setEditSubject(request.subject); setEditDescription(request.description); setFleetRemarks(request.fleet_remarks || "");
+    setStatusHistory([]);
+    (supabase as any).from("request_status_history").select("*").eq("request_id", request.id).order("changed_at", { ascending: false })
+      .then(({ data }: any) => setStatusHistory(data || []));
   }, []);
 
   const handleSubmitResponse = useCallback(async () => {
@@ -377,6 +381,26 @@ const AdminRequestsPage = () => {
                   {selectedRequest.fleet_remarks && <div className="bg-amber-50 rounded-lg p-3 border border-amber-200"><p className="text-xs text-amber-600 mb-1">Fleet Remarks:</p><p className="text-sm">{selectedRequest.fleet_remarks}</p></div>}
                 </div>
               )}
+              <div className="border-t pt-3">
+                <Label>Status History</Label>
+                {selectedRequest.responded_at && <p className="text-xs text-muted-foreground mt-1">Last updated: {format(new Date(selectedRequest.responded_at), "dd MMM yyyy, hh:mm:ss a")}</p>}
+                {statusHistory.length === 0 ? (
+                  <p className="text-xs text-muted-foreground mt-2">No status changes recorded yet.</p>
+                ) : (
+                  <ul className="mt-2 space-y-2">
+                    {statusHistory.map((h) => (
+                      <li key={h.id} className="rounded-md border border-border bg-muted/40 p-2 text-xs">
+                        <div className="flex flex-wrap items-center gap-1">
+                          {h.old_status && <>{getStatusBadge(h.old_status)}<span>→</span></>}
+                          {getStatusBadge(h.new_status)}
+                        </div>
+                        <p className="mt-1 text-muted-foreground">{format(new Date(h.changed_at), "dd MMM yyyy, hh:mm:ss a")}{h.changed_by_name ? ` · by ${h.changed_by_name}` : ""}</p>
+                        {h.admin_response && <p className="mt-1 text-foreground">{h.admin_response}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           )}
           <DialogFooter>

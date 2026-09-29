@@ -686,6 +686,47 @@ export type Database = {
         }
         Relationships: []
       }
+      request_status_history: {
+        Row: {
+          admin_response: string | null
+          changed_at: string
+          changed_by: string | null
+          changed_by_name: string | null
+          id: string
+          new_status: string
+          old_status: string | null
+          request_id: string
+        }
+        Insert: {
+          admin_response?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          id?: string
+          new_status: string
+          old_status?: string | null
+          request_id: string
+        }
+        Update: {
+          admin_response?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          id?: string
+          new_status?: string
+          old_status?: string | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_status_history_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "driver_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sharjah_locations: {
         Row: {
           created_at: string
