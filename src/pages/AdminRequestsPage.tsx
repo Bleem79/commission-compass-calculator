@@ -359,6 +359,7 @@ const AdminRequestsPage = () => {
                 <div><span className="text-muted-foreground">Driver:</span><p className="font-medium">{selectedRequest.driver_id} - {selectedRequest.driver_name || "N/A"}</p></div>
                 <div><span className="text-muted-foreground">Type:</span><p className="font-medium">{getRequestTypeLabel(selectedRequest.request_type)}</p></div>
                 <div><span className="text-muted-foreground">Status:</span><div>{getStatusBadge(selectedRequest.status)}</div></div>
+                <div className="col-span-2"><span className="text-muted-foreground">Submitted:</span><p className="font-medium">{format(new Date(selectedRequest.created_at), "dd MMM yyyy, hh:mm:ss a")}</p></div>
               </div>
               {controllerMap[selectedRequest.driver_id] && <p className="text-xs text-muted-foreground">Controller: {controllerMap[selectedRequest.driver_id]}</p>}
               
