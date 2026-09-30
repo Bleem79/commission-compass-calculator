@@ -126,7 +126,7 @@ const DriverManagementPage = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <CardTitle className="text-lg font-semibold">Driver Accounts</CardTitle>
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" disabled={filteredDrivers.length === 0} onClick={async () => {
+              <Button variant="outline" size="sm" className="border-emerald-500/40 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800" disabled={filteredDrivers.length === 0} onClick={async () => {
                 const XLSX = await import("xlsx");
                 const rows = filteredDrivers.map((d: any) => ({
                   "Driver ID": d.driver_id,
@@ -142,8 +142,8 @@ const DriverManagementPage = () => {
               }}><Download className="h-4 w-4 mr-1" />Export Excel</Button>
               {isAdmin && (
                 <>
-                  <Button variant="outline" size="sm" onClick={() => bulkUpdateStatus('enabled')} disabled={bulkUpdating || drivers.length === 0 || enabledCount === drivers.length}><CheckCircle2 className="h-4 w-4 mr-1" />Enable All</Button>
-                  <Button variant="outline" size="sm" onClick={() => bulkUpdateStatus('disabled')} disabled={bulkUpdating || drivers.length === 0 || disabledCount === drivers.length}><XCircle className="h-4 w-4 mr-1" />Disable All</Button>
+                  <Button variant="outline" size="sm" className="border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary" onClick={() => bulkUpdateStatus('enabled')} disabled={bulkUpdating || drivers.length === 0 || enabledCount === drivers.length}><CheckCircle2 className="h-4 w-4 mr-1" />Enable All</Button>
+                  <Button variant="outline" size="sm" className="border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive" onClick={() => bulkUpdateStatus('disabled')} disabled={bulkUpdating || drivers.length === 0 || disabledCount === drivers.length}><XCircle className="h-4 w-4 mr-1" />Disable All</Button>
                 </>
               )}
               <div className="relative">
