@@ -126,6 +126,20 @@ const DriverManagementPage = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <CardTitle className="text-lg font-semibold">Driver Accounts</CardTitle>
             <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" disabled={filteredDrivers.length === 0} onClick={async () => {
+                const XLSX = await import("xlsx");
+                const rows = filteredDrivers.map((d: any) => ({
+                  "Driver ID": d.driver_id,
+                  ...(isAdmin ? { "Password": d.password_text || "" } : {}),
+                  "Status": d.status === "enabled" ? "Enabled" : "Disabled",
+                  "OSR": osrDriverIds.has(d.driver_id) ? "Yes" : "No",
+                  "Created At": d.created_at ? new Date(d.created_at).toLocaleDateString() : "",
+                }));
+                const ws = XLSX.utils.json_to_sheet(rows);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Drivers");
+                XLSX.writeFile(wb, `Driver_Accounts_${new Date().toISOString().split("T")[0]}.xlsx`);
+              }}><Download className="h-4 w-4 mr-1" />Export Excel</Button>
               {isAdmin && (
                 <>
                   <Button variant="outline" size="sm" onClick={() => bulkUpdateStatus('enabled')} disabled={bulkUpdating || drivers.length === 0 || enabledCount === drivers.length}><CheckCircle2 className="h-4 w-4 mr-1" />Enable All</Button>
