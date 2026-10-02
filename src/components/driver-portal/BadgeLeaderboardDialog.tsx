@@ -122,24 +122,25 @@ export const BadgeLeaderboardDialog = ({ isOpen, onClose, driverId }: BadgeLeade
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         className="
-          max-w-[95vw] sm:max-w-[520px] p-0 overflow-hidden
+          w-[calc(100vw-1rem)] max-w-[520px] max-h-[calc(100dvh-1rem)] p-0 overflow-hidden gap-0
+          grid-rows-[auto_minmax(0,1fr)_auto]
           bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950
           border-amber-700/40
           text-white
         "
       >
         {/* Header */}
-        <DialogHeader className="px-6 pt-6 pb-3 bg-gradient-to-b from-slate-900 to-slate-950 border-b border-amber-700/30">
+        <DialogHeader className="px-4 sm:px-6 pt-6 pb-3 bg-gradient-to-b from-slate-900 to-slate-950 border-b border-amber-700/30">
           <DialogTitle asChild>
             <div className="flex flex-col items-center gap-1">
-              <div className="flex items-center justify-center gap-3">
-                <Trophy className="h-7 w-7 text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]" />
-                <h2 className="text-3xl font-black tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-yellow-300 to-amber-500">
+              <div className="flex w-full items-center justify-center gap-2 sm:gap-3 px-5 sm:px-0">
+                <Trophy className="h-5 w-5 sm:h-7 sm:w-7 shrink-0 text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]" />
+                <h2 className="text-xl sm:text-3xl font-black tracking-[0.1em] sm:tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-yellow-300 to-amber-500">
                   LEADERBOARD
                 </h2>
-                <Trophy className="h-7 w-7 text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]" />
+                <Trophy className="h-5 w-5 sm:h-7 sm:w-7 shrink-0 text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]" />
               </div>
-              <p className="text-[10px] tracking-[0.4em] text-amber-200/70 font-semibold uppercase">
+              <p className="text-[9px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.4em] text-center text-amber-200/70 font-semibold uppercase">
                 Drive · Achieve · Be Legendary
               </p>
             </div>
@@ -147,7 +148,7 @@ export const BadgeLeaderboardDialog = ({ isOpen, onClose, driverId }: BadgeLeade
         </DialogHeader>
 
         {/* Body */}
-        <div className="max-h-[65vh] overflow-y-auto divide-y divide-white/5">
+        <div className="min-h-0 overflow-y-auto divide-y divide-white/5">
           {loading ? (
             <div className="flex justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400" />
@@ -164,7 +165,7 @@ export const BadgeLeaderboardDialog = ({ isOpen, onClose, driverId }: BadgeLeade
               return (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 px-3 py-3 hover:bg-white/5 transition"
+                  className="flex items-center gap-2 sm:gap-3 px-3 py-3 hover:bg-white/5 transition"
                 >
                   {/* Rank medallion */}
                   <div
@@ -209,7 +210,7 @@ export const BadgeLeaderboardDialog = ({ isOpen, onClose, driverId }: BadgeLeade
                         <img
                           src={imgUrl}
                           alt={item.title}
-                          className="w-full h-full object-cover"
+                        className="w-full h-full object-contain p-0.5"
                         />
                       </div>
                     ) : (
@@ -236,7 +237,7 @@ export const BadgeLeaderboardDialog = ({ isOpen, onClose, driverId }: BadgeLeade
               My Badge History
             </Button>
           )}
-          <p className="text-[10px] tracking-[0.35em] text-amber-200/70 font-semibold uppercase">
+          <p className="max-w-full text-center text-[9px] sm:text-[10px] tracking-[0.18em] sm:tracking-[0.35em] leading-4 text-amber-200/70 font-semibold uppercase">
             Every Mile Counts · Every Badge Matters
           </p>
         </div>
@@ -244,7 +245,7 @@ export const BadgeLeaderboardDialog = ({ isOpen, onClose, driverId }: BadgeLeade
     </Dialog>
 
     <Dialog open={historyOpen} onOpenChange={(o) => !o && setHistoryOpen(false)}>
-      <DialogContent className="max-w-[95vw] sm:max-w-[480px] p-0 overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-amber-700/40 text-white">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-[480px] max-h-[calc(100dvh-1rem)] p-0 overflow-hidden gap-0 grid-rows-[auto_minmax(0,1fr)_auto] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-amber-700/40 text-white">
         <DialogHeader className="px-6 pt-6 pb-3 border-b border-amber-700/30">
           <DialogTitle asChild>
             <div className="flex flex-col items-center gap-1">
@@ -263,7 +264,7 @@ export const BadgeLeaderboardDialog = ({ isOpen, onClose, driverId }: BadgeLeade
           </DialogTitle>
         </DialogHeader>
 
-        <div className="max-h-[65vh] overflow-y-auto divide-y divide-white/5">
+        <div className="min-h-0 overflow-y-auto divide-y divide-white/5">
           {historyLoading ? (
             <div className="flex justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400" />
