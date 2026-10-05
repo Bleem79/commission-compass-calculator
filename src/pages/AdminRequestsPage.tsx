@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from
 import { useNavigate } from "react-router-dom";
 import { 
   MessageSquare, Loader2, Clock, CheckCircle, XCircle, 
-  Send, RefreshCw, AlertCircle, CalendarDays, FileSpreadsheet, Trash2, Bell, Copy
+  Send, RefreshCw, AlertCircle, CalendarDays, FileSpreadsheet, Trash2, Bell, Copy, Ban
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +26,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 import { PageLayout } from "@/components/shared/PageLayout";
 import { Input } from "@/components/ui/input";
+import { BlockDriverRequestsDialog } from "@/components/admin-requests/BlockDriverRequestsDialog";
 
 const DayOffCalendar = lazy(() => import("@/components/admin-requests/DayOffCalendar").then(m => ({ default: m.DayOffCalendar })));
 const ManageTypesDialog = lazy(() => import("@/components/admin-requests/ManageTypesDialog").then(m => ({ default: m.ManageTypesDialog })));
@@ -49,6 +50,7 @@ const AdminRequestsPage = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isActualAdmin, setIsActualAdmin] = useState(false);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -309,6 +311,8 @@ const AdminRequestsPage = () => {
             </Button>
           )}
           <Button onClick={() => setShowCalendar(!showCalendar)} variant={showCalendar ? "default" : "outline"} size="sm" className="text-xs sm:text-sm"><CalendarDays className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Day Off Calendar</span></Button>
+          <Button onClick={() => setShowBlockDialog(true)} variant="outline" size="sm" className="text-xs sm:text-sm text-destructive border-destructive/50 hover:bg-destructive/10"><Ban className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Block Driver</span></Button>
+          <BlockDriverRequestsDialog open={showBlockDialog} onOpenChange={setShowBlockDialog} canEdit={!!isActualAdmin} />
           <Button onClick={handleRefresh} variant="outline" size="sm" disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /></Button>
           {pushSupported && !pushGranted && <Button onClick={requestPermission} variant="outline" size="sm" className="text-xs sm:text-sm"><Bell className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Enable Notifications</span></Button>}
           {pushGranted && <Badge variant="outline" className="text-xs gap-1 py-1"><Bell className="h-3 w-3" /> Notifications On</Badge>}

@@ -27,6 +27,14 @@ const DriverRequestPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [sharjahLocation, setSharjahLocation] = useState("");
   const [landmark, setLandmark] = useState("");
+  const [isBlocked, setIsBlocked] = useState(false);
+
+  useEffect(() => {
+    if (!driverInfo?.driverId) return;
+    (supabase as any).from("driver_request_blocks").select("is_blocked")
+      .eq("driver_id", driverInfo.driverId).maybeSingle()
+      .then(({ data }: any) => setIsBlocked(!!data?.is_blocked));
+  }, [driverInfo?.driverId]);
 
   const dayOffValidation = useDayOffValidation({
     driverId: driverInfo?.driverId || null,
@@ -233,8 +241,14 @@ const DriverRequestPage = () => {
         />
       </StatsGrid>
 
+      {isBlocked && (
+        <div className="mb-4 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm font-medium text-destructive">
+          You are blocked from submitting new requests. Please contact your Revenue Controller.
+        </div>
+      )}
+
       {/* Form */}
-      {showForm && (
+      {showForm && !isBlocked && (
         <DriverRequestForm
           requestType={requestType}
           selectedDate={selectedDate}
