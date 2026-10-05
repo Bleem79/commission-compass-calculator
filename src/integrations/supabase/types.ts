@@ -434,6 +434,60 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_request_block_history: {
+        Row: {
+          action: string
+          changed_at: string
+          changed_by: string | null
+          changed_by_name: string | null
+          driver_id: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          changed_at?: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          driver_id: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          changed_at?: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          driver_id?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      driver_request_blocks: {
+        Row: {
+          driver_id: string
+          is_blocked: boolean
+          reason: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          driver_id: string
+          is_blocked?: boolean
+          reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          driver_id?: string
+          is_blocked?: boolean
+          reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       driver_request_types: {
         Row: {
           created_at: string
