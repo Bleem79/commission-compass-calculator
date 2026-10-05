@@ -289,6 +289,7 @@ const AdminRequestsPage = () => {
   }, [handleDeleteDuplicates]);
 
   if (!isAdmin) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  // eslint-disable-next-line
 
   return (
     <PageLayout
@@ -309,6 +310,8 @@ const AdminRequestsPage = () => {
             </Button>
           )}
           <Button onClick={() => setShowCalendar(!showCalendar)} variant={showCalendar ? "default" : "outline"} size="sm" className="text-xs sm:text-sm"><CalendarDays className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Day Off Calendar</span></Button>
+          <Button onClick={() => setShowBlockDialog(true)} variant="outline" size="sm" className="text-xs sm:text-sm text-destructive border-destructive/50 hover:bg-destructive/10"><Ban className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Block Driver</span></Button>
+          <BlockDriverRequestsDialog open={showBlockDialog} onOpenChange={setShowBlockDialog} canEdit={!!isActualAdmin} />
           <Button onClick={handleRefresh} variant="outline" size="sm" disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /></Button>
           {pushSupported && !pushGranted && <Button onClick={requestPermission} variant="outline" size="sm" className="text-xs sm:text-sm"><Bell className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Enable Notifications</span></Button>}
           {pushGranted && <Badge variant="outline" className="text-xs gap-1 py-1"><Bell className="h-3 w-3" /> Notifications On</Badge>}
