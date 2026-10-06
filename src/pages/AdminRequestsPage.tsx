@@ -55,6 +55,7 @@ const AdminRequestsPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [controllerFilter, setControllerFilter] = useState("all");
+  const [remarksFilter, setRemarksFilter] = useState("all");
   const [selectedRequest, setSelectedRequest] = useState<DriverRequest | null>(null);
   const [responseText, setResponseText] = useState("");
   const [newStatus, setNewStatus] = useState("");
@@ -145,8 +146,13 @@ const AdminRequestsPage = () => {
     if (typeFilter !== "all") filtered = filtered.filter((r) => r.request_type === typeFilter);
     if (controllerFilter !== "all") filtered = filtered.filter((r) => controllerMap[r.driver_id]?.toLowerCase() === controllerFilter.toLowerCase());
     if (selectedCalendarDate) filtered = filtered.filter((r) => r.request_type === "day_off" && extractDayOffDate(r.subject) === selectedCalendarDate);
+    if (isFleetUser && remarksFilter !== "all") {
+      filtered = filtered.filter((r) => r.status === "approved");
+      if (remarksFilter === "with") filtered = filtered.filter((r) => !!r.fleet_remarks?.trim());
+      else if (remarksFilter === "without") filtered = filtered.filter((r) => !r.fleet_remarks?.trim());
+    }
     return filtered;
-  }, [requests, searchQuery, statusFilter, typeFilter, controllerFilter, selectedCalendarDate, controllerMap, isFleetUser]);
+  }, [requests, searchQuery, statusFilter, typeFilter, controllerFilter, selectedCalendarDate, controllerMap, isFleetUser, remarksFilter]);
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);
