@@ -345,6 +345,30 @@ const AdminRequestsPage = () => {
         showControllerFilter={isActualAdmin}
       />
 
+      {isFleetUser && (
+        <Card className="mb-6 border-amber-200 bg-amber-50/50">
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex-1">
+              <p className="text-sm font-semibold">Approved Requests Remarks</p>
+              <p className="text-xs text-muted-foreground">
+                {approvedWithRemarks} with remarks · {approvedWithoutRemarks} without remarks
+              </p>
+            </div>
+            <Select value={remarksFilter} onValueChange={setRemarksFilter}>
+              <SelectTrigger className="w-full sm:w-[220px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Fleet Remarks" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Approved ({approvedWithRemarks + approvedWithoutRemarks})</SelectItem>
+                <SelectItem value="with">With Remarks ({approvedWithRemarks})</SelectItem>
+                <SelectItem value="without">Without Remarks ({approvedWithoutRemarks})</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      )}
+
       {loading ? (
         <div className="flex items-center justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
       ) : filteredRequests.length === 0 ? (
