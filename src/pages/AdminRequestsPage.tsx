@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from
 import { useNavigate } from "react-router-dom";
 import { 
   MessageSquare, Loader2, Clock, CheckCircle, XCircle, 
-  Send, RefreshCw, AlertCircle, CalendarDays, FileSpreadsheet, Trash2, Bell, Copy, Ban
+  Send, RefreshCw, AlertCircle, CalendarDays, FileSpreadsheet, Trash2, Bell, Copy, Ban, Filter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,6 +55,7 @@ const AdminRequestsPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [controllerFilter, setControllerFilter] = useState("all");
+  const [remarksFilter, setRemarksFilter] = useState("all");
   const [selectedRequest, setSelectedRequest] = useState<DriverRequest | null>(null);
   const [responseText, setResponseText] = useState("");
   const [newStatus, setNewStatus] = useState("");
@@ -145,8 +146,13 @@ const AdminRequestsPage = () => {
     if (typeFilter !== "all") filtered = filtered.filter((r) => r.request_type === typeFilter);
     if (controllerFilter !== "all") filtered = filtered.filter((r) => controllerMap[r.driver_id]?.toLowerCase() === controllerFilter.toLowerCase());
     if (selectedCalendarDate) filtered = filtered.filter((r) => r.request_type === "day_off" && extractDayOffDate(r.subject) === selectedCalendarDate);
+    if (isFleetUser && remarksFilter !== "all") {
+      filtered = filtered.filter((r) => r.status === "approved");
+      if (remarksFilter === "with") filtered = filtered.filter((r) => !!r.fleet_remarks?.trim());
+      else if (remarksFilter === "without") filtered = filtered.filter((r) => !r.fleet_remarks?.trim());
+    }
     return filtered;
-  }, [requests, searchQuery, statusFilter, typeFilter, controllerFilter, selectedCalendarDate, controllerMap, isFleetUser]);
+  }, [requests, searchQuery, statusFilter, typeFilter, controllerFilter, selectedCalendarDate, controllerMap, isFleetUser, remarksFilter]);
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);
@@ -277,6 +283,14 @@ const AdminRequestsPage = () => {
     dayOff: filteredRequests.filter((r) => r.request_type === "day_off").length,
   }), [filteredRequests]);
 
+  const { approvedWithRemarks, approvedWithoutRemarks } = useMemo(() => {
+    const approved = requests.filter((r) => r.status === "approved");
+    return {
+      approvedWithRemarks: approved.filter((r) => !!r.fleet_remarks?.trim()).length,
+      approvedWithoutRemarks: approved.filter((r) => !r.fleet_remarks?.trim()).length,
+    };
+  }, [requests]);
+
   const hasActiveFilters = searchQuery || statusFilter !== "all" || typeFilter !== "all" || controllerFilter !== "all";
   const clearAllFilters = useCallback(() => { setSearchQuery(""); setStatusFilter("all"); setTypeFilter("all"); setControllerFilter("all"); setSelectedCalendarDate(null); }, []);
   const [showDeleteDuplicatesConfirm, setShowDeleteDuplicatesConfirm] = useState(false);
@@ -338,6 +352,30 @@ const AdminRequestsPage = () => {
         onManageSharjahLocations={() => setShowSharjahDialog(true)}
         showControllerFilter={isActualAdmin}
       />
+
+      {isFleetUser && (
+        <Card className="mb-6 border-amber-200 bg-amber-50/50">
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex-1">
+              <p className="text-sm font-semibold">Approved Requests Remarks</p>
+              <p className="text-xs text-muted-foreground">
+                {approvedWithRemarks} with remarks · {approvedWithoutRemarks} without remarks
+              </p>
+            </div>
+            <Select value={remarksFilter} onValueChange={setRemarksFilter}>
+              <SelectTrigger className="w-full sm:w-[220px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Fleet Remarks" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Approved ({approvedWithRemarks + approvedWithoutRemarks})</SelectItem>
+                <SelectItem value="with">With Remarks ({approvedWithRemarks})</SelectItem>
+                <SelectItem value="without">Without Remarks ({approvedWithoutRemarks})</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
