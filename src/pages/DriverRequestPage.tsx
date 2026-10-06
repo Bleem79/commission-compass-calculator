@@ -195,9 +195,16 @@ const DriverRequestPage = () => {
           },
         })
         .catch((err) => console.log("Controller notification failed (non-critical):", err));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting request:", error);
-      toast.error("Failed to submit request");
+      const msg = String(error?.message || "");
+      if (msg.toLowerCase().includes("blocked")) {
+        setIsBlocked(true);
+        setShowForm(false);
+        toast.error("You are blocked from submitting requests. Please contact your Revenue Controller.");
+      } else {
+        toast.error("Failed to submit request");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -217,7 +224,7 @@ const DriverRequestPage = () => {
       backPath="/driver-portal"
       backLabel="Back to Portal"
       headerActions={
-        !showForm && (
+        !showForm && !isBlocked && (
           <Button onClick={() => setShowForm(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             New Request
