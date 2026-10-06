@@ -283,6 +283,14 @@ const AdminRequestsPage = () => {
     dayOff: filteredRequests.filter((r) => r.request_type === "day_off").length,
   }), [filteredRequests]);
 
+  const { approvedWithRemarks, approvedWithoutRemarks } = useMemo(() => {
+    const approved = requests.filter((r) => r.status === "approved");
+    return {
+      approvedWithRemarks: approved.filter((r) => !!r.fleet_remarks?.trim()).length,
+      approvedWithoutRemarks: approved.filter((r) => !r.fleet_remarks?.trim()).length,
+    };
+  }, [requests]);
+
   const hasActiveFilters = searchQuery || statusFilter !== "all" || typeFilter !== "all" || controllerFilter !== "all";
   const clearAllFilters = useCallback(() => { setSearchQuery(""); setStatusFilter("all"); setTypeFilter("all"); setControllerFilter("all"); setSelectedCalendarDate(null); }, []);
   const [showDeleteDuplicatesConfirm, setShowDeleteDuplicatesConfirm] = useState(false);
