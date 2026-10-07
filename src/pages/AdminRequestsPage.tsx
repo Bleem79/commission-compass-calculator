@@ -379,18 +379,27 @@ const AdminRequestsPage = () => {
             <div className="flex-1">
               <p className="text-sm font-semibold">Approved Requests Remarks</p>
               <p className="text-xs text-muted-foreground">
-                {approvedWithRemarks} with remarks · {approvedWithoutRemarks} without remarks
+                {remarkStats.withRemarks} with remarks · {remarkStats.withoutRemarks} without remarks
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                {FLEET_REMARKS_OPTIONS.map((o) => (
+                  <span key={o}>{o}: <span className="font-semibold">{remarkStats.counts[o]}</span></span>
+                ))}
+                <span>Other: <span className="font-semibold">{remarkStats.counts.other}</span></span>
               </p>
             </div>
             <Select value={remarksFilter} onValueChange={setRemarksFilter}>
-              <SelectTrigger className="w-full sm:w-[220px]">
+              <SelectTrigger className="w-full sm:w-[290px]">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Fleet Remarks" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Approved ({approvedWithRemarks + approvedWithoutRemarks})</SelectItem>
-                <SelectItem value="with">With Remarks ({approvedWithRemarks})</SelectItem>
-                <SelectItem value="without">Without Remarks ({approvedWithoutRemarks})</SelectItem>
+                <SelectItem value="all">All Approved ({remarkStats.approvedTotal})</SelectItem>
+                <SelectItem value="without">Without Remarks ({remarkStats.withoutRemarks})</SelectItem>
+                {FLEET_REMARKS_OPTIONS.map((o) => (
+                  <SelectItem key={o} value={o}>{o} ({remarkStats.counts[o]})</SelectItem>
+                ))}
+                <SelectItem value="other">Other Remarks ({remarkStats.counts.other})</SelectItem>
               </SelectContent>
             </Select>
           </CardContent>
