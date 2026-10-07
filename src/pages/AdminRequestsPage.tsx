@@ -38,6 +38,12 @@ const STATUS_OPTIONS = [
   { value: "rejected", label: "Rejected", color: "bg-red-500" },
 ];
 
+const FLEET_REMARKS_OPTIONS = [
+  "Done",
+  "Vehicle Rejected by Driver",
+  "Fleet Rejected the Driver",
+];
+
 const formatDate = (dateStr: string) => {
   try { return format(new Date(dateStr), "MMM dd, yyyy hh:mm a"); } catch { return dateStr; }
 };
