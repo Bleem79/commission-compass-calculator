@@ -311,7 +311,7 @@ const HomePage = () => {
     },
   ];
 
-  const isFleetUser = user?.email?.toLowerCase() === "fleet@amantaxi.com";
+  const isFleetUser = user?.email?.toLowerCase() === "fleet@amantaxi.com" || user?.email?.toLowerCase() === "emad@amantaximena.com";
 
   if (canAccessAdminPages && !isFleetUser) {
     features.push({

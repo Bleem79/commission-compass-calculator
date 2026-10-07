@@ -92,14 +92,14 @@ const AdminRequestsPage = () => {
   const { isSupported: pushSupported, isGranted: pushGranted, requestPermission } = usePushNotifications();
   usePushSubscriptionRegistration(user?.id, null);
 
-  const isFleetUser = user?.email?.toLowerCase() === 'fleet@amantaxi.com' || user?.username?.toLowerCase() === 'emad';
+  const isFleetUser = user?.email?.toLowerCase() === 'fleet@amantaxi.com' || user?.email?.toLowerCase() === 'emad@amantaximena.com' || user?.username?.toLowerCase() === 'emad';
 
   useEffect(() => { if (!isAuthenticated) navigate("/login", { replace: true }); }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     const checkAdminRole = async () => {
       if (!user?.id) return;
-      const isFleet = user.email?.toLowerCase() === 'fleet@amantaxi.com' || user.username?.toLowerCase() === 'emad';
+      const isFleet = user.email?.toLowerCase() === 'fleet@amantaxi.com' || user.email?.toLowerCase() === 'emad@amantaximena.com' || user.username?.toLowerCase() === 'emad';
       if (isFleet) { setIsAdmin(true); setIsActualAdmin(false); return; }
       try {
         const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", user.id).in("role", ["admin", "advanced", "user"]).maybeSingle();
