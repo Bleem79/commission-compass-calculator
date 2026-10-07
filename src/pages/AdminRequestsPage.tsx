@@ -38,6 +38,12 @@ const STATUS_OPTIONS = [
   { value: "rejected", label: "Rejected", color: "bg-red-500" },
 ];
 
+const FLEET_REMARKS_OPTIONS = [
+  "Done",
+  "Vehicle Rejected by Driver",
+  "Fleet Rejected the Driver",
+];
+
 const formatDate = (dateStr: string) => {
   try { return format(new Date(dateStr), "MMM dd, yyyy hh:mm a"); } catch { return dateStr; }
 };
@@ -407,7 +413,16 @@ const AdminRequestsPage = () => {
               
               {isFleetUser ? (
                 <div className="space-y-3">
-                  <div><Label>Fleet Remarks</Label><Textarea value={fleetRemarks} onChange={(e) => setFleetRemarks(e.target.value)} placeholder="Add fleet remarks..." rows={3} /></div>
+                  <div>
+                    <Label>Fleet Remarks</Label>
+                    <Select value={fleetRemarks && FLEET_REMARKS_OPTIONS.includes(fleetRemarks) ? fleetRemarks : "__none__"} onValueChange={(v) => setFleetRemarks(v === "__none__" ? "" : v)}>
+                      <SelectTrigger className="min-h-11"><SelectValue placeholder="Select fleet remarks..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">No Remarks</SelectItem>
+                        {FLEET_REMARKS_OPTIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   {selectedRequest.admin_response && <div className="bg-muted/50 rounded-lg p-3"><p className="text-xs text-muted-foreground mb-1">Admin Response:</p><p className="text-sm">{selectedRequest.admin_response}</p></div>}
                 </div>
               ) : (
