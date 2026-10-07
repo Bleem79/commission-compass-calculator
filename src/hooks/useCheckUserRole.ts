@@ -15,7 +15,7 @@ export const useCheckUserRole = (setUser: React.Dispatch<React.SetStateAction<Us
     try {
       // Specific check for admin emails
       // Special fleet user - restricted to Driver Requests only
-      if (userEmail.toLowerCase() === 'fleet@amantaxi.com') {
+      if (userEmail.toLowerCase() === 'fleet@amantaxi.com' || userEmail.toLowerCase() === 'emad@amantaximena.com') {
         console.log("Fleet user detected - setting as advanced (restricted):", userEmail);
         setUser(prevUser => {
           if (!prevUser || prevUser.role !== 'advanced') {
