@@ -44,6 +44,16 @@ const FLEET_REMARKS_OPTIONS = [
   "Fleet Rejected the Driver",
 ];
 
+// Groups a stored remark under one of the three standard options. Matching is
+// case-insensitive and tolerant of older free-text remarks that merely contain
+// the option phrase. Returns null when there is no remark and "other" when the
+// text matches none of the standard options.
+const remarkCategory = (value?: string | null): string | null => {
+  const text = (value || "").trim().toLowerCase();
+  if (!text) return null;
+  return FLEET_REMARKS_OPTIONS.find((o) => text.includes(o.toLowerCase())) || "other";
+};
+
 const formatDate = (dateStr: string) => {
   try { return format(new Date(dateStr), "MMM dd, yyyy hh:mm a"); } catch { return dateStr; }
 };
@@ -153,9 +163,8 @@ const AdminRequestsPage = () => {
     if (controllerFilter !== "all") filtered = filtered.filter((r) => controllerMap[r.driver_id]?.toLowerCase() === controllerFilter.toLowerCase());
     if (selectedCalendarDate) filtered = filtered.filter((r) => r.request_type === "day_off" && extractDayOffDate(r.subject) === selectedCalendarDate);
     if (isFleetUser && remarksFilter !== "all") {
-      filtered = filtered.filter((r) => r.status === "approved");
-      if (remarksFilter === "with") filtered = filtered.filter((r) => !!r.fleet_remarks?.trim());
-      else if (remarksFilter === "without") filtered = filtered.filter((r) => !r.fleet_remarks?.trim());
+      const wanted = remarksFilter === "without" ? null : remarksFilter;
+      filtered = filtered.filter((r) => r.status === "approved" && remarkCategory(r.fleet_remarks) === wanted);
     }
     return filtered;
   }, [requests, searchQuery, statusFilter, typeFilter, controllerFilter, selectedCalendarDate, controllerMap, isFleetUser, remarksFilter]);
@@ -289,11 +298,16 @@ const AdminRequestsPage = () => {
     dayOff: filteredRequests.filter((r) => r.request_type === "day_off").length,
   }), [filteredRequests]);
 
-  const { approvedWithRemarks, approvedWithoutRemarks } = useMemo(() => {
+  const remarkStats = useMemo(() => {
     const approved = requests.filter((r) => r.status === "approved");
+    const counts: Record<string, number> = { without: 0, other: 0 };
+    FLEET_REMARKS_OPTIONS.forEach((o) => { counts[o] = 0; });
+    approved.forEach((r) => { counts[remarkCategory(r.fleet_remarks) ?? "without"] += 1; });
     return {
-      approvedWithRemarks: approved.filter((r) => !!r.fleet_remarks?.trim()).length,
-      approvedWithoutRemarks: approved.filter((r) => !r.fleet_remarks?.trim()).length,
+      approvedTotal: approved.length,
+      withoutRemarks: counts.without,
+      withRemarks: approved.length - counts.without,
+      counts,
     };
   }, [requests]);
 
