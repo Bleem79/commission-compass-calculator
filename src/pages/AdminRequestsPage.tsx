@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, startOfDay, endOfDay } from "date-fns";
 import { useRequestTypes } from "@/hooks/useRequestTypes";
 import { AdminRequestStats } from "@/components/admin-requests/AdminRequestStats";
 import { AdminRequestsFilters } from "@/components/admin-requests/AdminRequestsFilters";
@@ -25,6 +25,7 @@ import { DriverRequest, getRequestTypeLabel } from "@/constants/requestTypes";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 import { PageLayout } from "@/components/shared/PageLayout";
+import { DateRangePicker } from "@/components/shared/DateRangePicker";
 import { Input } from "@/components/ui/input";
 import { BlockDriverRequestsDialog } from "@/components/admin-requests/BlockDriverRequestsDialog";
 
@@ -54,6 +55,17 @@ const remarkCategory = (value?: string | null): string | null => {
   return FLEET_REMARKS_OPTIONS.find((o) => text.includes(o.toLowerCase())) || "other";
 };
 
+// True when a request timestamp falls inside the inclusive From/To range.
+// An unset bound is treated as open, so a one-sided range still works.
+const inDateRange = (dateStr: string, from?: Date, to?: Date): boolean => {
+  if (!from && !to) return true;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return false;
+  if (from && d < startOfDay(from)) return false;
+  if (to && d > endOfDay(to)) return false;
+  return true;
+};
+
 const formatDate = (dateStr: string) => {
   try { return format(new Date(dateStr), "MMM dd, yyyy hh:mm a"); } catch { return dateStr; }
 };
@@ -72,6 +84,8 @@ const AdminRequestsPage = () => {
   const [typeFilter, setTypeFilter] = useState("all");
   const [controllerFilter, setControllerFilter] = useState("all");
   const [remarksFilter, setRemarksFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [selectedRequest, setSelectedRequest] = useState<DriverRequest | null>(null);
   const [responseText, setResponseText] = useState("");
   const [newStatus, setNewStatus] = useState("");
@@ -162,12 +176,13 @@ const AdminRequestsPage = () => {
     if (typeFilter !== "all") filtered = filtered.filter((r) => r.request_type === typeFilter);
     if (controllerFilter !== "all") filtered = filtered.filter((r) => controllerMap[r.driver_id]?.toLowerCase() === controllerFilter.toLowerCase());
     if (selectedCalendarDate) filtered = filtered.filter((r) => r.request_type === "day_off" && extractDayOffDate(r.subject) === selectedCalendarDate);
+    if (dateFrom || dateTo) filtered = filtered.filter((r) => inDateRange(r.created_at, dateFrom, dateTo));
     if (isFleetUser && remarksFilter !== "all") {
       const wanted = remarksFilter === "without" ? null : remarksFilter;
       filtered = filtered.filter((r) => r.status === "approved" && remarkCategory(r.fleet_remarks) === wanted);
     }
     return filtered;
-  }, [requests, searchQuery, statusFilter, typeFilter, controllerFilter, selectedCalendarDate, controllerMap, isFleetUser, remarksFilter]);
+  }, [requests, searchQuery, statusFilter, typeFilter, controllerFilter, selectedCalendarDate, controllerMap, isFleetUser, remarksFilter, dateFrom, dateTo]);
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);
@@ -299,7 +314,7 @@ const AdminRequestsPage = () => {
   }), [filteredRequests]);
 
   const remarkStats = useMemo(() => {
-    const approved = requests.filter((r) => r.status === "approved");
+    const approved = requests.filter((r) => r.status === "approved" && inDateRange(r.created_at, dateFrom, dateTo));
     const counts: Record<string, number> = { without: 0, other: 0 };
     FLEET_REMARKS_OPTIONS.forEach((o) => { counts[o] = 0; });
     approved.forEach((r) => { counts[remarkCategory(r.fleet_remarks) ?? "without"] += 1; });
@@ -309,10 +324,10 @@ const AdminRequestsPage = () => {
       withRemarks: approved.length - counts.without,
       counts,
     };
-  }, [requests]);
+  }, [requests, dateFrom, dateTo]);
 
-  const hasActiveFilters = searchQuery || statusFilter !== "all" || typeFilter !== "all" || controllerFilter !== "all";
-  const clearAllFilters = useCallback(() => { setSearchQuery(""); setStatusFilter("all"); setTypeFilter("all"); setControllerFilter("all"); setSelectedCalendarDate(null); }, []);
+  const hasActiveFilters = searchQuery || statusFilter !== "all" || typeFilter !== "all" || controllerFilter !== "all" || !!dateFrom || !!dateTo;
+  const clearAllFilters = useCallback(() => { setSearchQuery(""); setStatusFilter("all"); setTypeFilter("all"); setControllerFilter("all"); setSelectedCalendarDate(null); setDateFrom(undefined); setDateTo(undefined); }, []);
   const [showDeleteDuplicatesConfirm, setShowDeleteDuplicatesConfirm] = useState(false);
   const [deletingDuplicates, setDeletingDuplicates] = useState(false);
   const duplicateCount = useMemo(() => findDuplicates().length, [findDuplicates]);
@@ -375,7 +390,8 @@ const AdminRequestsPage = () => {
 
       {isFleetUser && (
         <Card className="mb-6 border-amber-200 bg-amber-50/50">
-          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <CardContent className="p-4 flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex-1">
               <p className="text-sm font-semibold">Approved Requests Remarks</p>
               <p className="text-xs text-muted-foreground">
@@ -402,6 +418,12 @@ const AdminRequestsPage = () => {
                 <SelectItem value="other">Other Remarks ({remarkStats.counts.other})</SelectItem>
               </SelectContent>
             </Select>
+            </div>
+            <DateRangePicker
+              from={dateFrom}
+              to={dateTo}
+              onChange={({ from, to }) => { setDateFrom(from); setDateTo(to); }}
+            />
           </CardContent>
         </Card>
       )}
