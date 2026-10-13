@@ -271,6 +271,21 @@ const DriverPortalPage = () => {
       },
     },
     {
+      key: "outstanding",
+      icon: <DollarSign className="w-8 h-8 sm:w-10 sm:h-10" />,
+      title: "Outstanding",
+      gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
+      onClick: () => {
+        const link = document.createElement("a");
+        link.href = "https://script.google.com/macros/s/AKfycbw0pUkyfnFps_fPjjPKdK0IgDKH6rAYwaMaFrGXuw2vlEYz7mHkKMADO5ojlmEOjEjZVg/exec";
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      },
+    },
+    {
       key: "calendar_events",
       icon: <CalendarRange className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Calendar Events",
@@ -294,9 +309,11 @@ const DriverPortalPage = () => {
   ];
 
   // Filter items based on settings (if settings loaded, filter; otherwise show all)
-  const portalItems = loadingSettings 
-    ? allPortalItems 
-    : allPortalItems.filter(item => portalSettings[item.key] !== false);
+  const portalItems = allPortalItems.filter(item =>
+    item.key === "outstanding"
+      ? !loadingSettings && portalSettings.outstanding === true
+      : loadingSettings || portalSettings[item.key] !== false
+  );
 
   // Show messages view if selected
   if (showMessages) {

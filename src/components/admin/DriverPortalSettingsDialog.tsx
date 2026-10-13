@@ -89,6 +89,7 @@ export const DriverPortalSettingsDialog = ({ open, onOpenChange }: DriverPortalS
     survey: "📋",
     sms: "📱",
     yango: "🚕",
+    outstanding: "💲",
   };
 
   return (
