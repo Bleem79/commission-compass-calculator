@@ -356,6 +356,20 @@ const HomePage = () => {
       pageKey: "total-balance-kpi",
       onClick: () => navigate("/total-balance-kpi"),
     });
+    features.push({
+      icon: <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Outstanding",
+      gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
+      onClick: () => {
+        const a = document.createElement("a");
+        a.href = "https://script.google.com/macros/s/AKfycbw0pUkyfnFps_fPjjPKdK0IgDKH6rAYwaMaFrGXuw2vlEYz7mHkKMADO5ojlmEOjEjZVg/exec";
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      },
+    });
   }
 
   if (canAccessAdminPages) {
