@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegistration";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+import PayslipNoticeDialog from "@/components/shared/PayslipNoticeDialog";
 import { QrCode } from "lucide-react";
 
 const DriverQRCodeDialog = lazy(() => import("@/components/driver-portal/DriverQRCodeDialog").then((m) => ({ default: m.DriverQRCodeDialog })));
@@ -113,6 +114,7 @@ const HomePage = () => {
   const [controllerName, setControllerName] = useState<string | null>(null);
   const [controllerAvatarUrl, setControllerAvatarUrl] = useState<string | null>(null);
   const [isQRCodeOpen, setIsQRCodeOpen] = useState(false);
+  const [isPayslipNoticeOpen, setIsPayslipNoticeOpen] = useState(false);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const [badgeImageUrl, setBadgeImageUrl] = useState<string | null>(null);
   const { driverInfo } = useDriverCredentials();
@@ -360,15 +362,7 @@ const HomePage = () => {
       icon: <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Payslip",
       gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
-      onClick: () => {
-        const a = document.createElement("a");
-        a.href = "https://script.google.com/macros/s/AKfycbw0pUkyfnFps_fPjjPKdK0IgDKH6rAYwaMaFrGXuw2vlEYz7mHkKMADO5ojlmEOjEjZVg/exec";
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      },
+      onClick: () => setIsPayslipNoticeOpen(true),
     });
   }
 
@@ -632,6 +626,7 @@ const HomePage = () => {
             driverName={driverInfo.driverName}
           />
         )}
+        <PayslipNoticeDialog open={isPayslipNoticeOpen} onClose={() => setIsPayslipNoticeOpen(false)} />
         <InstallBanner />
         <NotificationPrompt />
       </Suspense>
