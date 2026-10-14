@@ -34,6 +34,7 @@ import { usePushSubscriptionRegistration } from "@/hooks/usePushSubscriptionRegi
 import NotificationBell from "@/components/shared/NotificationBell";
 import { usePrivateMessageAlert } from "@/hooks/usePrivateMessageAlert";
 import { useUnreadMessageReminder } from "@/hooks/useUnreadMessageReminder";
+import PayslipNoticeDialog from "@/components/shared/PayslipNoticeDialog";
 
 interface PortalSetting {
   feature_key: string;
@@ -104,6 +105,7 @@ const DriverPortalPage = () => {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [controllerName, setControllerName] = useState<string | null>(null);
   const [controllerAvatarUrl, setControllerAvatarUrl] = useState<string | null>(null);
+  const [showPayslipNotice, setShowPayslipNotice] = useState(false);
 
   // Register push subscription when driver credentials are available
   usePushSubscriptionRegistration(user?.id, driverInfo?.driverId);
@@ -275,15 +277,7 @@ const DriverPortalPage = () => {
       icon: <DollarSign className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Payslip",
       gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
-      onClick: () => {
-        const link = document.createElement("a");
-        link.href = "https://script.google.com/macros/s/AKfycbw0pUkyfnFps_fPjjPKdK0IgDKH6rAYwaMaFrGXuw2vlEYz7mHkKMADO5ojlmEOjEjZVg/exec";
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      },
+      onClick: () => setShowPayslipNotice(true),
     },
     {
       key: "calendar_events",
