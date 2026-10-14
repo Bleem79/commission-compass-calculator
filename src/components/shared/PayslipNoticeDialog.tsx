@@ -25,7 +25,6 @@ export const PayslipNoticeDialog = ({
   const [progress, setProgress] = useState(100);
   const [secondsLeft, setSecondsLeft] = useState(5);
   const [shown, setShown] = useState(false);
-  const [attempted, setAttempted] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -44,7 +43,6 @@ export const PayslipNoticeDialog = ({
 
     setProgress(100);
     setSecondsLeft(5);
-    setAttempted(false);
     setBlocked(false);
     setShown(false);
 
@@ -59,7 +57,6 @@ export const PayslipNoticeDialog = ({
       if (remaining <= 0) {
         if (timerRef.current) clearInterval(timerRef.current);
         timerRef.current = null;
-        setAttempted(true);
         if (!launch()) setBlocked(true);
       }
     }, 80);
