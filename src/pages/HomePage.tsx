@@ -358,7 +358,7 @@ const HomePage = () => {
     });
     features.push({
       icon: <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" />,
-      title: "Outstanding",
+      title: "Payslip",
       gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
       onClick: () => {
         const a = document.createElement("a");
