@@ -110,7 +110,7 @@ export const DriverPortalSettingsDialog = ({ open, onOpenChange }: DriverPortalS
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="space-y-4 py-4">
+          <div className="max-h-[60vh] overflow-y-auto overscroll-contain space-y-4 py-4 pr-1 -mr-1">
             {settings.map((setting) => (
               <div 
                 key={setting.id} 
