@@ -13,6 +13,7 @@ import { PageLayout } from "@/components/shared/PageLayout";
 import { useDriverCredentialsManagement } from "@/hooks/useDriverCredentialsManagement";
 import { OsrDriverUploadDialog } from "@/components/admin/OsrDriverUploadDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const DriverManagementPage = () => {
   const {
@@ -28,6 +29,37 @@ const DriverManagementPage = () => {
   } = useDriverCredentialsManagement();
 
   const [osrDriverIds, setOsrDriverIds] = useState<Set<string>>(new Set());
+  const [isFixingBlank, setIsFixingBlank] = useState(false);
+  const blankPasswordCount = drivers.filter((d) => !d.password_text).length;
+
+  const handleFixBlankPasswords = async () => {
+    if (!window.confirm(`Generate new passwords for ${blankPasswordCount} driver(s) with blank passwords? The list of new passwords will download as an Excel file.`)) return;
+    setIsFixingBlank(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("fix-blank-passwords", { body: {} });
+      if (error) throw error;
+      const result = data as any;
+      const fixed: Array<{ driverId: string; password: string }> = result?.fixed || [];
+      const errors: Array<{ driverId: string; error: string }> = result?.errors || [];
+      if (fixed.length === 0) {
+        toast.info(errors.length > 0 ? `Could not fix ${errors.length} driver(s)` : "No blank passwords found");
+      } else {
+        const XLSX = await import("xlsx");
+        const rows = fixed.map((f) => ({ "Driver ID": f.driverId, "New Password": f.password }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "New Passwords");
+        XLSX.writeFile(wb, `New_Driver_Passwords_${new Date().toISOString().split("T")[0]}.xlsx`);
+        toast.success(`New passwords generated for ${fixed.length} driver(s) — Excel downloaded`);
+        if (errors.length > 0) toast.error(`Failed for ${errors.length} driver(s)`);
+      }
+      await fetchDrivers();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to fix blank passwords");
+    } finally {
+      setIsFixingBlank(false);
+    }
+  };
 
   const fetchOsrDrivers = useCallback(async () => {
     const { data } = await supabase
@@ -144,6 +176,10 @@ const DriverManagementPage = () => {
                 <>
                   <Button variant="outline" size="sm" className="border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary" onClick={() => bulkUpdateStatus('enabled')} disabled={bulkUpdating || drivers.length === 0 || enabledCount === drivers.length}><CheckCircle2 className="h-4 w-4 mr-1" />Enable All</Button>
                   <Button variant="outline" size="sm" className="border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive" onClick={() => bulkUpdateStatus('disabled')} disabled={bulkUpdating || drivers.length === 0 || disabledCount === drivers.length}><XCircle className="h-4 w-4 mr-1" />Disable All</Button>
+                  <Button variant="outline" size="sm" className="border-amber-500/40 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800" onClick={handleFixBlankPasswords} disabled={isFixingBlank || blankPasswordCount === 0}>
+                    {isFixingBlank ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <KeyRound className="h-4 w-4 mr-1" />}
+                    Fix Blank Passwords{blankPasswordCount > 0 ? ` (${blankPasswordCount})` : ""}
+                  </Button>
                 </>
               )}
               <div className="relative">
