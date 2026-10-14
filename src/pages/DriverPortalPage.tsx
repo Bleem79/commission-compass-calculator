@@ -273,7 +273,7 @@ const DriverPortalPage = () => {
     {
       key: "outstanding",
       icon: <DollarSign className="w-8 h-8 sm:w-10 sm:h-10" />,
-      title: "Outstanding",
+      title: "Payslip",
       gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
       onClick: () => {
         const link = document.createElement("a");
