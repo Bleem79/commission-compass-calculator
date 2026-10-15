@@ -14,8 +14,9 @@ interface PayslipNoticeDialogProps {
 
 /**
  * Full-screen flash notice shown when a driver taps "Payslip".
- * Stays up for ~5 seconds, tells the driver which credentials to use,
- * then opens the payslip page (or asks for a tap if the browser blocked it).
+ * Stays up for ~5 seconds telling the driver which credentials to use.
+ * The payslip page is NEVER opened automatically — it only opens when the
+ * driver taps the "Open Payslip" button.
  */
 export const PayslipNoticeDialog = ({
   open,
@@ -25,17 +26,20 @@ export const PayslipNoticeDialog = ({
   const [progress, setProgress] = useState(100);
   const [secondsLeft, setSecondsLeft] = useState(5);
   const [shown, setShown] = useState(false);
-  const [blocked, setBlocked] = useState(false);
+  const [awaitingTap, setAwaitingTap] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const rafRef = useRef<number | null>(null);
 
   const launch = useCallback(() => {
-    const win = window.open(url, "_blank", "noopener,noreferrer");
-    if (win) {
-      onClose();
-      return true;
-    }
-    return false;
+    // Use a real link click so the browser treats it as a user gesture.
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    onClose();
   }, [url, onClose]);
 
   useEffect(() => {
@@ -43,7 +47,7 @@ export const PayslipNoticeDialog = ({
 
     setProgress(100);
     setSecondsLeft(5);
-    setBlocked(false);
+    setAwaitingTap(false);
     setShown(false);
 
     rafRef.current = requestAnimationFrame(() => setShown(true));
@@ -57,7 +61,8 @@ export const PayslipNoticeDialog = ({
       if (remaining <= 0) {
         if (timerRef.current) clearInterval(timerRef.current);
         timerRef.current = null;
-        if (!launch()) setBlocked(true);
+        // Countdown finished: keep the notice on screen and wait for a tap.
+        setAwaitingTap(true);
       }
     }, 80);
 
@@ -67,7 +72,7 @@ export const PayslipNoticeDialog = ({
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     };
-  }, [open, launch]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -134,19 +139,19 @@ export const PayslipNoticeDialog = ({
               />
             </div>
             <p className="mt-2 text-center text-xs font-medium text-white/85">
-              {blocked
+              {awaitingTap
                 ? "Tap the button below to open the Payslip"
-                : `Opening the Payslip in a new tab in ${secondsLeft} second${secondsLeft === 1 ? "" : "s"}...`}
+                : `Please read this. The Payslip opens only when you tap the button (${secondsLeft} second${secondsLeft === 1 ? "" : "s"})`}
             </p>
           </div>
 
           <button
             type="button"
             onClick={() => {
-              if (!launch()) setBlocked(true);
+              launch();
             }}
             className={`mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-base font-bold shadow-lg transition-all active:scale-[0.98] ${
-              blocked
+              awaitingTap
                 ? "bg-white text-teal-700 ring-2 ring-white/70 animate-pulse"
                 : "bg-white/20 text-white hover:bg-white/30"
             }`}
