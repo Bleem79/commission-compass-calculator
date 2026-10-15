@@ -31,12 +31,15 @@ export const PayslipNoticeDialog = ({
   const rafRef = useRef<number | null>(null);
 
   const launch = useCallback(() => {
-    const win = window.open(url, "_blank", "noopener,noreferrer");
-    if (win) {
-      onClose();
-      return true;
-    }
-    return false;
+    // Use a real link click so the browser treats it as a user gesture.
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    onClose();
   }, [url, onClose]);
 
   useEffect(() => {
