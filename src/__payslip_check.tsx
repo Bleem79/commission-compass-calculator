@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import PayslipNoticeDialog from "./components/shared/PayslipNoticeDialog";
 
-const noop = new URLSearchParams(location.search).get("noop") === "1";
+const params = new URLSearchParams(location.search);
+const target = params.get("target") || undefined;
 
 function Check() {
   const [open, setOpen] = useState(false);
@@ -13,9 +14,8 @@ function Check() {
       </button>
       <PayslipNoticeDialog
         open={open}
-        onClose={() => {
-          if (!noop) setOpen(false);
-        }}
+        onClose={() => setOpen(false)}
+        url={target}
       />
     </div>
   );
