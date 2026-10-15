@@ -443,6 +443,11 @@ const DriverPortalPage = () => {
           </footer>
         </div>
       </div>
+
+      <PayslipNoticeDialog
+        open={showPayslipNotice}
+        onClose={() => setShowPayslipNotice(false)}
+      />
     </div>
   );
 };
