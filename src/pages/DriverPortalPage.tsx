@@ -367,7 +367,15 @@ const DriverPortalPage = () => {
                 Revenue Controller In Charge:{" "}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button className="text-white/80 font-medium underline decoration-dotted underline-offset-2 hover:text-white transition-colors">
+                    <button className="inline-flex items-center gap-2 align-middle text-white/80 font-medium underline decoration-dotted underline-offset-2 hover:text-white transition-colors">
+                      <Avatar className="h-6 w-6 border border-white/30">
+                        {controllerAvatarUrl ? (
+                          <AvatarImage src={controllerAvatarUrl} alt={controllerName} />
+                        ) : null}
+                        <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
+                          {controllerName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       {controllerName}
                     </button>
                   </PopoverTrigger>
