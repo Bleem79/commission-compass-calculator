@@ -240,6 +240,18 @@ const DriverActivityLogsPage = () => {
                 <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="pl-9 w-full sm:w-48" />
               </div>
+              <Select value={userTypeFilter} onValueChange={(v) => setUserTypeFilter(v as any)}>
+                <SelectTrigger className="w-full sm:w-52">
+                  <Users className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="User Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  <SelectItem value="driver">Drivers</SelectItem>
+                  <SelectItem value="controller">Revenue Controllers</SelectItem>
+                  <SelectItem value="other">Other Users</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button onClick={fetchLogs} variant="outline" size="sm" className="gap-2"><RefreshCw className="h-4 w-4" />Refresh</Button>
