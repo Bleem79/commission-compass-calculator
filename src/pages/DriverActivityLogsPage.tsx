@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, RefreshCw, LogIn, LogOut, Calendar, Radio, BarChart3 } from "lucide-react";
+import { Search, RefreshCw, LogIn, LogOut, Calendar, Radio, BarChart3, Users } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import ActivityStatistics from "@/components/activity/ActivityStatistics";
@@ -38,6 +39,46 @@ const DriverActivityLogsPage = () => {
   const [exportTo, setExportTo] = useState("");
   const [exporting, setExporting] = useState(false);
   const [activityFilter, setActivityFilter] = useState<"all" | "login" | "logout">("all");
+  const [userTypeFilter, setUserTypeFilter] = useState<"all" | "driver" | "controller" | "other">("all");
+  const [driverIdSet, setDriverIdSet] = useState<Set<string>>(new Set());
+  const [roleMap, setRoleMap] = useState<Map<string, string>>(new Map());
+
+  // Load driver IDs and user roles once so we can classify each log entry
+  useEffect(() => {
+    const loadClassification = async () => {
+      try {
+        const ids = new Set<string>();
+        let from = 0;
+        while (true) {
+          const { data } = await supabase.from("driver_credentials").select("driver_id").range(from, from + 999);
+          if (!data || data.length === 0) break;
+          data.forEach((d: any) => d.driver_id && ids.add(String(d.driver_id)));
+          if (data.length < 1000) break;
+          from += 1000;
+        }
+        setDriverIdSet(ids);
+
+        const roles = new Map<string, string>();
+        from = 0;
+        while (true) {
+          const { data } = await supabase.from("user_roles").select("user_id, role").range(from, from + 999);
+          if (!data || data.length === 0) break;
+          data.forEach((r: any) => roles.set(r.user_id, r.role));
+          if (data.length < 1000) break;
+          from += 1000;
+        }
+        setRoleMap(roles);
+      } catch (e) { console.error("Classification load error:", e); }
+    };
+    loadClassification();
+  }, []);
+
+  const getUserType = (log: ActivityLog): "driver" | "controller" | "other" => {
+    if (log.driver_id && driverIdSet.has(String(log.driver_id))) return "driver";
+    const role = roleMap.get(log.user_id);
+    if (role === "user" || role === "advanced") return "controller";
+    return "other";
+  };
 
   useEffect(() => {
     if (!isAuthenticated) { navigate("/login"); return; }
