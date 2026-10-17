@@ -50,17 +50,16 @@ interface PortalCardProps {
   alert?: boolean;
 }
 
-const PortalCard = ({ icon, title, gradient, onClick, badge, alert }: PortalCardProps) => (
+const PortalCard = ({ icon, title, onClick, badge, alert }: PortalCardProps) => (
   <button
     onClick={onClick}
     className={cn(
       "group relative overflow-hidden rounded-2xl p-6 sm:p-8 text-white transition-all duration-300",
-      "hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]",
+      "bg-[#161616] border border-white/10",
+      "hover:scale-[1.02] hover:border-yellow-400/50 hover:shadow-[0_10px_30px_-10px_rgba(250,204,21,0.35)] active:scale-[0.98]",
       "flex flex-col items-center justify-center gap-4",
       "min-h-[160px] sm:min-h-[180px]",
-      "backdrop-blur-sm border border-white/20",
-      alert && "ring-2 ring-red-400 ring-offset-2 ring-offset-transparent animate-pulse",
-      gradient
+      alert && "ring-2 ring-red-400 ring-offset-2 ring-offset-transparent animate-pulse"
     )}
   >
     {/* Badge */}
@@ -69,22 +68,22 @@ const PortalCard = ({ icon, title, gradient, onClick, badge, alert }: PortalCard
         <span className="text-xs font-bold text-white">{badge > 99 ? "99+" : badge}</span>
       </div>
     )}
-    
+
     {/* Shimmer effect */}
-    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-    
+    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-yellow-400/10 to-transparent" />
+
     {/* Icon container */}
-    <div className="relative z-10 p-4 rounded-2xl bg-white/20 backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+    <div className="relative z-10 p-4 rounded-2xl bg-yellow-400 text-black shadow-[0_4px_14px_rgba(250,204,21,0.35)] group-hover:scale-110 transition-transform duration-300">
       <div className={cn(alert && "animate-bell-ring")}>{icon}</div>
     </div>
-    
+
     {/* Title */}
-    <h3 className="relative z-10 text-sm sm:text-base font-semibold text-center leading-tight">
+    <h3 className="relative z-10 text-sm sm:text-base font-semibold text-center leading-tight text-white/90">
       {title}
     </h3>
-    
+
     {/* Arrow indicator */}
-    <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-2 transition-all duration-300 w-5 h-5" />
+    <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-2 transition-all duration-300 w-5 h-5 text-yellow-400" />
   </button>
 );
 
@@ -315,12 +314,12 @@ const DriverPortalPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0a0a0a] relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/30 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-yellow-400/5 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent" />
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col p-4 sm:p-6 lg:p-8">
