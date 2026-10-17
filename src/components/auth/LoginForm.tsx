@@ -110,18 +110,18 @@ export const LoginForm = () => {
   return (
     <form onSubmit={handleLogin} className="space-y-5">
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-500 border-l-4 border-red-500">
+        <div className="mb-4 rounded-md bg-red-500/10 p-3 text-sm text-red-400 border-l-4 border-red-500">
           {error}
         </div>
       )}
       <div className="space-y-2">
-        <Label htmlFor="identifier" className="text-sm font-medium text-gray-700">Email or Driver ID</Label>
+        <Label htmlFor="identifier" className="text-sm font-medium text-white/80">Email or Driver ID</Label>
         <div className="relative">
-          <User className="absolute left-3 top-2.5 h-5 w-5 text-purple-500" />
+          <User className="absolute left-3 top-2.5 h-5 w-5 text-yellow-400" />
           <Input
             id="identifier"
             placeholder="Enter email or driver ID"
-            className="pl-10 border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all"
+            className="pl-10 bg-[#0f0f0f] border-white/15 text-white placeholder:text-white/30 focus:border-yellow-400 focus:ring focus:ring-yellow-400/20 transition-all"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             disabled={loading}
@@ -129,14 +129,14 @@ export const LoginForm = () => {
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
+        <Label htmlFor="password" className="text-sm font-medium text-white/80">Password</Label>
         <div className="relative">
-          <Key className="absolute left-3 top-2.5 h-5 w-5 text-purple-500" />
+          <Key className="absolute left-3 top-2.5 h-5 w-5 text-yellow-400" />
           <Input
             id="password"
             type={showPassword ? "text" : "password"}
             placeholder="Enter password"
-            className="pl-10 pr-10 border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all"
+            className="pl-10 pr-10 bg-[#0f0f0f] border-white/15 text-white placeholder:text-white/30 focus:border-yellow-400 focus:ring focus:ring-yellow-400/20 transition-all"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
@@ -144,7 +144,7 @@ export const LoginForm = () => {
           <button 
             type="button" 
             onClick={toggleShowPassword} 
-            className="absolute right-3 top-2.5 text-gray-400 hover:text-purple-600 transition-colors"
+            className="absolute right-3 top-2.5 text-white/40 hover:text-yellow-400 transition-colors"
           >
             {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           </button>
@@ -152,7 +152,7 @@ export const LoginForm = () => {
       </div>
       <Button 
         type="submit" 
-        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-md"
+        className="w-full bg-yellow-400 text-black font-semibold hover:bg-yellow-300 shadow-[0_4px_14px_rgba(250,204,21,0.35)]"
         disabled={loading}
       >
         <div className="flex items-center justify-center">
