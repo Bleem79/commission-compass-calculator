@@ -69,16 +69,15 @@ type FeatureItem = FeatureCardProps & {
   pageKey?: string;
 };
 
-const FeatureCard = ({ icon, title, gradient, onClick, className, badge }: FeatureCardProps) => (
+const FeatureCard = ({ icon, title, onClick, className, badge }: FeatureCardProps) => (
   <button
     onClick={onClick}
     className={cn(
       "group relative overflow-hidden rounded-2xl p-4 sm:p-6 text-white transition-all duration-300",
-      "hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]",
+      "bg-[#161616] border border-white/10",
+      "hover:scale-[1.02] hover:border-yellow-400/50 hover:shadow-[0_10px_30px_-10px_rgba(250,204,21,0.35)] active:scale-[0.98]",
       "flex flex-col items-center justify-center gap-2 sm:gap-3",
       "min-h-[100px] sm:min-h-[140px]",
-      "border border-white/20",
-      gradient,
       className
     )}
   >
@@ -88,17 +87,17 @@ const FeatureCard = ({ icon, title, gradient, onClick, className, badge }: Featu
       </span>
     )}
 
-    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-yellow-400/10 to-transparent" />
 
-    <div className="relative z-10 p-2 sm:p-3 rounded-xl bg-white/20 group-hover:bg-white/30 transition-colors">
+    <div className="relative z-10 p-2.5 sm:p-3.5 rounded-2xl bg-yellow-400 text-black shadow-[0_4px_14px_rgba(250,204,21,0.35)] group-hover:scale-110 transition-transform duration-300">
       {icon}
     </div>
 
-    <h3 className="relative z-10 text-xs sm:text-sm font-semibold text-center leading-tight max-w-full">
+    <h3 className="relative z-10 text-xs sm:text-sm font-semibold text-center leading-tight max-w-full text-white/90">
       {title}
     </h3>
 
-    <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-2 transition-all duration-300 w-4 h-4 sm:w-5 sm:h-5" />
+    <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-2 transition-all duration-300 w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
   </button>
 );
 
@@ -482,25 +481,25 @@ const HomePage = () => {
 
   if (shouldApplyPagePermissions && permissionsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0a0a0a] relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-yellow-400/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent" />
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col p-4 sm:p-6 lg:p-8">
         <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col">
           <header className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
             <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
+              <div className="p-2 sm:p-3 rounded-xl bg-yellow-400/10 backdrop-blur-sm border border-yellow-400/30">
                 <img src="/lovable-uploads/aman-logo-footer.png" alt="Aman Taxi" className="h-6 sm:h-8 object-contain" />
               </div>
               <div>
@@ -528,7 +527,7 @@ const HomePage = () => {
           </header>
 
           {user && (
-            <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+            <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl bg-[#161616] border border-white/10">
               <div className="flex items-center gap-4">
                 {driverInfo?.driverId ? (
                   <button
@@ -537,7 +536,7 @@ const HomePage = () => {
                       "w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center text-white transition-colors hover:opacity-90 active:scale-95 shrink-0 overflow-hidden",
                       badgeImageUrl
                         ? "bg-white/10 p-1"
-                        : "bg-gradient-to-br from-primary to-orange-500"
+                        : "bg-yellow-400 text-black"
                     )}
                     title="Show Driver ID Card"
                   >
@@ -552,7 +551,7 @@ const HomePage = () => {
                     )}
                   </button>
                 ) : (
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-yellow-400 flex items-center justify-center text-black font-bold text-lg sm:text-xl shrink-0">
                     {(user.username || user.email || "?").charAt(0).toUpperCase()}
                   </div>
                 )}
