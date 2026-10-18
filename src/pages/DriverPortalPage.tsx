@@ -386,29 +386,32 @@ const DriverPortalPage = () => {
                 </Popover>
               </p>
             )}
+            </div>
           </div>
+        </div>
 
+        <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col p-4 sm:p-6 lg:p-8 -mt-10">
           {/* Portal Cards Grid */}
           {unreadCount > 0 && (
             <button
               onClick={openMessages}
-              className="mb-6 w-full flex items-center gap-3 rounded-xl border border-red-400/40 bg-red-500/15 backdrop-blur-sm px-4 py-3 text-left transition-colors hover:bg-red-500/25"
+              className="mb-6 w-full flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left transition-colors hover:bg-red-100 shadow-sm"
             >
-              <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/30">
-                <Mail className="h-5 w-5 text-white animate-bell-ring" />
+              <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/20">
+                <Mail className="h-5 w-5 text-red-600 animate-bell-ring" />
                 <span className="absolute inset-0 rounded-full bg-red-400/40 animate-ping" />
               </span>
               <span className="flex-1">
-                <span className="block text-sm font-semibold text-white">
+                <span className="block text-sm font-semibold text-red-700">
                   {unreadCount === 1
                     ? "You have 1 unread message"
                     : `You have ${unreadCount} unread messages`}
                 </span>
-                <span className="block text-xs text-white/70">
+                <span className="block text-xs text-red-500">
                   Tap here to read your private messages from Admin.
                 </span>
               </span>
-              <ChevronRight className="h-5 w-5 text-white/70" />
+              <ChevronRight className="h-5 w-5 text-red-400" />
             </button>
           )}
 
@@ -429,14 +432,14 @@ const DriverPortalPage = () => {
           </div>
 
           {/* Footer */}
-          <footer className="mt-8 pt-6 border-t border-white/10">
+          <footer className="mt-8 pt-6 border-t border-slate-200">
             <div className="flex flex-col items-center gap-3">
-              <img 
-                src="/lovable-uploads/aman-logo-footer.png" 
-                alt="Aman Taxi Sharjah" 
+              <img
+                src="/lovable-uploads/aman-logo-footer.png"
+                alt="Aman Taxi Sharjah"
                 className="h-8 sm:h-10 object-contain opacity-70"
               />
-              <p className="text-xs text-white/40">© {new Date().getFullYear()} All Rights Reserved</p>
+              <p className="text-xs text-slate-400">© {new Date().getFullYear()} All Rights Reserved</p>
             </div>
           </footer>
         </div>
