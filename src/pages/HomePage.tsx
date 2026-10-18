@@ -530,8 +530,8 @@ const HomePage = () => {
                     className={cn(
                       "w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center text-white transition-colors hover:opacity-90 active:scale-95 shrink-0 overflow-hidden",
                       badgeImageUrl
-                        ? "bg-white/10 p-1"
-                        : "bg-yellow-400 text-black"
+                        ? "bg-slate-100 p-1"
+                        : "bg-[#16324f] text-white"
                     )}
                     title="Show Driver ID Card"
                   >
@@ -546,30 +546,30 @@ const HomePage = () => {
                     )}
                   </button>
                 ) : (
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-yellow-400 flex items-center justify-center text-black font-bold text-lg sm:text-xl shrink-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#16324f] flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0">
                     {(user.username || user.email || "?").charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-white font-semibold text-base sm:text-lg truncate">
+                    <h2 className="text-slate-800 font-semibold text-base sm:text-lg truncate">
                       {driverInfo?.driverId || user.username || user.email}
                     </h2>
                   </div>
-                  <p className="text-white/60 text-xs sm:text-sm truncate">
+                  <p className="text-slate-500 text-xs sm:text-sm truncate">
                     {driverInfo?.driverName || (user.email?.endsWith("@driver.temp") ? "" : user.email)}
                   </p>
                 </div>
                 {controllerName && (
                   <div className="flex flex-col items-center gap-1 shrink-0">
-                    <Avatar className="h-12 w-12 sm:h-14 sm:w-14 border-2 border-white/20">
+                    <Avatar className="h-12 w-12 sm:h-14 sm:w-14 border-2 border-slate-200">
                       {controllerAvatarUrl ? <AvatarImage src={controllerAvatarUrl} alt={controllerName} /> : null}
-                      <AvatarFallback className="text-lg bg-primary/20 text-primary">
+                      <AvatarFallback className="text-lg bg-primary/10 text-primary">
                         {controllerName.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-[10px] text-white/50">Revenue Controller</span>
-                    <span className="text-[11px] text-white/80 font-medium max-w-[100px] text-center truncate">{controllerName}</span>
+                    <span className="text-[10px] text-slate-400">Revenue Controller</span>
+                    <span className="text-[11px] text-slate-700 font-medium max-w-[100px] text-center truncate">{controllerName}</span>
                   </div>
                 )}
               </div>
@@ -577,7 +577,7 @@ const HomePage = () => {
           )}
 
           <div className="flex-1">
-            <h2 className="text-white/80 text-sm font-medium mb-4 uppercase tracking-wider">Quick Actions</h2>
+            <h2 className="text-slate-500 text-sm font-medium mb-4 uppercase tracking-wider">Quick Actions</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {visibleFeatures.map((feature) => (
                 <FeatureCard
@@ -592,10 +592,10 @@ const HomePage = () => {
             </div>
           </div>
 
-          <footer className="mt-8 sm:mt-12 pt-6 border-t border-white/10">
+          <footer className="mt-8 sm:mt-12 pt-6 border-t border-slate-200">
             <div className="flex flex-col items-center gap-3">
               <img src="/lovable-uploads/aman-logo-footer.png" alt="Aman Taxi Sharjah" className="h-8 sm:h-10 object-contain opacity-70" />
-              <p className="text-xs text-white/40">© {new Date().getFullYear()} All Rights Reserved</p>
+              <p className="text-xs text-slate-400">© {new Date().getFullYear()} All Rights Reserved</p>
             </div>
           </footer>
         </div>
