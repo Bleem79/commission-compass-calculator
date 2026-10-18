@@ -115,13 +115,13 @@ export const LoginForm = () => {
         </div>
       )}
       <div className="space-y-2">
-        <Label htmlFor="identifier" className="text-sm font-medium text-white/80">Email or Driver ID</Label>
+        <Label htmlFor="identifier" className="text-sm font-medium text-slate-600">Email or Driver ID</Label>
         <div className="relative">
-          <User className="absolute left-3 top-2.5 h-5 w-5 text-yellow-400" />
+          <User className="absolute left-3 top-2.5 h-5 w-5 text-[#2b6cb0]" />
           <Input
             id="identifier"
             placeholder="Enter email or driver ID"
-            className="pl-10 bg-[#0f0f0f] border-white/15 text-white placeholder:text-white/30 focus:border-yellow-400 focus:ring focus:ring-yellow-400/20 transition-all"
+            className="pl-10 bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400 focus:border-[#2b6cb0] focus:ring focus:ring-[#2b6cb0]/20 transition-all"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             disabled={loading}
@@ -129,14 +129,14 @@ export const LoginForm = () => {
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-sm font-medium text-white/80">Password</Label>
+        <Label htmlFor="password" className="text-sm font-medium text-slate-600">Password</Label>
         <div className="relative">
-          <Key className="absolute left-3 top-2.5 h-5 w-5 text-yellow-400" />
+          <Key className="absolute left-3 top-2.5 h-5 w-5 text-[#2b6cb0]" />
           <Input
             id="password"
             type={showPassword ? "text" : "password"}
             placeholder="Enter password"
-            className="pl-10 pr-10 bg-[#0f0f0f] border-white/15 text-white placeholder:text-white/30 focus:border-yellow-400 focus:ring focus:ring-yellow-400/20 transition-all"
+            className="pl-10 pr-10 bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400 focus:border-[#2b6cb0] focus:ring focus:ring-[#2b6cb0]/20 transition-all"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
@@ -144,7 +144,7 @@ export const LoginForm = () => {
           <button 
             type="button" 
             onClick={toggleShowPassword} 
-            className="absolute right-3 top-2.5 text-white/40 hover:text-yellow-400 transition-colors"
+            className="absolute right-3 top-2.5 text-slate-400 hover:text-[#2b6cb0] transition-colors"
           >
             {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           </button>
@@ -152,7 +152,7 @@ export const LoginForm = () => {
       </div>
       <Button 
         type="submit" 
-        className="w-full bg-yellow-400 text-black font-semibold hover:bg-yellow-300 shadow-[0_4px_14px_rgba(250,204,21,0.35)]"
+        className="w-full bg-[#2b6cb0] text-white font-semibold hover:bg-[#25597f] shadow-[0_4px_14px_rgba(43,108,176,0.35)]"
         disabled={loading}
       >
         <div className="flex items-center justify-center">

@@ -50,13 +50,13 @@ interface PortalCardProps {
   alert?: boolean;
 }
 
-const PortalCard = ({ icon, title, onClick, badge, alert }: PortalCardProps) => (
+const PortalCard = ({ icon, title, gradient, onClick, badge, alert }: PortalCardProps) => (
   <button
     onClick={onClick}
     className={cn(
-      "group relative overflow-hidden rounded-2xl p-6 sm:p-8 text-white transition-all duration-300",
-      "bg-[#161616] border border-white/10",
-      "hover:scale-[1.02] hover:border-yellow-400/50 hover:shadow-[0_10px_30px_-10px_rgba(250,204,21,0.35)] active:scale-[0.98]",
+      "group relative overflow-hidden rounded-2xl p-6 sm:p-8 transition-all duration-300",
+      "bg-white border border-slate-200 shadow-sm",
+      "hover:scale-[1.02] hover:border-[#2b6cb0]/50 hover:shadow-[0_10px_30px_-10px_rgba(43,108,176,0.35)] active:scale-[0.98]",
       "flex flex-col items-center justify-center gap-4",
       "min-h-[160px] sm:min-h-[180px]",
       alert && "ring-2 ring-red-400 ring-offset-2 ring-offset-transparent animate-pulse"
@@ -69,21 +69,18 @@ const PortalCard = ({ icon, title, onClick, badge, alert }: PortalCardProps) => 
       </div>
     )}
 
-    {/* Shimmer effect */}
-    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-yellow-400/10 to-transparent" />
-
     {/* Icon container */}
-    <div className="relative z-10 p-4 rounded-2xl bg-yellow-400 text-black shadow-[0_4px_14px_rgba(250,204,21,0.35)] group-hover:scale-110 transition-transform duration-300">
+    <div className={cn(
+      "relative z-10 p-4 rounded-full text-white shadow-md group-hover:scale-110 transition-transform duration-300",
+      gradient
+    )}>
       <div className={cn(alert && "animate-bell-ring")}>{icon}</div>
     </div>
 
     {/* Title */}
-    <h3 className="relative z-10 text-sm sm:text-base font-semibold text-center leading-tight text-white/90">
+    <h3 className="relative z-10 text-sm sm:text-base font-semibold text-center leading-tight text-slate-700">
       {title}
     </h3>
-
-    {/* Arrow indicator */}
-    <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-2 transition-all duration-300 w-5 h-5 text-yellow-400" />
   </button>
 );
 
@@ -314,60 +311,54 @@ const DriverPortalPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-yellow-400/5 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent" />
-      </div>
-
-      <div className="relative z-10 min-h-screen flex flex-col p-4 sm:p-6 lg:p-8">
-        <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
-          
-          {/* Header */}
-          <header className="flex items-center justify-between gap-4 mb-8">
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
-              onClick={handleClose}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Back to Home</span>
-            </Button>
-            
-            <div className="flex items-center gap-2">
-              <NotificationBell
-                driverId={driverInfo?.driverId}
-                count={unreadCount}
-                onClick={() => { markAllAsRead(); clearAlert(); setShowMessages(true); }}
-              />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-white/70 hover:text-white hover:bg-white/10"
+    <div className="min-h-screen bg-[#eef2f6] relative overflow-hidden">
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Navy header band */}
+        <div className="bg-[#16324f] shadow-md pb-16">
+          <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+            {/* Header */}
+            <header className="flex items-center justify-between gap-4 py-3 sm:py-4">
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 hover:text-white"
                 onClick={handleClose}
               >
-                <X className="h-6 w-6" />
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Back to Home</span>
               </Button>
-            </div>
-          </header>
 
-          {/* Title */}
-          <div className="text-center mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Driver Main Portal</h1>
-            {user && (
-              <p className="text-white/60 text-sm">
-                Welcome, {driverInfo?.driverName || driverInfo?.driverId || user.username || user.email}
-              </p>
-            )}
-            {controllerName && (
-              <p className="text-white/50 text-xs mt-1">
-                Revenue Controller In Charge:{" "}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button className="inline-flex items-center gap-2 align-middle text-white/80 font-medium underline decoration-dotted underline-offset-2 hover:text-white transition-colors">
-                      <Avatar className="h-6 w-6 border border-white/30">
+              <div className="flex items-center gap-2">
+                <NotificationBell
+                  driverId={driverInfo?.driverId}
+                  count={unreadCount}
+                  onClick={() => { markAllAsRead(); clearAlert(); setShowMessages(true); }}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white/70 hover:text-white hover:bg-white/10"
+                  onClick={handleClose}
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
+            </header>
+
+            {/* Title */}
+            <div className="text-center mt-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Driver Main Portal</h1>
+              {user && (
+                <p className="text-white/60 text-sm">
+                  Welcome, {driverInfo?.driverName || driverInfo?.driverId || user.username || user.email}
+                </p>
+              )}
+              {controllerName && (
+                <p className="text-white/50 text-xs mt-1">
+                  Revenue Controller In Charge:{" "}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="inline-flex items-center gap-2 align-middle text-white/80 font-medium underline decoration-dotted underline-offset-2 hover:text-white transition-colors">
+                        <Avatar className="h-6 w-6 border border-white/30">
                         {controllerAvatarUrl ? (
                           <AvatarImage src={controllerAvatarUrl} alt={controllerName} />
                         ) : null}
@@ -395,29 +386,32 @@ const DriverPortalPage = () => {
                 </Popover>
               </p>
             )}
+            </div>
           </div>
+        </div>
 
+        <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col p-4 sm:p-6 lg:p-8 -mt-10">
           {/* Portal Cards Grid */}
           {unreadCount > 0 && (
             <button
               onClick={openMessages}
-              className="mb-6 w-full flex items-center gap-3 rounded-xl border border-red-400/40 bg-red-500/15 backdrop-blur-sm px-4 py-3 text-left transition-colors hover:bg-red-500/25"
+              className="mb-6 w-full flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left transition-colors hover:bg-red-100 shadow-sm"
             >
-              <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/30">
-                <Mail className="h-5 w-5 text-white animate-bell-ring" />
+              <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/20">
+                <Mail className="h-5 w-5 text-red-600 animate-bell-ring" />
                 <span className="absolute inset-0 rounded-full bg-red-400/40 animate-ping" />
               </span>
               <span className="flex-1">
-                <span className="block text-sm font-semibold text-white">
+                <span className="block text-sm font-semibold text-red-700">
                   {unreadCount === 1
                     ? "You have 1 unread message"
                     : `You have ${unreadCount} unread messages`}
                 </span>
-                <span className="block text-xs text-white/70">
+                <span className="block text-xs text-red-500">
                   Tap here to read your private messages from Admin.
                 </span>
               </span>
-              <ChevronRight className="h-5 w-5 text-white/70" />
+              <ChevronRight className="h-5 w-5 text-red-400" />
             </button>
           )}
 
@@ -438,14 +432,14 @@ const DriverPortalPage = () => {
           </div>
 
           {/* Footer */}
-          <footer className="mt-8 pt-6 border-t border-white/10">
+          <footer className="mt-8 pt-6 border-t border-slate-200">
             <div className="flex flex-col items-center gap-3">
-              <img 
-                src="/lovable-uploads/aman-logo-footer.png" 
-                alt="Aman Taxi Sharjah" 
+              <img
+                src="/lovable-uploads/aman-logo-footer.png"
+                alt="Aman Taxi Sharjah"
                 className="h-8 sm:h-10 object-contain opacity-70"
               />
-              <p className="text-xs text-white/40">© {new Date().getFullYear()} All Rights Reserved</p>
+              <p className="text-xs text-slate-400">© {new Date().getFullYear()} All Rights Reserved</p>
             </div>
           </footer>
         </div>
