@@ -69,13 +69,13 @@ type FeatureItem = FeatureCardProps & {
   pageKey?: string;
 };
 
-const FeatureCard = ({ icon, title, onClick, className, badge }: FeatureCardProps) => (
+const FeatureCard = ({ icon, title, gradient, onClick, className, badge }: FeatureCardProps) => (
   <button
     onClick={onClick}
     className={cn(
-      "group relative overflow-hidden rounded-2xl p-4 sm:p-6 text-white transition-all duration-300",
-      "bg-[#161616] border border-white/10",
-      "hover:scale-[1.02] hover:border-yellow-400/50 hover:shadow-[0_10px_30px_-10px_rgba(250,204,21,0.35)] active:scale-[0.98]",
+      "group relative overflow-hidden rounded-2xl p-4 sm:p-6 transition-all duration-300",
+      "bg-white border border-slate-200 shadow-sm",
+      "hover:scale-[1.02] hover:border-[#2b6cb0]/50 hover:shadow-[0_10px_30px_-10px_rgba(43,108,176,0.35)] active:scale-[0.98]",
       "flex flex-col items-center justify-center gap-2 sm:gap-3",
       "min-h-[100px] sm:min-h-[140px]",
       className
@@ -87,17 +87,16 @@ const FeatureCard = ({ icon, title, onClick, className, badge }: FeatureCardProp
       </span>
     )}
 
-    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-yellow-400/10 to-transparent" />
-
-    <div className="relative z-10 p-2.5 sm:p-3.5 rounded-2xl bg-yellow-400 text-black shadow-[0_4px_14px_rgba(250,204,21,0.35)] group-hover:scale-110 transition-transform duration-300">
+    <div className={cn(
+      "relative z-10 p-3 sm:p-4 rounded-full text-white shadow-md group-hover:scale-110 transition-transform duration-300",
+      gradient
+    )}>
       {icon}
     </div>
 
-    <h3 className="relative z-10 text-xs sm:text-sm font-semibold text-center leading-tight max-w-full text-white/90">
+    <h3 className="relative z-10 text-xs sm:text-sm font-semibold text-center leading-tight max-w-full text-slate-700">
       {title}
     </h3>
-
-    <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-2 transition-all duration-300 w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
   </button>
 );
 
