@@ -480,25 +480,19 @@ const HomePage = () => {
 
   if (shouldApplyPagePermissions && permissionsLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-[#eef2f6] flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] relative overflow-hidden">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-yellow-400/5 rounded-full blur-3xl" />
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent" />
-      </div>
-
-      <div className="relative z-10 min-h-screen flex flex-col p-4 sm:p-6 lg:p-8">
-        <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col">
-          <header className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
+    <div className="min-h-screen bg-[#eef2f6] relative overflow-hidden">
+      <div className="relative z-10 min-h-screen flex flex-col">
+        <header className="bg-[#16324f] shadow-md">
+          <div className="max-w-5xl mx-auto w-full flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-3 rounded-xl bg-yellow-400/10 backdrop-blur-sm border border-yellow-400/30">
+              <div className="p-1.5 sm:p-2 rounded-xl bg-white/10 border border-white/20">
                 <img src="/lovable-uploads/aman-logo-footer.png" alt="Aman Taxi" className="h-6 sm:h-8 object-contain" />
               </div>
               <div>
@@ -523,10 +517,12 @@ const HomePage = () => {
                 <span className="hidden sm:inline">{isLoggingOut ? "Logging out..." : "Logout"}</span>
               </button>
             </div>
-          </header>
+          </div>
+        </header>
 
+        <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col p-4 sm:p-6 lg:p-8">
           {user && (
-            <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl bg-[#161616] border border-white/10">
+            <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
               <div className="flex items-center gap-4">
                 {driverInfo?.driverId ? (
                   <button
