@@ -641,6 +641,36 @@ export type Database = {
         }
         Relationships: []
       }
+      nationality_message_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          message: string
+          nationality: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message: string
+          nationality: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message?: string
+          nationality?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       osr_drivers: {
         Row: {
           created_at: string
