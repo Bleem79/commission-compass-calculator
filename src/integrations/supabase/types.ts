@@ -647,6 +647,7 @@ export type Database = {
           created_by: string | null
           id: string
           message: string
+          nationalities: string[]
           nationality: string
           title: string
           updated_at: string
@@ -656,7 +657,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           message: string
-          nationality: string
+          nationalities?: string[]
+          nationality?: string
           title: string
           updated_at?: string
         }
@@ -665,6 +667,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           message?: string
+          nationalities?: string[]
           nationality?: string
           title?: string
           updated_at?: string
