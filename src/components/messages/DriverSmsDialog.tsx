@@ -30,6 +30,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { nationalityRecipients, templateNationalities } from "@/utils/smsTemplates";
 
 interface DriverCredential {
   id: string;
@@ -61,7 +62,9 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [selectedNationality, setSelectedNationality] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("new");
+  const [templateTitle, setTemplateTitle] = useState("");
+  const [selectedNationalities, setSelectedNationalities] = useState<string[]>([]);
   const [templateText, setTemplateText] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -154,8 +157,8 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("nationality_message_templates")
-        .select("id, nationality, title, message")
-        .order("nationality", { ascending: true });
+        .select("id, nationality, nationalities, title, message")
+        .order("title", { ascending: true });
       if (error) throw error;
       return data || [];
     },
@@ -179,48 +182,59 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     enabled: isOpen,
   });
 
-  // Active drivers matching the selected nationality
-  const matchingDriverIds = useMemo(() => {
-    if (!selectedNationality) return [];
-    const enabledIds = new Set(drivers.map((d) => d.driver_id));
-    return yangoDrivers
-      .filter((d) => (d.nationality || "").trim() === selectedNationality && enabledIds.has(d.driver_id))
-      .map((d) => d.driver_id);
-  }, [selectedNationality, yangoDrivers, drivers]);
+  const matchingDriverIds = useMemo(
+    () => nationalityRecipients(drivers, yangoDrivers, selectedNationalities),
+    [selectedNationalities, yangoDrivers, drivers],
+  );
+  const nationalityOptions = useMemo(
+    () => Array.from(new Set([...nationalities, ...selectedNationalities])).sort((a, b) => a.localeCompare(b)),
+    [nationalities, selectedNationalities],
+  );
 
-  const handleNationalityChange = (value: string) => {
-    setSelectedNationality(value);
-    const existing = templates.find((t) => t.nationality === value);
+  const handleTemplateChange = (value: string) => {
+    setSelectedTemplateId(value);
+    const existing = templates.find((t) => t.id === value);
+    setTemplateTitle(existing?.title || "");
+    setSelectedNationalities(existing ? templateNationalities(existing) : []);
     setTemplateText(existing?.message || "");
   };
 
   const handleSaveTemplate = async () => {
-    if (!selectedNationality || !templateText.trim()) {
-      toast.error("Select a nationality and enter a template message");
+    if (!isAdmin) return;
+    if (!templateTitle.trim() || !selectedNationalities.length || !templateText.trim()) {
+      toast.error("Enter a template name, message and select at least one nationality");
       return;
     }
     setSavingTemplate(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const existing = templates.find((t) => t.nationality === selectedNationality);
+      if (!user) throw new Error("Not authenticated");
+      const existing = templates.find((t) => t.id === selectedTemplateId);
+      const values = {
+        title: templateTitle.trim(),
+        message: templateText.trim(),
+        nationalities: selectedNationalities,
+        nationality: selectedNationalities[0],
+      };
       if (existing) {
         const { error } = await supabase
           .from("nationality_message_templates")
-          .update({ message: templateText.trim() })
+          .update(values)
           .eq("id", existing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("nationality_message_templates")
           .insert({
-            nationality: selectedNationality,
-            title: `${selectedNationality} template`,
-            message: templateText.trim(),
-            created_by: user?.id ?? null,
-          });
+            ...values,
+            created_by: user.id,
+          })
+          .select("id")
+          .single();
         if (error) throw error;
+        setSelectedTemplateId(data.id);
       }
-      toast.success(`Template saved for ${selectedNationality}`);
+      toast.success(`Template "${templateTitle.trim()}" saved`);
       queryClient.invalidateQueries({ queryKey: ["nationality-message-templates"] });
     } catch (error) {
       console.error("Error saving template:", error);
@@ -232,7 +246,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
 
   const handleUseTemplate = () => {
     if (matchingDriverIds.length === 0) {
-      toast.error("No active drivers found for this nationality");
+      toast.error("No active drivers found for the selected nationalities");
       return;
     }
     setSelectedDriverIds(new Set(matchingDriverIds));
@@ -472,7 +486,9 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     setSelectedDriverIds(new Set());
     setMessage("");
     setViewMode("list");
-    setSelectedNationality("");
+    setSelectedTemplateId("new");
+    setTemplateTitle("");
+    setSelectedNationalities([]);
     setTemplateText("");
     onClose();
   };
@@ -540,34 +556,55 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
               <FileText className="w-3.5 h-3.5 text-primary" />
               Message Templates Per Nationality
             </p>
-            <Select value={selectedNationality} onValueChange={handleNationalityChange}>
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder={nationalities.length ? "Select nationality..." : "No nationalities found (upload Yango driver list)"} />
+            <Select value={selectedTemplateId} onValueChange={handleTemplateChange}>
+              <SelectTrigger className="min-h-11 text-sm" aria-label="Saved SMS template">
+                <SelectValue placeholder="Select template..." />
               </SelectTrigger>
               <SelectContent>
-                {nationalities.map((n) => (
-                  <SelectItem key={n} value={n}>{n}</SelectItem>
+                <SelectItem value="new">{isAdmin ? "New Template" : "Select template..."}</SelectItem>
+                {templates.map((template) => (
+                  <SelectItem key={template.id} value={template.id}>{template.title}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            {selectedNationality && (
+            {(isAdmin || selectedTemplateId !== "new") && (
               <>
+                <label className="block space-y-1 text-xs font-medium">
+                  <span>Template name</span>
+                  <Input placeholder="Template 1" value={templateTitle} onChange={(e) => setTemplateTitle(e.target.value)} readOnly={!isAdmin} disabled={savingTemplate} className="min-h-11" />
+                </label>
+                <label className="block space-y-1 text-xs font-medium">
+                  <span>Message contents</span>
                 <Textarea
-                  placeholder={isAdmin ? `Type the template message for ${selectedNationality} drivers...` : "No template saved yet for this nationality"}
+                  placeholder="Enter message contents..."
                   value={templateText}
                   onChange={(e) => isAdmin && setTemplateText(e.target.value)}
                   readOnly={!isAdmin}
+                  disabled={savingTemplate}
                   className="min-h-[70px] resize-none text-sm"
                 />
+                </label>
+                <fieldset disabled={savingTemplate}>
+                  <legend className="mb-1 text-xs font-medium">Nationalities ({selectedNationalities.length} selected)</legend>
+                  <div className="max-h-36 overflow-y-auto rounded-md border border-border bg-background p-2">
+                    {nationalityOptions.length === 0 && <p className="text-xs text-muted-foreground">No nationalities found in the uploaded Yango driver list.</p>}
+                    {nationalityOptions.map((nationality) => (
+                      <label key={nationality} className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+                        <Checkbox checked={selectedNationalities.includes(nationality)} onCheckedChange={(checked) => setSelectedNationalities((current) => checked === true ? [...current, nationality] : current.filter((value) => value !== nationality))} />
+                        <span className="break-words">{nationality}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
                 <div className="flex flex-wrap gap-2">
                   {isAdmin && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleSaveTemplate}
-                      disabled={savingTemplate || !templateText.trim()}
-                      className="flex items-center gap-1.5"
+                      disabled={savingTemplate || !templateTitle.trim() || !templateText.trim() || !selectedNationalities.length}
+                      className="flex min-h-11 items-center gap-1.5"
                     >
                       <Save className="w-3.5 h-3.5" />
                       {savingTemplate ? "Saving..." : "Save Template"}
@@ -576,15 +613,15 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
                   <Button
                     size="sm"
                     onClick={handleUseTemplate}
-                    disabled={matchingDriverIds.length === 0}
-                    className="flex items-center gap-1.5"
+                    disabled={savingTemplate || matchingDriverIds.length === 0 || !templateText.trim()}
+                    className="flex min-h-11 items-center gap-1.5"
                   >
                     <Users className="w-3.5 h-3.5" />
                     Select {matchingDriverIds.length} Driver{matchingDriverIds.length !== 1 ? "s" : ""} & Use
                   </Button>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  {matchingDriverIds.length} active {selectedNationality} driver{matchingDriverIds.length !== 1 ? "s" : ""} will be selected.
+                  {matchingDriverIds.length} active driver{matchingDriverIds.length !== 1 ? "s" : ""} across {selectedNationalities.length} nationalit{selectedNationalities.length === 1 ? "y" : "ies"}.
                 </p>
               </>
             )}
