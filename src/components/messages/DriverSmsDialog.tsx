@@ -472,6 +472,8 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     setSelectedDriverIds(new Set());
     setMessage("");
     setViewMode("list");
+    setSelectedNationality("");
+    setTemplateText("");
     onClose();
   };
 
@@ -481,7 +483,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
   };
 
   const content = (
-    <div className="flex flex-col h-full max-h-[70vh]">
+    <div className="flex flex-col h-full max-h-[70vh] overflow-y-auto">
       {/* Driver Selection List */}
       {viewMode === "list" && (
         <div className="flex flex-col gap-4">
