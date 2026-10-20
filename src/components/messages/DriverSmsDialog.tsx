@@ -534,6 +534,62 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
                 : `${drivers.length} active drivers`}
           </p>
 
+          {/* Message Templates Per Nationality */}
+          <div className="border rounded-lg p-3 space-y-2 bg-muted/20">
+            <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-primary" />
+              Message Templates Per Nationality
+            </p>
+            <Select value={selectedNationality} onValueChange={handleNationalityChange}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder={nationalities.length ? "Select nationality..." : "No nationalities found (upload Yango driver list)"} />
+              </SelectTrigger>
+              <SelectContent>
+                {nationalities.map((n) => (
+                  <SelectItem key={n} value={n}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {selectedNationality && (
+              <>
+                <Textarea
+                  placeholder={isAdmin ? `Type the template message for ${selectedNationality} drivers...` : "No template saved yet for this nationality"}
+                  value={templateText}
+                  onChange={(e) => isAdmin && setTemplateText(e.target.value)}
+                  readOnly={!isAdmin}
+                  className="min-h-[70px] resize-none text-sm"
+                />
+                <div className="flex flex-wrap gap-2">
+                  {isAdmin && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSaveTemplate}
+                      disabled={savingTemplate || !templateText.trim()}
+                      className="flex items-center gap-1.5"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      {savingTemplate ? "Saving..." : "Save Template"}
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={handleUseTemplate}
+                    disabled={matchingDriverIds.length === 0}
+                    className="flex items-center gap-1.5"
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    Select {matchingDriverIds.length} Driver{matchingDriverIds.length !== 1 ? "s" : ""} & Use
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {matchingDriverIds.length} active {selectedNationality} driver{matchingDriverIds.length !== 1 ? "s" : ""} will be selected.
+                </p>
+              </>
+            )}
+          </div>
+
           {/* Driver List */}
           <ScrollArea className="h-[280px] border rounded-lg">
             {isLoading ? (
