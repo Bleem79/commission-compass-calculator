@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Send, Search, X, MessageSquare, User, ArrowLeft, Inbox, Check, CheckCheck, Users, CheckSquare, Square } from "lucide-react";
+import { Send, Search, X, MessageSquare, User, ArrowLeft, Inbox, Check, CheckCheck, Users, CheckSquare, Square, FileText, Save } from "lucide-react";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -16,6 +16,13 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,6 +61,9 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [selectedNationality, setSelectedNationality] = useState("");
+  const [templateText, setTemplateText] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch all driver credentials with pagination to get all records
