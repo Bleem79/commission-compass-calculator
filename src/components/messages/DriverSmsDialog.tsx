@@ -99,6 +99,147 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     enabled: isOpen,
   });
 
+  // Fetch Yango driver list (driver_id -> nationality) with pagination
+  const { data: yangoDrivers = [] } = useQuery({
+    queryKey: ["yango-driver-nationalities"],
+    queryFn: async () => {
+      const all: { driver_id: string; nationality: string | null }[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("yango_driver_list")
+          .select("driver_id, nationality")
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        if (data && data.length > 0) {
+          all.push(...(data as { driver_id: string; nationality: string | null }[]));
+          from += pageSize;
+          hasMore = data.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+      return all;
+    },
+    enabled: isOpen,
+  });
+
+  // Distinct nationalities from the Yango driver list
+  const nationalities = useMemo(() => {
+    const set = new Set<string>();
+    yangoDrivers.forEach((d) => {
+      const n = (d.nationality || "").trim();
+      if (n) set.add(n);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [yangoDrivers]);
+
+  // driver_id -> nationality lookup
+  const nationalityByDriverId = useMemo(() => {
+    const map = new Map<string, string>();
+    yangoDrivers.forEach((d) => {
+      const n = (d.nationality || "").trim();
+      if (n) map.set(d.driver_id, n);
+    });
+    return map;
+  }, [yangoDrivers]);
+
+  // Saved message templates per nationality
+  const { data: templates = [] } = useQuery({
+    queryKey: ["nationality-message-templates"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("nationality_message_templates")
+        .select("id, nationality, title, message")
+        .order("nationality", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isOpen,
+  });
+
+  // Admin check (only admins can save/edit templates)
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["sms-dialog-is-admin"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: isOpen,
+  });
+
+  // Active drivers matching the selected nationality
+  const matchingDriverIds = useMemo(() => {
+    if (!selectedNationality) return [];
+    const enabledIds = new Set(drivers.map((d) => d.driver_id));
+    return yangoDrivers
+      .filter((d) => (d.nationality || "").trim() === selectedNationality && enabledIds.has(d.driver_id))
+      .map((d) => d.driver_id);
+  }, [selectedNationality, yangoDrivers, drivers]);
+
+  const handleNationalityChange = (value: string) => {
+    setSelectedNationality(value);
+    const existing = templates.find((t) => t.nationality === value);
+    setTemplateText(existing?.message || "");
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!selectedNationality || !templateText.trim()) {
+      toast.error("Select a nationality and enter a template message");
+      return;
+    }
+    setSavingTemplate(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const existing = templates.find((t) => t.nationality === selectedNationality);
+      if (existing) {
+        const { error } = await supabase
+          .from("nationality_message_templates")
+          .update({ message: templateText.trim() })
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("nationality_message_templates")
+          .insert({
+            nationality: selectedNationality,
+            title: `${selectedNationality} template`,
+            message: templateText.trim(),
+            created_by: user?.id ?? null,
+          });
+        if (error) throw error;
+      }
+      toast.success(`Template saved for ${selectedNationality}`);
+      queryClient.invalidateQueries({ queryKey: ["nationality-message-templates"] });
+    } catch (error) {
+      console.error("Error saving template:", error);
+      toast.error("Failed to save template");
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const handleUseTemplate = () => {
+    if (matchingDriverIds.length === 0) {
+      toast.error("No active drivers found for this nationality");
+      return;
+    }
+    setSelectedDriverIds(new Set(matchingDriverIds));
+    if (templateText.trim()) setMessage(templateText.trim());
+    setViewMode("bulk");
+  };
+
   // Fetch message history for selected driver
   const { data: messageHistory = [], isLoading: isLoadingHistory } = useQuery({
     queryKey: ["driver-message-history", selectedDriver?.driver_id],
