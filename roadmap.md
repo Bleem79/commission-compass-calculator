@@ -7,3 +7,4 @@
 - [ ] Desktop/tablet/phone public-route checks and unchanged-logic review
 - [ ] Authenticated workflow checks — blocked by external unmanaged sign-in
 - [x] Message templates per nationality in admin SMS dialog (nationalities from yango_driver_list)
+- [ ] Named SMS templates with saved message contents and multiple nationalities
