@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Send, Search, X, MessageSquare, User, ArrowLeft, Inbox, Check, CheckCheck, Users, CheckSquare, Square, FileText, Save } from "lucide-react";
+import { Send, Search, X, MessageSquare, User, ArrowLeft, Inbox, Check, CheckCheck, Users, CheckSquare, Square, FileText, Save, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -239,6 +239,32 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     } catch (error) {
       console.error("Error saving template:", error);
       toast.error("Failed to save template");
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!isAdmin) return;
+    const existing = templates.find((t) => t.id === selectedTemplateId);
+    if (!existing) return;
+    if (!window.confirm(`Delete template "${existing.title}"? This cannot be undone.`)) return;
+    setSavingTemplate(true);
+    try {
+      const { error } = await supabase
+        .from("nationality_message_templates")
+        .delete()
+        .eq("id", existing.id);
+      if (error) throw error;
+      setSelectedTemplateId("new");
+      setTemplateTitle("");
+      setTemplateText("");
+      setSelectedNationalities([]);
+      toast.success(`Template "${existing.title}" deleted`);
+      queryClient.invalidateQueries({ queryKey: ["nationality-message-templates"] });
+    } catch (error) {
+      console.error("Error deleting template:", error);
+      toast.error("Failed to delete template");
     } finally {
       setSavingTemplate(false);
     }
@@ -612,16 +638,30 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
                 </fieldset>
                 <div className="flex flex-wrap gap-2">
                   {isAdmin && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSaveTemplate}
-                      disabled={savingTemplate || !templateTitle.trim() || !templateText.trim() || !selectedNationalities.length}
-                      className="flex min-h-11 items-center gap-1.5"
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      {savingTemplate ? "Saving..." : "Save Template"}
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSaveTemplate}
+                        disabled={savingTemplate || !templateTitle.trim() || !templateText.trim() || !selectedNationalities.length}
+                        className="flex min-h-11 items-center gap-1.5"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        {savingTemplate ? "Saving..." : selectedTemplateId !== "new" ? "Save Changes" : "Save Template"}
+                      </Button>
+                      {selectedTemplateId !== "new" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDeleteTemplate}
+                          disabled={savingTemplate}
+                          className="flex min-h-11 items-center gap-1.5 text-destructive border-destructive/40 hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete
+                        </Button>
+                      )}
+                    </>
                   )}
                   <Button
                     size="sm"
