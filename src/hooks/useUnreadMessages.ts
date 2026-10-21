@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { collectMessagePages } from "@/utils/privateMessageDelivery";
 
 const READ_MESSAGES_KEY = "driver_read_messages";
 
 export const useUnreadMessages = () => {
+  const queryClient = useQueryClient();
   const [readMessageIds, setReadMessageIds] = useState<string[]>(() => {
     const stored = localStorage.getItem(READ_MESSAGES_KEY);
     return stored ? JSON.parse(stored) : [];
@@ -35,15 +37,16 @@ export const useUnreadMessages = () => {
     queryFn: async () => {
       if (!driverCredential?.driver_id) return [];
 
-      const { data, error } = await supabase
-        .from("admin_messages")
-        .select("id, content")
-        .eq("is_admin", true);
-
-      if (error) return [];
-
       // Filter messages that are private to this driver
       const privatePrefix = `[PRIVATE TO: ${driverCredential.driver_id}]`;
+      const data = await collectMessagePages(async (from, to) => {
+        const { data, error } = await supabase.from("admin_messages")
+          .select("id, content").eq("is_admin", true)
+          .like("content", `${privatePrefix}%`).order("id", { ascending: true })
+          .range(from, to);
+        if (error) throw error;
+        return data || [];
+      });
       return data.filter((msg) => msg.content.startsWith(privatePrefix));
     },
     enabled: !!driverCredential?.driver_id,
@@ -64,7 +67,7 @@ export const useUnreadMessages = () => {
           table: "admin_messages",
         },
         () => {
-          // Trigger a refetch when new messages arrive
+          queryClient.invalidateQueries({ queryKey: ["driver-private-messages-count", driverCredential.driver_id] });
         }
       )
       .subscribe();
@@ -72,7 +75,7 @@ export const useUnreadMessages = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [driverCredential?.driver_id]);
+  }, [driverCredential?.driver_id, queryClient]);
 
   const unreadCount = messages.filter((msg) => !readMessageIds.includes(msg.id)).length;
 
