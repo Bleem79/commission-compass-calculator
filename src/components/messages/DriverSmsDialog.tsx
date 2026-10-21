@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { Send, Search, X, MessageSquare, User, ArrowLeft, Inbox, Check, CheckCheck, Users, CheckSquare, Square, FileText, Save, Trash2 } from "lucide-react";
 import { format } from "date-fns";
@@ -31,6 +32,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { nationalityRecipients, templateNationalities } from "@/utils/smsTemplates";
+import { collectMessagePages, deliverPrivateMessageBatches } from "@/utils/privateMessageDelivery";
 
 interface DriverCredential {
   id: string;
@@ -70,7 +72,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch all driver credentials with pagination to get all records
-  const { data: drivers = [], isLoading } = useQuery({
+  const { data: drivers = [], isLoading, isError: driverLoadError } = useQuery({
     queryKey: ["driver-credentials-sms"],
     queryFn: async () => {
       const allDrivers: DriverCredential[] = [];
@@ -81,7 +83,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
       while (hasMore) {
         const { data, error } = await supabase
           .from("driver_credentials")
-          .select("*")
+          .select("id, driver_id, user_id, status")
           .eq("status", "enabled")
           .order("driver_id", { ascending: true })
           .range(from, from + pageSize - 1);
@@ -103,7 +105,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
   });
 
   // Fetch Yango driver list (driver_id -> nationality) with pagination
-  const { data: yangoDrivers = [] } = useQuery({
+  const { data: yangoDrivers = [], isLoading: loadingNationalities, isError: nationalityLoadError } = useQuery({
     queryKey: ["yango-driver-nationalities"],
     queryFn: async () => {
       const all: { driver_id: string; nationality: string | null }[] = [];
@@ -115,6 +117,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
         const { data, error } = await supabase
           .from("yango_driver_list")
           .select("driver_id, nationality")
+          .order("id", { ascending: true })
           .range(from, from + pageSize - 1);
 
         if (error) throw error;
@@ -271,6 +274,10 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
   };
 
   const handleUseTemplate = () => {
+    if (isLoading || loadingNationalities || driverLoadError || nationalityLoadError) {
+      toast.error("Driver or nationality list is not ready. Please reopen and try again.");
+      return;
+    }
     if (matchingDriverIds.length === 0) {
       toast.error("No active drivers found for the selected nationalities");
       return;
@@ -286,16 +293,17 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     queryFn: async () => {
       if (!selectedDriver?.driver_id) return [];
 
-      const { data, error } = await supabase
-        .from("admin_messages")
-        .select("*")
-        .eq("is_admin", true)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-
       // Filter messages that are private to this driver
       const privatePrefix = `[PRIVATE TO: ${selectedDriver.driver_id}]`;
+      const data = await collectMessagePages(async (from, to) => {
+        const { data, error } = await supabase.from("admin_messages")
+          .select("id, content, created_at, read_at")
+          .eq("is_admin", true).like("content", `${privatePrefix}%`)
+          .order("created_at", { ascending: true }).order("id", { ascending: true })
+          .range(from, to);
+        if (error) throw error;
+        return data || [];
+      });
       const privateMessages = data
         .filter((msg) => msg.content.startsWith(privatePrefix))
         .map((msg) => ({
@@ -400,8 +408,29 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     },
   });
 
+  const notifyDrivers = async (driverIds: string[], content: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("send-message-notification", {
+        body: { type: "private", driverIds, messageContent: content },
+      });
+      if (error) {
+        const details = error instanceof FunctionsHttpError ? await error.context.text() : error.message;
+        console.error("Message notification failed:", details);
+        throw new Error("Notification request failed");
+      }
+      if (!data || typeof data.sent !== "number") throw new Error("Missing notification result");
+      toast.info(`${data.sent} device notification${data.sent === 1 ? "" : "s"} accepted`, {
+        description: `${data.coveredDrivers ?? 0} of ${driverIds.length} drivers have registered notifications. Portal messages remain available even without notifications.`,
+      });
+      if (data.failed > 0) toast.warning(`${data.failed} device notification${data.failed === 1 ? "" : "s"} failed`);
+    } catch {
+      toast.warning("Portal messages saved, but device notifications could not be confirmed");
+    }
+  };
+
   // Send to single driver
   const handleSendMessage = async () => {
+    if (isSending) return;
     if (!selectedDriver || !message.trim()) {
       toast.error("Please select a driver and enter a message");
       return;
@@ -420,16 +449,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
       queryClient.invalidateQueries({ queryKey: ["admin-messages"] });
       queryClient.invalidateQueries({ queryKey: ["driver-message-history", selectedDriver?.driver_id] });
 
-      // Send push notification to this driver (non-blocking)
-      supabase.functions
-        .invoke("send-message-notification", {
-          body: {
-            type: "private",
-            driverIds: [selectedDriver.driver_id],
-            messageContent: message.trim(),
-          },
-        })
-        .catch((err) => console.log("Push notification failed (non-critical):", err));
+      await notifyDrivers([selectedDriver.driver_id], message.trim());
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
@@ -440,6 +460,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
 
   // Send to multiple drivers (bulk)
   const handleSendBulkMessage = async () => {
+    if (isSending) return;
     if (selectedDriverIds.size === 0 || !message.trim()) {
       toast.error("Please select at least one driver and enter a message");
       return;
@@ -447,17 +468,12 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
 
     setIsSending(true);
     const driverIdsArray = Array.from(selectedDriverIds);
-    let successCount = 0;
-    let failCount = 0;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Send messages in batches to avoid overwhelming the database
-      const batchSize = 50;
-      for (let i = 0; i < driverIdsArray.length; i += batchSize) {
-        const batch = driverIdsArray.slice(i, i + batchSize);
+      const { sentIds, failedIds } = await deliverPrivateMessageBatches(driverIdsArray, async batch => {
         const insertData = batch.map(driverId => ({
           content: `[PRIVATE TO: ${driverId}] ${message.trim()}`,
           created_by: user.id,
@@ -467,33 +483,24 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
 
         const { error } = await supabase.from("admin_messages").insert(insertData);
         
-        if (error) {
-          console.error("Error sending batch:", error);
-          failCount += batch.length;
-        } else {
-          successCount += batch.length;
-        }
-      }
+        if (error) throw error;
+      });
+      const successCount = sentIds.length;
+      const failCount = failedIds.length;
 
       if (successCount > 0) {
         toast.success(`Message sent to ${successCount} driver${successCount > 1 ? 's' : ''}!`, {
           description: failCount > 0 ? `Failed to send to ${failCount} driver(s)` : undefined,
         });
 
-        // Send push notifications to all selected drivers (non-blocking)
-        supabase.functions
-          .invoke("send-message-notification", {
-            body: {
-              type: "private",
-              driverIds: driverIdsArray,
-              messageContent: message.trim(),
-            },
-          })
-          .catch((err) => console.log("Push notification failed (non-critical):", err));
-
-        setMessage("");
-        setSelectedDriverIds(new Set());
-        setViewMode("list");
+        await notifyDrivers(sentIds, message.trim());
+        setSelectedDriverIds(new Set(failedIds));
+        if (failCount === 0) {
+          setMessage("");
+          setViewMode("list");
+        } else {
+          toast.warning("Only failed drivers remain selected. Send again to retry them.");
+        }
         queryClient.invalidateQueries({ queryKey: ["admin-messages"] });
       } else {
         toast.error("Failed to send messages");
@@ -507,6 +514,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
   };
 
   const handleClose = () => {
+    if (isSending) return;
     setSearchQuery("");
     setSelectedDriver(null);
     setSelectedDriverIds(new Set());
@@ -526,6 +534,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
 
   const content = (
     <div className="flex flex-col h-full max-h-[70vh] overflow-y-auto">
+      {(driverLoadError || nationalityLoadError) && <p role="alert" className="text-sm text-destructive">Unable to load the complete driver or nationality list. Reopen this window to try again.</p>}
       {/* Driver Selection List */}
       {viewMode === "list" && (
         <div className="flex flex-col gap-4">
@@ -621,7 +630,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
                     </div>
                   </div>
                   <p className="text-right text-[11px] text-muted-foreground">
-                    {templateText.length} character{templateText.length !== 1 ? "s" : ""}{templateText.length > 160 ? ` — ${Math.ceil(templateText.length / 160)} SMS segment${Math.ceil(templateText.length / 160) !== 1 ? "s" : ""}` : ""}
+                    {templateText.length} character{templateText.length !== 1 ? "s" : ""}
                   </p>
                 </div>
                 <fieldset disabled={savingTemplate}>
@@ -666,7 +675,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
                   <Button
                     size="sm"
                     onClick={handleUseTemplate}
-                    disabled={savingTemplate || matchingDriverIds.length === 0 || !templateText.trim()}
+                    disabled={savingTemplate || isLoading || loadingNationalities || driverLoadError || nationalityLoadError || matchingDriverIds.length === 0 || !templateText.trim()}
                     className="flex min-h-11 items-center gap-1.5"
                   >
                     <Users className="w-3.5 h-3.5" />
@@ -850,6 +859,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
       {/* Bulk Message View */}
       {viewMode === "bulk" && (
         <div className="flex flex-col gap-3 h-full">
+          <p className="text-xs text-muted-foreground">Delivery: Driver Portal private message and registered device notification. Not phone SMS.</p>
           {/* Header */}
           <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/20 rounded-lg">
             <Button

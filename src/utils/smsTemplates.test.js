@@ -18,4 +18,14 @@ describe("SMS nationality templates", () => {
   test("preserves old single-nationality templates", () => {
     expect(templateNationalities({ nationality: "Pakistani", nationalities: [] })).toEqual(["Pakistani"]);
   });
+  test("matches case and surrounding spaces while preserving credential IDs", () => {
+    expect(nationalityRecipients([{ driver_id: "111993" }, { driver_id: "002" }], [
+      { driver_id: " 111993 ", nationality: " PAKISTANI " },
+      { driver_id: "002", nationality: "Bangladeshi" },
+      { driver_id: "111993", nationality: "Pakistani" },
+    ], [" pakistani", "BANGLADESHI "])).toEqual(["111993", "002"]);
+  });
+  test("empty nationalities never target unclassified drivers", () => {
+    expect(nationalityRecipients([{ driver_id: "1" }], [{ driver_id: "1", nationality: null }], [" "])).toEqual([]);
+  });
 });

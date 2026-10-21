@@ -7,9 +7,12 @@ export function nationalityRecipients(
   yangoDrivers: { driver_id: string; nationality: string | null }[],
   nationalities: string[],
 ): string[] {
-  const enabled = new Set(drivers.map(driver => driver.driver_id));
-  const selected = new Set(nationalities.map(value => value.trim().toLowerCase()));
-  return Array.from(new Set(yangoDrivers
-    .filter(driver => enabled.has(driver.driver_id) && selected.has((driver.nationality || "").trim().toLowerCase()))
-    .map(driver => driver.driver_id)));
+  const enabled = new Map(drivers.map(driver => [driver.driver_id.trim(), driver.driver_id]));
+  const selected = new Set(nationalities.map(value => value.trim().toLowerCase()).filter(Boolean));
+  const recipients = new Set<string>();
+  for (const driver of yangoDrivers) {
+    const id = enabled.get(driver.driver_id.trim());
+    if (id && selected.has((driver.nationality || "").trim().toLowerCase())) recipients.add(id);
+  }
+  return Array.from(recipients);
 }

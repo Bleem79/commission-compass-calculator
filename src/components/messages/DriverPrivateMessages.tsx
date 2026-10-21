@@ -6,6 +6,7 @@ import { MessageSquare, ArrowLeft, Inbox, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { collectMessagePages } from "@/utils/privateMessageDelivery";
 
 interface PrivateMessage {
   id: string;
@@ -47,16 +48,17 @@ export const DriverPrivateMessages = ({ onBack }: DriverPrivateMessagesProps) =>
     queryFn: async () => {
       if (!driverCredential?.driver_id) return [];
 
-      const { data, error } = await supabase
-        .from("admin_messages")
-        .select("*")
-        .eq("is_admin", true)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
       // Filter messages that are private to this driver
       const privatePrefix = `[PRIVATE TO: ${driverCredential.driver_id}]`;
+      const data = await collectMessagePages(async (from, to) => {
+        const { data, error } = await supabase.from("admin_messages")
+          .select("id, content, created_at, read_at")
+          .eq("is_admin", true).like("content", `${privatePrefix}%`)
+          .order("created_at", { ascending: false }).order("id", { ascending: false })
+          .range(from, to);
+        if (error) throw error;
+        return data || [];
+      });
       const privateMessages = data
         .filter((msg) => msg.content.startsWith(privatePrefix))
         .map((msg) => ({
@@ -82,10 +84,11 @@ export const DriverPrivateMessages = ({ onBack }: DriverPrivateMessagesProps) =>
     const markAsRead = async () => {
       const unreadIds = unreadMessages.map((msg) => msg.id);
       
-      await supabase
+      const { error } = await supabase
         .from("admin_messages")
         .update({ read_at: new Date().toISOString() })
         .in("id", unreadIds);
+      if (error) return;
       
       // Refresh the messages
       queryClient.invalidateQueries({ 
