@@ -585,6 +585,19 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
                   className="min-h-[70px] resize-none text-sm"
                 />
                 </label>
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium">Preview</p>
+                  <div className="flex justify-end">
+                    <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary/10 border border-primary/20 px-3 py-2">
+                      <p className="whitespace-pre-wrap break-words text-sm text-foreground">
+                        {templateText.trim() ? templateText : <span className="text-muted-foreground italic">Message preview will appear here...</span>}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-right text-[11px] text-muted-foreground">
+                    {templateText.length} character{templateText.length !== 1 ? "s" : ""}{templateText.length > 160 ? ` — ${Math.ceil(templateText.length / 160)} SMS segment${Math.ceil(templateText.length / 160) !== 1 ? "s" : ""}` : ""}
+                  </p>
+                </div>
                 <fieldset disabled={savingTemplate}>
                   <legend className="mb-1 text-xs font-medium">Nationalities ({selectedNationalities.length} selected)</legend>
                   <div className="max-h-36 overflow-y-auto rounded-md border border-border bg-background p-2">
