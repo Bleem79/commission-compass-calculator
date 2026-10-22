@@ -1,11 +1,16 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { z } from "npm:zod@3";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const requestSchema = z.object({
+  type: z.enum(["broadcast", "private"]),
+  driverIds: z.array(z.string().trim().min(1).max(100)).max(10000).optional(),
+  messageContent: z.string().trim().min(1).max(10000),
+  imageUrl: z.string().url().max(2048).nullable().optional(),
+}).refine(value => value.type !== "private" || (value.driverIds?.length ?? 0) > 0, {
+  message: "Private notifications require at least one driver ID",
+});
 
 interface NotificationRequest {
   type: "broadcast" | "private";
@@ -20,23 +25,44 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { type, driverIds, messageContent, imageUrl }: NotificationRequest = await req.json();
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!supabaseUrl || !supabaseServiceKey || !anonKey) throw new Error("Service configuration unavailable");
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const authClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+    const { data: authData, error: authError } = await authClient.auth.getUser();
+    if (authError || !authData.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: roles, error: roleError } = await supabase.from("user_roles").select("role")
+      .eq("user_id", authData.user.id).in("role", ["admin", "advanced", "user"]);
+    if (roleError || !roles?.length) {
+      return new Response(JSON.stringify({ error: "Staff access required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const parsed = requestSchema.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: parsed.error.flatten() }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { type, messageContent, imageUrl } = parsed.data;
+    const driverIds = parsed.data.driverIds ? Array.from(new Set(parsed.data.driverIds)) : undefined;
     const vapidPublicKey = Deno.env.get("WEB_PUSH_VAPID_PUBLIC_KEY");
     const vapidPrivateKey = Deno.env.get("WEB_PUSH_VAPID_PRIVATE_KEY");
 
     if (!vapidPublicKey || !vapidPrivateKey) {
       return new Response(
-        JSON.stringify({ success: true, message: "VAPID keys not configured" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ success: false, error: "Device notifications are not configured" }),
+        { status: 503, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     let subscriptions: any[] = [];
+    const coveredDriverIds = new Set<string>();
+    const driverByUser = new Map<string, string[]>();
 
     if (type === "private" && driverIds && driverIds.length > 0) {
       // Resolve driver IDs to their linked user_ids so we can also reach
@@ -47,12 +73,17 @@ const handler = async (req: Request): Promise<Response> => {
         const chunk = driverIds.slice(i, i + QUERY_CHUNK);
         const { data: creds, error: credErr } = await supabase
           .from("driver_credentials")
-          .select("user_id")
+          .select("user_id, driver_id")
+          .eq("status", "enabled")
           .in("driver_id", chunk);
         if (credErr) {
-          console.error("Error resolving driver credentials:", credErr);
+          throw credErr;
         } else {
-          creds?.forEach((c: any) => c.user_id && userIds.add(c.user_id));
+          creds?.forEach((c: any) => {
+            if (!c.user_id) return;
+            userIds.add(c.user_id);
+            driverByUser.set(c.user_id, [...(driverByUser.get(c.user_id) || []), c.driver_id]);
+          });
         }
       }
 
@@ -60,6 +91,9 @@ const handler = async (req: Request): Promise<Response> => {
       const seen = new Set<string>();
       const collect = (rows: any[] | null) => {
         rows?.forEach((r) => {
+          const ownerDrivers = driverByUser.get(r.user_id) || [];
+          if (!ownerDrivers.length) return;
+          ownerDrivers.forEach(id => coveredDriverIds.add(id));
           if (!seen.has(r.id)) {
             seen.add(r.id);
             subscriptions.push(r);
@@ -73,7 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
           .from("push_subscriptions")
           .select("*")
           .in("driver_id", chunk);
-        if (error) console.error("Error fetching subs by driver_id:", error);
+        if (error) throw error;
         else collect(data);
       }
 
@@ -84,24 +118,23 @@ const handler = async (req: Request): Promise<Response> => {
           .from("push_subscriptions")
           .select("*")
           .in("user_id", chunk);
-        if (error) console.error("Error fetching subs by user_id:", error);
+        if (error) throw error;
         else collect(data);
       }
     } else {
       // Broadcast: every registered device.
-      const { data, error: subError } = await supabase
-        .from("push_subscriptions")
-        .select("*");
-      if (subError) {
-        console.error("Error fetching subscriptions:", subError);
-        throw subError;
+      for (let from = 0; ; from += 1000) {
+        const { data, error: subError } = await supabase.from("push_subscriptions")
+          .select("*").order("id", { ascending: true }).range(from, from + 999);
+        if (subError) throw subError;
+        subscriptions.push(...(data || []));
+        if ((data?.length || 0) < 1000) break;
       }
-      subscriptions = data || [];
     }
 
     if (!subscriptions || subscriptions.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, message: "No subscriptions found" }),
+        JSON.stringify({ success: true, sent: 0, total: 0, failed: 0, coveredDrivers: 0, message: "No registered devices; portal messages remain available" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -135,7 +168,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const invalidIds: string[] = [];
-    const BATCH_SIZE = 50;
+    const BATCH_SIZE = 10;
     let successCount = 0;
     let totalProcessed = 0;
 
@@ -175,7 +208,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sent ${successCount}/${totalProcessed} notifications`);
 
     return new Response(
-      JSON.stringify({ success: true, sent: successCount, total: totalProcessed }),
+      JSON.stringify({ success: successCount === totalProcessed, sent: successCount, total: totalProcessed, failed: totalProcessed - successCount, coveredDrivers: coveredDriverIds.size }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
