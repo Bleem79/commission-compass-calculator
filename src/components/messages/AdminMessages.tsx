@@ -402,7 +402,7 @@ export const AdminMessages = ({
                     />
                   </a>
                 )}
-                <p className={`text-sm pr-16 whitespace-pre-wrap break-words leading-relaxed text-white ${message.is_pinned ? 'mt-2' : ''}`}>
+                <p dir="auto" className={`text-sm pr-16 whitespace-pre-wrap break-words leading-relaxed text-white text-start [unicode-bidi:plaintext] ${message.is_pinned ? 'mt-2' : ''}`}>
                   {linkifyText(message.content)}
                 </p>
                 <p className="text-xs text-gray-300 mt-2">
@@ -461,10 +461,11 @@ export const AdminMessages = ({
           )}
           
           <Textarea
+            dir="auto"
             placeholder="Type your message here..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            className="min-h-[80px] text-base"
+            className="min-h-[80px] text-base text-start [unicode-bidi:plaintext]"
           />
           
           {/* Hidden file input */}
