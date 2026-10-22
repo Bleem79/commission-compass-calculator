@@ -838,6 +838,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_send_history: {
+        Row: {
+          created_at: string
+          failed_count: number
+          failed_ids: string[]
+          id: string
+          message: string
+          nationalities: string[]
+          recipient_ids: string[]
+          sent_by: string
+          sent_by_name: string | null
+          sent_count: number
+          template_title: string | null
+        }
+        Insert: {
+          created_at?: string
+          failed_count?: number
+          failed_ids?: string[]
+          id?: string
+          message: string
+          nationalities?: string[]
+          recipient_ids?: string[]
+          sent_by: string
+          sent_by_name?: string | null
+          sent_count?: number
+          template_title?: string | null
+        }
+        Update: {
+          created_at?: string
+          failed_count?: number
+          failed_ids?: string[]
+          id?: string
+          message?: string
+          nationalities?: string[]
+          recipient_ids?: string[]
+          sent_by?: string
+          sent_by_name?: string | null
+          sent_count?: number
+          template_title?: string | null
+        }
+        Relationships: []
+      }
       survey_questions: {
         Row: {
           created_at: string
