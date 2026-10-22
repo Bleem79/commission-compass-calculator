@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 interface NotificationBellProps {
   className?: string;
@@ -14,7 +15,7 @@ interface NotificationBellProps {
   count?: number;
 }
 
-const NotificationBell = ({ className, onClick, driverId, count = 0 }: NotificationBellProps) => {
+const NotificationBell = ({ className, onClick, driverId, count }: NotificationBellProps) => {
   const [isRinging, setIsRinging] = useState(false);
   const [hasNew, setHasNew] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -101,31 +102,34 @@ const NotificationBell = ({ className, onClick, driverId, count = 0 }: Notificat
   };
 
   return (
-    <button
+    <Button
+      variant="outline"
+      size="icon"
       onClick={handleClick}
       className={cn(
-        "relative p-2 sm:p-2.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white",
-        "hover:bg-white/20 transition-all duration-300",
+        "relative h-11 w-11 rounded-lg border-primary-foreground/20 bg-primary text-primary-foreground",
+        "hover:bg-primary/90 hover:text-primary-foreground transition-all duration-300",
         className
       )}
-      aria-label="Notifications"
+      aria-label={count ? `Notifications, ${count} unread` : "Notifications"}
+      title={count ? `${count} unread notifications` : "Notifications"}
     >
       <Bell
         className={cn(
           "w-5 h-5 sm:w-6 sm:h-6 transition-transform",
-          isRinging && "animate-bell-ring"
+          (isRinging || (count ?? 0) > 0) && "motion-safe:animate-bell-ring"
         )}
       />
 
       {/* Unread count / pulsing dot for new notifications */}
-      {count > 0 ? (
-        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold animate-pulse shadow-lg shadow-red-500/50">
+      {count !== undefined && count > 0 ? (
+        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold motion-safe:animate-pulse shadow-sm">
           {count > 99 ? "99+" : count}
         </span>
-      ) : hasNew ? (
-        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-lg shadow-red-500/50" />
+      ) : count === undefined && hasNew ? (
+        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-destructive motion-safe:animate-pulse shadow-sm" />
       ) : null}
-    </button>
+    </Button>
   );
 };
 
