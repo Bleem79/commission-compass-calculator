@@ -612,19 +612,20 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
                 <label className="block space-y-1 text-xs font-medium">
                   <span>Message contents</span>
                 <Textarea
+                  dir="auto"
                   placeholder="Enter message contents..."
                   value={templateText}
                   onChange={(e) => isAdmin && setTemplateText(e.target.value)}
                   readOnly={!isAdmin}
                   disabled={savingTemplate}
-                  className="min-h-[70px] resize-none text-sm"
+                  className="min-h-[70px] resize-none text-sm text-start [unicode-bidi:plaintext]"
                 />
                 </label>
                 <div className="space-y-1.5">
                   <p className="text-xs font-medium">Preview</p>
                   <div className="flex justify-end">
                     <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary/10 border border-primary/20 px-3 py-2">
-                      <p className="whitespace-pre-wrap break-words text-sm text-foreground">
+                      <p dir="auto" className="whitespace-pre-wrap break-words text-sm text-foreground text-start [unicode-bidi:plaintext]">
                         {templateText.trim() ? templateText : <span className="text-muted-foreground italic">Message preview will appear here...</span>}
                       </p>
                     </div>
@@ -803,7 +804,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
                       className="flex justify-end"
                     >
                       <div className="max-w-[85%] p-3 rounded-lg bg-primary text-primary-foreground">
-                        <p className="text-sm whitespace-pre-wrap break-words">
+                        <p dir="auto" className="text-sm whitespace-pre-wrap break-words text-start [unicode-bidi:plaintext]">
                           {msg.content}
                         </p>
                         <div className="flex items-center justify-end gap-1 mt-1">
@@ -829,10 +830,11 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
 
           {/* Message Input */}
           <Textarea
+            dir="auto"
             placeholder="Type your private message here..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="min-h-[80px] resize-none"
+            className="min-h-[80px] resize-none text-start [unicode-bidi:plaintext]"
           />
 
           {/* Send Button */}
@@ -911,10 +913,11 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
 
           {/* Message Input */}
           <Textarea
+            dir="auto"
             placeholder="Type your message for all selected drivers..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="min-h-[100px] resize-none flex-1"
+            className="min-h-[100px] resize-none flex-1 text-start [unicode-bidi:plaintext]"
           />
 
           {/* Send Button */}

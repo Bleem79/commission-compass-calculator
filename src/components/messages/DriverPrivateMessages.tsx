@@ -203,7 +203,7 @@ export const DriverPrivateMessages = ({ onBack }: DriverPrivateMessagesProps) =>
                           <MessageSquare className="w-4 h-4 text-teal-300" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm sm:text-base whitespace-pre-wrap break-words">
+                          <p dir="auto" className="text-white text-sm sm:text-base whitespace-pre-wrap break-words text-start [unicode-bidi:plaintext]">
                             {message.content}
                           </p>
                           <p className="text-white/50 text-xs mt-2">
