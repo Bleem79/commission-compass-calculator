@@ -7,3 +7,4 @@
 - Message text uses native automatic direction with logical start alignment and plaintext bidi isolation so each language remains readable without changing stored content.
 - Private-message sends track successful and failed recipient batches separately; notify only saved recipients and retain failures for retry to avoid duplicate deliveries.
 - Scope private-message reads by recipient before pagination; shared pagination exhausts all pages so bulk sends cannot hide messages behind the Data API row limit.
+- Broadcast notification reminders use per-user local read IDs, paginated reads and realtime with polling fallback; never use shared broadcast read_at as an individual read receipt.

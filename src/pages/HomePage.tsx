@@ -55,6 +55,8 @@ const DriverPortalSettingsDialog = lazy(() => import("@/components/admin/DriverP
 const InstallBanner = lazy(() => import("@/components/pwa/InstallBanner"));
 const NotificationPrompt = lazy(() => import("@/components/pwa/NotificationPrompt"));
 import NotificationBell from "@/components/shared/NotificationBell";
+import { useAdminNotificationReminder } from "@/hooks/useAdminNotificationReminder";
+import { Button } from "@/components/ui/button";
 
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -119,6 +121,7 @@ const HomePage = () => {
   const isDriver = !!driverInfo?.driverId;
   const shouldApplyPagePermissions = user?.role === "user" || user?.role === "advanced";
   const canAccessNotifications = !shouldApplyPagePermissions || !isPageBlocked("notifications");
+  const { unreadCount: unreadNotificationCount } = useAdminNotificationReminder(user?.id, canAccessNotifications, isMessagesOpen);
 
   // Register push subscriptions for controllers (non-driver staff) so they receive request notifications
   usePushSubscriptionRegistration(user?.id, driverInfo?.driverId || null);
@@ -281,10 +284,11 @@ const HomePage = () => {
       onClick: () => navigate("/hotspot"),
     },
     {
-      icon: <Bell className="w-6 h-6 sm:w-8 sm:h-8" />,
+      icon: <Bell className={cn("w-6 h-6 sm:w-8 sm:h-8", unreadNotificationCount > 0 && "motion-safe:animate-bell-ring")} />,
       title: "Notifications",
       gradient: "bg-gradient-to-br from-fuchsia-500 via-purple-500 to-violet-600",
       pageKey: "notifications",
+      badge: unreadNotificationCount,
       onClick: () => setIsMessagesOpen(true),
     },
     {
@@ -502,7 +506,7 @@ const HomePage = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              {canAccessNotifications && <NotificationBell onClick={() => setIsMessagesOpen(true)} />}
+              {canAccessNotifications && <NotificationBell count={unreadNotificationCount} onClick={() => setIsMessagesOpen(true)} />}
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
@@ -577,6 +581,19 @@ const HomePage = () => {
           )}
 
           <div className="flex-1">
+            {canAccessNotifications && unreadNotificationCount > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => setIsMessagesOpen(true)}
+                className="mb-5 h-auto min-h-14 w-full justify-start whitespace-normal border-primary/30 bg-accent px-4 py-3 text-accent-foreground hover:bg-accent/80"
+              >
+                <Bell className="shrink-0 motion-safe:animate-bell-ring" />
+                <span className="flex-1 text-start">
+                  {unreadNotificationCount === 1 ? "1 unread admin notification" : `${unreadNotificationCount} unread admin notifications`}
+                </span>
+                <ChevronRight className="shrink-0" />
+              </Button>
+            )}
             <h2 className="text-slate-500 text-sm font-medium mb-4 uppercase tracking-wider">Quick Actions</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {visibleFeatures.map((feature) => (

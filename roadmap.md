@@ -1,5 +1,7 @@
 # AMAN Taxi presentation redesign
 
+- [x] Add a persistent unread bell/count and reminder to Home for admin broadcasts; clear when Notifications opens.
+
 - [ ] Shared semantic palette and existing UI controls
 - [ ] Grouped Home and Driver Portal shortcuts with desktop/mobile navigation
 - [ ] Consistent shared shell for all financial, request, management and reporting pages
