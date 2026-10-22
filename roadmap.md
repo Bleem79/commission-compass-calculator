@@ -8,4 +8,5 @@
 - [ ] Authenticated workflow checks — blocked by external unmanaged sign-in
 - [x] Message templates per nationality in admin SMS dialog (nationalities from yango_driver_list)
 - [x] Named SMS templates with saved message contents and multiple nationalities (3 tests passed; authenticated save/send check unavailable on external sign-in)
-- [ ] Verify nationality message targeting, batch failure handling and notification coverage without sending unsolicited messages
+- [x] Check nationality targeting and fix batch retries, message pagination, and notification reporting (9 tests passed; template matches 579 active drivers, 267 registered for push)
+- [ ] Actual signed-in send and recipient receipt confirmation — blocked by external unmanaged sign-in; no unsolicited test messages sent
