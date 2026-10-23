@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { toast } from "sonner";
-import { Send, Search, X, MessageSquare, User, ArrowLeft, Inbox, Check, CheckCheck, Users, CheckSquare, Square, FileText, Save, Trash2 } from "lucide-react";
+import { Send, Search, X, MessageSquare, User, ArrowLeft, Inbox, Check, CheckCheck, Users, CheckSquare, Square, FileText, Save, Trash2, History } from "lucide-react";
+import { SmsSendHistory, logSmsSend } from "./SmsSendHistory";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -64,6 +65,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [showHistory, setShowHistory] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState("new");
   const [templateTitle, setTemplateTitle] = useState("");
   const [selectedNationalities, setSelectedNationalities] = useState<string[]>([]);
@@ -449,6 +451,8 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
       queryClient.invalidateQueries({ queryKey: ["admin-messages"] });
       queryClient.invalidateQueries({ queryKey: ["driver-message-history", selectedDriver?.driver_id] });
 
+      await logSmsSend({ message: message.trim(), sentIds: [selectedDriver.driver_id], failedIds: [] });
+      queryClient.invalidateQueries({ queryKey: ["sms-send-history"] });
       await notifyDrivers([selectedDriver.driver_id], message.trim());
     } catch (error) {
       console.error("Error sending message:", error);
@@ -493,6 +497,9 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
           description: failCount > 0 ? `Failed to send to ${failCount} driver(s)` : undefined,
         });
 
+        const tpl = selectedTemplateId !== "new" ? templateTitle : null;
+        await logSmsSend({ message: message.trim(), templateTitle: tpl, nationalities: tpl ? selectedNationalities : [], sentIds, failedIds });
+        queryClient.invalidateQueries({ queryKey: ["sms-send-history"] });
         await notifyDrivers(sentIds, message.trim());
         setSelectedDriverIds(new Set(failedIds));
         if (failCount === 0) {
@@ -536,8 +543,12 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     <div className="flex flex-col h-full max-h-[70vh] overflow-y-auto">
       {(driverLoadError || nationalityLoadError) && <p role="alert" className="text-sm text-destructive">Unable to load the complete driver or nationality list. Reopen this window to try again.</p>}
       {/* Driver Selection List */}
-      {viewMode === "list" && (
+      {showHistory && <SmsSendHistory onBack={() => setShowHistory(false)} />}
+      {!showHistory && viewMode === "list" && (
         <div className="flex flex-col gap-4">
+          <Button variant="outline" onClick={() => setShowHistory(true)} className="min-h-11 self-start">
+            <History className="w-4 h-4 mr-2" />SMS Send History
+          </Button>
           {/* Search Input */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
