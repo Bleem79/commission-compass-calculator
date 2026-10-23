@@ -225,15 +225,21 @@ const VideoTutorialsPage = () => {
             onTouchStart={showControlsTemporarily}
             onMouseMove={showControlsTemporarily}
           />
-          <div className="flex-1 flex items-center justify-center px-2">
-            <iframe
-              src={toEmbedUrl(playingVideo.video_url) || ""}
-              className="w-full h-full max-w-4xl rounded-lg"
+          <div className="flex-1 flex items-center justify-center px-0">
+            {/* Wrapper clips the Google Drive player's own title bar so it never covers the video */}
+            <div
+              className="relative w-full max-w-4xl overflow-hidden rounded-lg bg-black"
               style={{ aspectRatio: "16/9", maxHeight: "95vh" }}
-              allow="autoplay; encrypted-media; fullscreen"
-              allowFullScreen
-              sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-            />
+            >
+              <iframe
+                src={toEmbedUrl(playingVideo.video_url) || ""}
+                className="absolute left-0 w-full"
+                style={{ top: "-56px", height: "calc(100% + 56px)" }}
+                allow="autoplay; encrypted-media; fullscreen"
+                allowFullScreen
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+              />
+            </div>
           </div>
         </div>
       )}
