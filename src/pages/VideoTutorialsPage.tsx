@@ -200,46 +200,42 @@ const VideoTutorialsPage = () => {
 
       {/* In-app video player dialog */}
       {playingVideo && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
+        <div className="fixed inset-0 z-50 bg-black" style={{ height: "100dvh" }}>
+          {/* Player fills the whole screen so vertical phone videos aren't shrunk under Drive's overlay buttons */}
+          <iframe
+            src={toEmbedUrl(playingVideo.video_url) || ""}
+            className="absolute inset-0 h-full w-full border-0"
+            allow="autoplay; encrypted-media; fullscreen"
+            allowFullScreen
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            title={playingVideo.title}
+          />
+          {/* Invisible blocker over Drive's pop-out icon (top-right) so it can't be tapped by accident */}
+          <div className="absolute right-0 top-0 z-10 h-14 w-14" aria-hidden="true" />
+          {/* Thin tap zone at the very top edge to re-reveal controls without blocking the video */}
           <div
-            className={`absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-3 sm:p-4 bg-gradient-to-b from-black/70 to-transparent transition-opacity duration-300 ${
-              controlsVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+            className="absolute left-0 right-14 top-0 z-20 h-12"
+            onClick={showControlsTemporarily}
+            onTouchStart={showControlsTemporarily}
+            onMouseMove={showControlsTemporarily}
+          />
+          <div
+            className={`absolute left-0 right-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent p-3 transition-opacity duration-300 sm:p-4 ${
+              controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
           >
-            <h2 className="text-white text-sm sm:text-base font-medium truncate flex-1 mr-3">
+            <h2 className="mr-3 flex-1 truncate text-sm font-medium text-white sm:text-base">
               {playingVideo.title}
             </h2>
             <Button
               size="icon"
               variant="ghost"
-              className="text-white hover:bg-white/20 min-h-[44px] min-w-[44px]"
+              className="min-h-[44px] min-w-[44px] text-white hover:bg-white/20"
               onClick={() => setPlayingVideo(null)}
+              aria-label="Close video"
             >
               <X className="h-6 w-6" />
             </Button>
-          </div>
-          {/* Thin tap zone at the very top edge to re-reveal controls without blocking the video */}
-          <div
-            className="absolute top-0 left-0 right-0 h-12 z-20"
-            onClick={showControlsTemporarily}
-            onTouchStart={showControlsTemporarily}
-            onMouseMove={showControlsTemporarily}
-          />
-          <div className="flex-1 flex items-center justify-center px-0">
-            {/* Wrapper clips the Google Drive player's own title bar so it never covers the video */}
-            <div
-              className="relative w-full max-w-4xl overflow-hidden rounded-lg bg-black"
-              style={{ aspectRatio: "16/9", maxHeight: "95vh" }}
-            >
-              <iframe
-                src={toEmbedUrl(playingVideo.video_url) || ""}
-                className="absolute left-0 w-full"
-                style={{ top: "-56px", height: "calc(100% + 56px)" }}
-                allow="autoplay; encrypted-media; fullscreen"
-                allowFullScreen
-                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-              />
-            </div>
           </div>
         </div>
       )}
