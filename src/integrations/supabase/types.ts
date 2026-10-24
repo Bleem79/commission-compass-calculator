@@ -814,6 +814,36 @@ export type Database = {
           },
         ]
       }
+      safe_parking: {
+        Row: {
+          area_name: string
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          parking_name: string
+          updated_at: string
+        }
+        Insert: {
+          area_name: string
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          parking_name: string
+          updated_at?: string
+        }
+        Update: {
+          area_name?: string
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          parking_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sharjah_locations: {
         Row: {
           created_at: string
