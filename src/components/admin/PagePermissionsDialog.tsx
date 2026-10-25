@@ -14,6 +14,7 @@ const ALL_PAGES = [
   { key: "hotspot", label: "Hotspot" },
   { key: "notifications", label: "Notifications" },
   { key: "cng-location", label: "CNG Locations" },
+  { key: "safe-parking", label: "Safe Parking" },
   { key: "driver-income", label: "Driver Income" },
   { key: "driver-management", label: "Driver Management" },
   { key: "driver-absent-fine", label: "Absent Fine Upload" },

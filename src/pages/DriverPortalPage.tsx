@@ -177,6 +177,13 @@ const DriverPortalPage = () => {
 
   const allPortalItems = [
     {
+      key: "safe_parking",
+      icon: <Car className="w-8 h-8 sm:w-10 sm:h-10" />,
+      title: "Safe Parking",
+      gradient: "bg-primary",
+      onClick: () => navigate("/safe-parking"),
+    },
+    {
       key: "driver_income",
       icon: <CalendarDays className="w-8 h-8 sm:w-10 sm:h-10" />,
       title: "Driver Income",
