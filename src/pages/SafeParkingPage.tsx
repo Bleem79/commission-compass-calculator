@@ -104,7 +104,8 @@ export default function SafeParkingPage() {
     if (!isAdmin || !valid.length) return;
     setSaving(true);
     try {
-      const { data, error } = await supabase.rpc('import_safe_parking', { p_rows: valid.map(row => row.record) });
+      const p_rows = valid.flatMap(row => row.record ? [{ parking_name: row.record.parking_name, area_name: row.record.area_name, latitude: row.record.latitude, longitude: row.record.longitude }] : []);
+      const { data, error } = await supabase.rpc('import_safe_parking', { p_rows });
       if (error) throw error;
       const summary = data as { saved: number; skipped: number };
       toast.success(`Import complete: ${summary.saved} saved, ${summary.skipped + (preview?.filter(r => r.duplicate).length ?? 0)} duplicates skipped, ${preview?.filter(r => r.error).length ?? 0} invalid rows not imported.`);
