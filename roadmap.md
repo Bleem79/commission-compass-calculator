@@ -1,10 +1,11 @@
 # AMAN Taxi presentation redesign
 
 ## Safe Parking enhancement
-- [ ] Database, administrator-only writes and trusted validation
-- [ ] Excel preview, duplicate handling and administrator record management
-- [ ] Read-only directory, search, navigation and existing permission integration
-- [ ] Real routing estimates when configured; unit and desktop/mobile checks
+- [x] Database, administrator-only writes and trusted validation
+- [x] Excel preview, duplicate handling and administrator record management
+- [x] Read-only directory, search, navigation and existing permission integration
+- [x] Secure routing function deployed; 20 tests pass, XLS/XLSX parsing and desktop/phone signed-out guards checked
+- [ ] Signed-in desktop/mobile directory and Google Maps routing validation — external session unavailable; Maps requires user validation on deployed origin
 - [ ] Authenticated end-to-end verification — external Supabase session unavailable
 
 - [x] Add a persistent unread bell/count and reminder to Home for admin broadcasts; clear when Notifications opens.

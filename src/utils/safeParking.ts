@@ -20,7 +20,7 @@ export function previewParking(sheet: unknown[][], existing: ParkingInput[]): Pa
   const coordinateIndex = headers.findIndex(h => ['coordinates', 'coordinate', 'latitudelongitude', 'latlong', 'latlng'].includes(h));
   if (areaIndex < 0 || coordinateIndex < 0) throw new Error('Required columns: Name of Parking, Area Name, Coordinates (latitude, longitude).');
   const seen = new Set(existing.map(parkingKey));
-  return sheet.slice(headerRow + 1).flatMap((cells, index) => {
+  return sheet.slice(headerRow + 1).flatMap<ParkingPreview>((cells, index) => {
     if (cells.every(cell => String(cell ?? '').trim() === '')) return [];
     const row = headerRow + index + 2;
     const coordinates = String(cells[coordinateIndex] ?? '').split(',').map(v => v.trim());

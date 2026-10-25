@@ -8,3 +8,5 @@
 - Private-message sends track successful and failed recipient batches separately; notify only saved recipients and retain failures for retry to avoid duplicate deliveries.
 - Scope private-message reads by recipient before pagination; shared pagination exhausts all pages so bulk sends cannot hide messages behind the Data API row limit.
 - Broadcast notification reminders use per-user local read IDs, paginated reads and realtime with polling fallback; never use shared broadcast read_at as an individual read receipt.
+- Safe Parking reuses protected page permissions and shared controls; all writes are protected by administrator RLS and database validation, and Excel imports use an atomic invoker RPC that skips duplicates without overwrites.
+- Safe Parking routing uses an authenticated server function with a stored destination and bounded current-location input; Google Maps credentials stay server-side, and navigation remains usable if estimates fail.

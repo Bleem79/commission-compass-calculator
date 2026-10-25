@@ -39,6 +39,7 @@ const InfoPage = lazyRetry(() => import("./pages/InfoPage"));
 const MFuelPage = lazyRetry(() => import("./pages/MFuelPage"));
 const HotspotPage = lazyRetry(() => import("./pages/HotspotPage"));
 const CNGLocationPage = lazyRetry(() => import("./pages/CNGLocationPage"));
+const SafeParkingPage = lazyRetry(() => import("./pages/SafeParkingPage"));
 const DriverIncomePage = lazyRetry(() => import("./pages/DriverIncomePage"));
 const DriverManagementPage = lazyRetry(() => import("./pages/DriverManagementPage"));
 const DriverAbsentFinePage = lazyRetry(() => import("./pages/DriverAbsentFinePage"));
@@ -174,6 +175,7 @@ const AppRoutes = () => {
         <Route path="/m-fuel" element={<PageGuard pageKey="m-fuel"><MFuelPage /></PageGuard>} />
         <Route path="/hotspot" element={<PageGuard pageKey="hotspot"><HotspotPage /></PageGuard>} />
         <Route path="/cng-location" element={<PageGuard pageKey="cng-location"><CNGLocationPage /></PageGuard>} />
+        <Route path="/safe-parking" element={<PageGuard pageKey="safe-parking"><SafeParkingPage /></PageGuard>} />
         <Route path="/driver-income" element={<PageGuard pageKey="driver-income"><DriverIncomePage /></PageGuard>} />
         <Route path="/driver-management" element={<PageGuard pageKey="driver-management"><DriverManagementPage /></PageGuard>} />
         <Route path="/driver-absent-fine" element={<PageGuard pageKey="driver-absent-fine"><DriverAbsentFinePage /></PageGuard>} />
