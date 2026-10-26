@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as XLSX from 'xlsx';
 import { FunctionsHttpError } from '@supabase/supabase-js';
-import { MapPin, Plus, Upload, Pencil, Trash2, Loader2, Search } from 'lucide-react';
+import { MapPin, Navigation, Plus, Upload, Pencil, Trash2, Loader2, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { PageLayout } from '@/components/shared/PageLayout';
