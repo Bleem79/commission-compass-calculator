@@ -312,13 +312,13 @@ const HomePage = () => {
       pageKey: "cng-location",
       onClick: () => navigate("/cng-location"),
     },
-    {
+    ...(safeParkingEnabled || isAdmin ? [{
       icon: <MapPin className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Safe Parking",
       gradient: "bg-primary",
       pageKey: "safe-parking",
       onClick: () => navigate("/safe-parking"),
-    },
+    }] : []),
     {
       icon: <CalendarDays className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: isAdmin || canAccessAdminPages ? "Driver Income" : "Driver Main Portal",
