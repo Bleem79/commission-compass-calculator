@@ -117,7 +117,21 @@ const HomePage = () => {
   const [isPayslipNoticeOpen, setIsPayslipNoticeOpen] = useState(false);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const [badgeImageUrl, setBadgeImageUrl] = useState<string | null>(null);
+  const [safeParkingEnabled, setSafeParkingEnabled] = useState(true);
   const { driverInfo } = useDriverCredentials();
+
+  useEffect(() => {
+    if (isAdmin) return;
+    supabase
+      .from("driver_portal_settings")
+      .select("is_enabled")
+      .eq("feature_key", "safe_parking")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setSafeParkingEnabled(Boolean(data.is_enabled));
+      })
+      .catch(() => {});
+  }, [isAdmin]);
   const isDriver = !!driverInfo?.driverId;
   const shouldApplyPagePermissions = user?.role === "user" || user?.role === "advanced";
   const canAccessNotifications = !shouldApplyPagePermissions || !isPageBlocked("notifications");
