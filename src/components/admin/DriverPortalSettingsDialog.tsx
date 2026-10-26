@@ -77,6 +77,7 @@ export const DriverPortalSettingsDialog = ({ open, onOpenChange }: DriverPortalS
   };
 
   const featureIcons: Record<string, string> = {
+    safe_parking: "🅿️",
     driver_income: "📊",
     target_trips: "🎯",
     absent_fine: "⚠️",
