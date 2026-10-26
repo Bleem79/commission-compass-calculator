@@ -129,8 +129,7 @@ const HomePage = () => {
       .maybeSingle()
       .then(({ data }) => {
         if (data) setSafeParkingEnabled(Boolean(data.is_enabled));
-      })
-      .catch(() => {});
+      });
   }, [isAdmin]);
   const isDriver = !!driverInfo?.driverId;
   const shouldApplyPagePermissions = user?.role === "user" || user?.role === "advanced";
