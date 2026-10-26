@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Navigation, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,8 @@ interface LocationCardProps {
   name: string;
   url: string;
   distance?: number | null;
+  subtitle?: string;
+  actions?: ReactNode;
   onOpenLocation: (url: string) => void;
 }
 
@@ -22,6 +25,8 @@ const LocationCard = ({
   name,
   url,
   distance,
+  subtitle,
+  actions,
   onOpenLocation,
 }: LocationCardProps) => {
   return (
@@ -36,6 +41,9 @@ const LocationCard = ({
               <h3 className="text-base md:text-lg font-medium text-foreground truncate">
                 {name}
               </h3>
+              {subtitle && (
+                <p className="text-sm text-muted-foreground truncate">{subtitle}</p>
+              )}
               {distance !== null && distance !== undefined && (
                 <p className="flex items-center gap-1 text-sm text-muted-foreground">
                   <MapPin className="h-3 w-3" />
@@ -54,6 +62,7 @@ const LocationCard = ({
             <span>Maps</span>
           </Button>
         </div>
+        {actions}
       </CardContent>
     </Card>
   );
