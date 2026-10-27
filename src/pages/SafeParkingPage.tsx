@@ -205,6 +205,12 @@ export default function SafeParkingPage() {
     <p className="text-sm text-muted-foreground mb-3">{filtered.length} locations</p>
     <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] rounded-lg overflow-hidden border-2 border-border mb-6 relative">
       <LeafletMap center={mapCenter} zoom={13} markers={markers} onMarkerClick={openMarkerDirections} userLocation={userLocation} />
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center overflow-hidden">
+        <div className="-rotate-12 select-none text-center">
+          <span className="block text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-[0.15em] text-muted-foreground/25">Demonstration only</span>
+          <span className="mt-2 block text-xs sm:text-lg md:text-xl font-bold uppercase tracking-[0.35em] text-muted-foreground/30">Not final</span>
+        </div>
+      </div>
     </div>
     <h2 className="text-xl font-semibold text-foreground mb-4">Safe Parking Directory</h2>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
