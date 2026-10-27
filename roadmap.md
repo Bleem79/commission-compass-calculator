@@ -6,7 +6,7 @@
 - [x] Read-only directory, search, navigation and existing permission integration
 - [x] Secure routing function deployed; 20 tests pass, XLS/XLSX parsing and desktop/phone signed-out guards checked
 - [x] Map watermark "Demonstration only / Not final" over the map plus a plain-text note beneath it, sized and contrasted for phone screens
-- [ ] Safe Parking headings and descriptions reworded for heavy rain and flooding
+- [x] Safe Parking headings and descriptions reworded for heavy rain and flooding
 - [ ] Signed-in desktop/mobile directory and Google Maps routing validation — external session unavailable; Maps requires user validation on deployed origin
 - [ ] Authenticated end-to-end verification — external Supabase session unavailable
 
