@@ -189,7 +189,7 @@ export default function SafeParkingPage() {
   const routeText = (record: ParkingRecord) => routes[record.id] ? <p className="text-sm text-primary mt-2">{(routes[record.id].distanceMeters / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} km · {Math.ceil(routes[record.id].durationSeconds / 60)} min driving</p> : null;
 
   return <PageLayout title="Safe Parking" icon={<MapPin className="h-6 w-6" />} maxWidth="6xl" gradient="from-background via-muted to-muted/50" headerActions={isAdmin ? <><input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => readFile(e.target.files?.[0])} /><Button variant="outline" className="min-h-11" disabled={reading || isLoading || !!error} onClick={() => fileRef.current?.click()}>{reading ? <Loader2 className="animate-spin" /> : <Upload />}Import Excel</Button><Button className="min-h-11" onClick={() => edit()}><Plus />Add Parking</Button></> : undefined}>
-    <p className="text-muted-foreground mb-4">Find designated safe parking locations and navigate to them.</p>
+    <p className="text-muted-foreground mb-4">Find safe parking locations during heavy rain and flooding, and navigate to them.</p>
     <div className="flex items-center gap-2 text-sm mb-4">
       {isLoadingLocation ? (
         <span className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Getting your location...</span>
@@ -203,10 +203,17 @@ export default function SafeParkingPage() {
     {navigation && <div role="status" className="border border-border bg-muted p-4 rounded-lg mb-4"><p className="text-sm mb-3">{navigation.message}</p><Button asChild variant="outline" className="min-h-11"><a href={navigation.url} target="_blank" rel="noopener noreferrer"><Navigation />Open Google Maps</a></Button></div>}
     {isLoading ? <div role="status" className="py-12 flex justify-center gap-2"><Loader2 className="animate-spin" />Loading parking locations…</div> : error ? <div role="alert" className="py-8"><p className="text-destructive mb-3">Could not load parking: {errorText(error)}</p><Button variant="outline" onClick={() => refetch()}>Try again</Button></div> : !filtered.length ? <div className="text-center py-14 border-y border-border"><MapPin className="mx-auto h-9 w-9 text-muted-foreground mb-3" /><p className="font-semibold">{records.length ? 'No matching parking locations' : 'No safe parking locations yet'}</p></div> : <>
     <p className="text-sm text-muted-foreground mb-3">{filtered.length} locations</p>
-    <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] rounded-lg overflow-hidden border-2 border-border mb-6 relative">
+    <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] rounded-lg overflow-hidden border-2 border-border mb-3 relative">
       <LeafletMap center={mapCenter} zoom={13} markers={markers} onMarkerClick={openMarkerDirections} userLocation={userLocation} />
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center overflow-hidden">
+        <div className="-rotate-12 select-none text-center">
+          <span className="block whitespace-nowrap text-[22px] sm:text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-[0.02em] sm:tracking-[0.1em] lg:tracking-[0.15em] text-muted-foreground opacity-40 sm:opacity-25">Demonstration only</span>
+          <span className="mt-2 block whitespace-nowrap text-[11px] sm:text-sm md:text-base lg:text-xl font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-50 sm:opacity-30">Not final</span>
+        </div>
+      </div>
     </div>
-    <h2 className="text-xl font-semibold text-foreground mb-4">Safe Parking Directory</h2>
+    <p className="text-center text-sm font-semibold text-muted-foreground mb-5">Parking locations shown are for demonstration only, not final.</p>
+    <h2 className="text-xl font-semibold text-foreground mb-4">Flood-Safe Parking Directory</h2>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
       {displayed.map(record => (
         <LocationCard
