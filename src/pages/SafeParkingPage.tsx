@@ -189,7 +189,7 @@ export default function SafeParkingPage() {
   const routeText = (record: ParkingRecord) => routes[record.id] ? <p className="text-sm text-primary mt-2">{(routes[record.id].distanceMeters / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} km · {Math.ceil(routes[record.id].durationSeconds / 60)} min driving</p> : null;
 
   return <PageLayout title="Safe Parking" icon={<MapPin className="h-6 w-6" />} maxWidth="6xl" gradient="from-background via-muted to-muted/50" headerActions={isAdmin ? <><input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => readFile(e.target.files?.[0])} /><Button variant="outline" className="min-h-11" disabled={reading || isLoading || !!error} onClick={() => fileRef.current?.click()}>{reading ? <Loader2 className="animate-spin" /> : <Upload />}Import Excel</Button><Button className="min-h-11" onClick={() => edit()}><Plus />Add Parking</Button></> : undefined}>
-    <p className="text-muted-foreground mb-4">Find designated safe parking locations and navigate to them.</p>
+    <p className="text-muted-foreground mb-4">Find safe parking locations during heavy rain and flooding, and navigate to them.</p>
     <div className="flex items-center gap-2 text-sm mb-4">
       {isLoadingLocation ? (
         <span className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Getting your location...</span>
@@ -213,7 +213,7 @@ export default function SafeParkingPage() {
       </div>
     </div>
     <p className="text-center text-sm font-semibold text-muted-foreground mb-5">Parking locations shown are for demonstration only, not final.</p>
-    <h2 className="text-xl font-semibold text-foreground mb-4">Safe Parking Directory</h2>
+    <h2 className="text-xl font-semibold text-foreground mb-4">Flood-Safe Parking Directory</h2>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
       {displayed.map(record => (
         <LocationCard
