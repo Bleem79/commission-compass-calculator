@@ -207,7 +207,7 @@ export default function SafeParkingPage() {
       <LeafletMap center={mapCenter} zoom={13} markers={markers} onMarkerClick={openMarkerDirections} userLocation={userLocation} />
       <div aria-hidden className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center overflow-hidden">
         <div className="-rotate-12 select-none text-center">
-          <span className="block whitespace-nowrap text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-[0.04em] sm:tracking-[0.1em] lg:tracking-[0.15em] text-muted-foreground opacity-40 sm:opacity-25">Demonstration only</span>
+          <span className="block whitespace-nowrap text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-[0.02em] sm:tracking-[0.1em] lg:tracking-[0.15em] text-muted-foreground opacity-40 sm:opacity-25">Demonstration only</span>
           <span className="mt-2 block whitespace-nowrap text-[11px] sm:text-sm md:text-base lg:text-xl font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-50 sm:opacity-30">Not final</span>
         </div>
       </div>
