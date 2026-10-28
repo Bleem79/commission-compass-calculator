@@ -1,5 +1,10 @@
 # AMAN Taxi presentation redesign
 
+## Driver Residence
+- [ ] Admin-only navigation and protected residence data access
+- [ ] Area/city statistics, unique driver counts and map pins from Yango residence data
+- [ ] Count/coordinate tests and available page checks
+
 ## Yango driver list columns
 - [x] Add nullable City, Area, Google Map storage without changing existing records or permissions
 - [x] Include new columns in Excel template, upload parsing, desktop table and mobile list
