@@ -1197,10 +1197,13 @@ export type Database = {
       }
       yango_driver_list: {
         Row: {
+          area: string | null
+          city: string | null
           created_at: string
           driver_id: string
           driver_name: string | null
           gender: string | null
+          google_map: string | null
           hr_status: string | null
           id: string
           mobile_no: string | null
@@ -1210,10 +1213,13 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
+          area?: string | null
+          city?: string | null
           created_at?: string
           driver_id: string
           driver_name?: string | null
           gender?: string | null
+          google_map?: string | null
           hr_status?: string | null
           id?: string
           mobile_no?: string | null
@@ -1223,10 +1229,13 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
+          area?: string | null
+          city?: string | null
           created_at?: string
           driver_id?: string
           driver_name?: string | null
           gender?: string | null
+          google_map?: string | null
           hr_status?: string | null
           id?: string
           mobile_no?: string | null
