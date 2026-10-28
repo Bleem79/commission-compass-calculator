@@ -1,0 +1,1 @@
+ALTER FUNCTION public.get_driver_residence_rows(integer) SECURITY INVOKER;
