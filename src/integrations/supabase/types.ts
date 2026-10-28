@@ -1347,6 +1347,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_driver_residence_rows: {
+        Args: { p_offset?: number }
+        Returns: {
+          area: string
+          city: string
+          driver_id: string
+          google_map: string
+        }[]
+      }
       get_my_username: { Args: never; Returns: string }
       has_admin_role: { Args: { user_id: string }; Returns: boolean }
       has_role:

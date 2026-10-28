@@ -11,3 +11,4 @@
 - Safe Parking reuses protected page permissions and shared controls; all writes are protected by administrator RLS and database validation, and Excel imports use an atomic invoker RPC that skips duplicates without overwrites.
 - Safe Parking routing uses an authenticated server function with a stored destination and bounded current-location input; Google Maps credentials stay server-side, and navigation remains usable if estimates fail.
 - Yango driver-list uploads use a shared row parser with nullable location fields so legacy spreadsheets remain compatible and column mapping can be tested independently.
+- Driver Residence reads through an admin-checked invoker RPC, deduplicates newest-first driver records, and reuses English Esri/Leaflet maps with validated uploaded coordinates; unresolved locations remain explicitly unmapped.
