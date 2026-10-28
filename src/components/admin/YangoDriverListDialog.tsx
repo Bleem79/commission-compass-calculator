@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { parseYangoDriverRow } from "@/utils/yangoDriverList";
 
 interface Row {
   id: string;
@@ -17,20 +18,12 @@ interface Row {
   mobile_no: string | null;
   status: string | null;
   hr_status: string | null;
+  city: string | null;
+  area: string | null;
+  google_map: string | null;
 }
 
 const PAGE_SIZE = 15;
-
-const pick = (row: Record<string, unknown>, keys: string[]) => {
-  for (const k of Object.keys(row)) {
-    const norm = k.toLowerCase().replace(/[^a-z]/g, "");
-    if (keys.includes(norm)) {
-      const v = row[k];
-      return v === null || v === undefined ? "" : String(v).trim();
-    }
-  }
-  return "";
-};
 
 export const YangoDriverListDialog = ({
   open,
@@ -56,7 +49,7 @@ export const YangoDriverListDialog = ({
       while (true) {
         const { data, error } = await supabase
           .from("yango_driver_list")
-          .select("id, s_no, driver_id, driver_name, gender, nationality, mobile_no, status, hr_status")
+          .select("id, s_no, driver_id, driver_name, gender, nationality, mobile_no, status, hr_status, city, area, google_map")
           .order("s_no", { ascending: true })
           .range(from, from + batch - 1);
         if (error) throw error;
@@ -89,6 +82,9 @@ export const YangoDriverListDialog = ({
         "Mobile No": "971502087454",
         Status: "OSR",
         "HR Status": "Resigned",
+        City: "",
+        Area: "",
+        "Google Map": "",
       },
     ]);
     const wb = XLSX.utils.book_new();
@@ -108,17 +104,7 @@ export const YangoDriverListDialog = ({
       const { data: userData } = await supabase.auth.getUser();
 
       const payload = raw
-        .map((r) => ({
-          s_no: Number(pick(r, ["sno", "sn", "srno", "serialno"])) || null,
-          driver_id: pick(r, ["driverid", "driverno", "empcde", "id"]),
-          driver_name: pick(r, ["drvrname", "drivername", "name"]) || null,
-          gender: pick(r, ["gender", "sex"]) || null,
-          nationality: pick(r, ["nationality"]) || null,
-          mobile_no: pick(r, ["mobileno", "mobile", "phone", "phoneno", "contactno"]) || null,
-          status: pick(r, ["status"]) || null,
-          hr_status: pick(r, ["hrstatus"]) || null,
-          uploaded_by: userData.user?.id ?? null,
-        }))
+        .map((r) => parseYangoDriverRow(r, userData.user?.id ?? null))
         .filter((r) => r.driver_id);
 
       if (payload.length === 0) {
@@ -220,7 +206,7 @@ export const YangoDriverListDialog = ({
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Columns: S.No, Driver Id, Drvr Name, Gender, Nationality, Mobile No, Status, HR Status
+          Columns: S.No, Driver Id, Drvr Name, Gender, Nationality, Mobile No, Status, HR Status, City, Area, Google Map
         </p>
 
         {loading ? (
@@ -251,6 +237,9 @@ export const YangoDriverListDialog = ({
                       ["Mobile No", r.mobile_no || "—"],
                       ["Status", r.status || "—"],
                       ["HR Status", r.hr_status || "—"],
+                      ["City", r.city || "—"],
+                      ["Area", r.area || "—"],
+                      ["Google Map", r.google_map || "—"],
                     ].map(([label, value]) => (
                       <div key={label as string} className="min-w-0">
                         <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -264,7 +253,7 @@ export const YangoDriverListDialog = ({
 
             <div className="hidden sm:block overflow-x-auto rounded-lg border">
 
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[1200px] text-sm">
                 <thead className="bg-muted/50">
                   <tr className="text-xs uppercase tracking-wider text-muted-foreground">
                     <th className="text-left font-medium px-3 py-2">S.No</th>
@@ -275,6 +264,9 @@ export const YangoDriverListDialog = ({
                     <th className="text-left font-medium px-3 py-2">Mobile No</th>
                     <th className="text-left font-medium px-3 py-2">Status</th>
                     <th className="text-left font-medium px-3 py-2">HR Status</th>
+                    <th className="text-left font-medium px-3 py-2">City</th>
+                    <th className="text-left font-medium px-3 py-2">Area</th>
+                    <th className="text-left font-medium px-3 py-2">Google Map</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -288,6 +280,9 @@ export const YangoDriverListDialog = ({
                       <td className="px-3 py-2">{r.mobile_no || "—"}</td>
                       <td className="px-3 py-2">{r.status || "—"}</td>
                       <td className="px-3 py-2">{r.hr_status || "—"}</td>
+                      <td className="px-3 py-2">{r.city || "—"}</td>
+                      <td className="px-3 py-2">{r.area || "—"}</td>
+                      <td className="px-3 py-2 max-w-64 break-words">{r.google_map || "—"}</td>
                     </tr>
                   ))}
                 </tbody>

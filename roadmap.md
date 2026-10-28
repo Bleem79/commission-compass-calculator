@@ -1,5 +1,10 @@
 # AMAN Taxi presentation redesign
 
+## Yango driver list columns
+- [x] Add nullable City, Area, Google Map storage without changing existing records or permissions
+- [x] Include new columns in Excel template, upload parsing, desktop table and mobile list
+- [ ] Verify column parsing and current page errors
+
 ## Safe Parking enhancement
 - [x] Database, administrator-only writes and trusted validation
 - [x] Excel preview, duplicate handling and administrator record management
