@@ -61,6 +61,7 @@ const AdminSurveyPage = lazyRetry(() => import("./pages/AdminSurveyPage"));
 const DriverYangoPage = lazyRetry(() => import("./pages/DriverYangoPage"));
 const AdminYangoPage = lazyRetry(() => import("./pages/AdminYangoPage"));
 const AdminYangoIncomePage = lazyRetry(() => import("./pages/AdminYangoIncomePage"));
+const AdminDriverResidencePage = lazyRetry(() => import("./pages/AdminDriverResidencePage"));
 const AdminEntryPassPage = lazyRetry(() => import("./pages/AdminEntryPassPage"));
 const VideoTutorialsPage = lazyRetry(() => import("./pages/VideoTutorialsPage"));
 const PRDPage = lazyRetry(() => import("./pages/PRDPage"));
@@ -196,6 +197,7 @@ const AppRoutes = () => {
         <Route path="/driver-yango" element={<DriverYangoPage />} />
         <Route path="/admin-yango" element={<PageGuard pageKey="admin-yango"><AdminYangoPage /></PageGuard>} />
         <Route path="/admin-yango-income" element={<PageGuard pageKey="admin-yango-income"><AdminYangoIncomePage /></PageGuard>} />
+        <Route path="/admin-driver-residence" element={<AdminDriverResidencePage />} />
         <Route path="/admin-entry-pass" element={<PageGuard pageKey="admin-entry-pass"><AdminEntryPassPage /></PageGuard>} />
         <Route path="/video-tutorials" element={<PageGuard pageKey="video-tutorials"><VideoTutorialsPage /></PageGuard>} />
         <Route path="/prd" element={<PRDPage />} />

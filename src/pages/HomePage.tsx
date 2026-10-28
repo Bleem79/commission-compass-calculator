@@ -337,6 +337,15 @@ const HomePage = () => {
 
   const isFleetUser = user?.email?.toLowerCase() === "fleet@amantaxi.com" || user?.email?.toLowerCase() === "emad@amantaximena.com";
 
+  if (isAdmin) {
+    features.push({
+      icon: <MapPin className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Driver Residence",
+      gradient: "bg-primary",
+      onClick: () => navigate("/admin-driver-residence"),
+    });
+  }
+
   if (canAccessAdminPages && !isFleetUser) {
     features.push({
       icon: <Users className="w-6 h-6 sm:w-8 sm:h-8" />,

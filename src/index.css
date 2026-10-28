@@ -3,6 +3,25 @@
 @tailwind components;
 @tailwind utilities;
 
+.residence-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50% 50% 50% 0;
+  border: 2px solid hsl(var(--primary-foreground));
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: var(--shadow-md);
+}
+.residence-pin-selected {
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+}
+
 @layer base {
   :root {
     --background: 0 0% 96%;
