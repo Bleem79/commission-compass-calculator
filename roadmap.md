@@ -3,7 +3,8 @@
 ## Yango driver list columns
 - [x] Add nullable City, Area, Google Map storage without changing existing records or permissions
 - [x] Include new columns in Excel template, upload parsing, desktop table and mobile list
-- [ ] Verify column parsing and current page errors
+- [x] Verify column parsing (4 tests pass) and current page errors (build OK)
+- [ ] Signed-in upload/read-back verification — external unmanaged authentication unavailable
 
 ## Safe Parking enhancement
 - [x] Database, administrator-only writes and trusted validation
