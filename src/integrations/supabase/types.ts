@@ -563,6 +563,27 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_residence_links: {
+        Row: {
+          lat: number | null
+          lng: number | null
+          resolved_at: string
+          url: string
+        }
+        Insert: {
+          lat?: number | null
+          lng?: number | null
+          resolved_at?: string
+          url: string
+        }
+        Update: {
+          lat?: number | null
+          lng?: number | null
+          resolved_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       driver_surveys: {
         Row: {
           answer: string
