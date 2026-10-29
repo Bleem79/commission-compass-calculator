@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { Home, MapPin, RefreshCw, Search, Users, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DriverResidenceMap from "@/components/map/DriverResidenceMap";
-import { ResidenceRow, summarizeResidences, residenceAdminAllowed } from "@/utils/driverResidence";
+import { ResidenceRow, summarizeResidences, residenceCoordinates, residenceAdminAllowed } from "@/utils/driverResidence";
 
 export default function AdminDriverResidencePage() {
   const { user } = useAuth();
@@ -20,6 +20,27 @@ export default function AdminDriverResidencePage() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [resolved, setResolved] = useState<Record<string, { lat: number; lng: number }>>({});
+  const [resolving, setResolving] = useState(false);
+  const resolvedRef = useRef<Record<string, { lat: number; lng: number }>>({});
+  const resolveLinks = useCallback(async (all: ResidenceRow[]) => {
+    const pending = [...new Set(all
+      .map(row => (row.google_map || "").trim())
+      .filter(link => link && /^https?:\/\//i.test(link) && !residenceCoordinates(link) && !(link in resolvedRef.current)))];
+    if (!pending.length) return;
+    setResolving(true);
+    const merged = { ...resolvedRef.current };
+    try {
+      for (let i = 0; i < pending.length; i += 50) {
+        const { data, error } = await supabase.functions.invoke("resolve-residence-links", { body: { urls: pending.slice(i, i + 50) } });
+        if (error) throw error;
+        Object.assign(merged, (data as { results?: Record<string, { lat: number; lng: number } | null> })?.results ?? {});
+      }
+    } catch { /* short links that cannot be resolved stay unmapped */ }
+    resolvedRef.current = merged;
+    setResolved(merged);
+    setResolving(false);
+  }, []);
   const load = useCallback(async () => {
     if (!allowed) return;
     setLoading(true); setError("");
@@ -32,12 +53,13 @@ export default function AdminDriverResidencePage() {
         if (!data || data.length < 1000) break;
       }
       setRows(all);
+      void resolveLinks(all);
     } catch { setError("Unable to load driver residences. Please try again."); }
     finally { setLoading(false); }
-  }, [allowed]);
+  }, [allowed, resolveLinks]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { setPage(1); setSelected(null); }, [city, search]);
-  const summary = useMemo(() => summarizeResidences(rows), [rows]);
+  const summary = useMemo(() => summarizeResidences(rows, resolved), [rows, resolved]);
   const cities = useMemo(() => [...new Set(summary.groups.map(g => g.city).filter(Boolean))].sort(), [summary]);
   const groups = useMemo(() => summary.groups.filter(g => (city === "all" || g.city === city) && `${g.city} ${g.area}`.toLowerCase().includes(search.trim().toLowerCase())), [summary, city, search]);
   const pins = groups.filter(g => g.position);
