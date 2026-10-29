@@ -16,4 +16,8 @@ describe("Yango driver list uploads", () => {
     expect(parseYangoDriverRow({ "S.No": 1, "Driver Id": "00100344", "Drvr Name": "Driver", Gender: "M", Nationality: "Bangladeshi", "Mobile No": "971502087454", Status: "OSR", "HR Status": "Resigned" }, null))
       .toEqual({ s_no: 1, driver_id: "00100344", driver_name: "Driver", gender: "M", nationality: "Bangladeshi", mobile_no: "971502087454", status: "OSR", hr_status: "Resigned", city: null, area: null, google_map: null, uploaded_by: null });
   });
+  test("blank spreadsheet cells saved as 0 stay empty", () => {
+    const parsed = parseYangoDriverRow({ "Driver Id": "100344", City: 0, Area: "0", "Google Map": "0" }, null);
+    expect([parsed.city, parsed.area, parsed.google_map]).toEqual([null, null, null]);
+  });
 });
