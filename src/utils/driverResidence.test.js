@@ -31,5 +31,5 @@ test("resolved short-link coordinates place areas on the map", () => {
     { driver_id: "2", city: "Sharjah", area: "Al Nahda", google_map: "https://maps.app.goo.gl/def" },
     { driver_id: "3", city: "Sharjah", area: "Al Butina", google_map: "https://maps.app.goo.gl/fail" },
   ], { "https://maps.app.goo.gl/abc": { lat: 25.31, lng: 55.41 }, "https://maps.app.goo.gl/fail": null });
-  expect(result.groups.map(g => [g.area, g.position])).toEqual([["Al Butina", null], ["Al Nahda", { lat: 25.31, lng: 55.41 }]]);
+  expect(result.groups.map(g => [g.area, g.count, g.position])).toEqual([["Al Nahda", 2, { lat: 25.31, lng: 55.41 }], ["Al Butina", 1, null]]);
 });

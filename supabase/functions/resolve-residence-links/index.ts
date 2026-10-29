@@ -15,7 +15,7 @@ const extractCoordinates = (value: string): { lat: number; lng: number } | null 
     // keep the raw value
   }
   const place = candidate.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
-  const pair = place || candidate.match(/(?:@|[?&](?:q|query|ll)=|^)(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
+  const pair = place || candidate.match(/(?:@|[?&](?:q|query|ll)=|\/search\/)(-?\d{1,3}(?:\.\d+)?),\s*\+?(-?\d{1,3}(?:\.\d+)?)/);
   if (!pair) return null;
   const lat = Number(pair[1]);
   const lng = Number(pair[2]);

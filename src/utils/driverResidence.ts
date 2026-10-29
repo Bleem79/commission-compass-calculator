@@ -17,8 +17,9 @@ export function residenceCoordinates(value: string | null): { lat: number; lng: 
     } catch { return null; }
   }
   // Prefer the actual place coordinates over an @ map-camera position.
+  // /maps/search/<lat>,<lng> and decoded bot-check redirects also carry plain coordinates.
   const place = candidate.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
-  const pair = place || candidate.match(/(?:@|[?&](?:q|query|ll)=|^)(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
+  const pair = place || candidate.match(/(?:@|[?&](?:q|query|ll)=|\/search\/)(-?\d{1,3}(?:\.\d+)?),\s*\+?(-?\d{1,3}(?:\.\d+)?)/);
   if (!pair) return null;
   const lat = Number(pair[1]);
   const lng = Number(pair[2]);
