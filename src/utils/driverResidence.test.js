@@ -25,3 +25,11 @@ test("extracts actual Google place coordinates rather than camera coordinates", 
 test("unresolved or invalid map locations never produce invented pins", () => {
   expect([null, "https://maps.app.goo.gl/abc", "https://evil.example/?q=25,55", "100,55"].map(residenceCoordinates)).toEqual([null, null, null, null]);
 });
+test("resolved short-link coordinates place areas on the map", () => {
+  const result = summarizeResidences([
+    { driver_id: "1", city: "Sharjah", area: "Al Nahda", google_map: "https://maps.app.goo.gl/abc" },
+    { driver_id: "2", city: "Sharjah", area: "Al Nahda", google_map: "https://maps.app.goo.gl/def" },
+    { driver_id: "3", city: "Sharjah", area: "Al Butina", google_map: "https://maps.app.goo.gl/fail" },
+  ], { "https://maps.app.goo.gl/abc": { lat: 25.31, lng: 55.41 }, "https://maps.app.goo.gl/fail": null });
+  expect(result.groups.map(g => [g.area, g.count, g.position])).toEqual([["Al Nahda", 2, { lat: 25.31, lng: 55.41 }], ["Al Butina", 1, null]]);
+});

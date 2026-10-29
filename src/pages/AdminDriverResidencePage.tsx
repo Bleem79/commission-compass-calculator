@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { Home, MapPin, RefreshCw, Search, Users, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DriverResidenceMap from "@/components/map/DriverResidenceMap";
-import { ResidenceRow, summarizeResidences, residenceAdminAllowed } from "@/utils/driverResidence";
+import { ResidenceRow, summarizeResidences, residenceCoordinates, residenceAdminAllowed } from "@/utils/driverResidence";
 
 export default function AdminDriverResidencePage() {
   const { user } = useAuth();
@@ -20,6 +20,27 @@ export default function AdminDriverResidencePage() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [resolved, setResolved] = useState<Record<string, { lat: number; lng: number }>>({});
+  const [resolving, setResolving] = useState(false);
+  const resolvedRef = useRef<Record<string, { lat: number; lng: number }>>({});
+  const resolveLinks = useCallback(async (all: ResidenceRow[]) => {
+    const pending = [...new Set(all
+      .map(row => (row.google_map || "").trim())
+      .filter(link => link && /^https?:\/\//i.test(link) && !residenceCoordinates(link) && !(link in resolvedRef.current)))];
+    if (!pending.length) return;
+    setResolving(true);
+    const merged = { ...resolvedRef.current };
+    try {
+      for (let i = 0; i < pending.length; i += 50) {
+        const { data, error } = await supabase.functions.invoke("resolve-residence-links", { body: { urls: pending.slice(i, i + 50) } });
+        if (error) throw error;
+        Object.assign(merged, (data as { results?: Record<string, { lat: number; lng: number } | null> })?.results ?? {});
+      }
+    } catch { /* short links that cannot be resolved stay unmapped */ }
+    resolvedRef.current = merged;
+    setResolved(merged);
+    setResolving(false);
+  }, []);
   const load = useCallback(async () => {
     if (!allowed) return;
     setLoading(true); setError("");
@@ -32,12 +53,13 @@ export default function AdminDriverResidencePage() {
         if (!data || data.length < 1000) break;
       }
       setRows(all);
+      void resolveLinks(all);
     } catch { setError("Unable to load driver residences. Please try again."); }
     finally { setLoading(false); }
-  }, [allowed]);
+  }, [allowed, resolveLinks]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { setPage(1); setSelected(null); }, [city, search]);
-  const summary = useMemo(() => summarizeResidences(rows), [rows]);
+  const summary = useMemo(() => summarizeResidences(rows, resolved), [rows, resolved]);
   const cities = useMemo(() => [...new Set(summary.groups.map(g => g.city).filter(Boolean))].sort(), [summary]);
   const groups = useMemo(() => summary.groups.filter(g => (city === "all" || g.city === city) && `${g.city} ${g.area}`.toLowerCase().includes(search.trim().toLowerCase())), [summary, city, search]);
   const pins = groups.filter(g => g.position);
@@ -54,7 +76,7 @@ export default function AdminDriverResidencePage() {
         <div className="relative flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input aria-label="Search city or area" placeholder="Search city or area" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
         <Select value={city} onValueChange={setCity}><SelectTrigger className="sm:w-56" aria-label="City"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All cities</SelectItem>{cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
       </div>
-      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm mb-4"><span className="flex items-center gap-2"><Users className="h-4 w-4" />{count.toLocaleString("en-US")} drivers</span><span className="flex items-center gap-2"><MapPin className="h-4 w-4" />{pins.length} mapped places</span><span>{groups.length - pins.length} places without map coordinates</span></div>
+      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm mb-4"><span className="flex items-center gap-2"><Users className="h-4 w-4" />{count.toLocaleString("en-US")} drivers</span><span className="flex items-center gap-2"><MapPin className="h-4 w-4" />{pins.length} mapped places</span><span>{groups.length - pins.length} places without map coordinates</span>{resolving && <span className="text-muted-foreground">Locating map coordinates…</span>}</div>
       <div className="relative isolate h-[360px] sm:h-[480px] overflow-hidden rounded-lg border border-border mb-5">
         {pins.length ? <DriverResidenceMap groups={groups} selected={selected} onSelect={setSelected} /> : <div className="flex h-full items-center justify-center bg-accent text-accent-foreground px-6 text-center"><div><MapPin className="h-10 w-10 mx-auto mb-3" /><p>No mapped residences available.</p><p className="text-sm mt-2">Upload City, Area and Google Map links containing coordinates in the Yango driver list.</p></div></div>}
       </div>

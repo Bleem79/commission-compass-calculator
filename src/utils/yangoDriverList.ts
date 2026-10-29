@@ -9,6 +9,12 @@ export const pickYangoField = (row: Record<string, unknown>, keys: string[]) => 
   return "";
 };
 
+// Blank spreadsheet cells arrive as "0" through the Excel reader; store them as empty instead.
+const locationOrNull = (row: Record<string, unknown>, keys: string[]) => {
+  const value = pickYangoField(row, keys);
+  return value && value !== "0" ? value : null;
+};
+
 export const parseYangoDriverRow = (row: Record<string, unknown>, uploadedBy: string | null) => ({
   s_no: Number(pickYangoField(row, ["sno", "sn", "srno", "serialno"])) || null,
   driver_id: pickYangoField(row, ["driverid", "driverno", "empcde", "id"]),
@@ -18,8 +24,8 @@ export const parseYangoDriverRow = (row: Record<string, unknown>, uploadedBy: st
   mobile_no: pickYangoField(row, ["mobileno", "mobile", "phone", "phoneno", "contactno"]) || null,
   status: pickYangoField(row, ["status"]) || null,
   hr_status: pickYangoField(row, ["hrstatus"]) || null,
-  city: pickYangoField(row, ["city"]) || null,
-  area: pickYangoField(row, ["area"]) || null,
-  google_map: pickYangoField(row, ["googlemap", "googlemaps"]) || null,
+  city: locationOrNull(row, ["city"]),
+  area: locationOrNull(row, ["area"]),
+  google_map: locationOrNull(row, ["googlemap", "googlemaps"]),
   uploaded_by: uploadedBy,
 });
