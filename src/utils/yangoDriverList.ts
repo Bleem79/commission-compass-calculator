@@ -18,8 +18,8 @@ export const parseYangoDriverRow = (row: Record<string, unknown>, uploadedBy: st
   mobile_no: pickYangoField(row, ["mobileno", "mobile", "phone", "phoneno", "contactno"]) || null,
   status: pickYangoField(row, ["status"]) || null,
   hr_status: pickYangoField(row, ["hrstatus"]) || null,
-  city: pickYangoField(row, ["city"]) || null,
-  area: pickYangoField(row, ["area"]) || null,
-  google_map: pickYangoField(row, ["googlemap", "googlemaps"]) || null,
+  city: locationOrNull(row, ["city"]),
+  area: locationOrNull(row, ["area"]),
+  google_map: locationOrNull(row, ["googlemap", "googlemaps"]),
   uploaded_by: uploadedBy,
 });
