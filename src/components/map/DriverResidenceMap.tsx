@@ -18,7 +18,10 @@ export default function DriverResidenceMap({ groups, selected, onSelect }: { gro
       if (!position) continue;
       const point: L.LatLngExpression = [position.lat, position.lng];
       bounds.extend(point);
-      const marker = L.marker(point, { icon: L.divIcon({ className: "residence-pin-host", html: `<span class="residence-pin${selected === group.key ? " residence-pin-selected" : ""}">${group.count}</span>`, iconSize: [44, 44], iconAnchor: [22, 44] }) }).addTo(map);
+      const label = document.createElement("span");
+      label.className = `residence-pin${selected === group.key ? " residence-pin-selected" : ""}`;
+      label.textContent = `${group.area || group.city}-${group.count}`;
+      const marker = L.marker(point, { icon: L.divIcon({ className: "residence-pin-host", html: label.outerHTML, iconSize: [0, 0], iconAnchor: [0, 0] }) }).addTo(map);
       const text = document.createElement("span");
       text.textContent = `${group.area || group.city} · ${group.city} · ${group.count} drivers`;
       marker.bindTooltip(text).on("click", () => onSelect(group.key));
