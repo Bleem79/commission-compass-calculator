@@ -53,9 +53,10 @@ Deno.serve(async req => {
     }
 
     const service = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-    const { data: cached } = await service.from('driver_residence_links').select('url,lat,lng').in('url', cleaned);
+    // Only successful lookups are trusted from cache; failed ones are retried.
+    const { data: cached } = await service.from('driver_residence_links').select('url,lat,lng').in('url', cleaned).not('lat', 'is', null).not('lng', 'is', null);
     const results: Record<string, { lat: number; lng: number } | null> = {};
-    for (const row of cached ?? []) results[row.url] = row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng };
+    for (const row of cached ?? []) results[row.url] = { lat: row.lat, lng: row.lng };
 
     const pending = cleaned.filter(url => !(url in results));
     const queue = [...pending];
@@ -65,19 +66,28 @@ Deno.serve(async req => {
         if (!url) return;
         let found: { lat: number; lng: number } | null = null;
         try {
-          const response = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(FETCH_TIMEOUT), headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AmanTaxiPortal/1.0)' } });
-          const finalUrl = response.url || url;
-          found = extractCoordinates(finalUrl);
-          if (!found && finalUrl !== url) {
-            // Some responses keep the target in the body or a header when the redirect is soft.
+          // Follow redirects by hand: the first Location header already carries the coordinates,
+          // while following to the end can land on a consent/bot-check page without them.
+          let current = url;
+          for (let hop = 0; hop < 5 && !found; hop++) {
+            const response = await fetch(current, { redirect: 'manual', signal: AbortSignal.timeout(FETCH_TIMEOUT), headers: { 'User-Agent': 'curl/8.0' } });
             const location = response.headers.get('location');
-            if (location) found = extractCoordinates(location);
+            await response.body?.cancel().catch(() => {});
+            if (!location) break;
+            current = new URL(location, current).toString();
+            found = extractCoordinates(current);
+            // Bot-check pages wrap the real target in a "continue" parameter.
+            if (!found) {
+              const cont = new URL(current).searchParams.get('continue');
+              if (cont) found = extractCoordinates(cont);
+            }
           }
-        } catch {
+        } catch (error) {
+          console.error('resolve failed', url, error);
           found = null;
         }
         results[url] = found;
-        await service.from('driver_residence_links').upsert({ url, lat: found?.lat ?? null, lng: found?.lng ?? null, resolved_at: new Date().toISOString() });
+        if (found) await service.from('driver_residence_links').upsert({ url, lat: found.lat, lng: found.lng, resolved_at: new Date().toISOString() });
       }
     });
     await Promise.all(workers);
