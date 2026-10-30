@@ -4,18 +4,21 @@
 @tailwind utilities;
 
 .residence-pin {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50% 50% 50% 0;
+  min-width: 44px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 17px;
   border: 2px solid hsl(var(--primary-foreground));
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
   box-shadow: var(--shadow-md);
+  transform: translate(-50%, -100%);
 }
 .residence-pin-selected {
   background: hsl(var(--foreground));
