@@ -4,6 +4,7 @@
 - [x] Admin-only navigation and protected residence data access via admin-checked invoker RPC
 - [x] Area/city statistics, unique driver counts and map pins from validated Yango coordinates
 - [x] Count/coordinate tests (9 tests pass), build OK and signed-out redirect verified
+- [x] Short Google Map links (maps.app.goo.gl) resolved server-side with cached coordinates; blank Excel cells saved as "0" cleaned and ignored in future uploads (11 tests pass)
 - [ ] Signed-in residence map and real-data validation — external unmanaged authentication unavailable
 
 ## Yango driver list columns
