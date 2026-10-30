@@ -4,6 +4,17 @@ import "leaflet/dist/leaflet.css";
 
 export interface ResidencePin { key: string; city: string; area: string; count: number; position: { lat: number; lng: number } | null }
 
+// Same blue teardrop pin style as CNG Locations
+const pinIcon = L.icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
 export default function DriverResidenceMap({ groups, selected, onSelect }: { groups: ResidencePin[]; selected: string | null; onSelect: (key: string) => void }) {
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -18,13 +29,12 @@ export default function DriverResidenceMap({ groups, selected, onSelect }: { gro
       if (!position) continue;
       const point: L.LatLngExpression = [position.lat, position.lng];
       bounds.extend(point);
+      const marker = L.marker(point, { icon: pinIcon }).addTo(map);
       const label = document.createElement("span");
-      label.className = `residence-pin${selected === group.key ? " residence-pin-selected" : ""}`;
+      label.className = `residence-pin-label${selected === group.key ? " residence-pin-label-selected" : ""}`;
       label.textContent = `${group.area || group.city}-${group.count}`;
-      const marker = L.marker(point, { icon: L.divIcon({ className: "residence-pin-host", html: label.outerHTML, iconSize: [0, 0], iconAnchor: [0, 0] }) }).addTo(map);
-      const text = document.createElement("span");
-      text.textContent = `${group.area || group.city} · ${group.city} · ${group.count} drivers`;
-      marker.bindTooltip(text).on("click", () => onSelect(group.key));
+      marker.bindTooltip(label, { permanent: true, direction: "bottom", offset: [0, 4], className: "residence-pin-tooltip" });
+      marker.on("click", () => onSelect(group.key));
     }
     const focus = pins.find(g => g.key === selected)?.position;
     if (focus) map.setView([focus.lat, focus.lng], 14);
