@@ -1,0 +1,1 @@
+CREATE POLICY "System manages daily request slots" ON public.driver_request_daily_slots FOR ALL TO service_role USING (true) WITH CHECK (true);
