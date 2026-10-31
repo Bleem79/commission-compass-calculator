@@ -488,6 +488,24 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_request_daily_slots: {
+        Row: {
+          created_at: string
+          driver_id: string
+          submission_day: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          submission_day: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          submission_day?: string
+        }
+        Relationships: []
+      }
       driver_request_types: {
         Row: {
           created_at: string
