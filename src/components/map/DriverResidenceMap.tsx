@@ -24,6 +24,7 @@ export default function DriverResidenceMap({ groups, selected, onSelect }: { gro
     const map = L.map(host.current);
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", { attribution: "Tiles &copy; Esri", maxZoom: 19 }).addTo(map);
     const bounds = L.latLngBounds([]);
+    const markers: L.Marker[] = [];
     for (const group of pins) {
       const position = group.position;
       if (!position) continue;
@@ -35,10 +36,22 @@ export default function DriverResidenceMap({ groups, selected, onSelect }: { gro
       label.textContent = `${group.area || group.city}-${group.count}`;
       marker.bindTooltip(label, { permanent: true, direction: "bottom", offset: [0, 4], className: "residence-pin-tooltip" });
       marker.on("click", () => onSelect(group.key));
+      markers.push(marker);
     }
     const focus = pins.find(g => g.key === selected)?.position;
     if (focus) map.setView([focus.lat, focus.lng], 14);
     else map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+    // Show the "Area-Count" labels only when zoomed out; hide them when zooming in.
+    const LABEL_MAX_ZOOM = 12;
+    const syncLabels = () => {
+      const show = map.getZoom() <= LABEL_MAX_ZOOM;
+      for (const marker of markers) {
+        if (show) marker.openTooltip();
+        else marker.closeTooltip();
+      }
+    };
+    syncLabels();
+    map.on("zoomend", syncLabels);
     const observer = new ResizeObserver(() => map.invalidateSize());
     observer.observe(host.current);
     return () => { observer.disconnect(); map.remove(); };
