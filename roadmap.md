@@ -1,5 +1,10 @@
 # AMAN Taxi presentation redesign
 
+## Daily driver request limit
+- [ ] Enforce one request per driver per Dubai calendar day across all types without changing existing records
+- [ ] Show daily-limit notice and prevent a second submission in the driver page
+- [ ] Test daily limits, date boundaries and existing-record enforcement
+
 ## Driver Residence
 - [x] Admin-only navigation and protected residence data access via admin-checked invoker RPC
 - [x] Area/city statistics, unique driver counts and map pins from validated Yango coordinates
