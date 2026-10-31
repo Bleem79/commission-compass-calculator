@@ -13,6 +13,7 @@ import { DriverRequestForm, DriverRequestList } from "@/components/driver-reques
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
 import { useDayOffValidation } from "@/hooks/useDayOffValidation";
 import { DriverRequest, REQUEST_TYPES, MAX_DAY_OFF_PER_DAY } from "@/constants/requestTypes";
+import { DAILY_REQUEST_LIMIT_MESSAGE, hasDailyRequest } from "@/utils/dailyRequestLimit";
 
 const DriverRequestPage = () => {
   const navigate = useNavigate();
@@ -28,6 +29,15 @@ const DriverRequestPage = () => {
   const [sharjahLocation, setSharjahLocation] = useState("");
   const [landmark, setLandmark] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+  const [limitRejectedDay, setLimitRejectedDay] = useState<string | null>(null);
+  const dailyLimitReached = hasDailyRequest(requests, now) ||
+    (limitRejectedDay !== null && hasDailyRequest([{ created_at: limitRejectedDay }], now));
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!driverInfo?.driverId) return;
@@ -82,6 +92,12 @@ const DriverRequestPage = () => {
 
     if (!driverInfo?.driverId) {
       toast.error("Driver ID not found");
+      return;
+    }
+
+    if (submitting || loading) return;
+    if (hasDailyRequest(requests) || dailyLimitReached) {
+      toast.error(DAILY_REQUEST_LIMIT_MESSAGE);
       return;
     }
 
@@ -161,7 +177,8 @@ const DriverRequestPage = () => {
 
       if (error) throw error;
 
-      setRequests([data, ...requests]);
+      setRequests((current) => [data, ...current]);
+      setNow(new Date());
       setRequestType("");
       setSelectedDate(undefined);
       setSharjahLocation("");
@@ -198,7 +215,12 @@ const DriverRequestPage = () => {
     } catch (error: any) {
       console.error("Error submitting request:", error);
       const msg = String(error?.message || "");
-      if (msg.toLowerCase().includes("blocked")) {
+      if (msg.includes("DAILY_REQUEST_LIMIT")) {
+        setLimitRejectedDay(new Date().toISOString());
+        setNow(new Date());
+        setShowForm(false);
+        toast.error(DAILY_REQUEST_LIMIT_MESSAGE);
+      } else if (msg.toLowerCase().includes("blocked")) {
         setIsBlocked(true);
         setShowForm(false);
         toast.error("You are blocked from submitting requests. Please contact your Revenue Controller.");
@@ -224,8 +246,8 @@ const DriverRequestPage = () => {
       backPath="/driver-portal"
       backLabel="Back to Portal"
       headerActions={
-        !showForm && !isBlocked && (
-          <Button onClick={() => setShowForm(true)} className="gap-2">
+        !showForm && !isBlocked && !dailyLimitReached && (
+          <Button onClick={() => setShowForm(true)} className="gap-2" disabled={loading}>
             <Plus className="h-4 w-4" />
             New Request
           </Button>
@@ -254,8 +276,14 @@ const DriverRequestPage = () => {
         </div>
       )}
 
+      {!isBlocked && dailyLimitReached && (
+        <div role="status" className="mb-4 rounded-md border border-border bg-muted p-3 text-sm font-medium text-foreground">
+          {DAILY_REQUEST_LIMIT_MESSAGE}
+        </div>
+      )}
+
       {/* Form */}
-      {showForm && !isBlocked && (
+      {showForm && !isBlocked && !dailyLimitReached && (
         <DriverRequestForm
           requestType={requestType}
           selectedDate={selectedDate}
