@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Home, MapPin, RefreshCw, Search, Users, Loader2 } from "lucide-react";
+import { Home, MapPin, Maximize2, Minimize2, RefreshCw, Search, Users, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { PageLayout } from "@/components/shared/PageLayout";
@@ -22,7 +22,18 @@ export default function AdminDriverResidencePage() {
   const [page, setPage] = useState(1);
   const [resolved, setResolved] = useState<Record<string, { lat: number; lng: number }>>({});
   const [resolving, setResolving] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const mapBoxRef = useRef<HTMLDivElement>(null);
   const resolvedRef = useRef<Record<string, { lat: number; lng: number }>>({});
+  useEffect(() => {
+    const sync = () => setFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void mapBoxRef.current?.requestFullscreen?.();
+  }, []);
   const resolveLinks = useCallback(async (all: ResidenceRow[]) => {
     const pending = [...new Set(all
       .map(row => (row.google_map || "").trim())
@@ -77,8 +88,11 @@ export default function AdminDriverResidencePage() {
         <Select value={city} onValueChange={setCity}><SelectTrigger className="sm:w-56" aria-label="City"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All cities</SelectItem>{cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
       </div>
       <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm mb-4"><span className="flex items-center gap-2"><Users className="h-4 w-4" />{count.toLocaleString("en-US")} drivers</span><span className="flex items-center gap-2"><MapPin className="h-4 w-4" />{pins.length} mapped places</span><span>{groups.length - pins.length} places without map coordinates</span>{resolving && <span className="text-muted-foreground">Locating map coordinates…</span>}</div>
-      <div className="relative isolate h-[360px] sm:h-[480px] overflow-hidden rounded-lg border border-border mb-5">
+      <div ref={mapBoxRef} className={`relative isolate overflow-hidden border border-border mb-5 bg-background ${fullscreen ? "h-full w-full rounded-none" : "h-[360px] sm:h-[480px] rounded-lg"}`}>
         {pins.length ? <DriverResidenceMap groups={groups} selected={selected} onSelect={setSelected} /> : <div className="flex h-full items-center justify-center bg-accent text-accent-foreground px-6 text-center"><div><MapPin className="h-10 w-10 mx-auto mb-3" /><p>No mapped residences available.</p><p className="text-sm mt-2">Upload City, Area and Google Map links containing coordinates in the Yango driver list.</p></div></div>}
+        <Button variant="outline" size="icon" aria-label={fullscreen ? "Exit full screen map" : "View map full screen"} title={fullscreen ? "Exit full screen" : "Full screen"} onClick={toggleFullscreen} className="absolute top-3 right-3 z-[1001] h-11 w-11 bg-background shadow-md">
+          {fullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+        </Button>
       </div>
       {!!(groups.length - pins.length) && <p className="text-sm text-muted-foreground mb-5">Places with blank or shortened map links are counted below but cannot be pinned until coordinates are available.</p>}
       {focus && <div className="border-y border-border py-4 mb-5 flex items-center justify-between gap-3"><div><h2 className="font-semibold">{focus.area || focus.city}</h2><p className="text-sm text-muted-foreground">{focus.city} · {focus.count} drivers · {count ? (focus.count / count * 100).toFixed(1) : "0.0"}% of filtered residences</p></div><Button variant="ghost" onClick={() => setSelected(null)}>Clear selection</Button></div>}
