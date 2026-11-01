@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Home, MapPin, RefreshCw, Search, Users, Loader2 } from "lucide-react";
+import { Home, MapPin, Maximize2, Minimize2, RefreshCw, Search, Users, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { PageLayout } from "@/components/shared/PageLayout";
@@ -22,7 +22,18 @@ export default function AdminDriverResidencePage() {
   const [page, setPage] = useState(1);
   const [resolved, setResolved] = useState<Record<string, { lat: number; lng: number }>>({});
   const [resolving, setResolving] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const mapBoxRef = useRef<HTMLDivElement>(null);
   const resolvedRef = useRef<Record<string, { lat: number; lng: number }>>({});
+  useEffect(() => {
+    const sync = () => setFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void mapBoxRef.current?.requestFullscreen?.();
+  }, []);
   const resolveLinks = useCallback(async (all: ResidenceRow[]) => {
     const pending = [...new Set(all
       .map(row => (row.google_map || "").trim())
