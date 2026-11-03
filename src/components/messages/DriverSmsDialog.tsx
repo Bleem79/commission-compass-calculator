@@ -34,6 +34,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { nationalityRecipients, templateNationalities } from "@/utils/smsTemplates";
 import { collectMessagePages, deliverPrivateMessageBatches } from "@/utils/privateMessageDelivery";
+import { filterDriversBySearch, parseDriverIdTokens, unmatchedDriverIdTokens } from "@/utils/smsDriverSearch";
 
 interface DriverCredential {
   id: string;
@@ -357,10 +358,18 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     }
   }, [messageHistory]);
 
-  // Filter drivers based on search
-  const filteredDrivers = drivers.filter((driver) =>
-    driver.driver_id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter drivers based on search (supports pasting multiple IDs)
+  const filteredDrivers = filterDriversBySearch(drivers, searchQuery);
+  const searchTokens = parseDriverIdTokens(searchQuery);
+  const isMultiIdSearch = searchTokens.length > 1;
+  const unmatchedTokens = unmatchedDriverIdTokens(drivers, searchQuery);
+
+  // Select every driver matched by a pasted multi-ID search
+  const handleSelectMatchedIds = () => {
+    const newSet = new Set(selectedDriverIds);
+    filteredDrivers.forEach((driver) => newSet.add(driver.driver_id));
+    setSelectedDriverIds(newSet);
+  };
 
   // Check if all filtered drivers are selected
   const allFilteredSelected = filteredDrivers.length > 0 && 
