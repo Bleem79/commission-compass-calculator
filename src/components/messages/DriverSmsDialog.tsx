@@ -34,6 +34,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { nationalityRecipients, templateNationalities } from "@/utils/smsTemplates";
 import { collectMessagePages, deliverPrivateMessageBatches } from "@/utils/privateMessageDelivery";
+import { filterDriversBySearch, parseDriverIdTokens, unmatchedDriverIdTokens } from "@/utils/smsDriverSearch";
 
 interface DriverCredential {
   id: string;
@@ -357,10 +358,18 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     }
   }, [messageHistory]);
 
-  // Filter drivers based on search
-  const filteredDrivers = drivers.filter((driver) =>
-    driver.driver_id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter drivers based on search (supports pasting multiple IDs)
+  const filteredDrivers = filterDriversBySearch(drivers, searchQuery);
+  const searchTokens = parseDriverIdTokens(searchQuery);
+  const isMultiIdSearch = searchTokens.length > 1;
+  const unmatchedTokens = unmatchedDriverIdTokens(drivers, searchQuery);
+
+  // Select every driver matched by a pasted multi-ID search
+  const handleSelectMatchedIds = () => {
+    const newSet = new Set(selectedDriverIds);
+    filteredDrivers.forEach((driver) => newSet.add(driver.driver_id));
+    setSelectedDriverIds(newSet);
+  };
 
   // Check if all filtered drivers are selected
   const allFilteredSelected = filteredDrivers.length > 0 && 
@@ -553,12 +562,30 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search by Driver ID..."
+              placeholder="Search or paste Driver IDs (e.g. 112857 113923 115422)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
+
+          {/* Multi-ID paste result */}
+          {isMultiIdSearch && !isLoading && (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+              <p className="text-xs text-foreground">
+                {searchTokens.length} IDs entered — {filteredDrivers.length} found
+                {unmatchedTokens.length > 0 && (
+                  <span className="text-destructive">, {unmatchedTokens.length} not found ({unmatchedTokens.slice(0, 5).join(", ")}{unmatchedTokens.length > 5 ? "…" : ""})</span>
+                )}
+              </p>
+              {filteredDrivers.length > 0 && (
+                <Button size="sm" variant="outline" onClick={handleSelectMatchedIds} className="ml-auto min-h-11 gap-1.5">
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  Select {filteredDrivers.length} Found
+                </Button>
+              )}
+            </div>
+          )}
 
           {/* Selection Actions */}
           <div className="flex items-center gap-2">
