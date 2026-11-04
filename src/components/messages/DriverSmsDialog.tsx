@@ -32,7 +32,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { nationalityRecipients, templateNationalities } from "@/utils/smsTemplates";
+import { filterNationalities, nationalityRecipients, templateNationalities } from "@/utils/smsTemplates";
 import { collectMessagePages, deliverPrivateMessageBatches } from "@/utils/privateMessageDelivery";
 import { filterDriversBySearch, parseDriverIdTokens, unmatchedDriverIdTokens } from "@/utils/smsDriverSearch";
 
@@ -70,6 +70,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
   const [selectedTemplateId, setSelectedTemplateId] = useState("new");
   const [templateTitle, setTemplateTitle] = useState("");
   const [selectedNationalities, setSelectedNationalities] = useState<string[]>([]);
+  const [nationalitySearch, setNationalitySearch] = useState("");
   const [templateText, setTemplateText] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -196,6 +197,16 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     () => Array.from(new Set([...nationalities, ...selectedNationalities])).sort((a, b) => a.localeCompare(b)),
     [nationalities, selectedNationalities],
   );
+  const visibleNationalities = useMemo(
+    () => filterNationalities(nationalityOptions, nationalitySearch),
+    [nationalityOptions, nationalitySearch],
+  );
+  const unselectedMatches = useMemo(
+    () => visibleNationalities.filter((value) => !selectedNationalities.includes(value)),
+    [visibleNationalities, selectedNationalities],
+  );
+  const selectAllMatchingNationalities = () =>
+    setSelectedNationalities((current) => Array.from(new Set([...current, ...unselectedMatches])));
 
   const handleTemplateChange = (value: string) => {
     setSelectedTemplateId(value);
@@ -203,6 +214,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     setTemplateTitle(existing?.title || "");
     setSelectedNationalities(existing ? templateNationalities(existing) : []);
     setTemplateText(existing?.message || "");
+    setNationalitySearch("");
   };
 
   const handleSaveTemplate = async () => {
@@ -539,6 +551,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     setSelectedTemplateId("new");
     setTemplateTitle("");
     setSelectedNationalities([]);
+    setNationalitySearch("");
     setTemplateText("");
     onClose();
   };
@@ -674,15 +687,69 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
                 </div>
                 <fieldset disabled={savingTemplate}>
                   <legend className="mb-1 text-xs font-medium">Nationalities ({selectedNationalities.length} selected)</legend>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={nationalitySearch}
+                      onChange={(e) => setNationalitySearch(e.target.value)}
+                      placeholder="Search nationality then select (e.g. Afghani)..."
+                      aria-label="Search nationalities"
+                      className="min-h-11 pl-9 pr-10 text-sm"
+                    />
+                    {nationalitySearch && (
+                      <button
+                        type="button"
+                        onClick={() => setNationalitySearch("")}
+                        aria-label="Clear nationality search"
+                        className="absolute right-0 top-0 flex min-h-11 min-w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  {selectedNationalities.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedNationalities.map((nationality) => (
+                        <button
+                          key={nationality}
+                          type="button"
+                          onClick={() => setSelectedNationalities((current) => current.filter((value) => value !== nationality))}
+                          className="flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-muted px-3 text-xs font-medium"
+                        >
+                          <Check className="h-3 w-3 shrink-0" />
+                          <span className="break-words">{nationality}</span>
+                          <X className="h-3 w-3 shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div className="max-h-36 overflow-y-auto rounded-md border border-border bg-background p-2">
-                    {nationalityOptions.length === 0 && <p className="text-xs text-muted-foreground">No nationalities found in the uploaded Yango driver list.</p>}
-                    {nationalityOptions.map((nationality) => (
+                    {visibleNationalities.length === 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {nationalityOptions.length === 0
+                          ? "No nationalities found in the uploaded Yango driver list."
+                          : "No nationality matches your search."}
+                      </p>
+                    )}
+                    {visibleNationalities.map((nationality) => (
                       <label key={nationality} className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
                         <Checkbox checked={selectedNationalities.includes(nationality)} onCheckedChange={(checked) => setSelectedNationalities((current) => checked === true ? [...current, nationality] : current.filter((value) => value !== nationality))} />
                         <span className="break-words">{nationality}</span>
                       </label>
                     ))}
                   </div>
+                  {unselectedMatches.length > 0 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={selectAllMatchingNationalities}
+                      className="min-h-11 self-start text-xs"
+                    >
+                      <CheckSquare className="mr-1.5 h-3.5 w-3.5" />
+                      Select {unselectedMatches.length} matching nationalit{unselectedMatches.length === 1 ? "y" : "ies"}
+                    </Button>
+                  )}
                 </fieldset>
                 <div className="flex flex-wrap gap-2">
                   {isAdmin && (

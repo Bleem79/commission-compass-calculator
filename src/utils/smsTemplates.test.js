@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { nationalityRecipients, templateNationalities } from "./smsTemplates";
+import { filterNationalities, nationalityRecipients, templateNationalities } from "./smsTemplates";
 
 describe("SMS nationality templates", () => {
   test("one saved template supports multiple nationalities", () => {
@@ -27,5 +27,27 @@ describe("SMS nationality templates", () => {
   });
   test("empty nationalities never target unclassified drivers", () => {
     expect(nationalityRecipients([{ driver_id: "1" }], [{ driver_id: "1", nationality: null }], [" "])).toEqual([]);
+  });
+});
+
+describe("Nationality search in the Send SMS dialog", () => {
+  const options = ["Afghani", "Bangladeshi", "Indian", "Pakistani", "Nepali"];
+
+  test("an empty search keeps the whole nationality list", () => {
+    expect(filterNationalities(options, "   ")).toEqual(options);
+  });
+  test("a search narrows the list without changing the saved selection", () => {
+    expect(filterNationalities(options, "afgh")).toEqual(["Afghani"]);
+    expect(filterNationalities(options, "ind")).toEqual(["Indian"]);
+  });
+  test("searching is case insensitive and matches anywhere in the name", () => {
+    expect(filterNationalities(options, "ANI")).toEqual(["Afghani", "Pakistani"]);
+    expect(filterNationalities(options, "ang")).toEqual(["Bangladeshi"]);
+  });
+  test("several search terms can be pasted at once", () => {
+    expect(filterNationalities(options, "afghani, indian")).toEqual(["Afghani", "Indian"]);
+  });
+  test("a search that matches nothing returns an empty list", () => {
+    expect(filterNationalities(options, "zzz")).toEqual([]);
   });
 });
