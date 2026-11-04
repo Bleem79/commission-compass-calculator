@@ -29,3 +29,24 @@ describe("SMS nationality templates", () => {
     expect(nationalityRecipients([{ driver_id: "1" }], [{ driver_id: "1", nationality: null }], [" "])).toEqual([]);
   });
 });
+
+describe("Nationality search in the Send SMS dialog", () => {
+  const options = ["Afghani", "Bangladeshi", "Indian", "Pakistani", "Nepali"];
+
+  test("an empty search keeps the whole nationality list", () => {
+    expect(filterNationalities(options, "   ")).toEqual(options);
+  });
+  test("a search narrows the list without changing the saved selection", () => {
+    expect(filterNationalities(options, "afgh")).toEqual(["Afghani"]);
+    expect(filterNationalities(options, "ind")).toEqual(["Indian"]);
+  });
+  test("searching is case insensitive and matches anywhere in the name", () => {
+    expect(filterNationalities(options, "ANI")).toEqual(["Bangladeshi", "Pakistani"]);
+  });
+  test("several search terms can be pasted at once", () => {
+    expect(filterNationalities(options, "afghani, indian")).toEqual(["Afghani", "Indian"]);
+  });
+  test("a search that matches nothing returns an empty list", () => {
+    expect(filterNationalities(options, "zzz")).toEqual([]);
+  });
+});
