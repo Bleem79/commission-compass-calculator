@@ -41,7 +41,8 @@ describe("Nationality search in the Send SMS dialog", () => {
     expect(filterNationalities(options, "ind")).toEqual(["Indian"]);
   });
   test("searching is case insensitive and matches anywhere in the name", () => {
-    expect(filterNationalities(options, "ANI")).toEqual(["Bangladeshi", "Pakistani"]);
+    expect(filterNationalities(options, "ANI")).toEqual(["Afghani", "Pakistani"]);
+    expect(filterNationalities(options, "ang")).toEqual(["Bangladeshi"]);
   });
   test("several search terms can be pasted at once", () => {
     expect(filterNationalities(options, "afghani, indian")).toEqual(["Afghani", "Indian"]);
