@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { nationalityRecipients, templateNationalities } from "./smsTemplates";
+import { filterNationalities, nationalityRecipients, templateNationalities } from "./smsTemplates";
 
 describe("SMS nationality templates", () => {
   test("one saved template supports multiple nationalities", () => {

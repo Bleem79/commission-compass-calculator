@@ -2,6 +2,18 @@ export function templateNationalities(template: { nationalities?: string[]; nati
   return template.nationalities?.length ? template.nationalities : template.nationality ? [template.nationality] : [];
 }
 
+// Nationality search for the Send SMS dialog: narrows the nationality list by
+// one or more terms (space, comma or semicolon separated) so the user can
+// search "afghani", select it, then search "indian", select it, and so on.
+export function filterNationalities(options: string[], query: string): string[] {
+  const needles = query.trim().toLowerCase().split(/[\s,;]+/).filter(Boolean);
+  if (needles.length === 0) return options;
+  return options.filter((option) => {
+    const value = option.trim().toLowerCase();
+    return needles.some((needle) => value.includes(needle));
+  });
+}
+
 export function nationalityRecipients(
   drivers: { driver_id: string }[],
   yangoDrivers: { driver_id: string; nationality: string | null }[],
