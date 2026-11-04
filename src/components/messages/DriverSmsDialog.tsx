@@ -32,7 +32,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { nationalityRecipients, templateNationalities } from "@/utils/smsTemplates";
+import { filterNationalities, nationalityRecipients, templateNationalities } from "@/utils/smsTemplates";
 import { collectMessagePages, deliverPrivateMessageBatches } from "@/utils/privateMessageDelivery";
 import { filterDriversBySearch, parseDriverIdTokens, unmatchedDriverIdTokens } from "@/utils/smsDriverSearch";
 
@@ -70,6 +70,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
   const [selectedTemplateId, setSelectedTemplateId] = useState("new");
   const [templateTitle, setTemplateTitle] = useState("");
   const [selectedNationalities, setSelectedNationalities] = useState<string[]>([]);
+  const [nationalitySearch, setNationalitySearch] = useState("");
   const [templateText, setTemplateText] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -196,6 +197,16 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     () => Array.from(new Set([...nationalities, ...selectedNationalities])).sort((a, b) => a.localeCompare(b)),
     [nationalities, selectedNationalities],
   );
+  const visibleNationalities = useMemo(
+    () => filterNationalities(nationalityOptions, nationalitySearch),
+    [nationalityOptions, nationalitySearch],
+  );
+  const unselectedMatches = useMemo(
+    () => visibleNationalities.filter((value) => !selectedNationalities.includes(value)),
+    [visibleNationalities, selectedNationalities],
+  );
+  const selectAllMatchingNationalities = () =>
+    setSelectedNationalities((current) => Array.from(new Set([...current, ...unselectedMatches])));
 
   const handleTemplateChange = (value: string) => {
     setSelectedTemplateId(value);
@@ -203,6 +214,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     setTemplateTitle(existing?.title || "");
     setSelectedNationalities(existing ? templateNationalities(existing) : []);
     setTemplateText(existing?.message || "");
+    setNationalitySearch("");
   };
 
   const handleSaveTemplate = async () => {
@@ -539,6 +551,7 @@ export const DriverSmsDialog = ({ isOpen, onClose }: DriverSmsDialogProps) => {
     setSelectedTemplateId("new");
     setTemplateTitle("");
     setSelectedNationalities([]);
+    setNationalitySearch("");
     setTemplateText("");
     onClose();
   };
