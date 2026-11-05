@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { GraduationCap } from "lucide-react";
 import { 
   CalendarDays, 
   Target, 
@@ -176,6 +177,13 @@ const DriverPortalPage = () => {
   };
 
   const allPortalItems = [
+    {
+      key: "driver_training",
+      icon: <GraduationCap className="w-8 h-8 sm:w-10 sm:h-10" />,
+      title: "My Training",
+      gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
+      onClick: () => navigate("/driver-training"),
+    },
     {
       key: "safe_parking",
       icon: <Car className="w-8 h-8 sm:w-10 sm:h-10" />,

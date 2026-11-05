@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
+import { GraduationCap } from "lucide-react";
 import {
   ListCheck,
   Calculator,
@@ -426,6 +427,13 @@ const HomePage = () => {
       pageKey: "admin-yango-income",
       gradient: "bg-gradient-to-br from-yellow-500 via-amber-600 to-orange-700",
       onClick: () => navigate("/admin-yango-income"),
+    });
+    features.push({
+      icon: <GraduationCap className="w-6 h-6 sm:w-8 sm:h-8" />,
+      title: "Drivers Training",
+      pageKey: "admin-driver-training",
+      gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",
+      onClick: () => navigate("/admin-driver-training"),
     });
   }
 

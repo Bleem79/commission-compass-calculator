@@ -632,6 +632,54 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_trainings: {
+        Row: {
+          attendance: string
+          created_at: string
+          driver_id: string
+          driver_name: string | null
+          id: string
+          marked_at: string | null
+          marked_by: string | null
+          room_no: string | null
+          training_date: string
+          training_name: string
+          training_time: string | null
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          attendance?: string
+          created_at?: string
+          driver_id: string
+          driver_name?: string | null
+          id?: string
+          marked_at?: string | null
+          marked_by?: string | null
+          room_no?: string | null
+          training_date: string
+          training_name: string
+          training_time?: string | null
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Update: {
+          attendance?: string
+          created_at?: string
+          driver_id?: string
+          driver_name?: string | null
+          id?: string
+          marked_at?: string | null
+          marked_by?: string | null
+          room_no?: string | null
+          training_date?: string
+          training_name?: string
+          training_time?: string | null
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       entry_pass_sequences: {
         Row: {
           last_seq: number
