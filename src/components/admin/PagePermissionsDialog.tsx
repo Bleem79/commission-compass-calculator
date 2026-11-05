@@ -32,6 +32,7 @@ const ALL_PAGES = [
   { key: "admin-survey", label: "Survey" },
   { key: "admin-yango", label: "Yango" },
   { key: "admin-yango-income", label: "Yango Income" },
+  { key: "admin-driver-training", label: "Drivers Training" },
   { key: "calendar-events-upload", label: "Calendar Events Upload" },
 ];
 
