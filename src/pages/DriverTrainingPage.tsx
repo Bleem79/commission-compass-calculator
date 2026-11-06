@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import { GraduationCap, Loader2, CalendarDays, Clock, DoorOpen } from "lucide-react";
+import { GraduationCap, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageLayout } from "@/components/shared/PageLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
+import { TrainingAttendance, TrainingDate, TrainingDetails, TrainingSummary, TrainingEmpty } from "@/components/shared/TrainingPresentation";
 import type { TrainingRow } from "@/utils/driverTraining";
-
-const label = { present: "Present", absent: "Absent", pending: "Scheduled" } as const;
-const tone = { present: "bg-primary/15 text-primary", absent: "bg-destructive/15 text-destructive", pending: "bg-muted text-muted-foreground" } as const;
 
 const DriverTrainingPage = () => {
   const { driverInfo, loading: driverLoading } = useDriverCredentials();
@@ -23,23 +21,24 @@ const DriverTrainingPage = () => {
   }, [driverInfo?.driverId, driverLoading]);
 
   return (
-    <PageLayout title="My Training" icon={<GraduationCap className="w-6 h-6" />}>
-      {loading ? <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin" /></div> :
-        rows.length === 0 ? <p className="text-center text-muted-foreground py-10">No training scheduled for you.</p> : (
-        <div className="space-y-3">
-          {rows.map((r) => (
-            <Card key={r.id}><CardContent className="p-4 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <div className="font-semibold text-lg">{r.training_name}</div>
-                <span className={`rounded-full px-3 py-1 text-sm font-semibold ${tone[r.attendance]}`}>{label[r.attendance]}</span>
-              </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1"><CalendarDays className="w-4 h-4" />{new Date(r.training_date + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}</span>
-                {r.training_time && <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{r.training_time}</span>}
-                {r.room_no && <span className="flex items-center gap-1"><DoorOpen className="w-4 h-4" />Room {r.room_no}</span>}
-              </div>
-            </CardContent></Card>
-          ))}
+    <PageLayout title="My Training" icon={<GraduationCap className="w-6 h-6 text-primary" />} gradient="from-background to-background" maxWidth="4xl">
+      {loading ? <div role="status" aria-label="Loading trainings" className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div> :
+        rows.length === 0 ? <TrainingEmpty driver /> : (
+        <div className="space-y-6">
+          <TrainingSummary total={rows.length} present={rows.filter((r) => r.attendance === "present").length} absent={rows.filter((r) => r.attendance === "absent").length} />
+          <h2 className="text-lg font-semibold">Training schedule</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {rows.map((r) => (
+              <Card key={r.id} className="rounded-lg shadow-none overflow-hidden"><CardContent className="p-5 sm:p-6">
+                <div className="mb-5 flex items-start justify-between gap-3">
+                  <TrainingDate date={r.training_date} />
+                  <TrainingAttendance value={r.attendance} driver />
+                </div>
+                <h3 className="break-words text-lg font-semibold leading-snug">{r.training_name}</h3>
+                <div className="mt-5 border-t border-border pt-4"><TrainingDetails row={r} /></div>
+              </CardContent></Card>
+            ))}
+          </div>
         </div>
       )}
     </PageLayout>

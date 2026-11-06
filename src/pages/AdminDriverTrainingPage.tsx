@@ -2,22 +2,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
-import { GraduationCap, Upload, Download, Trash2, Loader2, Search, Check, X } from "lucide-react";
+import { GraduationCap, Upload, Download, Trash2, Loader2, Search, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageLayout } from "@/components/shared/PageLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { TrainingAttendance, TrainingDate, TrainingDetails, TrainingSummary, TrainingEmpty } from "@/components/shared/TrainingPresentation";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseTrainingRows, type TrainingRow } from "@/utils/driverTraining";
 
 const PAGE_SIZE = 15;
-
-const AttendanceBadge = ({ value }: { value: string }) => (
-  <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
-    value === "present" ? "bg-primary/15 text-primary" : value === "absent" ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground"
-  }`}>{value === "present" ? "Present" : value === "absent" ? "Absent" : "Pending"}</span>
-);
 
 const AdminDriverTrainingPage = () => {
   const navigate = useNavigate();
@@ -110,57 +106,70 @@ const AdminDriverTrainingPage = () => {
   };
 
   return (
-    <PageLayout title="Drivers Training" icon={<GraduationCap className="w-6 h-6" />}>
-      <div className="space-y-4">
-        <div className="grid grid-cols-3 gap-3">
-          {[["Total", counts.total], ["Present", counts.present], ["Absent", counts.absent]].map(([l, v]) => (
-            <Card key={l as string}><CardContent className="p-4 text-center"><div className="text-2xl font-bold">{v}</div><div className="text-sm text-muted-foreground">{l}</div></CardContent></Card>
-          ))}
+    <PageLayout title="Drivers Training" icon={<GraduationCap className="w-6 h-6 text-primary" />} gradient="from-background to-background">
+      <div className="space-y-6">
+        <TrainingSummary total={counts.total} present={counts.present} absent={counts.absent} />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-lg font-semibold">Training register</h2>
+          <div className="flex flex-wrap gap-2">
+            {isAdmin && (<>
+              <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={handleUpload} />
+              <Button className="min-h-11" onClick={() => fileRef.current?.click()} disabled={uploading}>
+                {uploading ? <Loader2 className="animate-spin" /> : <Upload />}Upload Excel
+              </Button>
+              <Button variant="outline" className="min-h-11" onClick={downloadTemplate}><Download />Template</Button>
+            </>)}
+            <Button variant="outline" className="min-h-11" onClick={exportExcel}><Download />Export Excel</Button>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {isAdmin && (<>
-            <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={handleUpload} />
-            <Button className="min-h-11" onClick={() => fileRef.current?.click()} disabled={uploading}>
-              {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}Upload Excel
-            </Button>
-            <Button variant="outline" className="min-h-11" onClick={downloadTemplate}><Download className="w-4 h-4 mr-2" />Template</Button>
-          </>)}
-          <Button variant="outline" className="min-h-11" onClick={exportExcel}><Download className="w-4 h-4 mr-2" />Export Excel</Button>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input className="pl-9 min-h-11" placeholder="Search Driver ID, name, training, room..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+            <Input aria-label="Search trainings" className="pl-10 min-h-11 bg-card" placeholder="Search Driver ID, name, training, room..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
           </div>
-          <select className="min-h-11 rounded-md border bg-background px-3" value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1); }}>
-            <option value="all">All</option><option value="pending">Pending</option><option value="present">Present</option><option value="absent">Absent</option>
-          </select>
+          <Select value={filter} onValueChange={(value) => { setFilter(value); setPage(1); }}>
+            <SelectTrigger aria-label="Attendance filter" className="min-h-11 bg-card sm:w-44"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="all">All attendance</SelectItem><SelectItem value="pending">Pending</SelectItem><SelectItem value="present">Present</SelectItem><SelectItem value="absent">Absent</SelectItem></SelectContent>
+          </Select>
         </div>
-        {loading ? <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin" /></div> :
-          shown.length === 0 ? <p className="text-center text-muted-foreground py-10">No trainings found.</p> : (
-          <div className="space-y-2">
+        <div className="flex items-center justify-between border-b border-border pb-3 text-sm">
+          <span className="font-medium">{filtered.length.toLocaleString("en-US")} training records</span>
+          <span className="text-muted-foreground">Page {page} of {pages}</span>
+        </div>
+        {loading ? <div role="status" aria-label="Loading trainings" className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div> :
+          shown.length === 0 ? <TrainingEmpty /> : (
+          <div className="space-y-3">
             {shown.map((r) => (
-              <Card key={r.id}><CardContent className="p-3 flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold">{r.driver_id}{r.driver_name ? ` — ${r.driver_name}` : ""}</div>
-                  <div className="text-sm">{r.training_name}</div>
-                  <div className="text-xs text-muted-foreground">{r.training_date}{r.training_time ? ` · ${r.training_time}` : ""}{r.room_no ? ` · Room ${r.room_no}` : ""}</div>
+              <Card key={r.id} className="rounded-lg shadow-none"><CardContent className="p-4 sm:p-5">
+                <div className="flex items-start gap-4">
+                  <div className="hidden sm:block"><TrainingDate date={r.training_date} /></div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 text-xs font-semibold text-primary">Driver ID · {r.driver_id}</div>
+                        <h3 className="break-words font-semibold">{r.driver_name || r.driver_id}</h3>
+                      </div>
+                      <TrainingAttendance value={r.attendance} />
+                    </div>
+                    <p className="mt-2 break-words text-sm font-medium text-foreground">{r.training_name}</p>
+                    <div className="mt-3"><TrainingDetails row={r} /></div>
+                  </div>
                 </div>
-                <AttendanceBadge value={r.attendance} />
-                <div className="flex gap-2">
-                  <Button size="sm" className="min-h-11" variant={r.attendance === "present" ? "default" : "outline"} onClick={() => mark(r, r.attendance === "present" ? "pending" : "present")}><Check className="w-4 h-4 mr-1" />Present</Button>
-                  <Button size="sm" className="min-h-11" variant={r.attendance === "absent" ? "destructive" : "outline"} onClick={() => mark(r, r.attendance === "absent" ? "pending" : "absent")}><X className="w-4 h-4 mr-1" />Absent</Button>
-                  {isAdmin && <Button size="sm" variant="ghost" className="min-h-11" aria-label="Delete" onClick={() => remove(r)}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
+                <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
+                  <span className="mr-auto hidden text-xs text-muted-foreground sm:inline">Attendance</span>
+                  <Button size="sm" className="min-h-11 flex-1 sm:flex-none" aria-pressed={r.attendance === "present"} variant={r.attendance === "present" ? "default" : "outline"} onClick={() => mark(r, r.attendance === "present" ? "pending" : "present")}><Check />Present</Button>
+                  <Button size="sm" className="min-h-11 flex-1 sm:flex-none" aria-pressed={r.attendance === "absent"} variant={r.attendance === "absent" ? "destructive" : "outline"} onClick={() => mark(r, r.attendance === "absent" ? "pending" : "absent")}><X />Absent</Button>
+                  {isAdmin && <Button size="icon" variant="ghost" className="h-11 w-11 text-destructive" title="Delete training" aria-label={`Delete training for ${r.driver_id}`} onClick={() => remove(r)}><Trash2 /></Button>}
                 </div>
               </CardContent></Card>
             ))}
           </div>
         )}
         {pages > 1 && (
-          <div className="flex items-center justify-center gap-3">
-            <Button variant="outline" className="min-h-11" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</Button>
-            <span className="text-sm">Page {page} of {pages}</span>
-            <Button variant="outline" className="min-h-11" disabled={page >= pages} onClick={() => setPage(page + 1)}>Next</Button>
+          <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+            <Button variant="outline" className="min-h-11" disabled={page <= 1} onClick={() => setPage(page - 1)}><ChevronLeft />Prev</Button>
+            <span className="text-sm text-muted-foreground">{page} / {pages}</span>
+            <Button variant="outline" className="min-h-11" disabled={page >= pages} onClick={() => setPage(page + 1)}>Next<ChevronRight /></Button>
           </div>
         )}
       </div>
