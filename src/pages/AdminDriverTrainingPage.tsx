@@ -12,6 +12,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TrainingAttendance, TrainingDate, TrainingDetails, TrainingSummary, TrainingEmpty } from "@/components/shared/TrainingPresentation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseTrainingRows, type TrainingRow } from "@/utils/driverTraining";
+import { attendanceTemplateRows, prepareAttendanceUpload, type AttendancePreview } from "@/utils/trainingAttendance";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const PAGE_SIZE = 15;
 
@@ -19,6 +21,9 @@ const AdminDriverTrainingPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isAdmin, user } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
+  const attendanceFileRef = useRef<HTMLInputElement>(null);
+  const [attendancePreview, setAttendancePreview] = useState<AttendancePreview | null>(null);
+  const [savingAttendance, setSavingAttendance] = useState(false);
   const [rows, setRows] = useState<TrainingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -50,6 +55,58 @@ const AdminDriverTrainingPage = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Trainings");
     XLSX.writeFile(wb, "driver-training-template.xlsx");
+  };
+
+  const downloadAttendanceTemplate = () => {
+    const data = attendanceTemplateRows(filtered);
+    const ws = XLSX.utils.json_to_sheet(data.length ? data : [{ "Training ID": "", "Driver Id": "", Name: "", "Name of Training": "", Date: "", Time: "", "Room No": "", Attendance: "" }]);
+    ws["!cols"] = [38, 14, 28, 50, 16, 16, 16, 18].map((wch) => ({ wch }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+    const instructions = XLSX.utils.aoa_to_sheet([["Attendance upload"], ["Enter Present or Absent in Attendance. Remove rows you do not want to update."], ["Keep Training ID and Driver Id unchanged to match the exact schedule."], ["Without Training ID, Driver Id + Name of Training + Date must match one existing schedule."], ["This template contains the currently filtered training records."]]);
+    instructions["!cols"] = [{ wch: 110 }];
+    XLSX.utils.book_append_sheet(wb, instructions, "Instructions");
+    XLSX.writeFile(wb, "driver-training-attendance-template.xlsx");
+  };
+
+  const handleAttendanceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !isAdmin) return;
+    try {
+      const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      if (!sheet) throw new Error("No worksheet found");
+      const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
+      if (!raw.length) throw new Error("The attendance file is empty");
+      setAttendancePreview(prepareAttendanceUpload(raw, rows, XLSX.SSF.parse_date_code));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not read attendance file");
+    } finally {
+      if (attendanceFileRef.current) attendanceFileRef.current.value = "";
+    }
+  };
+
+  const saveAttendanceUpload = async () => {
+    if (!attendancePreview || !isAdmin || !user?.id) return;
+    setSavingAttendance(true);
+    const failures: typeof attendancePreview.updates = [];
+    let saved = 0;
+    try {
+      for (let offset = 0; offset < attendancePreview.updates.length; offset += 10) {
+        const batch = attendancePreview.updates.slice(offset, offset + 10);
+        const results = await Promise.allSettled(batch.map(async (r) => {
+          const { data, error } = await supabase.from("driver_trainings").update({ attendance: r.attendance, marked_by: user.id, marked_at: new Date().toISOString() }).eq("id", r.id).eq("driver_id", r.driver_id).select("id");
+          if (error || data?.length !== 1) throw new Error("Attendance update failed");
+        }));
+        results.forEach((result, i) => { if (result.status === "fulfilled") saved++; else failures.push(batch[i]); });
+      }
+      if (saved) toast.success(`Updated attendance for ${saved} training records`);
+      if (failures.length) {
+        toast.error(`${failures.length} updates failed. Retry the remaining records.`);
+        setAttendancePreview({ updates: failures, issues: attendancePreview.issues });
+      } else setAttendancePreview(null);
+      await fetchRows();
+    } finally { setSavingAttendance(false); }
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,6 +179,14 @@ const AdminDriverTrainingPage = () => {
             <Button variant="outline" className="min-h-11" onClick={exportExcel}><Download />Export Excel</Button>
           </div>
         </div>
+        {isAdmin && <div className="flex flex-col gap-3 border-y border-border py-4 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="font-semibold">Bulk attendance</h2>
+          <div className="flex flex-wrap gap-2">
+            <input ref={attendanceFileRef} type="file" aria-label="Attendance Excel file" accept=".xlsx,.xls,.csv" hidden onChange={handleAttendanceUpload} />
+            <Button variant="outline" className="min-h-11" onClick={() => attendanceFileRef.current?.click()} disabled={loading || uploading || savingAttendance}><Upload />Upload Attendance</Button>
+            <Button variant="outline" className="min-h-11" onClick={downloadAttendanceTemplate} disabled={loading}><Download />Attendance Template</Button>
+          </div>
+        </div>}
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -173,6 +238,21 @@ const AdminDriverTrainingPage = () => {
           </div>
         )}
       </div>
+      <Dialog open={attendancePreview !== null} onOpenChange={(open) => { if (!open && !savingAttendance) setAttendancePreview(null); }}>
+        <DialogContent className="max-h-[85dvh] overflow-y-auto bg-card text-card-foreground sm:max-w-2xl">
+          <DialogHeader><DialogTitle>Attendance upload preview</DialogTitle><DialogDescription>Only matching existing training records will be updated. No new schedules will be created.</DialogDescription></DialogHeader>
+          <div className="flex flex-wrap gap-4 text-sm font-medium">
+            <span>{attendancePreview?.updates.length ?? 0} matched</span>
+            <span className="text-primary">{attendancePreview?.updates.filter((r) => r.attendance === "present").length ?? 0} Present</span>
+            <span className="text-destructive">{attendancePreview?.updates.filter((r) => r.attendance === "absent").length ?? 0} Absent</span>
+          </div>
+          <div className="max-h-64 space-y-2 overflow-y-auto">
+            {attendancePreview?.updates.map((r) => <div key={r.id} className="flex items-start justify-between gap-3 border-b border-border py-2 text-sm"><div className="min-w-0"><div className="font-semibold">{r.driver_id}</div><div className="break-words">{r.training_name}</div></div><TrainingAttendance value={r.attendance} /></div>)}
+          </div>
+          {!!attendancePreview?.issues.length && <div className="text-sm"><h3 className="mb-2 font-semibold text-destructive">{attendancePreview.issues.length} skipped rows</h3><ul className="max-h-32 space-y-1 overflow-y-auto">{attendancePreview.issues.map((issue, i) => <li key={i}>{issue}</li>)}</ul></div>}
+          <div className="flex flex-wrap justify-end gap-2"><Button variant="outline" className="min-h-11" disabled={savingAttendance} onClick={() => setAttendancePreview(null)}>Cancel</Button><Button className="min-h-11" disabled={savingAttendance || !attendancePreview?.updates.length} onClick={saveAttendanceUpload}>{savingAttendance ? <Loader2 className="animate-spin" /> : <Check />}Save Attendance</Button></div>
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   );
 };
