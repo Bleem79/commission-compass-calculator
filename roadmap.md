@@ -1,8 +1,9 @@
 # AMAN Taxi presentation redesign
 
 ## Training page presentation
-- [ ] Improve admin and driver training layouts with shared schedule and attendance presentation, preserving data and actions
-- [ ] Check desktop/mobile presentation and current errors; signed-in checks unavailable with external unmanaged authentication
+- [x] Improve admin and driver training layouts with shared schedule and attendance presentation, preserving data and actions
+- [x] Check desktop/mobile presentation with fixture records, search and pagination; no page errors or horizontal overflow, build OK
+- [ ] Signed-in training upload/attendance verification — external unmanaged authentication unavailable
 
 ## Daily driver request limit
 - [x] Enforce one request per driver per Dubai calendar day across all types without changing existing records
