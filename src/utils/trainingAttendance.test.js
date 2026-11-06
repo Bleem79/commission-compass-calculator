@@ -1,0 +1,13 @@
+import { test, expect } from "bun:test";
+import { prepareAttendanceUpload, attendanceTemplateRows } from "./trainingAttendance";
+const row = { id: "training-1", driver_id: "113640", training_name: "Rain safety", training_date: "2026-11-07", training_time: "11:00 AM", room_no: "Room 1", attendance: "pending", driver_name: "Driver" };
+const input = { "Driver Id": "113640", "Name of Training": "Rain safety", Date: "07/11/2026" };
+test("accepts Present attendance", () => expect(prepareAttendanceUpload([{ ...input, Attendance: "Present" }], [row]).updates[0].attendance).toBe("present"));
+test("accepts Absent attendance", () => expect(prepareAttendanceUpload([{ ...input, Attendance: " absent " }], [row]).updates[0].attendance).toBe("absent"));
+test("rejects other attendance values", () => expect(prepareAttendanceUpload([{ ...input, Attendance: "Pending" }], [row]).updates).toHaveLength(0));
+test("does not update a different driver using a training ID", () => expect(prepareAttendanceUpload([{ ...input, "Training ID": row.id, "Driver Id": "115507", Attendance: "Present" }], [row]).updates).toHaveLength(0));
+test("does not update another date", () => expect(prepareAttendanceUpload([{ ...input, Date: "2026-11-08", Attendance: "Present" }], [row]).updates).toHaveLength(0));
+test("rejects ambiguous schedules", () => expect(prepareAttendanceUpload([{ ...input, Attendance: "Present" }], [row, { ...row, id: "training-2" }]).updates).toHaveLength(0));
+test("training ID selects exactly one schedule", () => expect(prepareAttendanceUpload([{ ...input, "Training ID": row.id, Attendance: "Present" }], [row, { ...row, id: "training-2" }]).updates.map(r => r.id)).toEqual(["training-1"]));
+test("duplicate rows cannot overwrite earlier attendance", () => expect(prepareAttendanceUpload([{ ...input, Attendance: "Present" }, { ...input, Attendance: "Absent" }], [row]).updates).toHaveLength(1));
+test("template preserves schedule IDs and leaves pending attendance blank", () => expect(attendanceTemplateRows([row])[0]).toMatchObject({ "Training ID": "training-1", "Driver Id": "113640", Attendance: "" }));

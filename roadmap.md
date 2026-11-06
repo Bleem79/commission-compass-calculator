@@ -1,6 +1,8 @@
 # AMAN Taxi presentation redesign
 
 ## Training page presentation
+- [ ] Add admin attendance Excel template, validated preview and bulk Present/Absent updates to existing schedules
+- [ ] Test attendance parsing/matching and upload preview; real signed-in saves blocked by external unmanaged authentication
 - [x] Improve admin and driver training layouts with shared schedule and attendance presentation, preserving data and actions
 - [x] Check desktop/mobile presentation with fixture records, search and pagination; no page errors or horizontal overflow, build OK
 - [ ] Signed-in training upload/attendance verification — external unmanaged authentication unavailable
