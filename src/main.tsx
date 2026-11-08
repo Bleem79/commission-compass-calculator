@@ -2,6 +2,9 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { installChunkErrorReload } from './utils/lazyRetry'
+
+installChunkErrorReload();
 
 // Ensure the root element exists
 const rootElement = document.getElementById("root");
