@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Settings2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, Search, Settings2, X } from "lucide-react";
 
 interface PortalSetting {
   id: string;
@@ -23,12 +24,21 @@ export const DriverPortalSettingsDialog = ({ open, onOpenChange }: DriverPortalS
   const [settings, setSettings] = useState<PortalSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (open) {
       fetchSettings();
+    } else {
+      setSearch("");
     }
   }, [open]);
+
+  const enabledCount = settings.filter((s) => s.is_enabled).length;
+  const visibleSettings = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return term ? settings.filter((s) => s.feature_name.toLowerCase().includes(term)) : settings;
+  }, [settings, search]);
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -91,6 +101,9 @@ export const DriverPortalSettingsDialog = ({ open, onOpenChange }: DriverPortalS
     sms: "📱",
     yango: "🚕",
     outstanding: "💲",
+    total_outstanding: "💰",
+    calendar_events: "📅",
+    driver_training: "🎓",
   };
 
   return (
@@ -111,8 +124,39 @@ export const DriverPortalSettingsDialog = ({ open, onOpenChange }: DriverPortalS
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="max-h-[60vh] overflow-y-auto overscroll-contain space-y-4 py-4 pr-1 -mr-1">
-            {settings.map((setting) => (
+          <>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>
+                <span className="font-semibold text-foreground">{enabledCount}</span> of {settings.length} features on
+              </span>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search features..."
+                className="pl-9 pr-10 h-11"
+                aria-label="Search features"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="max-h-[55vh] overflow-y-auto overscroll-contain space-y-3 py-2 pr-1 -mr-1">
+            {visibleSettings.length === 0 && (
+              <p className="py-6 text-center text-sm text-muted-foreground">No features match your search.</p>
+            )}
+            {visibleSettings.map((setting) => (
               <div 
                 key={setting.id} 
                 className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
@@ -137,6 +181,7 @@ export const DriverPortalSettingsDialog = ({ open, onOpenChange }: DriverPortalS
               </div>
             ))}
           </div>
+          </>
         )}
 
         <div className="flex justify-end">
