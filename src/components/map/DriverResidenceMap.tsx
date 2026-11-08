@@ -25,6 +25,7 @@ export default function DriverResidenceMap({ groups, selected, onSelect }: { gro
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", { attribution: "Tiles &copy; Esri", maxZoom: 19 }).addTo(map);
     const bounds = L.latLngBounds([]);
     const markers: L.Marker[] = [];
+    let labelsVisible = true;
     for (const group of pins) {
       const position = group.position;
       if (!position) continue;
@@ -36,6 +37,9 @@ export default function DriverResidenceMap({ groups, selected, onSelect }: { gro
       label.textContent = `${group.area || group.city}-${group.count}`;
       marker.bindTooltip(label, { permanent: true, direction: "bottom", offset: [0, 4], className: "residence-pin-tooltip" });
       marker.on("click", () => onSelect(group.key));
+      // When zoomed in (labels hidden), hovering a pin reveals its area label.
+      marker.on("mouseover", () => marker.openTooltip());
+      marker.on("mouseout", () => { if (!labelsVisible) marker.closeTooltip(); });
       markers.push(marker);
     }
     const focus = pins.find(g => g.key === selected)?.position;
@@ -45,6 +49,7 @@ export default function DriverResidenceMap({ groups, selected, onSelect }: { gro
     const LABEL_MAX_ZOOM = 12;
     const syncLabels = () => {
       const show = map.getZoom() <= LABEL_MAX_ZOOM;
+      labelsVisible = show;
       for (const marker of markers) {
         if (show) marker.openTooltip();
         else marker.closeTooltip();
