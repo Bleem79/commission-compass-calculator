@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
+import { lazyRetry } from "@/utils/lazyRetry";
 import { useNavigate } from "react-router-dom";
 import { 
   MessageSquare, Loader2, Clock, CheckCircle, XCircle, 
@@ -29,9 +30,9 @@ import { DateRangePicker } from "@/components/shared/DateRangePicker";
 import { Input } from "@/components/ui/input";
 import { BlockDriverRequestsDialog } from "@/components/admin-requests/BlockDriverRequestsDialog";
 
-const DayOffCalendar = lazy(() => import("@/components/admin-requests/DayOffCalendar").then(m => ({ default: m.DayOffCalendar })));
-const ManageTypesDialog = lazy(() => import("@/components/admin-requests/ManageTypesDialog").then(m => ({ default: m.ManageTypesDialog })));
-const ManageSharjahLocationsDialog = lazy(() => import("@/components/admin-requests/ManageSharjahLocationsDialog").then(m => ({ default: m.ManageSharjahLocationsDialog })));
+const DayOffCalendar = lazyRetry(() => import("@/components/admin-requests/DayOffCalendar").then(m => ({ default: m.DayOffCalendar })));
+const ManageTypesDialog = lazyRetry(() => import("@/components/admin-requests/ManageTypesDialog").then(m => ({ default: m.ManageTypesDialog })));
+const ManageSharjahLocationsDialog = lazyRetry(() => import("@/components/admin-requests/ManageSharjahLocationsDialog").then(m => ({ default: m.ManageSharjahLocationsDialog })));
 
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending", color: "bg-yellow-500" },

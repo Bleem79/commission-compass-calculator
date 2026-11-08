@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect, lazy, Suspense } from "react";
+import React, { useState, useCallback, useEffect, Suspense } from "react";
+import { lazyRetry } from "@/utils/lazyRetry";
 import { useNavigate } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
 import {
@@ -46,15 +47,15 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import PayslipNoticeDialog from "@/components/shared/PayslipNoticeDialog";
 import { QrCode } from "lucide-react";
 
-const DriverQRCodeDialog = lazy(() => import("@/components/driver-portal/DriverQRCodeDialog").then((m) => ({ default: m.DriverQRCodeDialog })));
+const DriverQRCodeDialog = lazyRetry(() => import("@/components/driver-portal/DriverQRCodeDialog").then((m) => ({ default: m.DriverQRCodeDialog })));
 
 // Lazy load heavy dialog components - only loaded when opened
-const AdminMessages = lazy(() => import("@/components/messages/AdminMessages").then((m) => ({ default: m.AdminMessages })));
-const DriverIncomeAuthDialog = lazy(() => import("@/components/driver-income/DriverIncomeAuthDialog").then((m) => ({ default: m.DriverIncomeAuthDialog })));
-const DriverSmsDialog = lazy(() => import("@/components/messages/DriverSmsDialog").then((m) => ({ default: m.DriverSmsDialog })));
-const DriverPortalSettingsDialog = lazy(() => import("@/components/admin/DriverPortalSettingsDialog").then((m) => ({ default: m.DriverPortalSettingsDialog })));
-const InstallBanner = lazy(() => import("@/components/pwa/InstallBanner"));
-const NotificationPrompt = lazy(() => import("@/components/pwa/NotificationPrompt"));
+const AdminMessages = lazyRetry(() => import("@/components/messages/AdminMessages").then((m) => ({ default: m.AdminMessages })));
+const DriverIncomeAuthDialog = lazyRetry(() => import("@/components/driver-income/DriverIncomeAuthDialog").then((m) => ({ default: m.DriverIncomeAuthDialog })));
+const DriverSmsDialog = lazyRetry(() => import("@/components/messages/DriverSmsDialog").then((m) => ({ default: m.DriverSmsDialog })));
+const DriverPortalSettingsDialog = lazyRetry(() => import("@/components/admin/DriverPortalSettingsDialog").then((m) => ({ default: m.DriverPortalSettingsDialog })));
+const InstallBanner = lazyRetry(() => import("@/components/pwa/InstallBanner"));
+const NotificationPrompt = lazyRetry(() => import("@/components/pwa/NotificationPrompt"));
 import NotificationBell from "@/components/shared/NotificationBell";
 import { useAdminNotificationReminder } from "@/hooks/useAdminNotificationReminder";
 import { Button } from "@/components/ui/button";

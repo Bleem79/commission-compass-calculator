@@ -6,28 +6,9 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outle
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { PagePermissionsProvider, usePagePermissions } from "./contexts/PagePermissionsContext";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { lazy, Suspense, useEffect, memo } from "react";
+import { Suspense, useEffect, memo } from "react";
 import { Loader2 } from "lucide-react";
-
-// Retry dynamic imports; if a chunk is stale (after a new deploy), reload once to get fresh assets.
-const lazyRetry = <T extends { default: React.ComponentType<any> }>(
-  importer: () => Promise<T>
-) =>
-  lazy(async () => {
-    try {
-      const mod = await importer();
-      sessionStorage.removeItem("chunk-reload-attempted");
-      return mod;
-    } catch (err) {
-      const key = "chunk-reload-attempted";
-      if (!sessionStorage.getItem(key)) {
-        sessionStorage.setItem(key, "1");
-        window.location.reload();
-        return new Promise<T>(() => {});
-      }
-      throw err;
-    }
-  });
+import { lazyRetry } from "@/utils/lazyRetry";
 
 // Lazy load all page components for code splitting
 const Login = lazyRetry(() => import("./pages/Login"));
