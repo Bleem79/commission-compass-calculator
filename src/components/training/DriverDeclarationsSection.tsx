@@ -114,7 +114,7 @@ const DriverDeclarationsSection = ({ driverId, driverName }: { driverId: string;
       })}
 
       <Dialog open={!!openDoc} onOpenChange={(o) => { if (!o && !saving) setOpenDoc(null); }}>
-        <DialogContent className="max-h-[95dvh] w-[calc(100vw-1rem)] max-w-4xl overflow-y-auto bg-card p-3 text-card-foreground sm:p-6">
+        <DialogContent onInteractOutside={(e) => { if (playing) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (playing) { e.preventDefault(); setPlaying(null); } }} className="max-h-[95dvh] w-[calc(100vw-1rem)] max-w-4xl overflow-y-auto bg-card p-3 text-card-foreground sm:p-6">
           <DialogHeader>
             <DialogTitle className="pr-8">{openDoc?.title}</DialogTitle>
             <DialogDescription>Read the document below. Pinch to zoom if the text is small.</DialogDescription>

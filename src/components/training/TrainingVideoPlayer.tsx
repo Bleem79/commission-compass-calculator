@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -17,8 +18,8 @@ export const openTrainingVideo = (video: TrainingVideo, setPlaying: (v: Training
   else window.open(video.video_url, "_blank", "noopener,noreferrer");
 };
 
-const TrainingVideoPlayer = ({ video, onClose }: { video: TrainingVideo; onClose: () => void }) => (
-  <div className="fixed inset-0 z-[60] bg-foreground" style={{ height: "100dvh" }}>
+const TrainingVideoPlayer = ({ video, onClose }: { video: TrainingVideo; onClose: () => void }) => createPortal(
+  <div className="pointer-events-auto fixed inset-0 z-[60] bg-foreground" style={{ height: "100dvh" }}>
     <iframe
       src={toEmbedUrl(video.video_url) || ""}
       className="absolute inset-0 h-full w-full border-0"
@@ -32,7 +33,8 @@ const TrainingVideoPlayer = ({ video, onClose }: { video: TrainingVideo; onClose
       <h2 className="mr-3 flex-1 truncate text-sm font-medium text-background">{video.title}</h2>
       <Button size="icon" variant="ghost" className="min-h-11 min-w-11 text-background hover:bg-background/20" onClick={onClose} aria-label="Close video"><X className="h-6 w-6" /></Button>
     </div>
-  </div>
+  </div>,
+  document.body,
 );
 
 export default TrainingVideoPlayer;
