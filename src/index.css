@@ -463,3 +463,17 @@
     break-inside: auto;
   }
 }
+/* Training declaration templates: A4 portrait paper (documents are always printed black on white) */
+.a4-document .a4-page,
+.a4-document .a4-docx section.docx {
+  width: 794px;
+  min-height: 1123px;
+  margin: 0 auto 16px;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 1px 4px hsl(var(--foreground) / 0.15);
+  box-sizing: border-box;
+}
+.a4-document .a4-page { height: 1123px; overflow: hidden; }
+.a4-document .a4-docx section.docx { padding: 72px; overflow: hidden; }
+.a4-document .a4-docx .docx-wrapper { background: transparent; padding: 0; }
