@@ -1153,6 +1153,97 @@ export type Database = {
         }
         Relationships: []
       }
+      training_acknowledgments: {
+        Row: {
+          agreed: boolean
+          created_at: string
+          document_id: string | null
+          document_title: string
+          driver_id: string
+          driver_name: string | null
+          id: string
+          signature_data: string
+          signed_at: string
+          user_id: string
+        }
+        Insert: {
+          agreed?: boolean
+          created_at?: string
+          document_id?: string | null
+          document_title?: string
+          driver_id: string
+          driver_name?: string | null
+          id?: string
+          signature_data: string
+          signed_at?: string
+          user_id: string
+        }
+        Update: {
+          agreed?: boolean
+          created_at?: string
+          document_id?: string | null
+          document_title?: string
+          driver_id?: string
+          driver_name?: string | null
+          id?: string
+          signature_data?: string
+          signed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_acknowledgments_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "training_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_documents: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_type: string
+          id: string
+          title: string
+          updated_at: string
+          uploaded_by: string
+          video_tutorial_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_type: string
+          id?: string
+          title: string
+          updated_at?: string
+          uploaded_by: string
+          video_tutorial_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_type?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          uploaded_by?: string
+          video_tutorial_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_documents_video_tutorial_id_fkey"
+            columns: ["video_tutorial_id"]
+            isOneToOne: false
+            referencedRelation: "video_tutorials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       uploaded_files: {
         Row: {
           category: string
