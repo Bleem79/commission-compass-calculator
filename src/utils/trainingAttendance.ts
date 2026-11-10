@@ -35,3 +35,13 @@ export function prepareAttendanceUpload(raw: Record<string, unknown>[], training
 }
 
 export const attendanceTemplateRows = (rows: TrainingRow[]) => rows.map((r) => ({ "Training ID": r.id, "Driver Id": r.driver_id, Name: r.driver_name ?? "", "Name of Training": r.training_name, Date: r.training_date, Time: r.training_time ?? "", "Room No": r.room_no ?? "", Attendance: r.attendance === "pending" ? "" : r.attendance === "present" ? "Present" : "Absent" }));
+/** Records whose attendance a bulk "Clear Attendance" would reset to pending. */
+export const markedTrainingIds = (rows: { id?: string; attendance?: string | null }[]) =>
+  rows.filter((r) => r.id && r.attendance && r.attendance !== "pending").map((r) => r.id as string);
+
+/** Splits IDs into fixed-size batches so bulk writes stay within request limits. */
+export const chunkIds = (ids: string[], size = 200) => {
+  const out: string[][] = [];
+  for (let i = 0; i < ids.length; i += size) out.push(ids.slice(i, i + size));
+  return out;
+};
