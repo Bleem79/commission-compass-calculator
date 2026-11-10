@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
-import { GraduationCap, Upload, Download, Trash2, Loader2, Search, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { GraduationCap, Upload, Download, Trash2, Loader2, Search, Check, X, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +12,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TrainingAttendance, TrainingDate, TrainingDetails, TrainingSummary, TrainingEmpty } from "@/components/shared/TrainingPresentation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseTrainingRows, type TrainingRow } from "@/utils/driverTraining";
-import { attendanceTemplateRows, prepareAttendanceUpload, type AttendancePreview } from "@/utils/trainingAttendance";
+import { attendanceTemplateRows, prepareAttendanceUpload, markedTrainingIds, chunkIds, type AttendancePreview } from "@/utils/trainingAttendance";
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const PAGE_SIZE = 15;
@@ -30,6 +31,8 @@ const AdminDriverTrainingPage = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [bulkAction, setBulkAction] = useState<"delete" | "clear" | null>(null);
+  const [bulkWorking, setBulkWorking] = useState(false);
 
   useEffect(() => { if (!isAuthenticated) navigate("/login", { replace: true }); }, [isAuthenticated, navigate]);
 
@@ -146,6 +149,32 @@ const AdminDriverTrainingPage = () => {
     setRows((rs) => rs.filter((r) => r.id !== row.id));
   };
 
+  const runBulkAction = async () => {
+    if (!isAdmin || !bulkAction) return;
+    const ids = bulkAction === "delete" ? filtered.map((r) => r.id as string).filter(Boolean) : markedTrainingIds(filtered);
+    if (!ids.length) { setBulkAction(null); return; }
+    setBulkWorking(true);
+    let done = 0;
+    try {
+      for (const batch of chunkIds(ids)) {
+        const query = bulkAction === "delete"
+          ? (supabase as any).from("driver_trainings").delete().in("id", batch).select("id")
+          : (supabase as any).from("driver_trainings").update({ attendance: "pending", marked_by: null, marked_at: null }).in("id", batch).select("id");
+        const { data, error } = await query;
+        if (error) throw error;
+        done += data?.length ?? 0;
+      }
+      toast.success(bulkAction === "delete" ? `Deleted ${done} training records` : `Cleared attendance for ${done} training records`);
+    } catch {
+      toast.error(`${bulkAction === "delete" ? "Delete" : "Clear attendance"} stopped after ${done} records. Please try again.`);
+    } finally {
+      setBulkWorking(false);
+      setBulkAction(null);
+      setPage(1);
+      await fetchRows();
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => (filter === "all" || r.attendance === filter) &&
@@ -176,6 +205,7 @@ const AdminDriverTrainingPage = () => {
               </Button>
               <Button variant="outline" className="min-h-11" onClick={downloadTemplate}><Download />Template</Button>
             </>)}
+            {isAdmin && <Button variant="outline" className="min-h-11 text-destructive hover:text-destructive" onClick={() => setBulkAction("delete")} disabled={loading || uploading || bulkWorking || filtered.length === 0}><Trash2 />Delete Register</Button>}
             <Button variant="outline" className="min-h-11" onClick={exportExcel}><Download />Export Excel</Button>
           </div>
         </div>
@@ -185,6 +215,7 @@ const AdminDriverTrainingPage = () => {
             <input ref={attendanceFileRef} type="file" aria-label="Attendance Excel file" accept=".xlsx,.xls,.csv" hidden onChange={handleAttendanceUpload} />
             <Button variant="outline" className="min-h-11" onClick={() => attendanceFileRef.current?.click()} disabled={loading || uploading || savingAttendance}><Upload />Upload Attendance</Button>
             <Button variant="outline" className="min-h-11" onClick={downloadAttendanceTemplate} disabled={loading}><Download />Attendance Template</Button>
+            <Button variant="outline" className="min-h-11 text-destructive hover:text-destructive" onClick={() => setBulkAction("clear")} disabled={loading || savingAttendance || bulkWorking || markedTrainingIds(filtered).length === 0}><RotateCcw />Clear Attendance</Button>
           </div>
         </div>}
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -253,6 +284,26 @@ const AdminDriverTrainingPage = () => {
           <div className="flex flex-wrap justify-end gap-2"><Button variant="outline" className="min-h-11" disabled={savingAttendance} onClick={() => setAttendancePreview(null)}>Cancel</Button><Button className="min-h-11" disabled={savingAttendance || !attendancePreview?.updates.length} onClick={saveAttendanceUpload}>{savingAttendance ? <Loader2 className="animate-spin" /> : <Check />}Save Attendance</Button></div>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={bulkAction !== null} onOpenChange={(open) => { if (!open && !bulkWorking) setBulkAction(null); }}>
+        <AlertDialogContent className="bg-card text-card-foreground">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{bulkAction === "delete" ? "Delete training register?" : "Clear bulk attendance?"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkAction === "delete"
+                ? `This permanently deletes ${filtered.length.toLocaleString("en-US")} ${search.trim() || filter !== "all" ? "filtered " : ""}training records. Drivers will no longer see these schedules. This cannot be undone.`
+                : `This resets ${markedTrainingIds(filtered).length.toLocaleString("en-US")} ${search.trim() || filter !== "all" ? "filtered " : ""}Present/Absent records back to Pending. The training schedules stay.`}
+              {(search.trim() || filter !== "all") ? " Only records matching your current search and filter are affected." : " No search or filter is applied, so all records are affected."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-h-11" disabled={bulkWorking}>Cancel</AlertDialogCancel>
+            <Button variant="destructive" className="min-h-11" disabled={bulkWorking} onClick={runBulkAction}>
+              {bulkWorking ? <Loader2 className="animate-spin" /> : bulkAction === "delete" ? <Trash2 /> : <RotateCcw />}
+              {bulkAction === "delete" ? "Delete Records" : "Clear Attendance"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageLayout>
   );
 };

@@ -11,3 +11,6 @@ test("rejects ambiguous schedules", () => expect(prepareAttendanceUpload([{ ...i
 test("training ID selects exactly one schedule", () => expect(prepareAttendanceUpload([{ ...input, "Training ID": row.id, Attendance: "Present" }], [row, { ...row, id: "training-2" }]).updates.map(r => r.id)).toEqual(["training-1"]));
 test("duplicate rows cannot overwrite earlier attendance", () => expect(prepareAttendanceUpload([{ ...input, Attendance: "Present" }, { ...input, Attendance: "Absent" }], [row]).updates).toHaveLength(1));
 test("template preserves schedule IDs and leaves pending attendance blank", () => expect(attendanceTemplateRows([row])[0]).toMatchObject({ "Training ID": "training-1", "Driver Id": "113640", Attendance: "" }));
+import { markedTrainingIds, chunkIds } from "./trainingAttendance";
+test("clear attendance targets only Present and Absent records", () => expect(markedTrainingIds([{ id: "a", attendance: "present" }, { id: "b", attendance: "pending" }, { id: "c", attendance: "absent" }])).toEqual(["a", "c"]));
+test("bulk writes are split into batches of 200", () => expect(chunkIds(Array.from({ length: 450 }, (_, i) => String(i))).map((c) => c.length)).toEqual([200, 200, 50]));
