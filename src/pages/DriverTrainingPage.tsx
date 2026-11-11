@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDriverCredentials } from "@/hooks/useDriverCredentials";
 import { TrainingAttendance, TrainingDate, TrainingDetails, TrainingSummary, TrainingEmpty } from "@/components/shared/TrainingPresentation";
 import type { TrainingRow } from "@/utils/driverTraining";
+import DriverDeclarationsSection from "@/components/training/DriverDeclarationsSection";
 
 const DriverTrainingPage = () => {
   const { driverInfo, loading: driverLoading } = useDriverCredentials();
@@ -22,6 +23,7 @@ const DriverTrainingPage = () => {
 
   return (
     <PageLayout title="My Training" icon={<GraduationCap className="w-6 h-6 text-primary" />} gradient="from-background to-background" maxWidth="4xl">
+      {!loading && driverInfo?.driverId && <div className="mb-6"><DriverDeclarationsSection driverId={driverInfo.driverId} driverName={driverInfo.driverName} /></div>}
       {loading ? <div role="status" aria-label="Loading trainings" className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div> :
         rows.length === 0 ? <TrainingEmpty driver /> : (
         <div className="space-y-6">
