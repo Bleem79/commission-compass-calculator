@@ -15,6 +15,7 @@ import { parseTrainingRows, type TrainingRow } from "@/utils/driverTraining";
 import { attendanceTemplateRows, prepareAttendanceUpload, markedTrainingIds, chunkIds, type AttendancePreview } from "@/utils/trainingAttendance";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import AdminDeclarationsSection from "@/components/training/AdminDeclarationsSection";
 
 const PAGE_SIZE = 15;
 
@@ -184,6 +185,9 @@ const AdminDriverTrainingPage = () => {
   const shown = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const counts = { total: rows.length, present: rows.filter((r) => r.attendance === "present").length, absent: rows.filter((r) => r.attendance === "absent").length };
 
+  const trainedDriverIds = useMemo(() => Array.from(new Set(rows.map((r) => r.driver_id).filter(Boolean))), [rows]);
+  const driverNames = useMemo(() => Object.fromEntries(rows.map((r) => [r.driver_id, r.driver_name ?? null])), [rows]);
+
   const exportExcel = () => {
     const ws = XLSX.utils.json_to_sheet(filtered.map((r) => ({ "Driver Id": r.driver_id, Name: r.driver_name, "Name of Training": r.training_name, Date: r.training_date, Time: r.training_time, "Room No": r.room_no, Attendance: r.attendance })));
     const wb = XLSX.utils.book_new();
@@ -195,6 +199,7 @@ const AdminDriverTrainingPage = () => {
     <PageLayout title="Drivers Training" icon={<GraduationCap className="w-6 h-6 text-primary" />} gradient="from-background to-background">
       <div className="space-y-6">
         <TrainingSummary total={counts.total} present={counts.present} absent={counts.absent} />
+        <AdminDeclarationsSection isAdmin={isAdmin} trainedDriverIds={trainedDriverIds} driverNames={driverNames} />
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold">Training register</h2>
           <div className="flex flex-wrap gap-2">
