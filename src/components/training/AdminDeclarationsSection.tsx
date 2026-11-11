@@ -44,6 +44,7 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
   const [search, setSearch] = useState("");
   const [viewAck, setViewAck] = useState<Ack | null>(null);
   const [viewSignature, setViewSignature] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -134,12 +135,39 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
     setViewSignature(data?.signature_data ?? null);
   };
 
+  const deleteAcks = async (ids: string[]) => {
+    const removed: string[] = [];
+    for (let i = 0; i < ids.length; i += 200) {
+      const { data, error } = await db.from("training_acknowledgments").delete().in("id", ids.slice(i, i + 200)).select("id");
+      if (error) break;
+      removed.push(...(data || []).map((r: { id: string }) => r.id));
+    }
+    const gone = new Set(removed);
+    if (gone.size) setAcks((as) => as.filter((a) => !gone.has(a.id)));
+    return gone.size;
+  };
+
   const removeAck = async (ack: Ack) => {
     if (!confirm(`Delete the signature of ${ack.driver_id}? The driver will need to sign again.`)) return;
-    const { error } = await db.from("training_acknowledgments").delete().eq("id", ack.id);
-    if (error) return toast.error("Delete failed");
-    setAcks((as) => as.filter((a) => a.id !== ack.id));
-    setViewAck(null);
+    setDeleting(true);
+    const count = await deleteAcks([ack.id]);
+    setDeleting(false);
+    if (!count) return toast.error("Delete failed – only administrators can delete signatures");
+    toast.success(`Signature of ${ack.driver_id} deleted`);
+    if (viewAck?.id === ack.id) setViewAck(null);
+  };
+
+  const removeShownAcks = async () => {
+    const ids = signedShown.map((a) => a.id);
+    if (!ids.length) return;
+    const scope = q ? ` matching "${search.trim()}"` : "";
+    if (!confirm(`Delete ${ids.length} signature${ids.length === 1 ? "" : "s"}${scope} for "${group?.title}"? These drivers will need to sign again. This cannot be undone.`)) return;
+    setDeleting(true);
+    const count = await deleteAcks(ids);
+    setDeleting(false);
+    if (!count) return toast.error("Delete failed – only administrators can delete signatures");
+    if (count < ids.length) toast.warning(`${count} of ${ids.length} signatures deleted. Please try again for the rest.`);
+    else toast.success(`${count} signature${count === 1 ? "" : "s"} deleted`);
   };
 
   const exportExcel = () => {
@@ -237,11 +265,21 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
           <Tabs defaultValue="signed">
             <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="signed">Signed ({group?.acks.length ?? 0})</TabsTrigger><TabsTrigger value="not">Not signed ({summary?.notSigned.length ?? 0})</TabsTrigger></TabsList>
             <TabsContent value="signed" className="max-h-[50dvh] space-y-1 overflow-y-auto">
+              {isAdmin && signedShown.length > 0 && (
+                <div className="flex justify-end pb-1">
+                  <Button variant="outline" className="min-h-11 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={deleting} onClick={removeShownAcks}>
+                    {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}Delete {q ? `${signedShown.length} shown` : `all ${signedShown.length}`} signature{signedShown.length === 1 ? "" : "s"}
+                  </Button>
+                </div>
+              )}
               {signedShown.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">No signatures found</p> : signedShown.map((a) => (
-                <button key={a.id} type="button" onClick={() => openAck(a)} className="flex min-h-11 w-full items-center justify-between gap-3 border-b border-border px-1 py-2 text-left text-sm hover:bg-muted">
-                  <span className="min-w-0"><span className="font-semibold">{a.driver_id}</span>{a.driver_name && <span className="block truncate text-muted-foreground">{a.driver_name}</span>}</span>
-                  <span className="shrink-0 text-right text-xs text-muted-foreground">{formatSignedAt(a.signed_at)}</span>
-                </button>
+                <div key={a.id} className="flex items-center gap-1 border-b border-border">
+                  <button type="button" onClick={() => openAck(a)} className="flex min-h-11 min-w-0 flex-1 items-center justify-between gap-3 px-1 py-2 text-left text-sm hover:bg-muted">
+                    <span className="min-w-0"><span className="font-semibold">{a.driver_id}</span>{a.driver_name && <span className="block truncate text-muted-foreground">{a.driver_name}</span>}</span>
+                    <span className="shrink-0 text-right text-xs text-muted-foreground">{formatSignedAt(a.signed_at)}</span>
+                  </button>
+                  {isAdmin && <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0 text-destructive" disabled={deleting} aria-label={`Delete signature of ${a.driver_id}`} title="Delete signature" onClick={() => removeAck(a)}><Trash2 /></Button>}
+                </div>
               ))}
             </TabsContent>
             <TabsContent value="not" className="max-h-[50dvh] space-y-1 overflow-y-auto">
@@ -263,7 +301,7 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
             {viewSignature ? <img src={viewSignature} alt="Driver signature" className="mt-2 max-h-44 w-full rounded-md border border-border bg-background object-contain" /> : <Loader2 className="mt-2 h-5 w-5 animate-spin text-primary" />}
           </div>
           <div className="flex flex-wrap justify-end gap-2">
-            {isAdmin && viewAck && <Button variant="ghost" className="min-h-11 text-destructive" onClick={() => removeAck(viewAck)}><Trash2 />Delete signature</Button>}
+            {isAdmin && viewAck && <Button variant="ghost" className="min-h-11 text-destructive" disabled={deleting} onClick={() => removeAck(viewAck)}><Trash2 />Delete signature</Button>}
             <Button className="min-h-11" disabled={!viewSignature} onClick={() => viewAck && viewSignature && !printSignedDeclaration(viewerRef.current?.content() ?? null, { title: viewAck.document_title, driverId: viewAck.driver_id, driverName: viewAck.driver_name, signedAt: viewAck.signed_at, signature: viewSignature }) && toast.error("Allow pop-ups to print the signed copy")}><Printer />Print / Save PDF</Button>
           </div>
           {viewDoc && <div className="rounded-md bg-muted p-2 sm:p-4"><Suspense fallback={viewerFallback}><A4DocumentViewer ref={viewerRef} filePath={viewDoc.file_path} fileType={viewDoc.file_type} /></Suspense></div>}
