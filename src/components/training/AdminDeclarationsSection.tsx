@@ -54,7 +54,7 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
   const load = useCallback(async () => {
     setLoading(true);
     const [docsRes, videosRes] = await Promise.all([
-      db.from("training_documents").select("id,title,file_name,file_path,file_type,video_tutorial_id,created_at").order("created_at", { ascending: false }),
+      db.from("training_documents").select("id,title,file_name,file_path,file_type,video_tutorial_id,video_tutorial_ids,created_at").order("created_at", { ascending: false }),
       db.from("video_tutorials").select("id,title").order("created_at", { ascending: false }),
     ]);
     let all: Ack[] = [];
@@ -101,12 +101,12 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
     try {
       const { error: upErr } = await supabase.storage.from(DECLARATION_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert: false });
       if (upErr) throw upErr;
-      const { error } = await db.from("training_documents").insert({ title: title.trim(), file_name: file.name, file_type: type, file_path: path, video_tutorial_id: videoId === NO_VIDEO ? null : videoId, uploaded_by: user.id });
+      const { error } = await db.from("training_documents").insert({ title: title.trim(), file_name: file.name, file_type: type, file_path: path, video_tutorial_id: videoIds[0] ?? null, video_tutorial_ids: videoIds, uploaded_by: user.id });
       if (error) { await supabase.storage.from(DECLARATION_BUCKET).remove([path]); throw error; }
       toast.success("Template uploaded. Drivers can now read and sign it in My Training.");
       setUploadOpen(false);
       setFile(null);
-      setVideoId(NO_VIDEO);
+      setVideoIds([]);
       await load();
     } catch (e: any) {
       toast.error(e?.message || "Upload failed");
@@ -124,12 +124,14 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
     await load();
   };
 
-  const changeVideo = async (doc: DeclarationDoc, value: string) => {
-    const video_tutorial_id = value === NO_VIDEO ? null : value;
-    const { error } = await db.from("training_documents").update({ video_tutorial_id }).eq("id", doc.id);
-    if (error) return toast.error("Could not update the tutorial link");
-    setDocs((ds) => ds.map((d) => (d.id === doc.id ? { ...d, video_tutorial_id } : d)));
-    toast.success(video_tutorial_id ? "Tutorial linked" : "Tutorial removed");
+  const toggleVideo = async (doc: DeclarationDoc, videoId: string) => {
+    const current = docVideoIds(doc);
+    const next = current.includes(videoId) ? current.filter((id) => id !== videoId) : [...current, videoId];
+    const { error } = await db.from("training_documents").update({ video_tutorial_ids: next, video_tutorial_id: next[0] ?? null }).eq("id", doc.id);
+    if (error) return toast.error("Could not update the tutorial links");
+    const updated = { ...doc, video_tutorial_ids: next, video_tutorial_id: next[0] ?? null };
+    setDocs((ds) => ds.map((d) => (d.id === doc.id ? updated : d)));
+    setVideoDialogDoc((d) => (d?.id === doc.id ? updated : d));
   };
 
   const openAck = async (ack: Ack) => {
