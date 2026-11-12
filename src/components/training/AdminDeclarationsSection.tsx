@@ -18,7 +18,11 @@ import { formatSignedAt, printSignedDeclaration } from "./printSignedDeclaration
 
 const A4DocumentViewer = lazyRetry(() => import("./A4DocumentViewer"));
 
-interface DeclarationDoc { id: string; title: string; file_name: string; file_path: string; file_type: DeclarationFileType; video_tutorial_id: string | null; created_at: string }
+interface DeclarationDoc { id: string; title: string; file_name: string; file_path: string; file_type: DeclarationFileType; video_tutorial_id: string | null; video_tutorial_ids: string[] | null; created_at: string }
+
+/** Linked tutorial videos: new multi-link list first, legacy single link as fallback. */
+const docVideoIds = (doc: DeclarationDoc): string[] =>
+  doc.video_tutorial_ids?.length ? doc.video_tutorial_ids : doc.video_tutorial_id ? [doc.video_tutorial_id] : [];
 interface Ack { id: string; document_id: string | null; document_title: string; driver_id: string; driver_name: string | null; signed_at: string }
 interface Group { key: string; title: string; doc: DeclarationDoc | null; acks: Ack[] }
 
@@ -37,7 +41,8 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [title, setTitle] = useState("Acknowledgment and Declaration");
   const [file, setFile] = useState<File | null>(null);
-  const [videoId, setVideoId] = useState(NO_VIDEO);
+  const [videoIds, setVideoIds] = useState<string[]>([]);
+  const [videoDialogDoc, setVideoDialogDoc] = useState<DeclarationDoc | null>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<DeclarationDoc | null>(null);
   const [groupKey, setGroupKey] = useState<string | null>(null);
