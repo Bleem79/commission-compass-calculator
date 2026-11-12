@@ -1,13 +1,13 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
-import { Download, Eye, FileSignature, Loader2, Printer, Search, Trash2, Upload, Users } from "lucide-react";
+import { Download, Eye, FileSignature, Loader2, PlayCircle, Printer, Search, Trash2, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,7 +27,6 @@ interface Ack { id: string; document_id: string | null; document_title: string; 
 interface Group { key: string; title: string; doc: DeclarationDoc | null; acks: Ack[] }
 
 const db = supabase as any;
-const NO_VIDEO = "none";
 const viewerFallback = <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
 const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { isAdmin: boolean; trainedDriverIds: string[]; driverNames: Record<string, string | null> }) => {
@@ -318,6 +317,26 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
             <Button className="min-h-11" disabled={!viewSignature} onClick={() => viewAck && viewSignature && !printSignedDeclaration(viewerRef.current?.content() ?? null, { title: viewAck.document_title, driverId: viewAck.driver_id, driverName: viewAck.driver_name, signedAt: viewAck.signed_at, signature: viewSignature }) && toast.error("Allow pop-ups to print the signed copy")}><Printer />Print / Save PDF</Button>
           </div>
           {viewDoc && <div className="rounded-md bg-muted p-2 sm:p-4"><Suspense fallback={viewerFallback}><A4DocumentViewer ref={viewerRef} filePath={viewDoc.file_path} fileType={viewDoc.file_type} /></Suspense></div>}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!videoDialogDoc} onOpenChange={(o) => !o && setVideoDialogDoc(null)}>
+        <DialogContent className="bg-card text-card-foreground">
+          <DialogHeader>
+            <DialogTitle className="pr-8">Tutorial videos – {videoDialogDoc?.title}</DialogTitle>
+            <DialogDescription>Tick one or more tutorials. Drivers will see a watch button for each in My Training.</DialogDescription>
+          </DialogHeader>
+          {videos.length === 0 ? <p className="text-sm text-muted-foreground">No tutorials yet. Add them on the Video Tutorials page first.</p> : (
+            <div className="max-h-[50dvh] space-y-1 overflow-y-auto rounded-md border border-border p-2">
+              {videos.map((v) => (
+                <label key={v.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2 hover:bg-muted">
+                  <Checkbox className="h-5 w-5" checked={videoDialogDoc ? docVideoIds(videoDialogDoc).includes(v.id) : false} onCheckedChange={() => videoDialogDoc && toggleVideo(videoDialogDoc, v.id)} />
+                  <span className="text-sm">{v.title}</span>
+                </label>
+              ))}
+            </div>
+          )}
+          <Button className="min-h-11 w-full" onClick={() => setVideoDialogDoc(null)}>Done</Button>
         </DialogContent>
       </Dialog>
     </section>
