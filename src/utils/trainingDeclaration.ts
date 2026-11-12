@@ -32,3 +32,11 @@ export const summarizeSignatures = (acks: { driver_id: string }[], driverIds: st
 };
 
 export const fitScale = (containerWidth: number) => (containerWidth > 0 ? Math.min(1, containerWidth / A4_WIDTH_PX) : 1);
+
+/** Reader zoom: level 0 fits the page to the screen; each level enlarges it, never beyond 2x actual A4 size. */
+export const MAX_DECLARATION_ZOOM_LEVEL = 4;
+export const readerScale = (containerWidth: number, level: number) => {
+  const fit = fitScale(containerWidth);
+  const safeLevel = Math.max(0, Math.min(MAX_DECLARATION_ZOOM_LEVEL, Math.round(level)));
+  return Math.min(2, Math.max(fit, fit * (1 + safeLevel * 0.5)));
+};
