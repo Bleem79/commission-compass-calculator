@@ -1211,6 +1211,7 @@ export type Database = {
           updated_at: string
           uploaded_by: string
           video_tutorial_id: string | null
+          video_tutorial_ids: string[]
         }
         Insert: {
           created_at?: string
@@ -1222,6 +1223,7 @@ export type Database = {
           updated_at?: string
           uploaded_by: string
           video_tutorial_id?: string | null
+          video_tutorial_ids?: string[]
         }
         Update: {
           created_at?: string
@@ -1233,6 +1235,7 @@ export type Database = {
           updated_at?: string
           uploaded_by?: string
           video_tutorial_id?: string | null
+          video_tutorial_ids?: string[]
         }
         Relationships: [
           {

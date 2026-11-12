@@ -1,0 +1,2 @@
+ALTER TABLE public.training_documents ADD COLUMN IF NOT EXISTS video_tutorial_ids uuid[] NOT NULL DEFAULT '{}';
+UPDATE public.training_documents SET video_tutorial_ids = ARRAY[video_tutorial_id] WHERE video_tutorial_id IS NOT NULL AND video_tutorial_ids = '{}';
