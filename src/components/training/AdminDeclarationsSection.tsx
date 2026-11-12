@@ -1,13 +1,13 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
-import { Download, Eye, FileSignature, Loader2, Printer, Search, Trash2, Upload, Users } from "lucide-react";
+import { Download, Eye, FileSignature, Loader2, PlayCircle, Printer, Search, Trash2, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,12 +18,15 @@ import { formatSignedAt, printSignedDeclaration } from "./printSignedDeclaration
 
 const A4DocumentViewer = lazyRetry(() => import("./A4DocumentViewer"));
 
-interface DeclarationDoc { id: string; title: string; file_name: string; file_path: string; file_type: DeclarationFileType; video_tutorial_id: string | null; created_at: string }
+interface DeclarationDoc { id: string; title: string; file_name: string; file_path: string; file_type: DeclarationFileType; video_tutorial_id: string | null; video_tutorial_ids: string[] | null; created_at: string }
+
+/** Linked tutorial videos: new multi-link list first, legacy single link as fallback. */
+const docVideoIds = (doc: DeclarationDoc): string[] =>
+  doc.video_tutorial_ids?.length ? doc.video_tutorial_ids : doc.video_tutorial_id ? [doc.video_tutorial_id] : [];
 interface Ack { id: string; document_id: string | null; document_title: string; driver_id: string; driver_name: string | null; signed_at: string }
 interface Group { key: string; title: string; doc: DeclarationDoc | null; acks: Ack[] }
 
 const db = supabase as any;
-const NO_VIDEO = "none";
 const viewerFallback = <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
 const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { isAdmin: boolean; trainedDriverIds: string[]; driverNames: Record<string, string | null> }) => {
@@ -37,7 +40,8 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [title, setTitle] = useState("Acknowledgment and Declaration");
   const [file, setFile] = useState<File | null>(null);
-  const [videoId, setVideoId] = useState(NO_VIDEO);
+  const [videoIds, setVideoIds] = useState<string[]>([]);
+  const [videoDialogDoc, setVideoDialogDoc] = useState<DeclarationDoc | null>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<DeclarationDoc | null>(null);
   const [groupKey, setGroupKey] = useState<string | null>(null);
@@ -49,7 +53,7 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
   const load = useCallback(async () => {
     setLoading(true);
     const [docsRes, videosRes] = await Promise.all([
-      db.from("training_documents").select("id,title,file_name,file_path,file_type,video_tutorial_id,created_at").order("created_at", { ascending: false }),
+      db.from("training_documents").select("id,title,file_name,file_path,file_type,video_tutorial_id,video_tutorial_ids,created_at").order("created_at", { ascending: false }),
       db.from("video_tutorials").select("id,title").order("created_at", { ascending: false }),
     ]);
     let all: Ack[] = [];
@@ -96,12 +100,12 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
     try {
       const { error: upErr } = await supabase.storage.from(DECLARATION_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert: false });
       if (upErr) throw upErr;
-      const { error } = await db.from("training_documents").insert({ title: title.trim(), file_name: file.name, file_type: type, file_path: path, video_tutorial_id: videoId === NO_VIDEO ? null : videoId, uploaded_by: user.id });
+      const { error } = await db.from("training_documents").insert({ title: title.trim(), file_name: file.name, file_type: type, file_path: path, video_tutorial_id: videoIds[0] ?? null, video_tutorial_ids: videoIds, uploaded_by: user.id });
       if (error) { await supabase.storage.from(DECLARATION_BUCKET).remove([path]); throw error; }
       toast.success("Template uploaded. Drivers can now read and sign it in My Training.");
       setUploadOpen(false);
       setFile(null);
-      setVideoId(NO_VIDEO);
+      setVideoIds([]);
       await load();
     } catch (e: any) {
       toast.error(e?.message || "Upload failed");
@@ -119,12 +123,14 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
     await load();
   };
 
-  const changeVideo = async (doc: DeclarationDoc, value: string) => {
-    const video_tutorial_id = value === NO_VIDEO ? null : value;
-    const { error } = await db.from("training_documents").update({ video_tutorial_id }).eq("id", doc.id);
-    if (error) return toast.error("Could not update the tutorial link");
-    setDocs((ds) => ds.map((d) => (d.id === doc.id ? { ...d, video_tutorial_id } : d)));
-    toast.success(video_tutorial_id ? "Tutorial linked" : "Tutorial removed");
+  const toggleVideo = async (doc: DeclarationDoc, videoId: string) => {
+    const current = docVideoIds(doc);
+    const next = current.includes(videoId) ? current.filter((id) => id !== videoId) : [...current, videoId];
+    const { error } = await db.from("training_documents").update({ video_tutorial_ids: next, video_tutorial_id: next[0] ?? null }).eq("id", doc.id);
+    if (error) return toast.error("Could not update the tutorial links");
+    const updated = { ...doc, video_tutorial_ids: next, video_tutorial_id: next[0] ?? null };
+    setDocs((ds) => ds.map((d) => (d.id === doc.id ? updated : d)));
+    setVideoDialogDoc((d) => (d?.id === doc.id ? updated : d));
   };
 
   const openAck = async (ack: Ack) => {
@@ -205,11 +211,11 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
                 </div>
                 {g.doc && isAdmin && (
                   <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-                    <Label className="shrink-0 text-xs text-muted-foreground">Tutorial video for drivers</Label>
-                    <Select value={g.doc.video_tutorial_id || NO_VIDEO} onValueChange={(v) => changeVideo(g.doc!, v)}>
-                      <SelectTrigger aria-label="Tutorial video" className="min-h-11 bg-card sm:max-w-sm"><SelectValue /></SelectTrigger>
-                      <SelectContent><SelectItem value={NO_VIDEO}>No tutorial</SelectItem>{videos.map((v) => <SelectItem key={v.id} value={v.id}>{v.title}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <Label className="shrink-0 text-xs text-muted-foreground">Tutorial videos for drivers</Label>
+                    <Button variant="outline" className="min-h-11 justify-start bg-card sm:max-w-sm" onClick={() => setVideoDialogDoc(g.doc)}>
+                      <PlayCircle className="shrink-0" />
+                      <span className="truncate">{docVideoIds(g.doc).length ? `${docVideoIds(g.doc).length} video${docVideoIds(g.doc).length === 1 ? "" : "s"} linked` : "No tutorials – tap to choose"}</span>
+                    </Button>
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2 border-t border-border pt-3">
@@ -234,11 +240,17 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
               <Button type="button" variant="outline" className="min-h-11 w-full justify-start" onClick={() => fileRef.current?.click()}><Upload /><span className="truncate">{file ? file.name : "Choose Word or PDF file"}</span></Button>
             </div>
             <div className="space-y-1.5">
-              <Label>Tutorial video (optional)</Label>
-              <Select value={videoId} onValueChange={setVideoId}>
-                <SelectTrigger aria-label="Tutorial video for upload" className="min-h-11"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value={NO_VIDEO}>No tutorial</SelectItem>{videos.map((v) => <SelectItem key={v.id} value={v.id}>{v.title}</SelectItem>)}</SelectContent>
-              </Select>
+              <Label>Tutorial videos (optional – choose one or more)</Label>
+              {videos.length === 0 ? <p className="text-sm text-muted-foreground">No tutorials yet. Add them on the Video Tutorials page first.</p> : (
+                <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                  {videos.map((v) => (
+                    <label key={v.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2 hover:bg-muted">
+                      <Checkbox className="h-5 w-5" checked={videoIds.includes(v.id)} onCheckedChange={(c) => setVideoIds((ids) => (c === true ? [...ids, v.id] : ids.filter((id) => id !== v.id)))} />
+                      <span className="text-sm">{v.title}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" className="min-h-11" disabled={uploading} onClick={() => setUploadOpen(false)}>Cancel</Button>
@@ -305,6 +317,26 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
             <Button className="min-h-11" disabled={!viewSignature} onClick={() => viewAck && viewSignature && !printSignedDeclaration(viewerRef.current?.content() ?? null, { title: viewAck.document_title, driverId: viewAck.driver_id, driverName: viewAck.driver_name, signedAt: viewAck.signed_at, signature: viewSignature }) && toast.error("Allow pop-ups to print the signed copy")}><Printer />Print / Save PDF</Button>
           </div>
           {viewDoc && <div className="rounded-md bg-muted p-2 sm:p-4"><Suspense fallback={viewerFallback}><A4DocumentViewer ref={viewerRef} filePath={viewDoc.file_path} fileType={viewDoc.file_type} /></Suspense></div>}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!videoDialogDoc} onOpenChange={(o) => !o && setVideoDialogDoc(null)}>
+        <DialogContent className="bg-card text-card-foreground">
+          <DialogHeader>
+            <DialogTitle className="pr-8">Tutorial videos – {videoDialogDoc?.title}</DialogTitle>
+            <DialogDescription>Tick one or more tutorials. Drivers will see a watch button for each in My Training.</DialogDescription>
+          </DialogHeader>
+          {videos.length === 0 ? <p className="text-sm text-muted-foreground">No tutorials yet. Add them on the Video Tutorials page first.</p> : (
+            <div className="max-h-[50dvh] space-y-1 overflow-y-auto rounded-md border border-border p-2">
+              {videos.map((v) => (
+                <label key={v.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2 hover:bg-muted">
+                  <Checkbox className="h-5 w-5" checked={videoDialogDoc ? docVideoIds(videoDialogDoc).includes(v.id) : false} onCheckedChange={() => videoDialogDoc && toggleVideo(videoDialogDoc, v.id)} />
+                  <span className="text-sm">{v.title}</span>
+                </label>
+              ))}
+            </div>
+          )}
+          <Button className="min-h-11 w-full" onClick={() => setVideoDialogDoc(null)}>Done</Button>
         </DialogContent>
       </Dialog>
     </section>

@@ -14,24 +14,28 @@ import { formatSignedAt } from "./printSignedDeclaration";
 
 const A4DocumentViewer = lazyRetry(() => import("./A4DocumentViewer"));
 
-interface DeclarationDoc { id: string; title: string; file_path: string; file_type: DeclarationFileType; video_tutorial_id: string | null; created_at: string }
+interface DeclarationDoc { id: string; title: string; file_path: string; file_type: DeclarationFileType; video_tutorial_id: string | null; video_tutorial_ids: string[] | null; created_at: string }
 interface MyAck { id: string; document_id: string | null; signed_at: string; signature_data?: string | null }
 
 const db = supabase as any;
 
+/** Linked tutorial videos: new multi-link list first, legacy single link as fallback. */
+const docVideoIds = (doc: DeclarationDoc): string[] =>
+  doc.video_tutorial_ids?.length ? doc.video_tutorial_ids : doc.video_tutorial_id ? [doc.video_tutorial_id] : [];
+
 interface CardProps {
   doc: DeclarationDoc;
   ack?: MyAck;
-  video?: TrainingVideo;
+  videos: TrainingVideo[];
   driverId: string;
   driverName: string | null;
   onRead: () => void;
-  onWatch: () => void;
+  onWatch: (video: TrainingVideo) => void;
   onSigned: (ack: MyAck) => void;
 }
 
 /** One declaration card: tick Yes, sign right below, and submit on the same card. */
-const DeclarationCard = ({ doc, ack, video, driverId, driverName, onRead, onWatch, onSigned }: CardProps) => {
+const DeclarationCard = ({ doc, ack, videos, driverId, driverName, onRead, onWatch, onSigned }: CardProps) => {
   const [agreed, setAgreed] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -67,9 +71,9 @@ const DeclarationCard = ({ doc, ack, video, driverId, driverName, onRead, onWatc
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Button className="min-h-11 flex-1" variant="outline" onClick={onRead}><BookOpen />Read declaration</Button>
-        {video && <Button variant="outline" className="min-h-11 flex-1" onClick={onWatch}><PlayCircle />Watch tutorial: {video.title}</Button>}
+      <div className="flex flex-col gap-2">
+        <Button className="min-h-11 w-full" variant="outline" onClick={onRead}><BookOpen />Read declaration</Button>
+        {videos.map((v) => <Button key={v.id} variant="outline" className="min-h-11 w-full" onClick={() => onWatch(v)}><PlayCircle /><span className="truncate">Watch tutorial: {v.title}</span></Button>)}
       </div>
 
       <div className="space-y-3 border-t border-border pt-4">
@@ -115,7 +119,7 @@ const DriverDeclarationsSection = ({ driverId, driverName }: { driverId: string;
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     const [docsRes, videosRes, acksRes] = await Promise.all([
-      db.from("training_documents").select("id,title,file_path,file_type,video_tutorial_id,created_at").order("created_at", { ascending: false }),
+      db.from("training_documents").select("id,title,file_path,file_type,video_tutorial_id,video_tutorial_ids,created_at").order("created_at", { ascending: false }),
       db.from("video_tutorials").select("id,title,video_url"),
       user ? db.from("training_acknowledgments").select("id,document_id,signed_at,signature_data").eq("user_id", user.id) : Promise.resolve({ data: [] }),
     ]);
@@ -131,23 +135,23 @@ const DriverDeclarationsSection = ({ driverId, driverName }: { driverId: string;
   if (loading) return <div role="status" aria-label="Loading declaration" className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
   if (!docs.length) return null;
 
-  const openVideo = openDoc?.video_tutorial_id ? videos[openDoc.video_tutorial_id] : undefined;
+  const openVideos = openDoc ? docVideoIds(openDoc).map((id) => videos[id]).filter(Boolean) : [];
 
   return (
     <section className="space-y-3" aria-labelledby="declaration-heading">
       <h2 id="declaration-heading" className="text-lg font-semibold">Acknowledgment and Declaration</h2>
       {docs.map((doc) => {
-        const video = doc.video_tutorial_id ? videos[doc.video_tutorial_id] : undefined;
+        const docVideos = docVideoIds(doc).map((id) => videos[id]).filter(Boolean);
         return (
           <DeclarationCard
             key={doc.id}
             doc={doc}
             ack={acks[doc.id]}
-            video={video}
+            videos={docVideos}
             driverId={driverId}
             driverName={driverName}
             onRead={() => setOpenDoc(doc)}
-            onWatch={() => video && openTrainingVideo(video, setPlaying)}
+            onWatch={(v) => openTrainingVideo(v, setPlaying)}
             onSigned={(ack) => setAcks((a) => ({ ...a, [doc.id]: ack }))}
           />
         );
@@ -159,7 +163,7 @@ const DriverDeclarationsSection = ({ driverId, driverName }: { driverId: string;
             <DialogTitle className="pr-8">{openDoc?.title}</DialogTitle>
             <DialogDescription>Read the document below. Pinch to zoom if the text is small. Close it to tick Yes and sign.</DialogDescription>
           </DialogHeader>
-          {openVideo && <Button variant="outline" className="min-h-11 w-full" onClick={() => openTrainingVideo(openVideo, setPlaying)}><PlayCircle />Watch tutorial: {openVideo.title}</Button>}
+          {openVideos.map((v) => <Button key={v.id} variant="outline" className="min-h-11 w-full" onClick={() => openTrainingVideo(v, setPlaying)}><PlayCircle /><span className="truncate">Watch tutorial: {v.title}</span></Button>)}
           <div className="rounded-md bg-muted p-2 sm:p-4">
             {openDoc && <Suspense fallback={<div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
               <A4DocumentViewer filePath={openDoc.file_path} fileType={openDoc.file_type} />
