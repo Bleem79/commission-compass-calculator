@@ -135,23 +135,23 @@ const DriverDeclarationsSection = ({ driverId, driverName }: { driverId: string;
   if (loading) return <div role="status" aria-label="Loading declaration" className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
   if (!docs.length) return null;
 
-  const openVideo = openDoc?.video_tutorial_id ? videos[openDoc.video_tutorial_id] : undefined;
+  const openVideos = openDoc ? docVideoIds(openDoc).map((id) => videos[id]).filter(Boolean) : [];
 
   return (
     <section className="space-y-3" aria-labelledby="declaration-heading">
       <h2 id="declaration-heading" className="text-lg font-semibold">Acknowledgment and Declaration</h2>
       {docs.map((doc) => {
-        const video = doc.video_tutorial_id ? videos[doc.video_tutorial_id] : undefined;
+        const docVideos = docVideoIds(doc).map((id) => videos[id]).filter(Boolean);
         return (
           <DeclarationCard
             key={doc.id}
             doc={doc}
             ack={acks[doc.id]}
-            video={video}
+            videos={docVideos}
             driverId={driverId}
             driverName={driverName}
             onRead={() => setOpenDoc(doc)}
-            onWatch={() => video && openTrainingVideo(video, setPlaying)}
+            onWatch={(v) => openTrainingVideo(v, setPlaying)}
             onSigned={(ack) => setAcks((a) => ({ ...a, [doc.id]: ack }))}
           />
         );
@@ -163,7 +163,7 @@ const DriverDeclarationsSection = ({ driverId, driverName }: { driverId: string;
             <DialogTitle className="pr-8">{openDoc?.title}</DialogTitle>
             <DialogDescription>Read the document below. Pinch to zoom if the text is small. Close it to tick Yes and sign.</DialogDescription>
           </DialogHeader>
-          {openVideo && <Button variant="outline" className="min-h-11 w-full" onClick={() => openTrainingVideo(openVideo, setPlaying)}><PlayCircle />Watch tutorial: {openVideo.title}</Button>}
+          {openVideos.map((v) => <Button key={v.id} variant="outline" className="min-h-11 w-full" onClick={() => openTrainingVideo(v, setPlaying)}><PlayCircle /><span className="truncate">Watch tutorial: {v.title}</span></Button>)}
           <div className="rounded-md bg-muted p-2 sm:p-4">
             {openDoc && <Suspense fallback={<div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
               <A4DocumentViewer filePath={openDoc.file_path} fileType={openDoc.file_type} />
