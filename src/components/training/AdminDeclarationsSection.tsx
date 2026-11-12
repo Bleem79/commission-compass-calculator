@@ -212,11 +212,11 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
                 </div>
                 {g.doc && isAdmin && (
                   <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-                    <Label className="shrink-0 text-xs text-muted-foreground">Tutorial video for drivers</Label>
-                    <Select value={g.doc.video_tutorial_id || NO_VIDEO} onValueChange={(v) => changeVideo(g.doc!, v)}>
-                      <SelectTrigger aria-label="Tutorial video" className="min-h-11 bg-card sm:max-w-sm"><SelectValue /></SelectTrigger>
-                      <SelectContent><SelectItem value={NO_VIDEO}>No tutorial</SelectItem>{videos.map((v) => <SelectItem key={v.id} value={v.id}>{v.title}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <Label className="shrink-0 text-xs text-muted-foreground">Tutorial videos for drivers</Label>
+                    <Button variant="outline" className="min-h-11 justify-start bg-card sm:max-w-sm" onClick={() => setVideoDialogDoc(g.doc)}>
+                      <PlayCircle className="shrink-0" />
+                      <span className="truncate">{docVideoIds(g.doc).length ? `${docVideoIds(g.doc).length} video${docVideoIds(g.doc).length === 1 ? "" : "s"} linked` : "No tutorials – tap to choose"}</span>
+                    </Button>
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2 border-t border-border pt-3">
@@ -241,11 +241,17 @@ const AdminDeclarationsSection = ({ isAdmin, trainedDriverIds, driverNames }: { 
               <Button type="button" variant="outline" className="min-h-11 w-full justify-start" onClick={() => fileRef.current?.click()}><Upload /><span className="truncate">{file ? file.name : "Choose Word or PDF file"}</span></Button>
             </div>
             <div className="space-y-1.5">
-              <Label>Tutorial video (optional)</Label>
-              <Select value={videoId} onValueChange={setVideoId}>
-                <SelectTrigger aria-label="Tutorial video for upload" className="min-h-11"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value={NO_VIDEO}>No tutorial</SelectItem>{videos.map((v) => <SelectItem key={v.id} value={v.id}>{v.title}</SelectItem>)}</SelectContent>
-              </Select>
+              <Label>Tutorial videos (optional – choose one or more)</Label>
+              {videos.length === 0 ? <p className="text-sm text-muted-foreground">No tutorials yet. Add them on the Video Tutorials page first.</p> : (
+                <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                  {videos.map((v) => (
+                    <label key={v.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2 hover:bg-muted">
+                      <Checkbox className="h-5 w-5" checked={videoIds.includes(v.id)} onCheckedChange={(c) => setVideoIds((ids) => (c === true ? [...ids, v.id] : ids.filter((id) => id !== v.id)))} />
+                      <span className="text-sm">{v.title}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" className="min-h-11" disabled={uploading} onClick={() => setUploadOpen(false)}>Cancel</Button>
