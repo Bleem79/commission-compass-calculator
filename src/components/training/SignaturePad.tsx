@@ -9,7 +9,10 @@ const SignaturePad = ({ onChange, disabled = false }: { onChange: (dataUrl: stri
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
+  const emptyRef = useRef(true);
   const [empty, setEmpty] = useState(true);
+
+  const markEmpty = (value: boolean) => { emptyRef.current = value; setEmpty(value); };
 
   const setup = () => {
     const canvas = canvasRef.current;
@@ -25,29 +28,29 @@ const SignaturePad = ({ onChange, disabled = false }: { onChange: (dataUrl: stri
     ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    setEmpty(true);
+    markEmpty(true);
     onChange(null);
   };
 
   useEffect(() => {
     setup();
     let width = canvasRef.current?.clientWidth ?? 0;
+    // Phone rotation changes the box width: redraw the existing signature instead of erasing it.
     const onResize = () => {
-      const w = canvasRef.current?.clientWidth ?? 0;
-      if (w === width || w === 0) return;
-      width = w;
       const canvas = canvasRef.current;
-      const previous = canvas && !emptyRef.current ? canvas.toDataURL("image/png") : null;
-      const oldW = canvas?.clientWidth ?? 0;
+      const w = canvas?.clientWidth ?? 0;
+      if (!canvas || w === 0 || w === width) return;
+      const oldWidth = width;
+      width = w;
+      const previous = emptyRef.current ? null : canvas.toDataURL("image/png");
       setup();
-      if (!previous || !canvas) return;
+      if (!previous) return;
       const img = new Image();
       img.onload = () => {
-        const ctx = canvas.getContext("2d")!;
-        const drawW = Math.min(canvas.clientWidth, img.width / (img.width / Math.max(oldW, 1)) || canvas.clientWidth);
-        ctx.drawImage(img, 0, 0, drawW, HEIGHT);
-        emptyRef.current = false;
-        setEmpty(false);
+        const drawW = Math.min(oldWidth, w);
+        const drawH = HEIGHT * (drawW / Math.max(oldWidth, 1));
+        canvas.getContext("2d")!.drawImage(img, 0, (HEIGHT - drawH) / 2, drawW, drawH);
+        markEmpty(false);
         onChange(canvas.toDataURL("image/png"));
       };
       img.src = previous;
@@ -92,7 +95,7 @@ const SignaturePad = ({ onChange, disabled = false }: { onChange: (dataUrl: stri
     if (!drawing.current) return;
     drawing.current = false;
     last.current = null;
-    setEmpty(false);
+    markEmpty(false);
     onChange(canvasRef.current?.toDataURL("image/png") ?? null);
   };
 
@@ -102,8 +105,8 @@ const SignaturePad = ({ onChange, disabled = false }: { onChange: (dataUrl: stri
         <canvas
           ref={canvasRef}
           aria-label="Signature box. Sign with your finger."
-          className="block w-full cursor-crosshair touch-none"
-          style={{ height: HEIGHT }}
+          className="block w-full cursor-crosshair touch-none select-none"
+          style={{ height: HEIGHT, WebkitUserSelect: "none" }}
           onPointerDown={start}
           onPointerMove={move}
           onPointerUp={end}
