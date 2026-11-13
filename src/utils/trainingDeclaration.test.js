@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { canSubmitDeclaration, declarationFileType, fitScale, summarizeSignatures, validateDeclarationFile } from './trainingDeclaration';
+import { canSubmitDeclaration, declarationFileType, fitScale, readerScale, summarizeSignatures, validateDeclarationFile } from './trainingDeclaration';
 
 const png = 'data:image/png;base64,iVBORw0KGgo=';
 
@@ -28,5 +28,12 @@ describe('Training Acknowledgment and Declaration', () => {
   test('A4 page shrinks to fit phone width but never enlarges', () => {
     expect(fitScale(397)).toBe(0.5);
     expect(fitScale(2000)).toBe(1);
+  });
+  test('phone reader starts fitted to the screen and zooms up to 2x A4 size', () => {
+    expect(readerScale(397, 0)).toBe(0.5);
+    expect(readerScale(397, 1)).toBe(0.75);
+    expect(readerScale(397, 4)).toBe(1.5);
+    expect(readerScale(1200, 4)).toBe(2);
+    expect(readerScale(397, -3)).toBe(0.5);
   });
 });
