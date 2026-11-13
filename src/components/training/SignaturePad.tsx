@@ -34,7 +34,23 @@ const SignaturePad = ({ onChange, disabled = false }: { onChange: (dataUrl: stri
     let width = canvasRef.current?.clientWidth ?? 0;
     const onResize = () => {
       const w = canvasRef.current?.clientWidth ?? 0;
-      if (w !== width) { width = w; setup(); }
+      if (w === width || w === 0) return;
+      width = w;
+      const canvas = canvasRef.current;
+      const previous = canvas && !emptyRef.current ? canvas.toDataURL("image/png") : null;
+      const oldW = canvas?.clientWidth ?? 0;
+      setup();
+      if (!previous || !canvas) return;
+      const img = new Image();
+      img.onload = () => {
+        const ctx = canvas.getContext("2d")!;
+        const drawW = Math.min(canvas.clientWidth, img.width / (img.width / Math.max(oldW, 1)) || canvas.clientWidth);
+        ctx.drawImage(img, 0, 0, drawW, HEIGHT);
+        emptyRef.current = false;
+        setEmpty(false);
+        onChange(canvas.toDataURL("image/png"));
+      };
+      img.src = previous;
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);

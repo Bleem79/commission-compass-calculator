@@ -72,12 +72,12 @@ const DeclarationCard = ({ doc, ack, videos, driverId, driverName, onRead, onWat
       </div>
 
       <div className="flex flex-col gap-2">
-        <Button className="min-h-11 w-full" variant="outline" onClick={onRead}><BookOpen />Read declaration</Button>
-        {videos.map((v) => <Button key={v.id} variant="outline" className="min-h-11 w-full" onClick={() => onWatch(v)}><PlayCircle /><span className="truncate">Watch tutorial: {v.title}</span></Button>)}
+        <Button className="min-h-11 w-full justify-start" variant="outline" onClick={onRead}><BookOpen />Read declaration</Button>
+        {videos.map((v) => <Button key={v.id} variant="outline" className="h-auto min-h-11 w-full justify-start whitespace-normal py-2 text-left" onClick={() => onWatch(v)}><PlayCircle className="shrink-0" /><span className="min-w-0 break-words">Watch tutorial: {v.title}</span></Button>)}
       </div>
 
       <div className="space-y-3 border-t border-border pt-4">
-        <div className="text-sm"><span className="text-muted-foreground">Driver ID:</span> <strong>{driverId}</strong>{driverName && <> · {driverName}</>}</div>
+        <div className="break-words text-sm"><span className="text-muted-foreground">Driver ID:</span> <strong>{driverId}</strong>{driverName && <> · {driverName}</>}</div>
         {ack ? (
           <div className="space-y-2">
             <p className="flex items-center gap-2 font-medium text-primary"><CheckCircle2 className="h-5 w-5" />Yes – I agree</p>
@@ -87,7 +87,7 @@ const DeclarationCard = ({ doc, ack, videos, driverId, driverName, onRead, onWat
           <>
             <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-md border border-border p-3">
               <Checkbox className="mt-0.5 h-6 w-6" checked={agreed} onCheckedChange={(v) => { setAgreed(v === true); if (v !== true) setSignature(null); }} disabled={saving} />
-              <span className="text-sm"><strong>Yes</strong> – I have read and understood this Acknowledgment and Declaration, and I agree to follow it.</span>
+              <span className="min-w-0 text-sm leading-relaxed"><strong>Yes</strong> – I have read and understood this Acknowledgment and Declaration, and I agree to follow it.</span>
             </label>
             {agreed && (
               <div className="space-y-3">
@@ -158,18 +158,26 @@ const DriverDeclarationsSection = ({ driverId, driverName }: { driverId: string;
       })}
 
       <Dialog open={!!openDoc} onOpenChange={(o) => { if (!o) setOpenDoc(null); }}>
-        <DialogContent onInteractOutside={(e) => { if (playing) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (playing) { e.preventDefault(); setPlaying(null); } }} className="max-h-[95dvh] w-[calc(100vw-1rem)] max-w-4xl overflow-y-auto bg-card p-3 text-card-foreground sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="pr-8">{openDoc?.title}</DialogTitle>
-            <DialogDescription>Read the document below. Pinch to zoom if the text is small. Close it to tick Yes and sign.</DialogDescription>
+        <DialogContent
+          onInteractOutside={(e) => { if (playing) e.preventDefault(); }}
+          onEscapeKeyDown={(e) => { if (playing) { e.preventDefault(); setPlaying(null); } }}
+          className="inset-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 bg-card p-0 text-card-foreground data-[state=open]:slide-in-from-left-0 data-[state=open]:slide-in-from-top-0 sm:inset-auto sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[95dvh] sm:w-[calc(100vw-2rem)] sm:max-w-4xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:border [&>button:last-child]:right-2 [&>button:last-child]:top-2 [&>button:last-child]:flex [&>button:last-child]:h-11 [&>button:last-child]:w-11 [&>button:last-child]:items-center [&>button:last-child]:justify-center [&>button:last-child>svg]:h-5 [&>button:last-child>svg]:w-5"
+        >
+          <DialogHeader className="shrink-0 border-b border-border px-4 pb-3 pt-4 text-left sm:px-6">
+            <DialogTitle className="break-words pr-10 text-base leading-snug sm:text-lg">{openDoc?.title}</DialogTitle>
+            <DialogDescription>Use the + and − buttons to make the text bigger. Close it to tick Yes and sign.</DialogDescription>
           </DialogHeader>
-          {openVideos.map((v) => <Button key={v.id} variant="outline" className="min-h-11 w-full" onClick={() => openTrainingVideo(v, setPlaying)}><PlayCircle /><span className="truncate">Watch tutorial: {v.title}</span></Button>)}
-          <div className="rounded-md bg-muted p-2 sm:p-4">
-            {openDoc && <Suspense fallback={<div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
-              <A4DocumentViewer filePath={openDoc.file_path} fileType={openDoc.file_type} />
-            </Suspense>}
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-3 sm:px-6">
+            {openVideos.map((v) => <Button key={v.id} variant="outline" className="h-auto min-h-11 w-full justify-start whitespace-normal py-2 text-left" onClick={() => openTrainingVideo(v, setPlaying)}><PlayCircle className="shrink-0" /><span className="min-w-0 break-words">Watch tutorial: {v.title}</span></Button>)}
+            <div className="rounded-md bg-muted p-1.5 sm:p-4">
+              {openDoc && <Suspense fallback={<div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+                <A4DocumentViewer filePath={openDoc.file_path} fileType={openDoc.file_type} />
+              </Suspense>}
+            </div>
           </div>
-          <Button className="min-h-11 w-full" onClick={() => setOpenDoc(null)}>Done reading</Button>
+          <div className="shrink-0 border-t border-border px-3 py-3 sm:px-6" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+            <Button className="min-h-11 w-full" onClick={() => setOpenDoc(null)}>Done reading</Button>
+          </div>
         </DialogContent>
       </Dialog>
       {playing && <TrainingVideoPlayer video={playing} onClose={() => setPlaying(null)} />}
