@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Video, Plus, Trash2, Play, Loader2, X } from "lucide-react";
+import { Video, Plus, Trash2, Play, Pause, RotateCcw, RotateCw, Loader2, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -29,6 +29,22 @@ const toEmbedUrl = (url: string): string | null => {
   return null;
 };
 
+/** Convert a Google Drive sharing URL to a direct stream URL for the native player */
+const toDirectUrl = (url: string): string | null => {
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+  const previewMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)\/preview/);
+  if (previewMatch) return `https://drive.google.com/uc?export=download&id=${previewMatch[1]}`;
+  return null;
+};
+
+const formatTime = (seconds: number): string => {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+};
+
 const VideoTutorialsPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isAdmin } = useAuth();
@@ -41,6 +57,12 @@ const VideoTutorialsPage = () => {
   const [playingVideo, setPlayingVideo] = useState<VideoTutorial | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Native player state (falls back to the Drive iframe if the direct stream fails)
+  const [useNativePlayer, setUseNativePlayer] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const scheduleHide = () => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -55,6 +77,10 @@ const VideoTutorialsPage = () => {
   useEffect(() => {
     if (playingVideo) {
       setControlsVisible(true);
+      setUseNativePlayer(true);
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
       scheduleHide();
     } else {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -201,42 +227,152 @@ const VideoTutorialsPage = () => {
       {/* In-app video player dialog */}
       {playingVideo && (
         <div className="fixed inset-0 z-50 bg-black" style={{ height: "100dvh" }}>
-          {/* Player fills the whole screen so vertical phone videos aren't shrunk under Drive's overlay buttons */}
-          <iframe
-            src={toEmbedUrl(playingVideo.video_url) || ""}
-            className="absolute inset-0 h-full w-full border-0"
-            allow="autoplay; encrypted-media; fullscreen"
-            allowFullScreen
-            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-            title={playingVideo.title}
-          />
-          {/* Invisible blocker over Drive's pop-out icon (top-right) so it can't be tapped by accident */}
-          <div className="absolute right-0 top-0 z-10 h-14 w-14" aria-hidden="true" />
-          {/* Thin tap zone at the very top edge to re-reveal controls without blocking the video */}
-          <div
-            className="absolute left-0 right-14 top-0 z-20 h-12"
-            onClick={showControlsTemporarily}
-            onTouchStart={showControlsTemporarily}
-            onMouseMove={showControlsTemporarily}
-          />
-          <div
-            className={`absolute left-0 right-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent p-3 transition-opacity duration-300 sm:p-4 ${
-              controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
-            }`}
-          >
-            <h2 className="mr-3 flex-1 truncate text-sm font-medium text-white sm:text-base">
-              {playingVideo.title}
-            </h2>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="min-h-[44px] min-w-[44px] text-white hover:bg-white/20"
-              onClick={() => setPlayingVideo(null)}
-              aria-label="Close video"
-            >
-              <X className="h-6 w-6" />
-            </Button>
-          </div>
+          {useNativePlayer && toDirectUrl(playingVideo.video_url) ? (
+            <>
+              {/* Native player: our own controls sit at the top, nothing covers the middle of the video */}
+              <video
+                ref={videoRef}
+                src={toDirectUrl(playingVideo.video_url) || ""}
+                className="absolute inset-0 h-full w-full object-contain"
+                autoPlay
+                playsInline
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                onError={() => setUseNativePlayer(false)}
+                onClick={showControlsTemporarily}
+              />
+              {/* Top bar: title, playback controls and close — all above the video, auto-hiding */}
+              <div
+                className={`absolute left-0 right-0 top-0 z-30 bg-gradient-to-b from-black/80 to-transparent p-3 transition-opacity duration-300 ${
+                  controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="mr-2 flex-1 truncate text-sm font-medium text-white">
+                    {playingVideo.title}
+                  </h2>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="min-h-[44px] min-w-[44px] text-white hover:bg-white/20"
+                    onClick={() => setPlayingVideo(null)}
+                    aria-label="Close video"
+                  >
+                    <X className="h-6 w-6" />
+                  </Button>
+                </div>
+                <div className="mt-1 flex items-center gap-1">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="min-h-[44px] min-w-[44px] text-white hover:bg-white/20"
+                    onClick={() => {
+                      const v = videoRef.current;
+                      if (!v) return;
+                      if (v.paused) void v.play(); else v.pause();
+                      showControlsTemporarily();
+                    }}
+                    aria-label={isPlaying ? "Pause video" : "Play video"}
+                  >
+                    {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="min-h-[44px] min-w-[44px] text-white hover:bg-white/20"
+                    onClick={() => {
+                      const v = videoRef.current;
+                      if (v) v.currentTime = Math.max(0, v.currentTime - 10);
+                      showControlsTemporarily();
+                    }}
+                    aria-label="Back 10 seconds"
+                  >
+                    <RotateCcw className="h-5 w-5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="min-h-[44px] min-w-[44px] text-white hover:bg-white/20"
+                    onClick={() => {
+                      const v = videoRef.current;
+                      if (v) v.currentTime = Math.min(v.duration || v.currentTime + 10, v.currentTime + 10);
+                      showControlsTemporarily();
+                    }}
+                    aria-label="Forward 10 seconds"
+                  >
+                    <RotateCw className="h-5 w-5" />
+                  </Button>
+                  <span className="ml-2 text-xs text-white/90">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </span>
+                </div>
+              </div>
+              {/* Bottom progress bar: tap to jump */}
+              <div
+                className={`absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/80 to-transparent p-3 transition-opacity duration-300 ${
+                  controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
+                }`}
+              >
+                <div
+                  className="h-2 w-full cursor-pointer rounded-full bg-white/30"
+                  onClick={(e) => {
+                    const v = videoRef.current;
+                    if (!v || !duration) return;
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+                    v.currentTime = ratio * duration;
+                    showControlsTemporarily();
+                  }}
+                >
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: duration ? `${(currentTime / duration) * 100}%` : "0%" }}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Fallback: Drive's own player when the direct stream is unavailable */}
+              <iframe
+                src={toEmbedUrl(playingVideo.video_url) || ""}
+                className="absolute inset-0 h-full w-full border-0"
+                allow="autoplay; encrypted-media; fullscreen"
+                allowFullScreen
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                title={playingVideo.title}
+              />
+              {/* Invisible blocker over Drive's pop-out icon (top-right) so it can't be tapped by accident */}
+              <div className="absolute right-0 top-0 z-10 h-14 w-14" aria-hidden="true" />
+              {/* Thin tap zone at the very top edge to re-reveal controls without blocking the video */}
+              <div
+                className="absolute left-0 right-14 top-0 z-20 h-12"
+                onClick={showControlsTemporarily}
+                onTouchStart={showControlsTemporarily}
+                onMouseMove={showControlsTemporarily}
+              />
+              <div
+                className={`absolute left-0 right-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent p-3 transition-opacity duration-300 sm:p-4 ${
+                  controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
+                }`}
+              >
+                <h2 className="mr-3 flex-1 truncate text-sm font-medium text-white sm:text-base">
+                  {playingVideo.title}
+                </h2>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="min-h-[44px] min-w-[44px] text-white hover:bg-white/20"
+                  onClick={() => setPlayingVideo(null)}
+                  aria-label="Close video"
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
