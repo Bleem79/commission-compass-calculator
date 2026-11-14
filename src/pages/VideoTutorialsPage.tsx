@@ -57,6 +57,12 @@ const VideoTutorialsPage = () => {
   const [playingVideo, setPlayingVideo] = useState<VideoTutorial | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Native player state (falls back to the Drive iframe if the direct stream fails)
+  const [useNativePlayer, setUseNativePlayer] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const scheduleHide = () => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -71,6 +77,10 @@ const VideoTutorialsPage = () => {
   useEffect(() => {
     if (playingVideo) {
       setControlsVisible(true);
+      setUseNativePlayer(true);
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
       scheduleHide();
     } else {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
