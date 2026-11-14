@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Video, Plus, Trash2, Play, Loader2, X } from "lucide-react";
+import { Video, Plus, Trash2, Play, Pause, RotateCcw, RotateCw, Loader2, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -27,6 +27,22 @@ const toEmbedUrl = (url: string): string | null => {
   // Already an embed/preview link
   if (url.includes("/preview")) return url;
   return null;
+};
+
+/** Convert a Google Drive sharing URL to a direct stream URL for the native player */
+const toDirectUrl = (url: string): string | null => {
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+  const previewMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)\/preview/);
+  if (previewMatch) return `https://drive.google.com/uc?export=download&id=${previewMatch[1]}`;
+  return null;
+};
+
+const formatTime = (seconds: number): string => {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
 };
 
 const VideoTutorialsPage = () => {
