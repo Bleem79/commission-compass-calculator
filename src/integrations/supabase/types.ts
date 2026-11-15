@@ -1519,6 +1519,7 @@ export type Database = {
         Returns: string
       }
       create_users_bulk: { Args: { user_data: Json }; Returns: undefined }
+      current_driver_id: { Args: never; Returns: string }
       get_driver_credentials: {
         Args: { p_driver_id: string; p_user_id: string }
         Returns: {
@@ -1562,6 +1563,8 @@ export type Database = {
       import_safe_parking: { Args: { p_rows: Json }; Returns: Json }
       is_fleet_user: { Args: never; Returns: boolean }
       is_guest_account: { Args: { email: string }; Returns: boolean }
+      is_portal_member: { Args: never; Returns: boolean }
+      is_portal_staff: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user" | "driver" | "advanced"
