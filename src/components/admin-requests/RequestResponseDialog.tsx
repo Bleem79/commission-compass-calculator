@@ -82,7 +82,7 @@ export const RequestResponseDialog = ({
           {/* Status Selection */}
           <div className="space-y-2">
             <Label>Update Status</Label>
-            <Select value={newStatus} onValueChange={onStatusChange}>
+            <Select value={newStatus === "pending" ? "" : newStatus} onValueChange={onStatusChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
@@ -112,7 +112,7 @@ export const RequestResponseDialog = ({
           <Button variant="outline" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button onClick={onSubmit} disabled={submitting}>
+          <Button onClick={onSubmit} disabled={submitting || !newStatus || newStatus === "pending"}>
             {submitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

@@ -48,7 +48,7 @@ export const DateRangePicker = ({
               mode="single"
               selected={from}
               onSelect={(d) => onChange({ from: d, to })}
-              disabled={(date) => (to ? isSameDay(date, to) || date > to : false)}
+              disabled={(date) => (to ? startOfDay(date) > startOfDay(to) : false)}
               initialFocus
               className={cn("p-3 pointer-events-auto")}
             />
@@ -69,7 +69,7 @@ export const DateRangePicker = ({
               mode="single"
               selected={to}
               onSelect={(d) => onChange({ from, to: d })}
-              disabled={(date) => (from ? isSameDay(date, from) || date < from : false)}
+              disabled={(date) => (from ? startOfDay(date) < startOfDay(from) : false)}
               numberOfMonths={1}
               initialFocus
               className={cn("p-3 pointer-events-auto")}
