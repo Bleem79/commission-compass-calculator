@@ -26,4 +26,12 @@ describe("SMS multi driver ID search", () => {
     expect(unmatchedDriverIdTokens(drivers, "112857 999999")).toEqual(["999999"]);
     expect(unmatchedDriverIdTokens(drivers, "112857")).toEqual([]);
   });
+  test("pasted IDs never pull in partial matches", () => {
+    expect(filterDriversBySearch(drivers, "1128 113923").map((d) => d.driver_id)).toEqual(["113923"]);
+    expect(unmatchedDriverIdTokens(drivers, "1128 113923")).toEqual(["1128"]);
+  });
+  test("found count never exceeds the number of pasted IDs", () => {
+    const many = [...drivers, { driver_id: "1128570" }];
+    expect(filterDriversBySearch(many, "112857 999999").map((d) => d.driver_id)).toEqual(["112857"]);
+  });
 });

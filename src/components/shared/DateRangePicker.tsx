@@ -1,5 +1,5 @@
 import React from "react";
-import { format, isSameDay } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import { CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
