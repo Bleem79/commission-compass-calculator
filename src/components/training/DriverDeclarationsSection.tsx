@@ -72,7 +72,7 @@ const DeclarationCard = ({ doc, ack, videos, driverId, driverName, onRead, onWat
       </div>
 
       <div className="flex flex-col gap-2">
-        <Button className="min-h-11 w-full justify-start" variant="outline" onClick={onRead}><BookOpen />Read declaration</Button>
+        <Button className="min-h-12 w-full justify-start bg-primary text-base font-semibold text-primary-foreground shadow-md ring-2 ring-primary/30 ring-offset-2 ring-offset-background hover:bg-primary/90 animate-pulse [animation-iteration-count:3]" onClick={onRead}><BookOpen />Read declaration<span className="ml-auto rounded-full bg-primary-foreground/20 px-2 py-0.5 text-xs font-medium">Tap to open</span></Button>
         {videos.map((v) => <Button key={v.id} variant="outline" className="h-auto min-h-11 w-full justify-start whitespace-normal py-2 text-left" onClick={() => onWatch(v)}><PlayCircle className="shrink-0" /><span className="min-w-0 break-words">Watch tutorial: {v.title}</span></Button>)}
       </div>
 
