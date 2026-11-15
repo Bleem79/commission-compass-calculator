@@ -193,7 +193,7 @@ const AdminRequestsPage = () => {
 
   const [statusHistory, setStatusHistory] = useState<any[]>([]);
   const openResponseDialog = useCallback((request: DriverRequest) => {
-    setSelectedRequest(request); setResponseText(request.admin_response || ""); setNewStatus(request.status); setEditSubject(request.subject); setEditDescription(request.description); setFleetRemarks(request.fleet_remarks || "");
+    setSelectedRequest(request); setResponseText(request.admin_response || ""); setNewStatus(request.status === "pending" ? "" : request.status); setEditSubject(request.subject); setEditDescription(request.description); setFleetRemarks(request.fleet_remarks || "");
     setStatusHistory([]);
     (supabase as any).from("request_status_history").select("*").eq("request_id", request.id).order("changed_at", { ascending: false })
       .then(({ data }: any) => setStatusHistory(data || []));
@@ -201,6 +201,7 @@ const AdminRequestsPage = () => {
 
   const handleSubmitResponse = useCallback(async () => {
     if (!selectedRequest || !user?.id) return;
+    if (!newStatus || newStatus === "pending") { toast.error("Please choose Approved or Rejected before submitting."); return; }
     setSubmitting(true);
     try {
       const updateData: any = { status: newStatus, responded_by: user.id, responded_at: new Date().toISOString(), subject: editSubject.trim(), description: editDescription.trim() };
@@ -477,7 +478,7 @@ const AdminRequestsPage = () => {
                   <div><Label>Description</Label><Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={2} /></div>
                   <div><Label>Update Status</Label>
                     <Select value={newStatus} onValueChange={setNewStatus}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Choose Approved or Rejected" /></SelectTrigger>
                       <SelectContent>{STATUS_OPTIONS.filter((s) => s.value !== "pending").map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
@@ -509,7 +510,7 @@ const AdminRequestsPage = () => {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelectedRequest(null)}>Cancel</Button>
-            <Button onClick={isFleetUser ? handleFleetRemarksSubmit : handleSubmitResponse} disabled={submitting}>
+            <Button onClick={isFleetUser ? handleFleetRemarksSubmit : handleSubmitResponse} disabled={submitting || (!isFleetUser && (!newStatus || newStatus === "pending"))}>
               {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
               {isFleetUser ? "Save Remarks" : "Submit Response"}
             </Button>

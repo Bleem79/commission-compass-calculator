@@ -18,17 +18,20 @@ export function parseDriverIdTokens(query: string): string[] {
 export function filterDriversBySearch<T extends { driver_id: string }>(drivers: T[], query: string): T[] {
   const tokens = parseDriverIdTokens(query);
   if (tokens.length === 0) return drivers;
-  const needles = tokens.map((token) => token.toLowerCase());
-  return drivers.filter((driver) => {
-    const id = driver.driver_id.toLowerCase();
-    return needles.some((needle) => id.includes(needle));
-  });
+  // One term: normal partial search. Several pasted IDs: exact matches only,
+  // so a typo or short fragment never pulls in extra drivers.
+  if (tokens.length === 1) {
+    const needle = tokens[0].toLowerCase();
+    return drivers.filter((driver) => driver.driver_id.toLowerCase().includes(needle));
+  }
+  const wanted = new Set(tokens.map((token) => token.toLowerCase()));
+  return drivers.filter((driver) => wanted.has(driver.driver_id.trim().toLowerCase()));
 }
 
 // Tokens that match no active driver exactly (only meaningful for multi-ID pastes).
 export function unmatchedDriverIdTokens(drivers: { driver_id: string }[], query: string): string[] {
   const tokens = parseDriverIdTokens(query);
   if (tokens.length < 2) return [];
-  const ids = new Set(drivers.map((driver) => driver.driver_id.toLowerCase()));
+  const ids = new Set(drivers.map((driver) => driver.driver_id.trim().toLowerCase()));
   return tokens.filter((token) => !ids.has(token.toLowerCase()));
 }
