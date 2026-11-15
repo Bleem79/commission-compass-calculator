@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
+import { lookupDriverNames } from "@/utils/driverNameFallback";
 import { Loader2, Upload, Trash2, Download, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -58,7 +59,10 @@ export const YangoDriverListDialog = ({
         if (chunk.length < batch) break;
         from += batch;
       }
-      setRows(all);
+      // Most uploaded rows have no name; show the Driver Master File / Driver Income name instead of a blank.
+      const blank = all.filter((r) => !r.driver_name?.trim()).map((r) => r.driver_id);
+      const names = blank.length ? await lookupDriverNames(blank).catch(() => new Map<string, string>()) : new Map<string, string>();
+      setRows(all.map((r) => (r.driver_name?.trim() ? r : { ...r, driver_name: names.get(r.driver_id.trim().toLowerCase()) ?? null })));
     } catch (err) {
       console.error("Error loading Yango driver list:", err);
       toast.error("Failed to load driver list.");

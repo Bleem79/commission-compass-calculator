@@ -8,6 +8,7 @@ import { PageLayout } from "@/components/shared/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { lookupDriverNames } from "@/utils/driverNameFallback";
 import DriverResidenceMap from "@/components/map/DriverResidenceMap";
 import { ResidenceRow, summarizeResidences, residenceCoordinates, residenceAdminAllowed, excelSafe } from "@/utils/driverResidence";
 
@@ -100,6 +101,15 @@ export default function AdminDriverResidencePage() {
           for (const r of data || []) { const k = r.driver_id.trim().toLowerCase(); if (!found.has(k)) found.set(k, r); }
         }
       } catch { /* fall back to Driver IDs only */ }
+      // Most Yango list rows have no name; fill blanks from the Driver Master File, then Driver Income.
+      const missing = ids.filter(id => !found.get(id.toLowerCase())?.driver_name?.trim());
+      let names = new Map<string, string>();
+      try { names = await lookupDriverNames(missing); } catch { /* names stay blank */ }
+      for (const id of missing) {
+        const k = id.toLowerCase(); const name = names.get(k); if (!name) continue;
+        const row = found.get(k);
+        found.set(k, row ? { ...row, driver_name: name } : { driver_id: id, driver_name: name, nationality: null, mobile_no: null, status: null, hr_status: null });
+      }
       if (cancelled) return;
       setAreaDrivers(ids.map(id => found.get(id.toLowerCase()) ?? { driver_id: id, driver_name: null, nationality: null, mobile_no: null, status: null, hr_status: null })
         .sort((a, b) => a.driver_id.localeCompare(b.driver_id, undefined, { numeric: true })));
