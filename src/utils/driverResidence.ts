@@ -33,15 +33,16 @@ export function summarizeResidences(rows: ResidenceRow[], resolved: Record<strin
     const id = row.driver_id.trim().toLowerCase();
     if (id && !drivers.has(id)) drivers.set(id, row);
   }
-  const groups = new Map<string, { key: string; city: string; area: string; count: number; position: { lat: number; lng: number } | null }>();
+  const groups = new Map<string, { key: string; city: string; area: string; count: number; driverIds: string[]; position: { lat: number; lng: number } | null }>();
   let missing = 0;
   for (const row of drivers.values()) {
     const city = (row.city || "").trim().replace(/\s+/g, " ");
     const area = (row.area || "").trim().replace(/\s+/g, " ");
     if (!city && !area) { missing++; continue; }
     const key = JSON.stringify([city.toLowerCase(), area.toLowerCase()]);
-    const group = groups.get(key) || { key, city, area, count: 0, position: null };
+    const group = groups.get(key) || { key, city, area, count: 0, driverIds: [] as string[], position: null };
     group.count++;
+    group.driverIds.push(row.driver_id.trim());
     const link = (row.google_map || "").trim();
     group.position ||= residenceCoordinates(link) || (link ? resolved[link] ?? null : null);
     groups.set(key, group);
@@ -50,3 +51,8 @@ export function summarizeResidences(rows: ResidenceRow[], resolved: Record<strin
 }
 
 export const residenceAdminAllowed = (role: string | undefined) => role === "admin";
+// Excel cells starting with these characters can be run as formulas; prefix them so exports stay plain text.
+export const excelSafe = (value: unknown) => {
+  const text = value == null ? "" : String(value);
+  return /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+};

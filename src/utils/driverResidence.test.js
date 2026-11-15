@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { summarizeResidences, residenceCoordinates, residenceAdminAllowed } from "./driverResidence";
+import { summarizeResidences, residenceCoordinates, residenceAdminAllowed, excelSafe } from "./driverResidence";
 
 test("Driver Residence permits only administrators", () => {
   expect(["admin", "advanced", "user", "driver", undefined].map(residenceAdminAllowed)).toEqual([true, false, false, false, false]);
@@ -32,4 +32,16 @@ test("resolved short-link coordinates place areas on the map", () => {
     { driver_id: "3", city: "Sharjah", area: "Al Butina", google_map: "https://maps.app.goo.gl/fail" },
   ], { "https://maps.app.goo.gl/abc": { lat: 25.31, lng: 55.41 }, "https://maps.app.goo.gl/fail": null });
   expect(result.groups.map(g => [g.area, g.count, g.position])).toEqual([["Al Nahda", 2, { lat: 25.31, lng: 55.41 }], ["Al Butina", 1, null]]);
+});test("each area lists exactly the unique drivers residing there", () => {
+  const result = summarizeResidences([
+    { driver_id: "100344", city: "Sharjah", area: "Al Ghubaiba", google_map: null },
+    { driver_id: "100475", city: "Sharjah", area: "al ghubaiba", google_map: null },
+    { driver_id: "100344", city: "Sharjah", area: "Al Ghubaiba", google_map: null },
+    { driver_id: "200001", city: "Sharjah", area: "Al Nahda", google_map: null },
+  ]);
+  const ghubaiba = result.groups.find(g => g.area === "Al Ghubaiba");
+  expect(ghubaiba.driverIds).toEqual(["100344", "100475"]);
+});
+test("exported cells cannot run as spreadsheet formulas", () => {
+  expect([excelSafe("=HYPERLINK(1)"), excelSafe("+971"), excelSafe("Ahmed"), excelSafe(null)]).toEqual(["'=HYPERLINK(1)", "'+971", "Ahmed", ""]);
 });
