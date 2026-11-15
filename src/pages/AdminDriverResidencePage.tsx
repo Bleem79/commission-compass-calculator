@@ -8,6 +8,7 @@ import { PageLayout } from "@/components/shared/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { lookupDriverNames } from "@/utils/driverNameFallback";
 import DriverResidenceMap from "@/components/map/DriverResidenceMap";
 import { ResidenceRow, summarizeResidences, residenceCoordinates, residenceAdminAllowed, excelSafe } from "@/utils/driverResidence";
 
@@ -102,16 +103,8 @@ export default function AdminDriverResidencePage() {
       } catch { /* fall back to Driver IDs only */ }
       // Most Yango list rows have no name; fill blanks from the Driver Master File, then Driver Income.
       const missing = ids.filter(id => !found.get(id.toLowerCase())?.driver_name?.trim());
-      const names = new Map<string, string>();
-      try {
-        for (const table of ["driver_master_file", "driver_income"] as const) {
-          const need = missing.filter(id => !names.has(id.toLowerCase()));
-          for (let i = 0; i < need.length; i += 200) {
-            const { data } = await supabase.from(table).select("driver_id, driver_name").in("driver_id", need.slice(i, i + 200)).order("created_at", { ascending: false });
-            for (const r of data || []) { const k = r.driver_id.trim().toLowerCase(); const n = r.driver_name?.trim(); if (n && !names.has(k)) names.set(k, n); }
-          }
-        }
-      } catch { /* names stay blank */ }
+      let names = new Map<string, string>();
+      try { names = await lookupDriverNames(missing); } catch { /* names stay blank */ }
       for (const id of missing) {
         const k = id.toLowerCase(); const name = names.get(k); if (!name) continue;
         const row = found.get(k);
