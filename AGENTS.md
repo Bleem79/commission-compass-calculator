@@ -18,3 +18,4 @@
 - Training declarations store Word/PDF templates in a private bucket and one signed acknowledgment per driver per template; admins manage templates and signatures, drivers insert only their own, so collected signatures survive template deletion.
 - Submitting a signed declaration marks that driver's pending trainings Present via a SECURITY DEFINER insert trigger, because drivers cannot update attendance themselves; Absent marks are never overridden.
 - RLS for shared data uses private-schema helpers (portal member = has a role or admin-created driver credentials; staff = admin/advanced/user; current driver ID from linked credentials), never bare sign-in checks, because self-registration is open.
+- Training Department access (register uploads, attendance, signature viewing/export) is granted through one private email-plus-staff-role helper exposed to the UI via an RPC, so the database and buttons agree; deletions stay admin-only.
