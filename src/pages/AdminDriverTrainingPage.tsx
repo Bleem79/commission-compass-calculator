@@ -34,6 +34,13 @@ const AdminDriverTrainingPage = () => {
   const [page, setPage] = useState(1);
   const [bulkAction, setBulkAction] = useState<"delete" | "clear" | null>(null);
   const [bulkWorking, setBulkWorking] = useState(false);
+  const [isTrainingManager, setIsTrainingManager] = useState(false);
+  const canManage = isAdmin || isTrainingManager;
+
+  useEffect(() => {
+    if (!isAuthenticated || isAdmin) return;
+    (supabase as any).rpc("can_manage_training").then(({ data }: { data: boolean | null }) => setIsTrainingManager(data === true));
+  }, [isAuthenticated, isAdmin]);
 
   useEffect(() => { if (!isAuthenticated) navigate("/login", { replace: true }); }, [isAuthenticated, navigate]);
 
@@ -75,7 +82,7 @@ const AdminDriverTrainingPage = () => {
 
   const handleAttendanceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !isAdmin) return;
+    if (!file || !canManage) return;
     try {
       const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
       const sheet = wb.Sheets[wb.SheetNames[0]];
@@ -91,7 +98,7 @@ const AdminDriverTrainingPage = () => {
   };
 
   const saveAttendanceUpload = async () => {
-    if (!attendancePreview || !isAdmin || !user?.id) return;
+    if (!attendancePreview || !canManage || !user?.id) return;
     setSavingAttendance(true);
     const failures: typeof attendancePreview.updates = [];
     let saved = 0;
@@ -151,7 +158,7 @@ const AdminDriverTrainingPage = () => {
   };
 
   const runBulkAction = async () => {
-    if (!isAdmin || !bulkAction) return;
+    if (!bulkAction || (bulkAction === "delete" ? !isAdmin : !canManage)) return;
     const ids = bulkAction === "delete" ? filtered.map((r) => r.id as string).filter(Boolean) : markedTrainingIds(filtered);
     if (!ids.length) { setBulkAction(null); return; }
     setBulkWorking(true);
@@ -203,7 +210,7 @@ const AdminDriverTrainingPage = () => {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold">Training register</h2>
           <div className="flex flex-wrap gap-2">
-            {isAdmin && (<>
+            {canManage && (<>
               <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={handleUpload} />
               <Button className="min-h-11" onClick={() => fileRef.current?.click()} disabled={uploading}>
                 {uploading ? <Loader2 className="animate-spin" /> : <Upload />}Upload Excel
@@ -214,7 +221,7 @@ const AdminDriverTrainingPage = () => {
             <Button variant="outline" className="min-h-11" onClick={exportExcel}><Download />Export Excel</Button>
           </div>
         </div>
-        {isAdmin && <div className="flex flex-col gap-3 border-y border-border py-4 sm:flex-row sm:items-center sm:justify-between">
+        {canManage && <div className="flex flex-col gap-3 border-y border-border py-4 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="font-semibold">Bulk attendance</h2>
           <div className="flex flex-wrap gap-2">
             <input ref={attendanceFileRef} type="file" aria-label="Attendance Excel file" accept=".xlsx,.xls,.csv" hidden onChange={handleAttendanceUpload} />
