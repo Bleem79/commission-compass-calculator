@@ -120,17 +120,20 @@ const HomePage = () => {
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const [badgeImageUrl, setBadgeImageUrl] = useState<string | null>(null);
   const [safeParkingEnabled, setSafeParkingEnabled] = useState(true);
+  const [payslipEnabled, setPayslipEnabled] = useState(false);
   const { driverInfo } = useDriverCredentials();
 
   useEffect(() => {
     if (isAdmin) return;
     supabase
       .from("driver_portal_settings")
-      .select("is_enabled")
-      .eq("feature_key", "safe_parking")
-      .maybeSingle()
+      .select("feature_key, is_enabled")
+      .in("feature_key", ["safe_parking", "outstanding"])
       .then(({ data }) => {
-        if (data) setSafeParkingEnabled(Boolean(data.is_enabled));
+        for (const row of data || []) {
+          if (row.feature_key === "safe_parking") setSafeParkingEnabled(Boolean(row.is_enabled));
+          if (row.feature_key === "outstanding") setPayslipEnabled(Boolean(row.is_enabled));
+        }
       });
   }, [isAdmin]);
   const isDriver = !!driverInfo?.driverId;
@@ -391,7 +394,7 @@ const HomePage = () => {
       pageKey: "total-balance-kpi",
       onClick: () => navigate("/total-balance-kpi"),
     });
-    features.push({
+    if (isAdmin || payslipEnabled) features.push({
       icon: <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" />,
       title: "Payslip",
       gradient: "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600",

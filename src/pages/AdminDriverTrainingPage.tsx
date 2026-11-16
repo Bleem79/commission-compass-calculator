@@ -206,7 +206,7 @@ const AdminDriverTrainingPage = () => {
     <PageLayout title="Drivers Training" icon={<GraduationCap className="w-6 h-6 text-primary" />} gradient="from-background to-background">
       <div className="space-y-6">
         <TrainingSummary total={counts.total} present={counts.present} absent={counts.absent} />
-        <AdminDeclarationsSection isAdmin={isAdmin} canViewSignatures={canManage} trainedDriverIds={trainedDriverIds} driverNames={driverNames} />
+        <AdminDeclarationsSection isAdmin={isAdmin} trainedDriverIds={trainedDriverIds} driverNames={driverNames} />
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold">Training register</h2>
           <div className="flex flex-wrap gap-2">
