@@ -1510,6 +1510,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_training: { Args: never; Returns: boolean }
       count_approved_day_off_requests: {
         Args: { p_date_str: string }
         Returns: number
