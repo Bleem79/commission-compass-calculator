@@ -32,10 +32,12 @@ interface CardProps {
   onRead: () => void;
   onWatch: (video: TrainingVideo) => void;
   onSigned: (ack: MyAck) => void;
+  /** Staff hold the device while the driver signs; saved to the driver's account via the server. */
+  assisted?: boolean;
 }
 
 /** One declaration card: tick Yes, sign right below, and submit on the same card. */
-const DeclarationCard = ({ doc, ack, videos, driverId, driverName, onRead, onWatch, onSigned }: CardProps) => {
+const DeclarationCard = ({ doc, ack, videos, driverId, driverName, onRead, onWatch, onSigned, assisted = false }: CardProps) => {
   const [agreed, setAgreed] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -46,14 +48,24 @@ const DeclarationCard = ({ doc, ack, videos, driverId, driverName, onRead, onWat
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Please sign in again");
-      const { data, error } = await db.from("training_acknowledgments")
-        .insert({ document_id: doc.id, user_id: user.id, driver_id: driverId, driver_name: driverName, agreed: true, signature_data: signature })
-        .select("id,document_id,signed_at").single();
-      if (error) throw error;
-      onSigned({ ...data, signature_data: signature });
-      toast.success("Thank you. Your signed declaration has been saved.");
+      let saved: MyAck;
+      if (assisted) {
+        const { data, error } = await db.rpc("sign_declaration_for_driver", { p_document_id: doc.id, p_driver_id: driverId, p_signature: signature });
+        if (error) throw error;
+        const row = Array.isArray(data) ? data[0] : data;
+        if (!row) throw new Error("Could not save the signature");
+        saved = row;
+      } else {
+        const { data, error } = await db.from("training_acknowledgments")
+          .insert({ document_id: doc.id, user_id: user.id, driver_id: driverId, driver_name: driverName, agreed: true, signature_data: signature })
+          .select("id,document_id,signed_at").single();
+        if (error) throw error;
+        saved = data;
+      }
+      onSigned({ ...saved, signature_data: signature });
+      toast.success(assisted ? `Signed declaration saved for ${driverId}.` : "Thank you. Your signed declaration has been saved.");
     } catch (e: any) {
-      toast.error(e?.code === "23505" ? "You have already signed this declaration." : e?.message || "Could not save your signature");
+      toast.error(e?.code === "23505" ? (assisted ? `${driverId} has already signed this declaration.` : "You have already signed this declaration.") : e?.message || "Could not save the signature");
     } finally {
       setSaving(false);
     }
@@ -81,7 +93,7 @@ const DeclarationCard = ({ doc, ack, videos, driverId, driverName, onRead, onWat
         {ack ? (
           <div className="space-y-2">
             <p className="flex items-center gap-2 font-medium text-primary"><CheckCircle2 className="h-5 w-5" />Yes – I agree</p>
-            {ack.signature_data && <img src={ack.signature_data} alt="Your signature" className="max-h-44 w-full rounded-md border border-border bg-background object-contain" />}
+            {ack.signature_data && <img src={ack.signature_data} alt={assisted ? "Driver's signature" : "Your signature"} className="max-h-44 w-full rounded-md border border-border bg-background object-contain" />}
           </div>
         ) : (
           <>
@@ -92,7 +104,7 @@ const DeclarationCard = ({ doc, ack, videos, driverId, driverName, onRead, onWat
             {agreed && (
               <div className="space-y-3">
                 <div>
-                  <p className="mb-2 text-sm font-medium">Your signature</p>
+                  <p className="mb-2 text-sm font-medium">{assisted ? "Driver's signature" : "Your signature"}</p>
                   <SignaturePad onChange={setSignature} disabled={saving} />
                 </div>
                 <Button className="min-h-11 w-full" disabled={saving || !canSubmitDeclaration({ agreed, signature })} onClick={submit}>
@@ -107,7 +119,7 @@ const DeclarationCard = ({ doc, ack, videos, driverId, driverName, onRead, onWat
   );
 };
 
-const DriverDeclarationsSection = ({ driverId, driverName }: { driverId: string; driverName: string | null }) => {
+const DriverDeclarationsSection = ({ driverId, driverName, assisted = false, onSigned }: { driverId: string; driverName: string | null; assisted?: boolean; onSigned?: () => void }) => {
   const [docs, setDocs] = useState<DeclarationDoc[]>([]);
   const [videos, setVideos] = useState<Record<string, TrainingVideo>>({});
   const [acks, setAcks] = useState<Record<string, MyAck>>({});
@@ -121,25 +133,27 @@ const DriverDeclarationsSection = ({ driverId, driverName }: { driverId: string;
     const [docsRes, videosRes, acksRes] = await Promise.all([
       db.from("training_documents").select("id,title,file_path,file_type,video_tutorial_id,video_tutorial_ids,created_at").order("created_at", { ascending: false }),
       db.from("video_tutorials").select("id,title,video_url"),
-      user ? db.from("training_acknowledgments").select("id,document_id,signed_at,signature_data").eq("user_id", user.id) : Promise.resolve({ data: [] }),
+      !user ? Promise.resolve({ data: [] })
+        : assisted ? db.from("training_acknowledgments").select("id,document_id,signed_at,signature_data").eq("driver_id", driverId)
+        : db.from("training_acknowledgments").select("id,document_id,signed_at,signature_data").eq("user_id", user.id),
     ]);
     if (docsRes.error) toast.error("Could not load the declaration");
     setDocs(docsRes.data || []);
     setVideos(Object.fromEntries((videosRes.data || []).map((v: TrainingVideo) => [v.id, v])));
     setAcks(Object.fromEntries((acksRes.data || []).filter((a: MyAck) => a.document_id).map((a: MyAck) => [a.document_id, a])));
     setLoading(false);
-  }, []);
+  }, [assisted, driverId]);
 
   useEffect(() => { load(); }, [load]);
 
   if (loading) return <div role="status" aria-label="Loading declaration" className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
-  if (!docs.length) return null;
+  if (!docs.length) return assisted ? <p className="text-sm text-muted-foreground">No declaration template has been uploaded yet.</p> : null;
 
   const openVideos = openDoc ? docVideoIds(openDoc).map((id) => videos[id]).filter(Boolean) : [];
 
   return (
     <section className="space-y-3" aria-labelledby="declaration-heading">
-      <h2 id="declaration-heading" className="text-lg font-semibold">Acknowledgment and Declaration</h2>
+      {!assisted && <h2 id="declaration-heading" className="text-lg font-semibold">Acknowledgment and Declaration</h2>}
       {docs.map((doc) => {
         const docVideos = docVideoIds(doc).map((id) => videos[id]).filter(Boolean);
         return (
@@ -152,7 +166,8 @@ const DriverDeclarationsSection = ({ driverId, driverName }: { driverId: string;
             driverName={driverName}
             onRead={() => setOpenDoc(doc)}
             onWatch={(v) => openTrainingVideo(v, setPlaying)}
-            onSigned={(ack) => setAcks((a) => ({ ...a, [doc.id]: ack }))}
+            assisted={assisted}
+            onSigned={(ack) => { setAcks((a) => ({ ...a, [doc.id]: ack })); onSigned?.(); }}
           />
         );
       })}

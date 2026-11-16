@@ -1156,6 +1156,7 @@ export type Database = {
       training_acknowledgments: {
         Row: {
           agreed: boolean
+          collected_by: string | null
           created_at: string
           document_id: string | null
           document_title: string
@@ -1168,6 +1169,7 @@ export type Database = {
         }
         Insert: {
           agreed?: boolean
+          collected_by?: string | null
           created_at?: string
           document_id?: string | null
           document_title?: string
@@ -1180,6 +1182,7 @@ export type Database = {
         }
         Update: {
           agreed?: boolean
+          collected_by?: string | null
           created_at?: string
           document_id?: string | null
           document_title?: string
@@ -1563,6 +1566,18 @@ export type Database = {
       import_safe_parking: { Args: { p_rows: Json }; Returns: Json }
       is_fleet_user: { Args: never; Returns: boolean }
       is_guest_account: { Args: { email: string }; Returns: boolean }
+      sign_declaration_for_driver: {
+        Args: {
+          p_document_id: string
+          p_driver_id: string
+          p_signature: string
+        }
+        Returns: {
+          document_id: string
+          id: string
+          signed_at: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "driver" | "advanced"
